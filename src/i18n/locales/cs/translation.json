@@ -356,7 +356,16 @@
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Automaticky"
+        "auto": "Automaticky",
+        "autoUnavailable": {
+          "title": "Automaticky je vypnuto",
+          "oneLanguage": "S tímto modelem funguje jen jeden z vašich jazyků",
+          "undetectable": "Není k dispozici pro {{languages}}",
+          "noMatch": "Žádný z vašich jazyků s tímto modelem nefunguje"
+        },
+        "detectorMissingTitle": "Automaticky vyžaduje samostatné stažení",
+        "detectorMissing": "Tento model nepozná, jakým jazykem mluvíte. Režim Automaticky potřebuje malý detektor jazyka, který to zjistí",
+        "stopDetectorDownload": "Zastavit stahování detektoru jazyka"
       },
       "preferredLanguages": {
         "title": "Preferované jazyky",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Dělení dlouhého zvuku",
         "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu. Přepisované soubory a dlouhé opakované přepisy se rozdělují vždy."
+      },
+      "languageDetection": {
+        "title": "Omezit Automaticky na mé jazyky",
+        "description": "Automaticky vybírá jen z vašich preferovaných jazyků pomocí malého detektoru jazyka. Zapněte to, pokud Automaticky stále volí jazyk, kterým nemluvíte",
+        "downloadHint": "Zapnutím se stáhne malý detektor jazyka",
+        "downloadingHint": "Stahuje se detektor jazyka. Vypnutím stahování zrušíte"
       },
       "vadBackend": {
         "title": "Backend detekce hlasu",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
+      },
+      "languageDetectionWindow": {
+        "title": "Zvuk pro rozpoznání jazyka",
+        "description": "Kolik sekund řeči detektor jazyka slyší. Delší je přesnější, ale pomalejší."
       },
       "keyboardDiagnostic": {
         "title": "Diagnostika klávesnice",

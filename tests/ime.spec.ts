@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 
-// Replace only the native settings service. Input handlers, picker/table
-// components, localization and keyboard/composition events are real browser code.
+// Replace native settings, IPC and events. Input handlers, picker/table and
+// language/detector hooks, localization and keyboard events are real browser code.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     Object.assign(window, {
@@ -255,3 +255,23 @@ test("model search ignores an ordinary Enter without a highlighted row", async (
   await page.getByRole("searchbox").press("Enter");
   await expect(page.getByTestId("selected-models")).toHaveText("[]");
 });
+
+for (const marker of markers) {
+  test(`recognition-language Enter skips unavailable Auto after composition: ${marker.name}`, async ({
+    page,
+  }) => {
+    await open(page, "language&autoUnavailable=1");
+    await page.locator("button").first().click();
+    const input = page.getByRole("textbox");
+    // Auto is listed first but cannot be selected for this backend policy.
+    expect(await keyDuringComposition(input, "Enter", marker)).toBe(false);
+    expect(await writes(page)).toEqual([]);
+    await expect(input).toBeVisible();
+    await finishComposition(input);
+    await input.press("Enter");
+    await expect
+      .poll(() => writes(page))
+      .toEqual([{ key: "selected_language", value: "en" }]);
+    await expect(input).toHaveCount(0);
+  });
+}

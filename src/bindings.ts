@@ -149,6 +149,22 @@ async changeExtraRecordingBufferSetting(ms: number) : Promise<Result<null, strin
     else return { status: "error", error: e  as any };
 }
 },
+async changeLanguageDetectionSetting(mode: LanguageDetectionMode) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_language_detection_setting", { mode }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeLanguageDetectionWindowSetting(secs: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_language_detection_window_setting", { secs }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changePasteDelayMsSetting(ms: number) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_paste_delay_ms_setting", { ms }) };
@@ -692,6 +708,25 @@ async downloadModel(modelId: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Download the language detector on its own. Progress, completion,
+ * cancellation and failure use the model download events under
+ * `LANGUAGE_DETECTOR_ID`.
+ */
+async downloadLanguageDetector() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_language_detector") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Whether the language detector is on disk.
+ */
+async isLanguageDetectorDownloaded() : Promise<boolean> {
+    return await TAURI_INVOKE("is_language_detector_downloaded");
+},
 async deleteModel(modelId: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("delete_model", { modelId }) };
@@ -890,6 +925,12 @@ async getModelLoadStatus() : Promise<Result<ModelLoadStatus, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * The language transcription on `model_id` will use, for the picker.
+ */
+async getLanguageStatus(modelId: string) : Promise<LanguageStatus> {
+    return await TAURI_INVOKE("get_language_status", { modelId });
+},
 async unloadModelManually() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("unload_model_manually") };
@@ -1086,7 +1127,12 @@ vad_backend?: VadBackend;
  * degrades on long audio. Independent of `vad_enabled`, which only
  * decides whether silence is dropped from recordings.
  */
-long_form_chunking?: boolean; 
+long_form_chunking?: boolean; language_detection?: LanguageDetectionMode; 
+/**
+ * Seconds of speech the language detector hears (debug). Read through
+ * [`AppSettings::language_detection_window_samples`], which clamps it.
+ */
+language_detection_window_secs?: number; 
 /**
  * Which recording overlay to show: None / Minimal / Live. Streaming mode is
  * not gated on this — that follows model capability. Migrated from the old
@@ -1095,6 +1141,19 @@ long_form_chunking?: boolean;
 overlay_style?: OverlayStyle }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
+export type AutoUnavailableReason = 
+/**
+ * Only one of their languages (or only one at all) fits the model.
+ */
+{ kind: "one_language" } | 
+/**
+ * The detector can't identify these spoken languages.
+ */
+{ kind: "undetectable"; languages: string[] } | 
+/**
+ * None of their languages fit the model.
+ */
+{ kind: "no_match" }
 export type AvailableAccelerators = { transcribe: string[]; gpu_devices: GpuDeviceOption[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 /**
@@ -1122,7 +1181,15 @@ export type HistoryEntry = { id: number; file_name: string; timestamp: number; s
  * The name of the file this entry was transcribed from; `None` for a
  * dictation.
  */
-source_name: string | null }
+source_name: string | null; 
+/**
+ * The language it was transcribed in, when known.
+ */
+language: string | null; 
+/**
+ * How that language was chosen; `None` before it was recorded.
+ */
+language_source: LanguageSource | null }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
  * Result of changing keyboard implementation
@@ -1139,6 +1206,64 @@ export type KeyboardDiagnosticReport = { secure_input_enabled: boolean; culprit_
 key_down: number; key_up: number; flags_changed: number; mouse: number; duration_ms: number }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
+/**
+ * When Handy's spoken-language detector picks the language for Auto.
+ */
+export type LanguageDetectionMode = 
+/**
+ * Only for models that can't detect the language themselves.
+ */
+"when_needed" | 
+/**
+ * For every model except streaming ones, restricted to the languages
+ * the person speaks.
+ */
+"always"
+/**
+ * How a transcription's language was chosen.
+ */
+export type LanguageSource = 
+/**
+ * The person picked it, or it is the only language of theirs the model
+ * supports.
+ */
+"selected" | 
+/**
+ * The model decides: its own detection, or its only language.
+ */
+"model" | 
+/**
+ * Handy's detector picked it.
+ */
+"detected" | 
+/**
+ * Handy had to pick without detecting (too little speech, detection
+ * failed or unavailable, or Auto can't work for these languages).
+ */
+"fallback"
+/**
+ * What the language picker shows: the language a transcription will run in,
+ * or Auto when it's decided per transcription. Derived from [`plan`], so it
+ * can't disagree with what transcription does.
+ */
+export type LanguageStatus = 
+/**
+ * The language they picked.
+ */
+{ kind: "selected"; language: string } | 
+/**
+ * Decided per transcription: the model's own detection, or Handy's.
+ */
+{ kind: "auto" } | 
+/**
+ * Auto needs Handy's detector, which isn't downloaded; `fallback` (the
+ * first preferred language) is used until it is.
+ */
+{ kind: "detector_missing"; fallback: string } | 
+/**
+ * Auto can't work here; `language` is used instead.
+ */
+{ kind: "auto_unavailable"; language: string; reason: AutoUnavailableReason }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }

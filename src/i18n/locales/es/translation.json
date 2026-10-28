@@ -356,7 +356,16 @@
         "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectará automáticamente el idioma, mientras que seleccionar un idioma específico puede mejorar la precisión para ese idioma.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "No se encontraron idiomas",
-        "auto": "Automático"
+        "auto": "Automático",
+        "autoUnavailable": {
+          "title": "Automático está desactivado",
+          "oneLanguage": "Solo uno de tus idiomas funciona con este modelo",
+          "undetectable": "No disponible con {{languages}}",
+          "noMatch": "Ninguno de tus idiomas funciona con este modelo"
+        },
+        "detectorMissingTitle": "Automático necesita una descarga aparte",
+        "detectorMissing": "Este modelo no puede saber qué idioma hablas. Automático necesita un pequeño detector de idioma para averiguarlo",
+        "stopDetectorDownload": "Detener la descarga del detector de idioma"
       },
       "preferredLanguages": {
         "title": "Idiomas preferidos",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "División de audio largo",
         "description": "Divide las grabaciones largas en las pausas antes de transcribirlas, lo que normalmente mejora el rendimiento de la transcripción. Los archivos transcritos y las re-transcripciones largas siempre se dividen."
+      },
+      "languageDetection": {
+        "title": "Limitar Automático a mis idiomas",
+        "description": "Automático solo elige entre tus idiomas preferidos, usando un pequeño detector de idioma. Actívalo si Automático sigue eligiendo un idioma que no hablas",
+        "downloadHint": "Al activarlo se descarga un pequeño detector de idioma",
+        "downloadingHint": "Descargando el detector de idioma. Desactívalo para cancelar"
       },
       "vadBackend": {
         "title": "Backend de detección de voz",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Búfer de grabación adicional",
         "description": "Tiempo adicional (en milisegundos) para seguir grabando después de soltar la tecla, para capturar el audio restante. 0 = sin búfer adicional."
+      },
+      "languageDetectionWindow": {
+        "title": "Audio de detección de idioma",
+        "description": "Segundos de voz que escucha el detector de idioma. Más largo es más preciso pero más lento."
       },
       "keyboardDiagnostic": {
         "title": "Diagnóstico del teclado",

@@ -349,27 +349,36 @@ pub fn create_detector(
     })
 }
 
-fn create_capture_vad(
+/// A detector for `backend` with a recording's smoothing (pre-roll, onset,
+/// offline hangover): what keeps speech in a recording, and what cuts the
+/// silence out of other audio the same way.
+pub fn create_smoothed_detector(
     backend: VadBackend,
     app_handle: &tauri::AppHandle,
-) -> Result<CaptureVad, anyhow::Error> {
+) -> Result<SmoothedVad, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = create_detector(backend, app_handle)?;
 
     // Earshot uses 16 ms frames while Silero uses 32 ms. Convert the existing
     // time-based capture profile to each detector's frame size so selecting a
     // backend does not shorten pre-roll, onset, or post-speech audio.
     let frame_samples = detector.frame_samples();
-    let prefill_frames = frames_for_duration_ms(VAD_PREFILL_MS, frame_samples);
+    Ok(SmoothedVad::new(
+        detector,
+        frames_for_duration_ms(VAD_PREFILL_MS, frame_samples),
+        frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, frame_samples),
+        frames_for_duration_ms(VAD_ONSET_MS, frame_samples),
+    ))
+}
+
+fn create_capture_vad(
+    backend: VadBackend,
+    app_handle: &tauri::AppHandle,
+) -> Result<CaptureVad, anyhow::Error> {
+    let smoothed_vad = create_smoothed_detector(backend, app_handle)?;
+    let frame_samples = smoothed_vad.frame_samples();
     let offline_hangover_frames = frames_for_duration_ms(VAD_OFFLINE_HANGOVER_MS, frame_samples);
     let streaming_hangover_frames =
         frames_for_duration_ms(VAD_STREAMING_HANGOVER_MS, frame_samples);
-    let onset_frames = frames_for_duration_ms(VAD_ONSET_MS, frame_samples);
-    let smoothed_vad = SmoothedVad::new(
-        detector,
-        prefill_frames,
-        offline_hangover_frames,
-        onset_frames,
-    );
 
     info!(
         "Initialized {:?} VAD backend ({} samples/frame)",

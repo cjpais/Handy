@@ -356,7 +356,16 @@
         "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
         "searchPlaceholder": "Search languages...",
         "noResults": "No languages found",
-        "auto": "Auto"
+        "auto": "Auto",
+        "autoUnavailable": {
+          "title": "Auto is disabled",
+          "oneLanguage": "Only one of your languages works with this model",
+          "undetectable": "Not available with {{languages}}",
+          "noMatch": "None of your languages work with this model"
+        },
+        "detectorMissingTitle": "Auto needs a separate download",
+        "detectorMissing": "This model can't tell which language you're speaking. Auto needs a small language detector to figure it out",
+        "stopDetectorDownload": "Stop downloading the language detector"
       },
       "preferredLanguages": {
         "title": "Preferred Languages",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Long Audio Chunking",
         "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance. Transcribed files and long re-transcriptions are always split."
+      },
+      "languageDetection": {
+        "title": "Limit Auto to My Languages",
+        "description": "Auto only picks from your preferred languages, using a small language detector. Turn this on if Auto keeps choosing a language you don't speak",
+        "downloadHint": "Turning this on downloads a small language detector",
+        "downloadingHint": "Downloading the language detector. Turn this off to cancel"
       },
       "vadBackend": {
         "title": "Voice Activity Backend",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Language Detection Audio",
+        "description": "Seconds of speech the language detector hears. Longer is more accurate but slower."
       },
       "keyboardDiagnostic": {
         "title": "Keyboard Diagnostic",

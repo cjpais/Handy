@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider } from "react-i18next";
+import { mockIPC } from "@tauri-apps/api/mocks";
+import type { LanguageStatus } from "../../src/bindings";
 import { CustomWords } from "../../src/components/settings/CustomWords";
 import { LanguageSelector } from "../../src/components/settings/LanguageSelector";
 import { PreferredLanguages } from "../../src/components/settings/PreferredLanguages";
@@ -19,6 +21,23 @@ import ko from "../../src/i18n/locales/ko/translation.json";
 import "../../src/App.css";
 
 const params = new URLSearchParams(location.search);
+// Keep the current language/detector hooks, replacing only native IPC/events.
+mockIPC(
+  (command) => {
+    if (command === "is_language_detector_downloaded") return true;
+    if (command === "get_language_status") {
+      return params.has("autoUnavailable")
+        ? ({
+            kind: "auto_unavailable",
+            language: "en",
+            reason: { kind: "one_language" },
+          } satisfies LanguageStatus)
+        : ({ kind: "selected", language: "en" } satisfies LanguageStatus);
+    }
+    throw new Error(`Unexpected native command: ${command}`);
+  },
+  { shouldMockEvents: true },
+);
 const i18n = i18next.createInstance();
 await i18n.init({
   lng: params.get("lng") || "ko",
@@ -105,6 +124,7 @@ function Fixture() {
       {view === "words" && <CustomWords descriptionMode="inline" />}
       {view === "language" && (
         <LanguageSelector
+          modelId="ime-fixture"
           descriptionMode="inline"
           supportedLanguages={["en", "ko"]}
         />

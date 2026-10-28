@@ -356,7 +356,16 @@
         "description": "Konuşma tanıma dilini seçin. 'Otomatik' seçeneği dili kendisi belirler, ancak belirli bir dil seçmek o dildeki doğruluğu artırabilir.",
         "searchPlaceholder": "Dil ara...",
         "noResults": "Dil bulunamadı",
-        "auto": "Otomatik"
+        "auto": "Otomatik",
+        "autoUnavailable": {
+          "title": "Otomatik devre dışı",
+          "oneLanguage": "Dillerinizden yalnızca biri bu modelle çalışıyor",
+          "undetectable": "{{languages}} ile kullanılamaz",
+          "noMatch": "Dillerinizden hiçbiri bu modelle çalışmıyor"
+        },
+        "detectorMissingTitle": "Otomatik için ayrı bir indirme gerekiyor",
+        "detectorMissing": "Bu model hangi dili konuştuğunuzu anlayamıyor. Otomatik'in bunu anlamak için küçük bir dil algılayıcıya ihtiyacı var",
+        "stopDetectorDownload": "Dil algılayıcının indirilmesini durdur"
       },
       "preferredLanguages": {
         "title": "Tercih Edilen Diller",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Uzun Sesi Bölme",
         "description": "Uzun kayıtları yazıya dökmeden önce duraklamalardan böler; bu genellikle yazıya dökme performansını artırır. Yazıya dökülen dosyalar ve uzun yeniden transkripsiyonlar her zaman bölünür."
+      },
+      "languageDetection": {
+        "title": "Otomatik'i dillerimle sınırla",
+        "description": "Otomatik, küçük bir dil algılayıcı kullanarak yalnızca tercih ettiğiniz diller arasından seçer. Otomatik konuşmadığınız bir dili seçip duruyorsa bunu açın",
+        "downloadHint": "Bunu açmak küçük bir dil algılayıcı indirir",
+        "downloadingHint": "Dil algılayıcı indiriliyor. İptal etmek için kapatın"
       },
       "vadBackend": {
         "title": "Ses Etkinliği Arka Ucu",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Ekstra Kayıt Tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
+      },
+      "languageDetectionWindow": {
+        "title": "Dil Algılama Sesi",
+        "description": "Dil algılayıcının duyduğu konuşma saniyesi. Daha uzun daha doğru ama daha yavaştır."
       },
       "keyboardDiagnostic": {
         "title": "Klavye Tanılaması",

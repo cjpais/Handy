@@ -12,6 +12,7 @@ mod commands;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
+mod language_detection;
 mod llm_client;
 mod managers;
 mod memory;
@@ -673,6 +674,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,
+            shortcut::change_language_detection_setting,
+            shortcut::change_language_detection_window_setting,
             shortcut::change_paste_delay_ms_setting,
             shortcut::change_paste_delay_after_ms_setting,
             shortcut::change_reliable_paste_setting,
@@ -740,6 +743,8 @@ pub fn run(cli_args: CliArgs) {
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
+            commands::models::download_language_detector,
+            commands::models::is_language_detector_downloaded,
             commands::models::delete_model,
             commands::models::get_retired_models,
             commands::models::delete_retired_model,
@@ -768,6 +773,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::set_selected_channel,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
+            commands::transcription::get_language_status,
             commands::transcription::unload_model_manually,
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,

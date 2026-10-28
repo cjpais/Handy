@@ -60,6 +60,10 @@ struct CatalogRoot {
     #[cfg_attr(not(test), allow(dead_code))]
     transcribe_cpp: String,
     models: Vec<CatalogModel>,
+    /// Catalog id of the spoken-language detector for transcription models
+    /// without their own language detection.
+    #[serde(default)]
+    language_detector: Option<String>,
     /// Benchmark results keyed by catalog id.
     #[serde(default)]
     results: HashMap<String, ModelResults>,
@@ -337,6 +341,36 @@ pub static CATALOG: Lazy<Vec<ModelDescriptor>> = Lazy::new(|| {
         .collect()
 });
 
+/// The spoken-language detector the catalog names (`languageDetector`): the
+/// file Handy fetches, at the package's default quant, and the labels it can
+/// tell apart.
+pub struct LanguageDetectorFile {
+    pub repo_id: String,
+    pub revision: String,
+    pub filename: String,
+    pub size_bytes: u64,
+    sha256: String,
+    /// The detector's own codes (`iw`, `jw`, `tl`, `no` included).
+    pub labels: Vec<String>,
+}
+
+pub static LANGUAGE_DETECTOR: Lazy<Option<LanguageDetectorFile>> = Lazy::new(|| {
+    let id = ROOT.language_detector.as_deref()?;
+    let model = ROOT
+        .models
+        .iter()
+        .find(|m| m.id == id && m.role == "langid")?;
+    let file = model.default_file()?;
+    Some(LanguageDetectorFile {
+        repo_id: model.repository.clone(),
+        revision: model.revision.clone(),
+        filename: file.filename.clone(),
+        size_bytes: file.size,
+        sha256: file.sha256.clone(),
+        labels: model.languages.clone(),
+    })
+});
+
 /// A mirror copy of a catalog model's file, with the expected content hash for
 /// end-to-end verification. Mirrors are untrusted bit-pipes: the sha256 here
 /// (from the catalog compiled into the binary) is the trust anchor.
@@ -364,18 +398,47 @@ pub fn mirror_fallbacks(model_id: &str) -> Vec<MirrorFile> {
     else {
         return Vec::new();
     };
+    mirror_files(
+        &m.repository,
+        &m.revision,
+        &file.filename,
+        &file.sha256,
+        file.size,
+    )
+}
+
+/// Ordered mirror URLs for the language detector's file.
+pub fn language_detector_mirrors() -> Vec<MirrorFile> {
+    LANGUAGE_DETECTOR.as_ref().map_or_else(Vec::new, |d| {
+        mirror_files(
+            &d.repo_id,
+            &d.revision,
+            &d.filename,
+            &d.sha256,
+            d.size_bytes,
+        )
+    })
+}
+
+fn mirror_files(
+    repository: &str,
+    revision: &str,
+    filename: &str,
+    sha256: &str,
+    size_bytes: u64,
+) -> Vec<MirrorFile> {
     MIRRORS
         .iter()
         .map(|base| MirrorFile {
             url: format!(
                 "{}/{}/{}/{}",
                 base.trim_end_matches('/'),
-                m.repository,
-                m.revision,
-                file.filename
+                repository,
+                revision,
+                filename
             ),
-            sha256: file.sha256.clone(),
-            size_bytes: file.size,
+            sha256: sha256.to_string(),
+            size_bytes,
         })
         .collect()
 }
@@ -436,6 +499,16 @@ mod tests {
         let before = ids.len();
         ids.dedup();
         assert_eq!(before, ids.len(), "catalog descriptor ids must be unique");
+    }
+
+    #[test]
+    fn names_a_language_detector() {
+        let detector = LANGUAGE_DETECTOR
+            .as_ref()
+            .expect("catalog names a language detector");
+        assert!(detector.filename.ends_with(".gguf"));
+        assert!(detector.labels.iter().any(|l| l == "en"));
+        assert!(detector.labels.iter().any(|l| l == "iw"));
     }
 
     #[test]

@@ -356,7 +356,16 @@
         "description": "Chọn ngôn ngữ để nhận dạng giọng nói. Tự động sẽ tự động xác định ngôn ngữ, trong khi chọn một ngôn ngữ cụ thể có thể cải thiện độ chính xác cho ngôn ngữ đó.",
         "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
         "noResults": "Không tìm thấy ngôn ngữ",
-        "auto": "Tự động"
+        "auto": "Tự động",
+        "autoUnavailable": {
+          "title": "Tự động đã tắt",
+          "oneLanguage": "Chỉ một trong các ngôn ngữ của bạn hoạt động với mô hình này",
+          "undetectable": "Không khả dụng với {{languages}}",
+          "noMatch": "Không ngôn ngữ nào của bạn hoạt động với mô hình này"
+        },
+        "detectorMissingTitle": "Tự động cần tải xuống riêng",
+        "detectorMissing": "Mô hình này không nhận biết được bạn đang nói ngôn ngữ nào. Tự động cần một trình nhận diện ngôn ngữ nhỏ để xác định",
+        "stopDetectorDownload": "Dừng tải xuống trình nhận diện ngôn ngữ"
       },
       "preferredLanguages": {
         "title": "Ngôn ngữ ưa thích",
@@ -582,6 +591,12 @@
       "longFormChunking": {
         "title": "Chia nhỏ âm thanh dài",
         "description": "Chia các bản ghi dài tại các khoảng ngắt trước khi chuyển thành văn bản, điều này thường cải thiện hiệu quả chuyển văn bản. Tệp được chép lời và các lần phiên âm lại dài luôn được chia nhỏ."
+      },
+      "languageDetection": {
+        "title": "Giới hạn Tự động trong ngôn ngữ của tôi",
+        "description": "Tự động chỉ chọn trong các ngôn ngữ ưu tiên của bạn, nhờ một trình nhận diện ngôn ngữ nhỏ. Bật lên nếu Tự động cứ chọn một ngôn ngữ bạn không nói",
+        "downloadHint": "Bật lên sẽ tải xuống một trình nhận diện ngôn ngữ nhỏ",
+        "downloadingHint": "Đang tải xuống trình nhận diện ngôn ngữ. Tắt để hủy"
       },
       "vadBackend": {
         "title": "Bộ phát hiện giọng nói",
@@ -822,6 +837,10 @@
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
+      },
+      "languageDetectionWindow": {
+        "title": "Âm thanh nhận diện ngôn ngữ",
+        "description": "Số giây giọng nói mà trình nhận diện ngôn ngữ nghe. Dài hơn thì chính xác hơn nhưng chậm hơn."
       },
       "keyboardDiagnostic": {
         "title": "Chẩn đoán bàn phím",
