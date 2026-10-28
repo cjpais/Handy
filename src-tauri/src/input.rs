@@ -290,8 +290,11 @@ fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
 ///
 /// This sleeps for roughly `key_delay_ms` per character, so callers must run it
 /// off the main thread.
-pub fn type_text_as_keystrokes(
-    enigo: &mut Enigo,
+///
+/// Generic over the keyboard so tests can record the exact event sequence
+/// instead of typing into whatever window happens to hold focus.
+pub fn type_text_as_keystrokes<K: Keyboard>(
+    keyboard: &mut K,
     text: &str,
     key_delay_ms: u64,
 ) -> Result<(), String> {
@@ -316,7 +319,7 @@ pub fn type_text_as_keystrokes(
             other => Key::Unicode(other),
         };
 
-        enigo
+        keyboard
             .key(key, enigo::Direction::Click)
             .map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
 
@@ -329,6 +332,100 @@ pub fn type_text_as_keystrokes(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use enigo::{Direction, InputResult};
+    use std::collections::HashSet;
+    use std::time::Instant;
+
+    /// Stands in for a real keyboard so a test can see exactly what was sent,
+    /// instead of typing into whatever window happens to hold focus.
+    #[derive(Default)]
+    struct RecordingKeyboard {
+        events: Vec<(Key, Direction)>,
+        gaps_ms: Vec<u128>,
+        bulk_text: Vec<String>,
+        last: Option<Instant>,
+    }
+
+    impl Keyboard for RecordingKeyboard {
+        fn fast_text(&mut self, text: &str) -> InputResult<Option<()>> {
+            self.bulk_text.push(text.to_string());
+            Ok(Some(()))
+        }
+
+        fn key(&mut self, key: Key, direction: Direction) -> InputResult<()> {
+            let now = Instant::now();
+            if let Some(previous) = self.last {
+                self.gaps_ms.push(now.duration_since(previous).as_millis());
+            }
+            self.last = Some(now);
+            self.events.push((key, direction));
+            Ok(())
+        }
+
+        fn raw(&mut self, _keycode: u16, _direction: Direction) -> InputResult<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn sends_one_key_event_per_character_and_never_bulk_text() {
+        let mut keyboard = RecordingKeyboard::default();
+        let text = "Hello, world!";
+
+        type_text_as_keystrokes(&mut keyboard, text, 0).expect("typing should succeed");
+
+        assert!(
+            keyboard.bulk_text.is_empty(),
+            "bulk text entry must not be used; arriving all at once is what gives a paste away"
+        );
+        assert_eq!(keyboard.events.len(), text.chars().count());
+        for (index, character) in text.chars().enumerate() {
+            assert_eq!(
+                keyboard.events[index],
+                (Key::Unicode(character), Direction::Click)
+            );
+        }
+    }
+
+    #[test]
+    fn maps_newline_and_tab_and_drops_the_cr_of_a_crlf_pair() {
+        let mut keyboard = RecordingKeyboard::default();
+
+        type_text_as_keystrokes(&mut keyboard, "a\r\nb\tc", 0).expect("typing should succeed");
+
+        let keys: Vec<Key> = keyboard.events.iter().map(|(key, _)| *key).collect();
+        assert_eq!(
+            keys,
+            vec![
+                Key::Unicode('a'),
+                Key::Return,
+                Key::Unicode('b'),
+                Key::Tab,
+                Key::Unicode('c'),
+            ]
+        );
+    }
+
+    #[test]
+    fn paces_characters_instead_of_bursting_them() {
+        let mut keyboard = RecordingKeyboard::default();
+        let text = "the quick brown fox";
+
+        type_text_as_keystrokes(&mut keyboard, text, TYPING_KEY_DELAY_MS)
+            .expect("typing should succeed");
+
+        assert_eq!(keyboard.events.len(), text.chars().count());
+        assert!(
+            keyboard.gaps_ms.iter().all(|&gap| gap >= 5),
+            "every character needs a real gap before it, got {:?}",
+            keyboard.gaps_ms
+        );
+        assert!(
+            keyboard.gaps_ms.iter().collect::<HashSet<_>>().len() > 1,
+            "the rhythm must vary rather than tick like a metronome, got {:?}",
+            keyboard.gaps_ms
+        );
+    }
 
     #[test]
     fn jitter_stays_within_its_spread() {

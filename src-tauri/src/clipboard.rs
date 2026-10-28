@@ -753,7 +753,7 @@ fn paste_direct(
         .lock()
         .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
 
-    input::type_text_as_keystrokes(&mut enigo, text, input::TYPING_KEY_DELAY_MS)
+    input::type_text_as_keystrokes(&mut *enigo, text, input::TYPING_KEY_DELAY_MS)
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
