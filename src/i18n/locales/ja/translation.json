@@ -576,6 +576,13 @@
           "sec15": "15秒後 (デバッグ)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "カスタム単語",
         "description": "対応モデルが名前や専門用語を認識しやすくします。あいまい補正は現在、A～Zの英字と数字を使用する単語に限定されています。",

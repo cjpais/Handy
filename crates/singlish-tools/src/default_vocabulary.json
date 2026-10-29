@@ -1,0 +1,36 @@
+{
+  "replacements": [
+    { "from": ["la", "lar", "laa", "laaa", "lahh", "lahhh", "larh"], "to": "lah" },
+    { "from": ["lehh", "lehhh", "ley"], "to": "leh" },
+    { "from": ["lorh", "lorr", "lorrr", "lohr"], "to": "lor" },
+    { "from": ["mehh", "mehhh", "meeh"], "to": "meh" },
+    { "from": ["siah", "siaa", "siaaa"], "to": "sia" },
+    { "from": ["horh", "horr", "hohr"], "to": "hor" },
+    { "from": ["liau", "leow", "lio", "liow", "liaw", "lyao", "liaoh"], "to": "liao" },
+    { "from": ["shiock", "shiokk", "shiyok", "shyok", "shiak"], "to": "shiok" },
+    { "from": ["sianh", "sien", "siann", "sianhh"], "to": "sian" },
+    { "from": ["pai seh", "pai say", "pie say", "pie seh", "paisay", "piseh", "pisay", "pie-seh"], "to": "paiseh" },
+    { "from": ["kia su", "kiasoo", "kiah su", "kia-su", "kiasue"], "to": "kiasu" },
+    { "from": ["kia si", "kiasee", "kia-si"], "to": "kiasi" },
+    { "from": ["a la mak", "ala mak", "alamac", "alamack"], "to": "alamak" },
+    { "from": ["jia lat", "jia lak", "jialak", "jialatt"], "to": "jialat" },
+    { "from": ["mah kan", "makkan", "makhan"], "to": "makan" },
+    { "from": ["ta pau", "ta pao", "tapao", "tapow", "ta pow", "tah pau"], "to": "tapau" },
+    { "from": ["choap", "chopeh", "chopey"], "to": "chope" },
+    { "from": ["bo jio", "boh jio", "bojiao", "bo jiao"], "to": "bojio" },
+    { "from": ["steddy", "stedy", "stedi"], "to": "steady" },
+    { "from": ["wah lao", "wa lao", "wah lau", "wa lau", "walau"], "to": "walao" },
+    { "from": ["canornot", "can ornot", "can or knot", "kan or not"], "to": "can or not" }
+  ],
+  "protected_terms": [
+    "Funding Societies",
+    "Worksplice",
+    "Singlish",
+    "Singapore",
+    "PayNow",
+    "GrabPay",
+    "MRT",
+    "HDB",
+    "CPF"
+  ]
+}

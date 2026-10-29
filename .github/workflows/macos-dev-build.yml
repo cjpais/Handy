@@ -1,0 +1,28 @@
+name: "macOS Dev Build"
+
+# Unsigned, un-notarized Apple Silicon build of the v0.2 branch. Uses no
+# secrets: build.yml only reads signing secrets when `sign-binaries` is true.
+# The updater artifact is switched off via an extra Tauri config, because it
+# would otherwise demand TAURI_SIGNING_PRIVATE_KEY.
+
+on:
+  push:
+    branches: [v0.2-singlish]
+  workflow_dispatch:
+
+concurrency:
+  group: macos-dev-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: "macos-14" # Apple Silicon
+      target: "aarch64-apple-darwin"
+      build-args: "--target aarch64-apple-darwin --config src-tauri/tauri.dev.conf.json"
+      sign-binaries: false
+      upload-artifacts: true
+      asset-prefix: "handy-v0.2-dev"

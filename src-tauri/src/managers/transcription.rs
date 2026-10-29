@@ -1606,6 +1606,9 @@ fn post_process_transcription_text(
 ) -> String {
     let converts_script = settings.chinese_script != ChineseScript::AsTranscribed;
     fail_open_text_transform(raw, |raw| {
+        // Engines drop control tags themselves; never let one reach paste.
+        let raw = singlish_tools::strip_asr_tags(&raw);
+
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
         // consulted when it can change the outcome (built-in gated fillers or
@@ -1648,6 +1651,12 @@ fn post_process_transcription_text(
             )
         } else {
             raw
+        };
+
+        let corrected = if settings.singlish_vocabulary_enabled {
+            crate::singlish::apply(&corrected)
+        } else {
+            corrected
         };
 
         let without_fillers = remove_filler_words(

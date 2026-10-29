@@ -1,0 +1,16 @@
+{
+  "version": "0.4.1",
+  "commit": "unknown",
+  "shared": false,
+  "backend_dl": false,
+  "module_dir": null,
+  "backends": ["cpu"],
+  "metal_embed": false,
+  "include_dir": "include",
+  "lib_dir": "lib",
+  "libraries": ["transcribe", "ggml", "ggml-cpu", "ggml-base"],
+  "library_paths": ["/usr/lib/x86_64-linux-gnu/libopenblas.so"],
+  "system_libs": ["stdc++", "m", "pthread", "dl"],
+  "frameworks": [],
+  "link_flags": []
+}

@@ -576,6 +576,13 @@
           "sec15": "Após 15 segundos (Depuração)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "Palavras Personalizadas",
         "description": "Ajude os modelos compatíveis a reconhecer nomes e termos especializados. A correção aproximada está atualmente limitada a palavras que usam letras de A–Z e números.",

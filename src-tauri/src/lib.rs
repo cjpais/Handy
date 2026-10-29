@@ -23,6 +23,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod singlish;
 mod system_languages;
 mod transcription_coordinator;
 mod tray;
@@ -189,6 +190,7 @@ fn should_force_show_permissions_window(app: &AppHandle) -> bool {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
+    singlish::init(app_handle);
     // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
@@ -703,6 +705,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::resume_all_bindings,
             shortcut::change_mute_while_recording_setting,
             shortcut::change_append_trailing_space_setting,
+            shortcut::change_singlish_vocabulary_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_vad_enabled_setting,
             shortcut::change_long_form_chunking_setting,
@@ -736,6 +739,7 @@ pub fn run(cli_args: CliArgs) {
             commands::open_recordings_folder,
             commands::open_log_dir,
             commands::open_app_data_dir,
+            commands::open_singlish_vocabulary_file,
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,

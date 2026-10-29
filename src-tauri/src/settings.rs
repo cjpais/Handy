@@ -495,6 +495,9 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
+    /// Apply the user-editable Singlish replacement vocabulary after transcription.
+    #[serde(default = "default_singlish_vocabulary_enabled")]
+    pub singlish_vocabulary_enabled: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
     #[serde(default = "default_theme")]
@@ -575,6 +578,10 @@ fn default_settings_schema_version() -> u32 {
 
 fn default_hold_threshold_ms() -> u64 {
     300
+}
+
+fn default_singlish_vocabulary_enabled() -> bool {
+    true
 }
 
 fn default_always_on_microphone() -> bool {
@@ -1035,6 +1042,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
+        singlish_vocabulary_enabled: true,
         app_language: default_app_language(),
         theme: default_theme(),
         experimental_enabled: false,
@@ -1552,6 +1560,7 @@ mod tests {
             "post_process_selected_prompt_id": null,
             "mute_while_recording": false,
             "append_trailing_space": false,
+            "singlish_vocabulary_enabled": true,
             "app_language": "en",
             "experimental_enabled": false,
             "lazy_stream_close": false,
