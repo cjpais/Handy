@@ -51,42 +51,42 @@ For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
 
 ## Architecture Overview
 
-Handy is a cross-platform desktop speech-to-text application built with Tauri 2.x (Rust backend + React/TypeScript frontend).
+Handy is a small cross-platform desktop dictation app built with Tauri 2.x (Rust backend + React/TypeScript frontend). It does one thing: record from the microphone, transcribe locally with one fixed model, and type the transcript at the cursor, one key press per character, so pages that block pasting accept it.
+
+The model is pinned in `managers/model.rs` to `handy-computer/parakeet-unified-en-0.6b-gguf/parakeet-unified-en-0.6b-Q8_0.gguf`. There is no model picker, history, post-processing, language selection, self-updater or clipboard paste.
 
 ### Backend Structure (src-tauri/src/)
 
-- `lib.rs` - Main entry point, Tauri setup, manager initialization
+- `lib.rs` - Main entry point, Tauri setup, manager initialization, model download and load at startup
 - `managers/` - Core business logic:
   - `audio.rs` - Audio recording and device management
-  - `model.rs` - Model downloading and management
-  - `transcription.rs` - Speech-to-text processing pipeline
-  - `history.rs` - Transcription history storage
+  - `model.rs` - The one pinned model: find it in the Hugging Face cache, download it if missing, report progress
+  - `transcription.rs` (+ `transcription/live.rs`) - Keeps the model loaded, decodes live while recording when the model streams, otherwise decodes the whole recording
+- `engine_supervisor/` - Runs transcribe.cpp in a child process, so a driver fault or hang kills only the worker
 - `audio_toolkit/` - Low-level audio processing:
   - `audio/` - Recording sink (VAD, levels, live streaming feed), output devices, WAV I/O
   - `vad/` - Voice Activity Detection (Silero VAD)
 - `commands/` - Tauri command handlers for frontend communication
 - `cli.rs` - CLI argument definitions (clap derive)
-- `shortcut.rs` - Global keyboard shortcut handling
+- `shortcut/` - Global keyboard shortcut handling
 - `settings.rs` - Application settings management
 - `overlay.rs` - Recording overlay window (platform-specific)
+- `clipboard.rs` / `input.rs` - Typing the transcript: `paste_direct` paces keystrokes on a worker thread and sends each key press to the main thread
 - `signal_handle.rs` - `send_transcription_input()` reusable function
 - `utils.rs` - Platform detection helpers
 
 ### Frontend Structure (src/)
 
-- `App.tsx` - Main component with onboarding flow
+- `App.tsx` - Permissions screen, then one settings page
 - `components/` - React UI components:
-  - `settings/` - Settings UI
-  - `model-selector/` - Model management interface
-  - `onboarding/` - First-run experience
-  - `overlay/` - Recording overlay UI
-  - `update-checker/` - App update notifications
-  - `shared/`, `ui/`, `icons/`, `footer/` - Shared components
-- `hooks/useSettings.ts` - Settings state management hook
+  - `Permissions.tsx` - Microphone (and, on macOS, accessibility) permissions
+  - `ModelStatus.tsx` - Model download progress, loading and ready state
+  - `settings/` - Microphone, shortcut, overlay, start hidden, autostart
+  - `ui/`, `icons/` - Shared components
+- `hooks/useSettings.ts`, `hooks/usePermissions.ts` - Settings and permission state
 - `stores/settingsStore.ts` - Zustand store for settings
-- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta)
+- `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta, written by a debug build)
 - `overlay/` - Recording overlay window entry point
-- `lib/types.ts` - Shared TypeScript type definitions
 
 ### Key Architecture Patterns
 
@@ -94,7 +94,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 **Command-Event Architecture:** Frontend → Backend via Tauri commands; Backend → Frontend via events.
 
-**Pipeline Processing:** Audio → VAD → Whisper/Parakeet → Text output → Clipboard/Paste
+**Pipeline Processing:** Audio → VAD → Parakeet (live, or batch) → Text → Typed key by key
 
 **State Flow:** Zustand → Tauri Command → Rust State → Persistence (tauri-plugin-store)
 
@@ -102,28 +102,28 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 **Core Libraries:**
 
-- `transcribe-cpp` - Local speech recognition (Whisper, Parakeet, Moonshine, SenseVoice, etc.; GGML/GGUF) with GPU acceleration
+- `transcribe-cpp` - Local speech recognition (GGML/GGUF) with GPU acceleration
 - `handy-recorder` - Microphone capture: device selection, resampling to 16 kHz, failure detection
 - `transcribe-cpp` (Silero VAD v6, CPU-only, in-process) / `earshot` - Voice Activity Detection
-- `rdev` - Global keyboard shortcuts
+- `enigo` - Typing the transcript
+- `handy-keys` - Global keyboard shortcuts
 - `rodio` - Audio playback for feedback sounds
 
 ### Application Flow
 
-1. **Initialization:** App starts minimized to tray, loads settings, initializes managers
-2. **Model Setup:** First-run downloads preferred Whisper model (Small/Medium/Turbo/Large)
-3. **Recording:** Global shortcut triggers audio recording with VAD filtering
-4. **Processing:** Audio sent to Whisper model for transcription
-5. **Output:** Text pasted to active application via system clipboard
+1. **Initialization:** App starts, loads settings, initializes managers, downloads the model if missing and loads it
+2. **Recording:** Global shortcut triggers audio recording with VAD filtering
+3. **Processing:** Audio is decoded by the already-loaded model
+4. **Output:** Text is typed into the active application, one key press per character
 
 ### Settings System
 
 Settings are stored using Tauri's store plugin with reactive updates:
 
 - Keyboard shortcuts (configurable, supports push-to-talk)
-- Audio devices (microphone/output selection)
-- Model preferences (Small/Medium/Turbo/Large Whisper variants)
-- Audio feedback and translation options
+- Microphone selection
+- Overlay style and position, start hidden, launch on startup
+- Model unload timeout (defaults to never)
 
 ### Single Instance Architecture
 
@@ -176,7 +176,6 @@ Handy supports command-line parameters on all platforms for integration with scr
 | Flag                     | Description                                                |
 | ------------------------ | ---------------------------------------------------------- |
 | `--toggle-transcription` | Toggle recording on/off on a running instance              |
-| `--toggle-post-process`  | Toggle recording with post-processing on/off               |
 | `--cancel`               | Cancel the current operation on a running instance         |
 | `--start-hidden`         | Launch without showing the main window (tray icon visible) |
 | `--no-tray`              | Launch without system tray (closing window quits the app)  |
@@ -194,10 +193,9 @@ Access debug features: `Cmd+Shift+D` (macOS) or `Ctrl+Shift+D` (Windows/Linux)
 
 ## Platform Notes
 
-- **macOS**: Metal acceleration, accessibility permissions required for keyboard shortcuts
+- **macOS**: Metal acceleration; microphone and accessibility permissions are required (accessibility is what lets Handy type)
 - **Windows**: Vulkan acceleration, code signing. Implicit Vulkan layers (overlays, capture hooks) are disabled for the Handy process via `VK_LOADER_LAYERS_DISABLE=~implicit~` set in `main.rs`; opt out with `HANDY_KEEP_VULKAN_IMPLICIT_LAYERS=1` or by setting `VK_LOADER_LAYERS_DISABLE` yourself
 - **Linux**: OpenBLAS + Vulkan, limited Wayland support, overlay uses GTK layer shell (disable with `HANDY_NO_GTK_LAYER_SHELL=1`)
-- **Nix/NixOS**: the Nix package sets `HANDY_DISABLE_UPDATER=1` to force-disable the self-updater at runtime without touching the persisted setting (self-update can't work against an immutable `/nix/store`)
 
 ## Troubleshooting
 
