@@ -5,7 +5,6 @@ on:
     branches: [main]
     paths:
       - "src/**"
-      - "src-tauri/src/catalog/catalog.json"
       - "scripts/**"
       - "package.json"
       - "bun.lock"
@@ -18,7 +17,6 @@ on:
   pull_request:
     paths:
       - "src/**"
-      - "src-tauri/src/catalog/catalog.json"
       - "scripts/**"
       - "package.json"
       - "bun.lock"
@@ -48,12 +46,6 @@ jobs:
 
       - name: Check translation consistency
         run: bun run check:translations
-
-      - name: Check model language coverage
-        run: bun run check:model-languages
-
-      - name: Check bundled model catalog matches @handy-computer/models
-        run: bun run check:catalog
 
       - name: Test keyboard utilities
         run: bun run test:keyboard

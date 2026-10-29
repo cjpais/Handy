@@ -5,323 +5,8 @@
     "cancel": "취소",
     "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
   },
-  "sidebar": {
-    "general": "일반",
-    "models": "모델",
-    "advanced": "고급",
-    "postProcessing": "후처리",
-    "history": "히스토리",
-    "debug": "디버그",
-    "about": "정보"
-  },
-  "onboarding": {
-    "customModelDescription": "공식 지원되지 않음",
-    "migration": {
-      "title": "모델 업데이트가 필요합니다",
-      "description": "Handy가 이제 새로운 종류의 모델을 사용합니다. 계속 음성 인식을 사용하려면 새 버전을 다운로드하세요. 이전 버전은 삭제됩니다.",
-      "replaces": "{{name}} 대체",
-      "oldFormat": "이전 형식",
-      "failed": "다운로드 실패",
-      "retry": "다시 시도",
-      "chooseAnother": "다른 모델 선택",
-      "download": "모델 다운로드 ({{size}})",
-      "continue": "계속"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "빠르고 상당히 정확합니다."
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "좋은 정확도, 중간 속도"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "정확도와 속도의 균형."
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "좋은 정확도지만 느립니다."
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "대만 만다린에 최적화. 코드 스위칭 지원."
-      }
-    },
-    "errors": {
-      "selectModel": "모델을 선택하지 못했습니다"
-    },
-    "permissions": {
-      "microphone": {
-        "name": "마이크",
-        "why": "Handy가 목소리를 들을 수 있도록 하기 위한 권한입니다. 오디오는 이 컴퓨터에서 텍스트로 변환되며 업로드되지 않습니다."
-      },
-      "accessibility": {
-        "name": "손쉬운 사용",
-        "why": "어떤 앱에서든 단축키가 작동하고, Handy가 커서 위치에 텍스트를 입력할 수 있도록 하기 위한 권한입니다."
-      },
-      "errors": {
-        "checkFailed": "권한 확인에 실패했습니다. 다시 시도해주세요.",
-        "requestFailed": "권한 요청에 실패했습니다. 다시 시도해주세요."
-      },
-      "titleMac": "권한 두 가지만 허용하면 끝나요",
-      "titleWindows": "권한 한 가지만 허용하면 끝나요",
-      "subtitleMac": "macOS는 앱이 소리를 듣거나 입력하기 전에 먼저 허락을 구합니다.",
-      "subtitleWindows": "Windows는 앱이 소리를 듣기 전에 먼저 허락을 구합니다.",
-      "allow": "허용",
-      "openSettings": "설정 열기",
-      "allowed": "허용됨",
-      "waiting": "대기 중",
-      "turnOnMac": "시스템 설정에서 Handy를 켠 다음 여기로 돌아오세요.",
-      "turnOnWindows": "Windows 설정에서 마이크 접근을 켠 다음 여기로 돌아오세요.",
-      "hintBoth": "계속하려면 둘 다 허용하세요",
-      "hintMicrophone": "계속하려면 마이크를 허용하세요",
-      "welcomeBack": "다시 오셨네요. 하던 곳에서 이어갑니다.",
-      "relaunch": "이후에도 단축키가 반응하지 않나요? <relaunch>Handy를 다시 실행</relaunch>하면 바로 이 화면으로 돌아옵니다."
-    },
-    "shell": {
-      "back": "뒤로",
-      "continue": "계속",
-      "progress": "{{count}}단계 중 {{step}}단계"
-    },
-    "welcome": {
-      "title": "어떤 앱에서든 타자 대신 말로 입력하세요",
-      "subtitle": "받아쓰기에 사용할 언어를 선택하세요",
-      "languagesLabel": "언어",
-      "noMatch": "「{{query}}」와(과) 일치하는 언어가 없습니다. Handy의 모델은 약 100개 언어를 지원하며, 더 많은 언어는 설정에서 볼 수 있습니다.",
-      "appLanguage": "앱 언어",
-      "menusIn": "메뉴 언어: <b>{{language}}</b>",
-      "chinese": {
-        "question": "{{languages}}을(를) 사용하시네요. Handy가 어떤 글자로 쓸까요?",
-        "label": "중국어 글자",
-        "zh-Hans": "간체",
-        "zh-Hant": "대만",
-        "zh-HK": "홍콩"
-      },
-      "hint": {
-        "pickOne": "언어를 하나 이상 선택하세요",
-        "weak_one": "{{languages}}: 아직 이 언어를 잘 알아듣는 모델이 없습니다",
-        "weak_other": "{{languages}}: 아직 이 언어들을 잘 알아듣는 모델이 없습니다"
-      }
-    },
-    "download": {
-      "checking": "다운로드 확인 중…",
-      "ready": "{{name}} 준비 완료",
-      "failed": "다운로드가 중단되었습니다",
-      "downloading": "{{name}} 다운로드 중",
-      "progress": "{{total}} 중 {{done}}",
-      "progressLeft": "{{total}} 중 {{done}}, {{time}} 남음",
-      "checkingName": "{{name}} 확인 중",
-      "checkingDetail": "다운로드가 완전한지 확인하고 있습니다",
-      "stopped": "{{name}} 다운로드가 중단되었습니다",
-      "retryDetail": "다시 시도하면 중단된 곳에서 이어서 받습니다",
-      "retryDownload": "다운로드 다시 시도",
-      "cardProgress": "다운로드 중 {{percent}}%, {{total}} 중 {{done}}",
-      "timeLeft": "{{time}} 남음",
-      "speedLeft": "{{speed}}, {{time}} 남음"
-    },
-    "model": {
-      "title": "음성 모델 선택",
-      "subtitle": "음성 모델은 이 컴퓨터에서 바로 음성을 텍스트로 바꿔 줍니다",
-      "label": "음성 모델",
-      "lines": {
-        "recommended": "선택한 언어에서 속도와 정확도의 균형이 가장 좋습니다",
-        "faster": "더 빠르지만 오류가 조금 더 많습니다",
-        "accurate": "오류가 가장 적지만 더 느립니다"
-      },
-      "shorts": {
-        "recommended": "나에게 가장 균형 잡힌 모델",
-        "faster": "더 빠름, 오류 약간 많음",
-        "accurate": "오류 최소, 더 느림"
-      },
-      "model": "모델",
-      "showAll": "모델 {{count}}개 모두 보기",
-      "download": "{{size}} 다운로드",
-      "downloadInstead": "대신 {{size}} 다운로드",
-      "pauses": "{{name}}은(는) {{percent}}%에서 일시 중지됩니다",
-      "resumeLater": "다시 선택하면 중단된 곳에서 이어받습니다",
-      "hint": "설정을 마치는 동안 다운로드됩니다"
-    },
-    "demo": {
-      "title": "단축키 하나로 어떤 앱에서든 말하세요",
-      "hold": "<0>입력할 곳을 클릭하세요.</0> <1>단축키를 누른 채 말하세요.</1> <2>손을 떼면 말한 내용이 나타납니다.</2>",
-      "tap": "<0>입력할 곳을 클릭하세요.</0> <1>단축키를 탭하고 말하세요.</1> <2>다시 탭하면 말한 내용이 나타납니다.</2>",
-      "apps": {
-        "messages": "메시지",
-        "notes": "메모"
-      },
-      "chat": "오늘 밤에 아직 올 거지?",
-      "noteTitle": "주말 계획",
-      "screenLabel": "노트북 화면: 누군가 앱을 클릭하고 단축키를 누른 채 말하면, 클릭한 곳에 말한 내용이 나타납니다.",
-      "change": "변경",
-      "yourShortcut": "내 단축키:",
-      "pressKeys": "새 키를 누르세요",
-      "addKey": "이제 키를 하나 더 추가하세요",
-      "cancel": "취소",
-      "tryIt": "직접 해보기"
-    },
-    "try": {
-      "title": "한번 해볼까요!",
-      "subtitle": "Handy가 구석에서 차근차근 도와드릴게요",
-      "noteLabel": "메모",
-      "placeholder": "새 메모",
-      "hold": "<keys/>를 누른 채 말하세요.",
-      "tapNext": "이번에는 <keys/>를 한 번 탭한 다음 말하세요.",
-      "letGo": "다 말했으면 <keys/>에서 손을 떼세요.",
-      "tapAgain": "다 말했으면 <keys/>를 다시 탭하세요.",
-      "watch": "메모를 지켜보세요.",
-      "changeKeys": "단축키 변경, {{keys}}",
-      "doneHold": "하이파이브! 누르고 있기 성공이에요.",
-      "doneHoldNext": "다음은 손이 자유로운 방식이에요.",
-      "doneTap": "하이파이브! 탭하기 성공이에요.",
-      "doneTapNext": "이번에는 누른 채로 말해 보세요.",
-      "giveFive": "잘했어요! 하이파이브",
-      "highFive": "하이파이브",
-      "slowLine": "이 컴퓨터에서 {{name}}은(는) {{wait}} 걸렸습니다. <faster>더 빠른 모델 써보기</faster>",
-      "nothingTyped": "음, 아무것도 입력되지 않았어요.",
-      "nothingTypedSub": "먼저 메모를 클릭한 다음 다시 해보세요.",
-      "silent": "아무 소리도 들리지 않았어요.",
-      "silentSub": "이 마이크에서 소리가 나오지 않았습니다. 다른 마이크를 써보세요:",
-      "noWords": "말씀을 알아듣지 못했어요.",
-      "noWordsSub": "다시 해보고, 한 문장을 온전히 말해 보세요.",
-      "finish": "마치기",
-      "skip": "건너뛰기",
-      "seconds": "{{value}}초"
-    },
-    "done": {
-      "title": "준비 완료!",
-      "subMac": "이제 Handy가 메뉴 막대에 있습니다. 어떤 앱에서든 <keys/>를 누르거나 탭해서 말하세요.",
-      "subTray": "이제 Handy가 시스템 트레이에 있습니다. 어떤 앱에서든 <keys/>를 누르거나 탭해서 말하세요.",
-      "hint": "나중에 설정에서 바꿀 수 있습니다",
-      "highFiveLabel": "하이파이브",
-      "atLogin": "로그인할 때 Handy 시작",
-      "finish": "완료",
-      "panel": {
-        "name": "Handy",
-        "ready": "준비됨",
-        "languages": "언어",
-        "model": "음성 모델",
-        "shortcut": "단축키",
-        "changeLanguages": "언어 변경, {{languages}}",
-        "changeModel": "음성 모델 변경, {{model}}"
-      }
-    },
-    "linux": {
-      "tryIt": "작동하지 않나요? <guide>Linux 설정 가이드</guide>",
-      "done": "다른 앱에서 작동하지 않나요? <guide>Linux 설정 가이드</guide>"
-    }
-  },
-  "modelTable": {
-    "tags": {
-      "preview": "실시간 미리보기",
-      "previewTitle": "말하는 동안 실시간 오버레이에 단어를 보여 주고, 말을 멈추면 입력합니다",
-      "translate": "번역 지원",
-      "translateTitle": "말한 내용을 영어 텍스트로 바꿀 수 있습니다. 설정에서 켜세요"
-    },
-    "rubric": {
-      "gradeTitle": "{{language}} 정확도: {{grade}}",
-      "accuracyTitle": "{{language}} 정확도",
-      "overallTitle": "선택한 언어의 정확도: {{grade}}",
-      "overall": "선택한 언어의 정확도",
-      "meaning": {
-        "A": "오류가 매우 적음: 말한 그대로 입력되는 경우가 대부분입니다",
-        "B": "오류가 약간 있음: 가끔 단어를 고쳐야 할 수 있습니다",
-        "C": "오류가 잦음: 일부 세부 내용이 빠질 수 있습니다",
-        "D": "오류가 많음: 입력된 내용을 확인하고 고쳐야 합니다",
-        "F": "알아듣기 어려운 경우가 많음: 말한 내용 상당수가 틀리게 입력될 수 있습니다"
-      },
-      "unsupported": "이 모델은 {{language}}을(를) 이해하지 못해 입력할 수 없습니다",
-      "unrated": "이 모델은 {{language}}을(를) 이해하지만 얼마나 잘하는지는 아직 측정하지 않았습니다",
-      "under": "{{max}}% 미만",
-      "between": "{{min}}~{{max}}%",
-      "over": "{{min}}% 이상",
-      "speedTitle": "속도: {{speed}}",
-      "speedName": {
-        "0": "매우 느림",
-        "1": "느림",
-        "2": "보통",
-        "3": "빠름",
-        "4": "매우 빠름"
-      },
-      "speedMeaning": {
-        "0": "한참 기다려야 단어가 나타납니다",
-        "1": "기다려야 단어가 나타납니다",
-        "2": "잠시 기다리면 단어가 나타납니다",
-        "3": "거의 바로 단어가 나타납니다",
-        "4": "바로 단어가 나타납니다"
-      },
-      "speedPreview": "{{meaning}}, 말하는 동안 실시간 미리보기 제공",
-      "untimed": "속도를 아직 측정하지 않았습니다",
-      "underSeconds": "{{max}}초 미만",
-      "betweenSeconds": "{{min}}~{{max}}초",
-      "overSeconds": "{{min}}초 이상"
-    },
-    "roles": {
-      "recommended": "추천",
-      "faster": "더 빠름",
-      "accurate": "더 정확함",
-      "fromAll": "전체 모델에서"
-    },
-    "speed": "속도",
-    "size": "크기",
-    "accuracy": "정확도",
-    "search": "모델 검색",
-    "allLabel": "음성 모델 목록",
-    "noMatch": "「{{query}}」와(과) 일치하는 항목이 없습니다. 언어나 Whisper, Parakeet 같은 계열을 검색해 보세요",
-    "noFilterMatch": "이 필터와 일치하는 모델이 없습니다",
-    "speedUntested": "속도를 아직 측정하지 않았습니다",
-    "speedWords": {
-      "0": "매우 느림, 한참 기다려야 단어가 나타납니다",
-      "1": "느림, 기다려야 단어가 나타납니다",
-      "2": "보통, 잠시 기다리면 단어가 나타납니다",
-      "3": "빠름, 거의 바로 단어가 나타납니다",
-      "4": "매우 빠름, 바로 단어가 나타납니다"
-    },
-    "speedWordsPreview": {
-      "0": "매우 느림, 말하는 동안 실시간 미리보기 제공",
-      "1": "느림, 말하는 동안 실시간 미리보기 제공",
-      "2": "보통, 말하는 동안 실시간 미리보기 제공",
-      "3": "빠름, 말하는 동안 실시간 미리보기 제공",
-      "4": "매우 빠름, 말하는 동안 실시간 미리보기 제공"
-    },
-    "missingLanguage": "빠진 언어가 있나요?",
-    "allLanguages": "전체",
-    "downloadingLine": "{{total}} 중 {{percent}}% 다운로드 중",
-    "customLine": "모델 폴더에서 추가됨. 등급 없음.",
-    "legacyLine": "이전 다운로드입니다. 등급 없음."
-  },
-  "languagePicker": {
-    "search": "언어 검색",
-    "addAnother": "추가",
-    "remove": "{{language}} 삭제",
-    "alreadyAdded_one": "{{languages}}은(는) 이미 추가되었습니다.",
-    "alreadyAdded_other": "{{languages}}은(는) 이미 추가되었습니다."
-  },
-  "modelSelector": {
-    "custom": "사용자 정의",
-    "streaming": "스트리밍",
-    "active": "활성",
-    "noModelsAvailable": "사용 가능한 모델이 없습니다",
-    "verifying": "{{modelName}} 검증 중...",
-    "verifyingGeneric": "검증 중...",
-    "downloading": "다운로드 중 {{percentage}}%",
-    "downloadingMultiple": "{{count}}개 모델 다운로드 중...",
-    "modelReady": "모델 준비 완료",
-    "loading": "{{modelName}} 로딩 중...",
-    "loadingGeneric": "로딩 중...",
-    "modelError": "모델 오류",
-    "modelUnloaded": "모델 언로드됨",
-    "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "히스토리의 받아쓰기가 끝나면 모델을 변경할 수 있습니다."
-  },
   "settings": {
-    "modelSettings": {
-      "title": "{{model}} 설정"
-    },
     "general": {
-      "title": "일반",
       "shortcut": {
         "title": "Handy 단축키",
         "description": "음성-텍스트 녹음을 시작하는 키보드 단축키를 설정하세요",
@@ -337,153 +22,22 @@
           "cancel": {
             "name": "취소 단축키",
             "description": "현재 녹음을 취소하는 키보드 단축키입니다."
-          },
-          "transcribe_with_post_process": {
-            "name": "후처리 단축키",
-            "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
           }
         },
         "errors": {
           "set": "단축키 설정 실패: {{error}}"
         }
-      },
-      "language": {
-        "title": "언어",
-        "description": "음성 인식 언어를 선택하세요. 자동은 언어를 자동으로 감지하며, 특정 언어를 선택하면 해당 언어의 정확도가 향상될 수 있습니다.",
-        "searchPlaceholder": "언어 검색...",
-        "noResults": "언어를 찾을 수 없습니다",
-        "auto": "자동",
-        "autoUnavailable": {
-          "title": "자동이 꺼져 있습니다",
-          "oneLanguage": "이 모델에서는 사용자 언어 중 하나만 사용할 수 있습니다",
-          "undetectable": "{{languages}}에서는 사용할 수 없습니다",
-          "noMatch": "이 모델에서 사용할 수 있는 언어가 없습니다"
-        },
-        "detectorMissingTitle": "자동을 사용하려면 별도 다운로드가 필요합니다",
-        "detectorMissing": "이 모델은 어떤 언어로 말하는지 구별할 수 없습니다. 자동은 작은 언어 감지기로 언어를 알아냅니다",
-        "stopDetectorDownload": "언어 감지기 다운로드 중지"
-      },
-      "preferredLanguages": {
-        "title": "선호 언어",
-        "description": "내가 사용하는 언어입니다. Handy가 모델을 추천하는 데 사용합니다.",
-        "noMatch": "「{{query}}」와(과) 일치하는 언어가 없습니다",
-        "weak": "아직 {{languages}}을(를) 잘 인식하는 모델이 없습니다."
-      },
-      "shortcutActivation": {
-        "title": "단축키 동작",
-        "description": "음성 텍스트 변환 단축키로 녹음을 시작하고 중지하는 방식을 선택합니다.",
-        "options": {
-          "holdOrToggle": "자동",
-          "pushToTalk": "길게 누르기",
-          "toggle": "전환"
-        },
-        "descriptions": {
-          "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
-          "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
-          "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
-        }
       }
-    },
-    "models": {
-      "title": "모델",
-      "changeLanguages": "언어 변경",
-      "sections": {
-        "yours": "이 컴퓨터에 있는 모델",
-        "fits": "선택한 언어용",
-        "untested": "테스트되지 않음"
-      },
-      "untestedNote": "Handy에서 테스트하지 않았습니다. 더 느리거나 오류가 더 많을 수 있습니다.",
-      "untestedHidden_one": "받아쓰기에 맞춰 조정되지 않은 모델이 {{count}}개 더 있습니다. 검색해서 찾아보세요.",
-      "untestedHidden_other": "받아쓰기에 맞춰 조정되지 않은 모델이 {{count}}개 더 있습니다. 검색해서 찾아보세요.",
-      "emptyYours": "아직 모델이 없습니다. 아래에서 하나를 고르면 다운로드된 후 Handy가 사용합니다.",
-      "showMore": "{{count}}개 더 보기",
-      "showFewer": "간략히 보기",
-      "download": "다운로드 후 사용",
-      "downloadingThenUse": "{{total}} 중 {{percent}}%, 완료 후 전환됩니다",
-      "loading": "로딩 중…",
-      "deleteAsk": "{{name}}을(를) 삭제할까요? {{size}}가 확보됩니다.",
-      "deleteAskActive": "{{name}}을(를) 삭제할까요? 다른 모델을 선택하기 전에는 Handy가 전사할 수 없습니다.",
-      "cancel": "취소",
-      "deleteModel": "{{name}} 삭제",
-      "cancelDownload": "{{name}} 다운로드 중지",
-      "legend": {
-        "open": "모델 등급 기준",
-        "accuracyNote": "선택한 언어별로, 테스트 녹음에서 모델이 틀린 단어의 비율입니다.",
-        "speedNote": {
-          "accelerated": "테스트용 노트북의 그래픽 칩에서 30초 분량의 음성을 텍스트로 옮기는 데 걸리는 시간입니다. 이 컴퓨터에서는 다를 수 있습니다.",
-          "cpu": "테스트용 노트북의 프로세서에서 30초 분량의 음성을 텍스트로 옮기는 데 걸리는 시간입니다. 이 컴퓨터에서는 다를 수 있습니다."
-        },
-        "marks": "? 아직 측정되지 않음. — 해당 언어를 인식하지 못함."
-      },
-      "retiredNotice": {
-        "title": "이전 모델은 더 이상 Handy에서 작동하지 않습니다",
-        "description": "컴퓨터에서 {{size}}을(를) 차지하고 있습니다.",
-        "delete": "모델 삭제",
-        "deleted": "이전 모델을 삭제했습니다",
-        "deleteFailed": "일부 이전 모델을 삭제할 수 없습니다. 자세한 내용은 로그를 확인하세요."
-      },
-      "rescan": {
-        "label": "다시 스캔",
-        "tooltip": "Handy 외부에서 모델 폴더 또는 Hugging Face 캐시에 추가된 모델을 다시 스캔합니다"
-      }
-    },
-    "languages": {
-      "title": "언어"
     },
     "sound": {
-      "title": "사운드",
       "microphone": {
         "title": "마이크",
         "description": "선호하는 마이크 장치를 선택하세요",
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
-      },
-      "channel": {
-        "title": "입력 채널",
-        "description": "녹음할 입력 채널을 선택하세요. 오디오 인터페이스에 입력이 여러 개 있는 경우 사용하세요.",
-        "average": "모든 채널 평균",
-        "channel": "채널 {{n}}"
-      },
-      "audioFeedback": {
-        "label": "오디오 피드백",
-        "description": "녹음 시작 및 정지 시 소리 재생"
-      },
-      "outputDevice": {
-        "title": "출력 장치",
-        "description": "피드백 사운드를 위한 오디오 출력 장치를 선택하세요",
-        "placeholder": "출력 장치 선택...",
-        "loading": "로딩 중..."
-      },
-      "volume": {
-        "title": "볼륨",
-        "description": "오디오 피드백 사운드의 볼륨 조절"
       }
     },
     "advanced": {
-      "groups": {
-        "app": "앱",
-        "output": "출력",
-        "transcription": "전사",
-        "history": "히스토리",
-        "experimental": "실험적"
-      },
-      "experimentalToggle": {
-        "label": "실험적 기능",
-        "description": "개발 중인 실험적 기능을 활성화합니다."
-      },
-      "lazyStreamClose": {
-        "label": "전사 사이에 마이크 열어 두기",
-        "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
-      },
-      "acceleration": {
-        "transcribe": {
-          "title": "하드웨어 가속",
-          "description": "음성 인식에 사용할 하드웨어를 선택합니다. 자동 모드는 GPU를 사용할 수 있으면 GPU를, 그렇지 않으면 CPU를 사용합니다."
-        },
-        "gpuDevice": {
-          "auto": "자동"
-        }
-      },
       "startHidden": {
         "label": "숨김으로 시작",
         "description": "창을 열지 않고 시스템 트레이에서 실행합니다."
@@ -491,10 +45,6 @@
       "autostart": {
         "label": "시작 시 실행",
         "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
-      },
-      "showTrayIcon": {
-        "label": "트레이 아이콘 표시",
-        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
       },
       "overlay": {
         "style": {
@@ -514,414 +64,23 @@
             "top": "상단"
           }
         }
-      },
-      "pasteMethod": {
-        "title": "붙여넣기 방법",
-        "description": "텍스트 삽입 방법을 선택하세요. 직접: 시스템 입력을 통해 타이핑 시뮬레이션. 없음: 붙여넣기를 건너뛰고 히스토리/클립보드만 업데이트합니다.",
-        "options": {
-          "clipboard": "클립보드 ({{modifier}}+V)",
-          "clipboardCtrlShiftV": "클립보드 (Ctrl+Shift+V)",
-          "clipboardShiftInsert": "클립보드 (Shift+Insert)",
-          "direct": "직접",
-          "none": "없음",
-          "externalScript": "외부 스크립트"
-        },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
-      },
-      "typingTool": {
-        "title": "타이핑 도구",
-        "description": "직접 붙여넣기 방식에 사용할 Linux 타이핑 도구를 선택하세요. Auto는 시스템에서 사용 가능한 최적의 도구를 자동으로 감지해 사용합니다.",
-        "options": {
-          "auto": "Auto (권장)"
-        }
-      },
-      "clipboardHandling": {
-        "title": "클립보드 처리",
-        "description": "클립보드 수정 안 함은 전사 후 현재 클립보드 내용을 보존합니다. 클립보드에 복사는 붙여넣기 후 전사 결과를 클립보드에 남겨둡니다.",
-        "options": {
-          "dontModify": "클립보드 수정 안 함",
-          "copyToClipboard": "클립보드에 복사"
-        }
-      },
-      "autoSubmit": {
-        "title": "자동 제출",
-        "description": "텍스트 삽입 후 선택한 키 조합을 자동으로 전송합니다. macOS에서는 Cmd+Enter가, Windows/Linux에서는 Super+Enter가 적용됩니다.",
-        "options": {
-          "off": "끄기",
-          "enter": "Enter",
-          "cmdEnter": "Cmd+Enter",
-          "superEnter": "Super+Enter",
-          "ctrlEnter": "Ctrl+Enter"
-        }
-      },
-      "translateToEnglish": {
-        "label": "영어로 번역",
-        "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다."
-      },
-      "modelUnload": {
-        "title": "모델 언로드",
-        "description": "모델을 지정된 시간 동안 사용하지 않으면 자동으로 GPU/CPU 메모리를 해제합니다",
-        "options": {
-          "never": "안 함",
-          "immediately": "즉시",
-          "min2": "2분 후",
-          "min5": "5분 후",
-          "min10": "10분 후",
-          "min15": "15분 후",
-          "hour1": "1시간 후",
-          "sec15": "15초 후 (디버그)"
-        }
-      },
-      "customWords": {
-        "title": "사용자 정의 단어",
-        "description": "지원되는 모델이 이름과 전문 용어를 인식하도록 도와줍니다. 퍼지 교정은 현재 A–Z 문자와 숫자를 사용하는 단어로 제한됩니다.",
-        "placeholder": "단어 추가",
-        "add": "추가",
-        "remove": "{{word}} 제거",
-        "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
-      },
-      "voiceActivityDetection": {
-        "title": "음성 활동 감지",
-        "description": "녹음에서 무음 구간을 걸러냅니다. 스트리밍 지원 모델은 더 긴 VAD 테일을 사용하며, VAD를 끄면 원본 오디오가 그대로 녹음됩니다."
-      },
-      "longFormChunking": {
-        "title": "긴 오디오 분할",
-        "description": "전사하기 전에 긴 녹음을 쉬는 구간에서 나눕니다. 일반적으로 전사 성능이 향상됩니다. 파일 전사와 긴 재전사는 항상 나누어 처리됩니다."
-      },
-      "languageDetection": {
-        "title": "자동을 내 언어로 제한",
-        "description": "자동이 작은 언어 감지기를 사용해 선호 언어 중에서만 고릅니다. 자동이 사용하지 않는 언어를 계속 고르면 켜세요",
-        "downloadHint": "켜면 작은 언어 감지기를 다운로드합니다",
-        "downloadingHint": "언어 감지기를 다운로드하는 중입니다. 취소하려면 끄세요"
-      },
-      "vadBackend": {
-        "title": "음성 활동 감지 백엔드",
-        "description": "무음을 필터링하는 데 사용할 감지기를 선택합니다. Earshot은 실험적 기능입니다. 음성이 잘리거나 소음이 남는 경우 Silero로 되돌리세요.",
-        "options": {
-          "silero": "Silero",
-          "earshot": "Earshot"
-        }
-      },
-      "fillerWordRemoval": {
-        "title": "군더더기 표현 제거",
-        "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
-      },
-      "chineseScript": {
-        "title": "중국어 간체/번체",
-        "description": "표준 중국어와 광둥어 전사를 간체 또는 대만·홍콩식 번체로 표기합니다. 다른 언어는 변경되지 않습니다.",
-        "options": {
-          "asTranscribed": "전사된 그대로",
-          "simplified": "간체",
-          "traditionalTw": "번체 (대만)",
-          "traditionalHk": "번체 (홍콩)"
-        }
       }
     },
-    "postProcessing": {
-      "hotkey": {
-        "title": "단축키"
-      },
-      "api": {
-        "title": "API",
-        "provider": {
-          "title": "제공자",
-          "description": "OpenAI 또는 Anthropic 호환 제공자를 선택하세요."
-        },
-        "apiFormat": {
-          "title": "API 형식",
-          "description": "사용자 정의 엔드포인트에서 예상하는 요청 형식입니다.",
-          "options": {
-            "openai": "OpenAI 호환 (Chat Completions)",
-            "anthropic": "Anthropic Messages"
-          }
-        },
-        "appleIntelligence": {
-          "unavailable": "이 기기에서는 Apple Intelligence를 사용할 수 없습니다. macOS Tahoe (26.0) 이상을 실행하고 시스템 설정에서 Apple Intelligence가 활성화된 Apple Silicon Mac이 필요합니다."
-        },
-        "baseUrl": {
-          "title": "기본 URL",
-          "description": "선택한 제공자의 API 기본 URL입니다. 사용자 정의 제공자만 편집할 수 있습니다.",
-          "placeholder": "https://api.openai.com/v1",
-          "placeholderAnthropic": "https://api.anthropic.com/v1"
-        },
-        "apiKey": {
-          "title": "API 키",
-          "description": "선택한 제공자의 API 키입니다.",
-          "placeholder": "sk-..."
-        },
-        "model": {
-          "title": "모델",
-          "descriptionCustom": "사용자 정의 엔드포인트에서 예상하는 모델 식별자를 제공하세요.",
-          "descriptionDefault": "선택한 제공자가 제공하는 모델을 선택하세요.",
-          "placeholderWithOptions": "모델 검색 또는 선택",
-          "placeholderNoOptions": "모델 이름 입력",
-          "refreshModels": "모델 새로고침"
-        }
-      },
-      "prompts": {
-        "title": "프롬프트",
-        "selectedPrompt": {
-          "title": "선택된 프롬프트",
-          "description": "텍스트 변환을 개선하기 위한 템플릿을 선택하거나 새로 만드세요. 프롬프트 텍스트 내에서 ${output}를 사용하여 캡처된 텍스트를 참조하세요."
-        },
-        "noPrompts": "사용 가능한 프롬프트 없음",
-        "selectPrompt": "프롬프트 선택",
-        "createNew": "새 프롬프트 만들기",
-        "promptLabel": "프롬프트 레이블",
-        "promptLabelPlaceholder": "프롬프트 이름 입력",
-        "promptInstructions": "프롬프트 지시사항",
-        "promptInstructionsPlaceholder": "텍스트 변환 후 실행할 지시사항을 작성하세요. 예: 다음 텍스트의 문법과 명확성을 개선하세요: ${output}",
-        "promptTip": "팁: 프롬프트에서 변환된 텍스트를 삽입하려면 <code>${output}</code>을 사용하세요.",
-        "updatePrompt": "프롬프트 업데이트",
-        "deletePrompt": "프롬프트 삭제",
-        "createPrompt": "프롬프트 만들기",
-        "cancel": "취소",
-        "selectToEdit": "세부 정보를 보고 편집하려면 위에서 프롬프트를 선택하세요.",
-        "createFirst": "첫 번째 후처리 프롬프트를 만들려면 위의 '새 프롬프트 만들기'를 클릭하세요."
-      }
+    "basics": {
+      "title": "Basics"
     },
-    "history": {
-      "title": "히스토리",
-      "openFolder": "녹음 폴더 열기",
-      "loading": "히스토리 로딩 중...",
-      "empty": "아직 변환된 내용이 없습니다. 녹음을 시작하여 히스토리를 만드세요!",
-      "copyToClipboard": "녹음 내용을 클립보드에 복사",
-      "copyError": "전사 내용을 클립보드에 복사하지 못했습니다.",
-      "save": "변환된 텍스트 저장",
-      "unsave": "저장에서 제거",
-      "delete": "항목 삭제",
-      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
-      "retranscribe": "다시 전사",
-      "cancelTranscription": "전사 취소",
-      "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
-      "notTranscribed": "전사되지 않았습니다. 재시도 아이콘을 사용하여 전사할 수 있습니다.",
-      "transcribeFile": "파일 받아쓰기",
-      "mediaFiles": "오디오 및 비디오",
-      "fileUnsupported": "{{name}}에서 오디오를 읽을 수 없습니다.",
-      "readingFile": "{{name}} 읽는 중...",
-      "transcribeFailed": "받아쓰기에 실패했습니다. 다시 시도해 주세요.",
-      "waiting": "받아쓰기 대기 중",
-      "transcribingPercent": "받아쓰는 중, {{percent}}%",
-      "showMore": "더 보기",
-      "showLess": "간략히 보기",
-      "dropTitle": "놓아서 받아쓰기",
-      "dropDescription": "기록에 표시됩니다."
+    "microphone": {
+      "title": "마이크"
     },
-    "debug": {
-      "title": "디버그",
-      "logDirectory": {
-        "title": "로그 디렉토리",
-        "description": "로그 파일이 저장되는 위치"
-      },
-      "logLevel": {
-        "title": "로그 레벨",
-        "description": "로깅의 상세도 설정"
-      },
-      "liveLogs": {
-        "title": "실시간 로그",
-        "description": "로그 파일을 열지 않고도 문제를 진단할 수 있도록 애플리케이션 로그를 실시간으로 표시합니다. 이 패널이 열려 있는 동안 발생한 로그만 표시되며, 위의 로그 레벨 설정을 따릅니다.",
-        "live": "실시간",
-        "paused": "일시정지됨",
-        "pause": "일시정지",
-        "resume": "재개",
-        "copied": "복사됨",
-        "lineCount": "{{count}}줄",
-        "empty": "로그 대기 중… 앱이 로그를 출력하면 여기에 표시됩니다."
-      },
-      "updateChecks": {
-        "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다",
-        "lockedDescription": "시스템 구성에 의해 비활성화됨 (HANDY_DISABLE_UPDATER)"
-      },
-      "whatsNewPreview": {
-        "title": "새 소식 미리보기",
-        "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
-        "button": "미리보기",
-        "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
-        "error": "릴리스 노트를 미리 볼 수 없습니다"
-      },
-      "onboardingPreview": {
-        "title": "온보딩 미리보기",
-        "description": "권한, 모델 또는 완료 상태를 변경하지 않고 온보딩 화면을 미리 봅니다",
-        "exitButton": "미리보기 종료",
-        "choose": "화면 선택",
-        "screens": {
-          "welcome": "환영",
-          "permissions": "권한",
-          "model": "모델",
-          "demo": "데모",
-          "try": "체험",
-          "done": "준비 완료"
-        }
-      },
-      "onboardingRun": {
-        "title": "온보딩 실행",
-        "description": "온보딩을 처음부터 실제로 진행합니다. 권한을 요청하고, 모델을 다운로드하고, 선택 내용을 저장합니다",
-        "button": "시작"
-      },
-      "modelMigration": {
-        "title": "모델 마이그레이션",
-        "description": "이전 형식 모델 업데이트 화면을 실제로 엽니다. 대체 모델을 다운로드하고, 모델을 전환하고, 이전 파일을 삭제합니다",
-        "button": "열기",
-        "noRetired": "디스크에 이전 형식 모델이 없습니다"
-      },
-      "soundTheme": {
-        "label": "사운드 테마",
-        "description": "녹음 시작 및 정지 피드백을 위한 사운드 테마를 선택하세요"
-      },
-      "wordCorrectionThreshold": {
-        "title": "단어 수정 임계값",
-        "description": "사용자 정의 단어 수정의 민감도"
-      },
-      "historyLimit": {
-        "title": "히스토리 제한",
-        "description": "보관할 최대 히스토리 항목 수",
-        "entries": "항목"
-      },
-      "recordingRetention": {
-        "title": "녹음 자동 삭제",
-        "description": "공간을 절약하기 위해 오래된 녹음을 자동으로 삭제합니다",
-        "never": "안 함",
-        "preserveLimit": "최근 {{count}}개 유지",
-        "days3": "3일 후",
-        "weeks2": "2주 후",
-        "months3": "3개월 후",
-        "placeholder": "보관 기간 선택..."
-      },
-      "alwaysOnMicrophone": {
-        "label": "항상 켜진 마이크",
-        "description": "더 빠른 응답을 위해 마이크를 활성 상태로 유지"
-      },
-      "clamshellMicrophone": {
-        "title": "클램셸 마이크",
-        "description": "노트북 덮개가 닫혀 있을 때 사용할 마이크"
-      },
-      "postProcessingToggle": {
-        "label": "후처리",
-        "description": "텍스트 변환 후 AI 기반 텍스트 개선 활성화"
-      },
-      "muteWhileRecording": {
-        "label": "녹음 중 음소거",
-        "description": "녹음 중 시스템 오디오 음소거"
-      },
-      "appendTrailingSpace": {
-        "label": "끝 공백 추가",
-        "description": "붙여넣은 텍스트 끝에 공백 추가"
-      },
-      "keyboardImplementation": {
-        "title": "키보드 구현",
-        "description": "키보드 단축키 백엔드를 선택하세요.",
-        "bindingsReset": "키보드 단축키가 호환되지 않아 기본값으로 재설정되었습니다"
-      },
-      "pasteDelay": {
-        "title": "붙여넣기 지연 (이전)",
-        "description": "텍스트를 복사한 후 붙여넣기 키 입력을 보내기 전의 지연 시간(밀리초). 아무것도 붙여넣어지지 않으면 늘리세요."
-      },
-      "pasteDelayAfter": {
-        "title": "붙여넣기 지연 (이후)",
-        "description": "붙여넣기 키 입력을 보낸 후 이전 클립보드를 복원하기 전의 지연 시간(밀리초). 전사된 텍스트 대신 이전 클립보드 내용이 붙여넣어지면 늘리세요."
-      },
-      "holdThreshold": {
-        "title": "길게 누르기 기준 시간",
-        "description": "자동 모드 전용: 탭이 아닌 길게 누르기로 인식되려면 단축키를 얼마나 오래(밀리초) 누르고 있어야 하는지 설정합니다. 짧게 누른 뒤에도 녹음이 계속 켜져 있으면 낮추고, 의도한 탭이 길게 누르기로 처리되면 높이세요."
-      },
-      "reliablePaste": {
-        "title": "안정적인 붙여넣기 (Beta)",
-        "description": "고정된 지연 시간이 아니라 대상 앱이 실제로 전사된 텍스트를 읽은 뒤에만 클립보드를 복원합니다. 시스템 부하가 높을 때 이전 클립보드 내용이 붙여넣어지는 문제를 해결하기 위한 옵션입니다. 클립보드를 사용하는 붙여넣기 방법이 필요하며 macOS와 Windows에서만 지원됩니다."
-      },
-      "recordingBuffer": {
-        "title": "추가 녹음 버퍼",
-        "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
-      },
-      "languageDetectionWindow": {
-        "title": "언어 감지 오디오",
-        "description": "언어 감지기가 듣는 음성의 초 단위 길이입니다. 길수록 정확하지만 느립니다."
-      },
-      "keyboardDiagnostic": {
-        "title": "키보드 진단",
-        "description": "키보드 이벤트가 Handy에 도달하는지 확인합니다. 이벤트 개수만 기록되며, 어떤 키를 눌렀는지는 절대 기록되지 않습니다.",
-        "run": "10초 진단 실행",
-        "running": "수신 중… 단축키를 몇 번 눌러 보세요 (예: Option+Space)",
-        "secureInputLabel": "Secure Input",
-        "enabled": "사용 중",
-        "disabled": "사용 안 함",
-        "holder": "{{name}}(pid {{pid}})이(가) 점유 중",
-        "holderUnknown": "점유 중인 앱을 확인할 수 없음",
-        "keyDown": "키 누름",
-        "keyUp": "키 뗌",
-        "flagsChanged": "조합 키",
-        "mouse": "마우스",
-        "verdictBlocked": "Secure Input이 키 이벤트를 차단하고 있습니다. 해결될 때까지 일반 키가 포함된 단축키는 작동할 수 없습니다.",
-        "verdictSuspicious": "조합 키 이벤트는 도착했지만 키 이벤트는 없습니다. Secure Input은 꺼져 있다고 보고되지만 무언가가 키를 가로막고 있습니다. GitHub에 신고해 주세요.",
-        "verdictOk": "키 이벤트가 Handy에 정상적으로 도달하고 있습니다.",
-        "verdictNoEvents": "이벤트가 감지되지 않았습니다. 테스트 중에 키를 누르셨나요?",
-        "failed": "진단 실패: {{error}}"
-      }
-    },
-    "about": {
-      "title": "정보",
-      "version": {
-        "title": "버전",
-        "description": "Handy의 현재 버전"
-      },
-      "whatsNewUpdates": {
-        "label": "새 소식 표시",
-        "description": "Handy 업데이트 후 릴리스 노트를 표시합니다"
-      },
-      "appDataDirectory": {
-        "title": "앱 데이터 디렉토리",
-        "description": "Handy가 데이터를 저장하는 위치"
-      },
-      "sourceCode": {
-        "title": "소스 코드",
-        "description": "소스 코드 보기 및 기여",
-        "button": "GitHub에서 보기"
-      },
-      "supportDevelopment": {
-        "title": "개발 지원",
-        "description": "Handy 개발을 계속할 수 있도록 도와주세요",
-        "button": "후원하기"
-      },
-      "acknowledgments": {
-        "title": "감사의 말",
-        "ggml": {
-          "title": "ggml",
-          "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
-          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 ggml를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
-        }
-      }
+    "shortcut": {
+      "title": "Handy 단축키"
     }
   },
-  "footer": {
-    "checkingUpdates": "업데이트 확인 중...",
-    "updateAvailableShort": "업데이트 사용 가능",
-    "upToDate": "최신 상태",
-    "updateCheckingDisabled": "업데이트 확인 비활성화됨",
-    "downloading": "다운로드 중... {{progress}}%",
-    "installing": "설치 중...",
-    "preparing": "준비 중...",
-    "checkForUpdates": "업데이트 확인",
-    "portableUpdateTitle": "수동 업데이트 필요",
-    "portableUpdateMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. 아래에서 사용 중인 시스템에 맞는 설치 프로그램을 다운로드해 실행하고 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
-    "portableUpdateButton": "설치 프로그램 다운로드",
-    "portableUpdateBrowseMessage": "포터블 설치는 자동으로 업데이트할 수 없습니다. GitHub Releases에서 사용 중인 시스템에 맞는 최신 버전을 다운로드해 같은 폴더에 설치하세요. Data/ 폴더(설정, 모델, 녹음)는 그대로 유지됩니다.",
-    "portableUpdateBrowseButton": "GitHub Releases 열기"
-  },
-  "whatsNew": {
-    "title": "Handy v{{version}}의 새 소식"
-  },
   "common": {
-    "loading": "로딩 중...",
-    "delete": "삭제",
-    "close": "닫기",
     "open": "열기",
-    "copy": "복사",
-    "clear": "지우기",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
   },
   "errors": {
-    "loadDirectory": "디렉토리 로딩 오류: {{error}}",
     "micPermissionDeniedTitle": "마이크 접근이 거부되었습니다",
     "micPermissionDenied": {
       "generic": "운영 체제에서 마이크 접근을 거부했습니다. 시스템 설정에서 마이크 권한을 허용해 주세요.",
@@ -932,28 +91,14 @@
     "noInputDeviceTitle": "마이크를 찾을 수 없음",
     "noInputDevice": "오디오 입력 장치가 감지되지 않았습니다. 마이크 또는 헤드셋을 연결한 후 다시 시도해 주세요.",
     "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
-    "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
-    "modelLoadFailedUnknown": "알 수 없는 모델",
-    "pasteFailedTitle": "텍스트 붙여넣기 실패",
-    "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
-    "transcriptionFailedTitle": "음성 인식 실패"
-  },
-  "appLanguage": {
-    "title": "애플리케이션 언어",
-    "description": "Handy 인터페이스의 언어를 변경하세요"
-  },
-  "theme": {
-    "title": "앱 테마",
-    "description": "Handy가 시스템 테마를 따를지, 밝게 또는 어둡게 유지할지 선택하세요",
-    "options": {
-      "system": "시스템",
-      "light": "밝게",
-      "dark": "어둡게"
-    }
+    "modelLoadFailed": "Failed to load the speech model",
+    "transcriptionFailedTitle": "음성 인식 실패",
+    "typeFailedTitle": "Failed to Type Text",
+    "typeFailed": "Text could not be typed into the active application.",
+    "modelDownloadFailed": "Failed to download the speech model"
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중...",
     "loadingModel": "모델 로딩 중..."
   },
   "secureInput": {
@@ -966,5 +111,38 @@
     "learnMore": "해결 방법",
     "recorderBlocked": "지금은 단축키를 등록할 수 없습니다. macOS Secure Input이 키 이벤트를 차단하고 있습니다. Secure Input 경고를 먼저 해결하세요.",
     "dismiss": "닫기"
+  },
+  "model": {
+    "ready": "Ready",
+    "downloading": "Downloading {{percent}}%",
+    "cancel": "Cancel",
+    "loading": "Loading model...",
+    "failed": "Download failed",
+    "missing": "Not downloaded",
+    "retry": "Retry",
+    "download": "Download",
+    "size": "{{size}} MB"
+  },
+  "permissions": {
+    "microphone": {
+      "name": "마이크",
+      "why": "Handy가 목소리를 들을 수 있도록 하기 위한 권한입니다. 오디오는 이 컴퓨터에서 텍스트로 변환되며 업로드되지 않습니다."
+    },
+    "accessibility": {
+      "name": "손쉬운 사용",
+      "why": "어떤 앱에서든 단축키가 작동하고, Handy가 커서 위치에 텍스트를 입력할 수 있도록 하기 위한 권한입니다."
+    },
+    "errors": {
+      "checkFailed": "권한 확인에 실패했습니다. 다시 시도해주세요.",
+      "requestFailed": "권한 요청에 실패했습니다. 다시 시도해주세요."
+    },
+    "titleMac": "권한 두 가지만 허용하면 끝나요",
+    "titleWindows": "권한 한 가지만 허용하면 끝나요",
+    "subtitleMac": "macOS는 앱이 소리를 듣거나 입력하기 전에 먼저 허락을 구합니다.",
+    "subtitleWindows": "Windows는 앱이 소리를 듣기 전에 먼저 허락을 구합니다.",
+    "allow": "허용",
+    "openSettings": "설정 열기",
+    "allowed": "허용됨",
+    "waiting": "대기 중"
   }
 }

@@ -7,13 +7,12 @@ import type {
   StreamPhase,
   StreamPhaseEvent,
   StreamTextEvent,
-  StreamWorkKind,
 } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import type { ModelStateEvent } from "@/lib/types/events";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "streaming" | "transcribing" | "processing";
+type OverlayState = "recording" | "streaming" | "transcribing";
 
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
@@ -50,7 +49,6 @@ const RecordingOverlay: React.FC = () => {
     tentative: "",
   });
   const [phase, setPhase] = useState<StreamPhase>("listening");
-  const [workKind, setWorkKind] = useState<StreamWorkKind>("transcribing");
   const [elapsed, setElapsed] = useState(0);
   // Bumped on each new streaming session so the Live card remounts fresh (replays
   // the pop-in, and never animates in from the previous panel's open size).
@@ -100,7 +98,6 @@ const RecordingOverlay: React.FC = () => {
         setState(overlayState);
         if (overlayState === "streaming") {
           setPhase("listening");
-          setWorkKind("transcribing");
           setElapsed(0);
           setLoadNoticeShown(false);
           setSession((s) => s + 1); // remount the card fresh for this session
@@ -137,7 +134,6 @@ const RecordingOverlay: React.FC = () => {
       const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
         setPhase(payload.phase);
-        if (payload.kind) setWorkKind(payload.kind);
       });
 
       // The backend ends every `loading_started` with exactly one of completed
@@ -333,12 +329,7 @@ const RecordingOverlay: React.FC = () => {
             </div>
           </div>
           {working
-            ? workingRow(
-                workKind === "polishing"
-                  ? t("overlay.processing")
-                  : transcribingLabel,
-                true,
-              )
+            ? workingRow(transcribingLabel, true)
             : listeningRow(open, true)}
         </div>
       </div>
@@ -346,11 +337,10 @@ const RecordingOverlay: React.FC = () => {
   }
 
   // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
-  // spinner + label (transcribing / processing). Never both. The pill animates its
+  // spinner + label (transcribing). Never both. The pill animates its
   // width between them; the cancel button is in both rows so it stays put.
-  const working = state === "transcribing" || state === "processing";
-  const workLabel =
-    state === "processing" ? t("overlay.processing") : transcribingLabel;
+  const working = state === "transcribing";
+  const workLabel = transcribingLabel;
 
   return (
     <div

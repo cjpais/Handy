@@ -5,323 +5,8 @@
     "cancel": "取消",
     "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止"
   },
-  "sidebar": {
-    "general": "通用",
-    "models": "模型",
-    "advanced": "高级",
-    "postProcessing": "后处理",
-    "history": "历史记录",
-    "debug": "调试",
-    "about": "关于"
-  },
-  "onboarding": {
-    "customModelDescription": "非官方支持",
-    "migration": {
-      "title": "您的模型需要更新",
-      "description": "Handy 现在使用一种更新的模型类型。请下载新版本以继续转录。旧版本将被移除。",
-      "replaces": "替代 {{name}}",
-      "oldFormat": "旧格式",
-      "failed": "下载失败",
-      "retry": "重试",
-      "chooseAnother": "选择其他模型",
-      "download": "下载模型（{{size}}）",
-      "continue": "继续"
-    },
-    "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "快速且相当准确。"
-      },
-      "medium": {
-        "name": "Whisper Medium",
-        "description": "准确度高，速度适中"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "准确度和速度均衡。"
-      },
-      "large": {
-        "name": "Whisper Large",
-        "description": "准确度高，但速度较慢。"
-      },
-      "breeze-asr": {
-        "name": "Breeze ASR",
-        "description": "针对台湾国语优化。支持语码转换。"
-      }
-    },
-    "errors": {
-      "selectModel": "选择模型失败"
-    },
-    "permissions": {
-      "microphone": {
-        "name": "麦克风",
-        "why": "这样 Handy 才能听到您说话。音频只在这台电脑上转成文字，绝不会上传。"
-      },
-      "accessibility": {
-        "name": "辅助功能",
-        "why": "这样快捷键在每个应用中都能使用，Handy 也能把文字输入到光标所在的位置。"
-      },
-      "errors": {
-        "checkFailed": "检查权限失败。请重试。",
-        "requestFailed": "请求权限失败。请重试。"
-      },
-      "titleMac": "两项权限，马上就好",
-      "titleWindows": "一项权限，马上就好",
-      "subtitleMac": "在任何应用收听或输入之前，macOS 都会先征求您的同意。",
-      "subtitleWindows": "在任何应用收听之前，Windows 都会先征求您的同意。",
-      "allow": "允许",
-      "openSettings": "打开设置",
-      "allowed": "已允许",
-      "waiting": "等待中",
-      "turnOnMac": "请在“系统设置”中打开 Handy，然后回到这里。",
-      "turnOnWindows": "请在“Windows 设置”中打开麦克风访问权限，然后回到这里。",
-      "hintBoth": "请允许两项权限后继续",
-      "hintMicrophone": "请允许使用麦克风后继续",
-      "welcomeBack": "欢迎回来，我们接着刚才的步骤继续。",
-      "relaunch": "之后快捷键没有反应？<relaunch>重新启动 Handy</relaunch>，您会直接回到这里。"
-    },
-    "shell": {
-      "back": "返回",
-      "continue": "继续",
-      "progress": "第 {{step}} 步，共 {{count}} 步"
-    },
-    "welcome": {
-      "title": "在任何应用中，动口不动手",
-      "subtitle": "选择您要用来听写的语言",
-      "languagesLabel": "语言",
-      "noMatch": "没有与“{{query}}”匹配的语言。Handy 的模型涵盖约 100 种语言，更多语言可在设置中找到。",
-      "appLanguage": "应用语言",
-      "menusIn": "菜单语言：<b>{{language}}</b>",
-      "chinese": {
-        "question": "您说{{languages}}。Handy 应该写哪种汉字？",
-        "label": "汉字",
-        "zh-Hans": "简体",
-        "zh-Hant": "台湾繁体",
-        "zh-HK": "香港繁体"
-      },
-      "hint": {
-        "pickOne": "请至少选择一种语言",
-        "weak_one": "{{languages}}：目前还没有模型能很好地听懂",
-        "weak_other": "{{languages}}：目前还没有模型能很好地听懂"
-      }
-    },
-    "download": {
-      "checking": "正在检查下载内容…",
-      "ready": "{{name}}已就绪",
-      "failed": "下载已中断",
-      "downloading": "正在下载 {{name}}",
-      "progress": "{{done}} / {{total}}",
-      "progressLeft": "{{done}} / {{total}}，还剩 {{time}}",
-      "checkingName": "正在检查 {{name}}",
-      "checkingDetail": "正在确认下载是否完整",
-      "stopped": "{{name}}已停止下载",
-      "retryDetail": "重试会从中断的地方继续",
-      "retryDownload": "重试下载",
-      "cardProgress": "正在下载 {{percent}}%，{{done}} / {{total}}",
-      "timeLeft": "还剩 {{time}}",
-      "speedLeft": "{{speed}}，还剩 {{time}}"
-    },
-    "model": {
-      "title": "选择语音模型",
-      "subtitle": "语音模型直接在这台电脑上把您的语音转成文字",
-      "label": "语音模型",
-      "lines": {
-        "recommended": "针对您的语言，速度与准确度的最佳平衡",
-        "faster": "更快，但错误稍多",
-        "accurate": "错误最少，但更慢"
-      },
-      "shorts": {
-        "recommended": "最适合您的平衡之选",
-        "faster": "更快，错误稍多",
-        "accurate": "错误最少，但更慢"
-      },
-      "model": "模型",
-      "showAll": "显示全部 {{count}} 个模型",
-      "download": "下载（{{size}}）",
-      "downloadInstead": "改为下载（{{size}}）",
-      "pauses": "{{name}}将在 {{percent}}% 时暂停",
-      "resumeLater": "再次选择它，即可从中断处继续",
-      "hint": "在您完成设置的同时下载"
-    },
-    "demo": {
-      "title": "一个快捷键，在任何应用中开口就写",
-      "hold": "<0>点一下要输入的位置。</0><1>按住快捷键并说话。</1><2>松开，文字就出现了。</2>",
-      "tap": "<0>点一下要输入的位置。</0><1>轻按快捷键并说话。</1><2>再按一次，文字就出现了。</2>",
-      "apps": {
-        "messages": "信息",
-        "notes": "备忘录"
-      },
-      "chat": "你今晚还来吗？",
-      "noteTitle": "周末计划",
-      "screenLabel": "一台笔记本电脑：有人点进一个应用，按下快捷键并开口说话，文字就出现在点击的位置。",
-      "change": "更改",
-      "yourShortcut": "您的快捷键是",
-      "pressKeys": "请按下新的按键",
-      "addKey": "再加一个按键",
-      "cancel": "取消",
-      "tryIt": "亲自试试"
-    },
-    "try": {
-      "title": "来试一试吧！",
-      "subtitle": "Handy 就在角落里，带您一步步体验",
-      "noteLabel": "备忘录",
-      "placeholder": "新备忘录",
-      "hold": "按住 <keys/> 并说话。",
-      "tapNext": "现在轻按一下 <keys/>，然后说话。",
-      "letGo": "说完后松开 <keys/>。",
-      "tapAgain": "说完后再按一下 <keys/>。",
-      "watch": "看看备忘录吧。",
-      "changeKeys": "更改快捷键，当前为 {{keys}}",
-      "doneHold": "击掌！这就是按住的用法。",
-      "doneHoldNext": "接下来试试免按住的方式。",
-      "doneTap": "击掌！这就是轻按的用法。",
-      "doneTapNext": "现在试试说话时按住它们。",
-      "giveFive": "成功啦！击个掌",
-      "highFive": "击掌",
-      "slowLine": "{{name}}在这台电脑上用了 {{wait}}。<faster>试试更快的模型</faster>",
-      "nothingTyped": "嗯，什么都没输入进去。",
-      "nothingTypedSub": "请先点进备忘录，再试一次。",
-      "silent": "我什么都没听到。",
-      "silentSub": "这个麦克风没有任何声音。换一个试试：",
-      "noWords": "我没听清说了什么。",
-      "noWordsSub": "再试一次，说一整句话。",
-      "finish": "完成",
-      "skip": "跳过",
-      "seconds": "{{value}} 秒"
-    },
-    "done": {
-      "title": "一切就绪",
-      "subMac": "Handy 现在位于菜单栏中。在任何应用里按住或轻按 <keys/> 即可说话。",
-      "subTray": "Handy 现在位于系统托盘中。在任何应用里按住或轻按 <keys/> 即可说话。",
-      "hint": "这些内容以后可以在“设置”中更改",
-      "highFiveLabel": "击掌",
-      "atLogin": "登录时启动 Handy",
-      "finish": "完成",
-      "panel": {
-        "name": "Handy",
-        "ready": "已就绪",
-        "languages": "语言",
-        "model": "语音模型",
-        "shortcut": "快捷键",
-        "changeLanguages": "更改语言，当前为{{languages}}",
-        "changeModel": "更改语音模型，当前为{{model}}"
-      }
-    },
-    "linux": {
-      "tryIt": "不起作用？<guide>Linux 设置指南</guide>",
-      "done": "在其他应用中不起作用？<guide>Linux 设置指南</guide>"
-    }
-  },
-  "modelTable": {
-    "tags": {
-      "preview": "实时预览",
-      "previewTitle": "说话时在“实时”悬浮窗中显示您的文字，停止后再输入",
-      "translate": "可翻译",
-      "translateTitle": "可以把您说的话转成英文文本，需在设置中开启"
-    },
-    "rubric": {
-      "gradeTitle": "{{language}}准确度：{{grade}}",
-      "accuracyTitle": "{{language}}准确度",
-      "overallTitle": "您所选语言的准确度：{{grade}}",
-      "overall": "您所选语言的准确度",
-      "meaning": {
-        "A": "错误很少：您说的话通常都能原样输出",
-        "B": "有些错误：偶尔需要改一两个字词",
-        "C": "错误较多：部分细节可能会丢失",
-        "D": "错误很多：输入的内容需要检查并修改",
-        "F": "常常不清楚：您说的话可能大部分都会出错"
-      },
-      "unsupported": "此模型听不懂{{language}}，因此无法输入该语言",
-      "unrated": "此模型能听懂{{language}}，但我们还没有测过效果如何",
-      "under": "低于 {{max}}%",
-      "between": "{{min}}% 至 {{max}}%",
-      "over": "{{min}}% 或更高",
-      "speedTitle": "速度：{{speed}}",
-      "speedName": {
-        "0": "很慢",
-        "1": "较慢",
-        "2": "中等",
-        "3": "较快",
-        "4": "很快"
-      },
-      "speedMeaning": {
-        "0": "要等很久才会出字",
-        "1": "要等一会儿才会出字",
-        "2": "稍等片刻就会出字",
-        "3": "几乎立刻出字",
-        "4": "立刻出字"
-      },
-      "speedPreview": "{{meaning}}，说话时可实时预览",
-      "untimed": "我们还没有测过它的速度",
-      "underSeconds": "低于 {{max}} 秒",
-      "betweenSeconds": "{{min}} 至 {{max}} 秒",
-      "overSeconds": "{{min}} 秒或更久"
-    },
-    "roles": {
-      "recommended": "推荐",
-      "faster": "更快",
-      "accurate": "更准确",
-      "fromAll": "全部模型"
-    },
-    "speed": "速度",
-    "size": "大小",
-    "accuracy": "准确度",
-    "search": "搜索模型",
-    "allLabel": "语音模型",
-    "noMatch": "没有与“{{query}}”匹配的内容。试试语言名称，或 Whisper、Parakeet 这样的模型系列",
-    "noFilterMatch": "没有符合这些筛选条件的模型",
-    "speedUntested": "尚未测速",
-    "speedWords": {
-      "0": "很慢，要等很久才会出字",
-      "1": "较慢，要等一会儿才会出字",
-      "2": "中等，稍等片刻就会出字",
-      "3": "较快，几乎立刻出字",
-      "4": "很快，立刻出字"
-    },
-    "speedWordsPreview": {
-      "0": "很慢，说话时可实时预览",
-      "1": "较慢，说话时可实时预览",
-      "2": "中等，说话时可实时预览",
-      "3": "较快，说话时可实时预览",
-      "4": "很快，说话时可实时预览"
-    },
-    "missingLanguage": "缺少某种语言",
-    "allLanguages": "全部",
-    "downloadingLine": "正在下载 {{percent}}%（共 {{total}}）",
-    "customLine": "从您的模型文件夹添加，未评级。",
-    "legacyLine": "较早下载的版本，未评级。"
-  },
-  "languagePicker": {
-    "search": "搜索语言",
-    "addAnother": "再添加一种",
-    "remove": "移除{{language}}",
-    "alreadyAdded_one": "已添加{{languages}}。",
-    "alreadyAdded_other": "已添加{{languages}}。"
-  },
-  "modelSelector": {
-    "custom": "自定义",
-    "streaming": "流式",
-    "active": "活跃",
-    "noModelsAvailable": "没有可用的模型",
-    "verifying": "正在验证 {{modelName}}...",
-    "verifyingGeneric": "正在验证...",
-    "downloading": "下载中 {{percentage}}%",
-    "downloadingMultiple": "正在下载 {{count}} 个模型...",
-    "modelReady": "模型已就绪",
-    "loading": "正在加载 {{modelName}}...",
-    "loadingGeneric": "加载中...",
-    "modelError": "模型错误",
-    "modelUnloaded": "模型已卸载",
-    "noModelDownloadRequired": "无模型 - 需要下载",
-    "downloadSpeed": "{{speed}} MB/s",
-    "lockedWhileTranscribing": "历史记录中的转录完成后才能更换模型。"
-  },
   "settings": {
-    "modelSettings": {
-      "title": "{{model}} 设置"
-    },
     "general": {
-      "title": "通用",
       "shortcut": {
         "title": "Handy 快捷键",
         "description": "配置启动语音转文字录制的键盘快捷键",
@@ -337,153 +22,22 @@
           "cancel": {
             "name": "取消快捷键",
             "description": "用于取消当前录制的键盘快捷键。"
-          },
-          "transcribe_with_post_process": {
-            "name": "后处理快捷键",
-            "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
           }
         },
         "errors": {
           "set": "无法设置快捷键: {{error}}"
         }
-      },
-      "language": {
-        "title": "语言",
-        "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
-        "searchPlaceholder": "搜索语言...",
-        "noResults": "未找到语言",
-        "auto": "自动",
-        "autoUnavailable": {
-          "title": "自动已停用",
-          "oneLanguage": "你的语言中只有一种适用于此模型",
-          "undetectable": "不支持{{languages}}",
-          "noMatch": "你的语言都不适用于此模型"
-        },
-        "detectorMissingTitle": "自动模式需要单独下载",
-        "detectorMissing": "此模型无法分辨你说的是哪种语言。自动模式需要一个小型语言检测器来判断",
-        "stopDetectorDownload": "停止下载语言检测器"
-      },
-      "preferredLanguages": {
-        "title": "常用语言",
-        "description": "您会说的语言。Handy 会据此推荐模型。",
-        "noMatch": "没有与“{{query}}”匹配的语言",
-        "weak": "目前还没有模型能很好地识别{{languages}}。"
-      },
-      "shortcutActivation": {
-        "title": "快捷键行为",
-        "description": "选择转录快捷键开始和停止录音的方式。",
-        "options": {
-          "holdOrToggle": "自动",
-          "pushToTalk": "按住",
-          "toggle": "切换"
-        },
-        "descriptions": {
-          "hold_or_toggle": "按住录音，或轻按切换",
-          "push_to_talk": "按住快捷键期间录音",
-          "toggle": "轻按快捷键开始录音，再次轻按停止"
-        }
       }
-    },
-    "models": {
-      "title": "模型",
-      "changeLanguages": "更改语言",
-      "sections": {
-        "yours": "在这台电脑上",
-        "fits": "适合您的语言",
-        "untested": "未测试"
-      },
-      "untestedNote": "尚未经过 Handy 测试，可能更慢或错误更多。",
-      "untestedHidden_one": "另有 {{count}} 个模型未针对听写优化，可通过搜索找到。",
-      "untestedHidden_other": "另有 {{count}} 个模型未针对听写优化，可通过搜索找到。",
-      "emptyYours": "还没有模型。请在下方选择一个：它会先下载，然后由 Handy 使用。",
-      "showMore": "再显示 {{count}} 个",
-      "showFewer": "收起",
-      "download": "下载并使用",
-      "downloadingThenUse": "{{percent}}%（共 {{total}}），完成后自动切换",
-      "loading": "加载中…",
-      "deleteAsk": "删除{{name}}？这将释放 {{size}}。",
-      "deleteAskActive": "删除{{name}}？在您选择其他模型之前，Handy 无法转录。",
-      "cancel": "取消",
-      "deleteModel": "删除{{name}}",
-      "cancelDownload": "停止下载{{name}}",
-      "legend": {
-        "open": "模型如何评级",
-        "accuracyNote": "针对您选择的每种语言：模型在我们的测试录音中听错了多少词。",
-        "speedNote": {
-          "accelerated": "在我们的测试笔记本电脑的显卡上，输出 30 秒语音所需的时间。这台电脑可能有所不同。",
-          "cpu": "在我们的测试笔记本电脑的处理器上，输出 30 秒语音所需的时间。这台电脑可能有所不同。"
-        },
-        "marks": "? 表示尚未测量。— 表示听不懂该语言。"
-      },
-      "retiredNotice": {
-        "title": "旧模型已无法在 Handy 中使用",
-        "description": "它们占用了您电脑上 {{size}} 的空间。",
-        "delete": "删除模型",
-        "deleted": "已删除旧模型",
-        "deleteFailed": "部分旧模型无法删除。请查看日志了解详情。"
-      },
-      "rescan": {
-        "label": "重新扫描",
-        "tooltip": "重新扫描在 Handy 之外添加到模型文件夹或 Hugging Face 缓存中的模型"
-      }
-    },
-    "languages": {
-      "title": "语言"
     },
     "sound": {
-      "title": "声音",
       "microphone": {
         "title": "麦克风",
         "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
-      },
-      "channel": {
-        "title": "输入通道",
-        "description": "选择要录制的输入通道。如果您的音频接口有多个输入，请使用此选项。",
-        "average": "所有通道的平均值",
-        "channel": "通道 {{n}}"
-      },
-      "audioFeedback": {
-        "label": "音频反馈",
-        "description": "录制开始和停止时播放声音"
-      },
-      "outputDevice": {
-        "title": "输出设备",
-        "description": "选择用于反馈声音的音频输出设备",
-        "placeholder": "选择输出设备...",
-        "loading": "加载中..."
-      },
-      "volume": {
-        "title": "音量",
-        "description": "调整音频反馈的音量"
       }
     },
     "advanced": {
-      "groups": {
-        "app": "应用",
-        "output": "输出",
-        "transcription": "转录",
-        "history": "历史",
-        "experimental": "实验性"
-      },
-      "experimentalToggle": {
-        "label": "实验性功能",
-        "description": "启用仍在开发中的实验性功能。"
-      },
-      "lazyStreamClose": {
-        "label": "在转录之间保持麦克风开启",
-        "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
-      },
-      "acceleration": {
-        "transcribe": {
-          "title": "硬件加速",
-          "description": "选择用于转录的硬件。自动模式在可用时使用 GPU，否则回退到 CPU。"
-        },
-        "gpuDevice": {
-          "auto": "自动"
-        }
-      },
       "startHidden": {
         "label": "隐藏启动",
         "description": "启动到系统托盘而不打开窗口。"
@@ -491,10 +45,6 @@
       "autostart": {
         "label": "开机启动",
         "description": "登录计算机时自动启动 Handy。"
-      },
-      "showTrayIcon": {
-        "label": "显示托盘图标",
-        "description": "在系统托盘中显示 Handy 图标。"
       },
       "overlay": {
         "style": {
@@ -514,414 +64,23 @@
             "top": "顶部"
           }
         }
-      },
-      "pasteMethod": {
-        "title": "粘贴方式",
-        "description": "选择文字插入方式。直接：通过系统输入模拟打字。无：跳过粘贴，仅更新历史记录/剪贴板。",
-        "options": {
-          "clipboard": "剪贴板 ({{modifier}}+V)",
-          "clipboardCtrlShiftV": "剪贴板 (Ctrl+Shift+V)",
-          "clipboardShiftInsert": "剪贴板 (Shift+Insert)",
-          "direct": "直接",
-          "none": "无",
-          "externalScript": "外部脚本"
-        },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
-      },
-      "typingTool": {
-        "title": "输入工具",
-        "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
-        "options": {
-          "auto": "Auto（推荐）"
-        }
-      },
-      "clipboardHandling": {
-        "title": "剪贴板处理",
-        "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
-        "options": {
-          "dontModify": "不修改剪贴板",
-          "copyToClipboard": "复制到剪贴板"
-        }
-      },
-      "autoSubmit": {
-        "title": "自动提交",
-        "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",
-        "options": {
-          "off": "关闭",
-          "enter": "回车",
-          "cmdEnter": "Cmd+回车",
-          "superEnter": "Super+回车",
-          "ctrlEnter": "Ctrl+回车"
-        }
-      },
-      "translateToEnglish": {
-        "label": "翻译为英语",
-        "description": "在转录过程中自动将其他语言的语音翻译为英语。"
-      },
-      "modelUnload": {
-        "title": "卸载模型",
-        "description": "当模型在指定时间内未使用时自动释放 GPU/CPU 内存",
-        "options": {
-          "never": "从不",
-          "immediately": "立即",
-          "min2": "2 分钟后",
-          "min5": "5 分钟后",
-          "min10": "10 分钟后",
-          "min15": "15 分钟后",
-          "hour1": "1 小时后",
-          "sec15": "15 秒后（调试）"
-        }
-      },
-      "customWords": {
-        "title": "自定义词汇",
-        "description": "帮助受支持的模型识别名称和专业术语。目前，模糊纠错仅适用于使用 A–Z 字母和数字的词语。",
-        "placeholder": "添加词汇",
-        "add": "添加",
-        "remove": "删除 {{word}}",
-        "duplicate": "\"{{word}}\" 已存在"
-      },
-      "voiceActivityDetection": {
-        "title": "语音活动检测",
-        "description": "过滤录音中的静音。支持流式的模型会使用更长的 VAD 尾段；停用 VAD 则会录制原始音频。"
-      },
-      "longFormChunking": {
-        "title": "长音频分段",
-        "description": "在转录前按停顿处将长录音分段，通常可以提升转录效果。转录文件与较长的重新转录始终会分段。"
-      },
-      "languageDetection": {
-        "title": "将自动模式限制为我的语言",
-        "description": "自动模式会借助一个小型语言检测器，只从你的首选语言中选择。如果自动模式总是选中你不说的语言，请打开此项",
-        "downloadHint": "打开后会下载一个小型语言检测器",
-        "downloadingHint": "正在下载语言检测器。关闭此项即可取消"
-      },
-      "vadBackend": {
-        "title": "语音活动检测后端",
-        "description": "选择用于过滤静音的检测器。Earshot 为实验性功能；如果语音被截断或噪音被保留，请切换回 Silero。",
-        "options": {
-          "silero": "Silero",
-          "earshot": "Earshot"
-        }
-      },
-      "fillerWordRemoval": {
-        "title": "移除语气词",
-        "description": "从转录中移除常见的语气词。关闭此选项即可保留这些词。"
-      },
-      "chineseScript": {
-        "title": "简繁转换",
-        "description": "将普通话和粤语的转录结果输出为简体字，或台湾、香港通行的繁体字。其他语言保持不变。",
-        "options": {
-          "asTranscribed": "保持原样",
-          "simplified": "简体",
-          "traditionalTw": "繁体（台湾）",
-          "traditionalHk": "繁体（香港）"
-        }
       }
     },
-    "postProcessing": {
-      "hotkey": {
-        "title": "快捷键"
-      },
-      "api": {
-        "title": "API",
-        "provider": {
-          "title": "提供商",
-          "description": "选择一个兼容 OpenAI 或 Anthropic 的提供商。"
-        },
-        "apiFormat": {
-          "title": "API 格式",
-          "description": "自定义端点期望的请求格式。",
-          "options": {
-            "openai": "兼容 OpenAI (Chat Completions)",
-            "anthropic": "Anthropic Messages"
-          }
-        },
-        "appleIntelligence": {
-          "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
-        },
-        "baseUrl": {
-          "title": "基础 URL",
-          "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
-          "placeholder": "https://api.openai.com/v1",
-          "placeholderAnthropic": "https://api.anthropic.com/v1"
-        },
-        "apiKey": {
-          "title": "API 密钥",
-          "description": "所选提供商的 API 密钥。",
-          "placeholder": "sk-..."
-        },
-        "model": {
-          "title": "模型",
-          "descriptionCustom": "提供自定义端点期望的模型标识符。",
-          "descriptionDefault": "选择所选提供商提供的模型。",
-          "placeholderWithOptions": "搜索或选择模型",
-          "placeholderNoOptions": "输入模型名称",
-          "refreshModels": "刷新模型"
-        }
-      },
-      "prompts": {
-        "title": "提示词",
-        "selectedPrompt": {
-          "title": "已选提示词",
-          "description": "选择用于优化转录的模板或创建新模板。在提示词文本中使用 ${output} 来引用捕获的转录。"
-        },
-        "noPrompts": "没有可用的提示词",
-        "selectPrompt": "选择提示词",
-        "createNew": "创建新提示词",
-        "promptLabel": "提示词名称",
-        "promptLabelPlaceholder": "输入提示词名称",
-        "promptInstructions": "提示词指令",
-        "promptInstructionsPlaceholder": "编写转录后要执行的指令。示例：改进以下文本的语法和清晰度: ${output}",
-        "promptTip": "提示：使用 <code>${output}</code> 将转录文本插入到您的提示词中。",
-        "updatePrompt": "更新提示词",
-        "deletePrompt": "删除提示词",
-        "createPrompt": "创建提示词",
-        "cancel": "取消",
-        "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
-        "createFirst": "点击上方的「创建新提示词」来创建您的第一个后处理提示词。"
-      }
+    "basics": {
+      "title": "Basics"
     },
-    "history": {
-      "title": "历史记录",
-      "openFolder": "打开录音文件夹",
-      "loading": "加载历史记录中...",
-      "empty": "还没有转录记录。开始录制以建立您的历史记录！",
-      "copyToClipboard": "复制转录到剪贴板",
-      "copyError": "无法将转录复制到剪贴板。",
-      "save": "保存转录",
-      "unsave": "从已保存中移除",
-      "delete": "删除条目",
-      "deleteError": "删除条目失败，请重试。",
-      "retranscribe": "重新转录",
-      "cancelTranscription": "取消转录",
-      "transcribing": "转录中...",
-      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
-      "notTranscribed": "尚未转录。您可以使用重试图标进行转录。",
-      "transcribeFile": "转录文件",
-      "mediaFiles": "音频和视频",
-      "fileUnsupported": "无法读取 {{name}} 中的音频。",
-      "readingFile": "正在读取 {{name}}...",
-      "transcribeFailed": "转录失败，请重试。",
-      "waiting": "等待转录",
-      "transcribingPercent": "正在转录，{{percent}}%",
-      "showMore": "显示更多",
-      "showLess": "收起",
-      "dropTitle": "拖放到此处进行转录",
-      "dropDescription": "它会出现在历史记录中。"
+    "microphone": {
+      "title": "麦克风"
     },
-    "debug": {
-      "title": "调试",
-      "logDirectory": {
-        "title": "日志目录",
-        "description": "日志文件的存储位置"
-      },
-      "logLevel": {
-        "title": "日志级别",
-        "description": "设置日志的详细程度"
-      },
-      "liveLogs": {
-        "title": "实时日志",
-        "description": "实时传输应用程序日志，无需打开日志文件即可诊断问题。仅显示此面板打开期间产生的日志；遵循上方的“日志级别”设置。",
-        "live": "实时",
-        "paused": "已暂停",
-        "pause": "暂停",
-        "resume": "继续",
-        "copied": "已复制",
-        "lineCount": "{{count}} 行",
-        "empty": "正在等待日志…… 应用产生日志时将显示在此处。"
-      },
-      "updateChecks": {
-        "label": "检查更新",
-        "description": "自动检查 Handy 的新版本",
-        "lockedDescription": "已被系统配置禁用 (HANDY_DISABLE_UPDATER)"
-      },
-      "whatsNewPreview": {
-        "title": "预览新功能",
-        "description": "打开最新内置发行说明，且不标记为已查看",
-        "button": "预览",
-        "noNotes": "未找到内置发行说明",
-        "error": "无法预览发行说明"
-      },
-      "onboardingPreview": {
-        "title": "预览新手引导",
-        "description": "预览新手引导界面，而不更改权限、模型或完成状态",
-        "exitButton": "退出预览",
-        "choose": "选择一个界面",
-        "screens": {
-          "welcome": "欢迎",
-          "permissions": "权限",
-          "model": "模型",
-          "demo": "演示",
-          "try": "试一试",
-          "done": "完成"
-        }
-      },
-      "onboardingRun": {
-        "title": "运行引导流程",
-        "description": "从头真实走一遍引导流程：会请求权限、下载模型并保存您的选择",
-        "button": "开始"
-      },
-      "modelMigration": {
-        "title": "模型迁移",
-        "description": "真实打开旧格式模型更新界面：会下载替代模型、切换模型并删除旧文件",
-        "button": "打开",
-        "noRetired": "磁盘上没有旧格式模型"
-      },
-      "soundTheme": {
-        "label": "声音主题",
-        "description": "选择录制开始和停止反馈的声音主题"
-      },
-      "wordCorrectionThreshold": {
-        "title": "词汇修正阈值",
-        "description": "自定义词汇修正的灵敏度"
-      },
-      "historyLimit": {
-        "title": "历史记录上限",
-        "description": "保留的最大历史条目数",
-        "entries": "条"
-      },
-      "recordingRetention": {
-        "title": "自动删除录音",
-        "description": "自动删除旧录音以节省空间",
-        "never": "从不",
-        "preserveLimit": "保留最新 {{count}} 条",
-        "days3": "3 天后",
-        "weeks2": "2 周后",
-        "months3": "3 个月后",
-        "placeholder": "选择保留期限..."
-      },
-      "alwaysOnMicrophone": {
-        "label": "麦克风常开",
-        "description": "保持麦克风活跃以获得更快的响应"
-      },
-      "clamshellMicrophone": {
-        "title": "合盖麦克风",
-        "description": "笔记本电脑盖子关闭时使用的麦克风"
-      },
-      "postProcessingToggle": {
-        "label": "后处理",
-        "description": "启用转录后的 AI 文本优化"
-      },
-      "muteWhileRecording": {
-        "label": "录制时静音",
-        "description": "录制期间静音系统音频"
-      },
-      "appendTrailingSpace": {
-        "label": "追加尾部空格",
-        "description": "在粘贴的转录后添加空格"
-      },
-      "keyboardImplementation": {
-        "title": "键盘实现",
-        "description": "选择键盘快捷键的后端。",
-        "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
-      },
-      "pasteDelay": {
-        "title": "粘贴延迟（前）",
-        "description": "复制文本后、发送粘贴按键前的延迟（毫秒）。如果没有粘贴任何内容，请增加此值。"
-      },
-      "pasteDelayAfter": {
-        "title": "粘贴延迟（后）",
-        "description": "发送粘贴按键后、恢复先前剪贴板前的延迟（毫秒）。如果粘贴的是旧的剪贴板内容而非转录文本，请增加此值。"
-      },
-      "holdThreshold": {
-        "title": "长按判定时长",
-        "description": "仅适用于“自动”模式：快捷键需要按住多长时间（毫秒）才算作按住而不是轻按。如果短暂按住后录音仍持续，请调低；如果有意的轻按被当作按住，请调高。"
-      },
-      "reliablePaste": {
-        "title": "可靠粘贴（Beta）",
-        "description": "在目标应用程序真正读取转录文本之后再恢复剪贴板，而不是等待固定延迟。用于解决系统负载较高时粘贴旧剪贴板内容的问题。需要使用剪贴板类的粘贴方式；仅支持 macOS 和 Windows。"
-      },
-      "recordingBuffer": {
-        "title": "额外录音缓冲",
-        "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
-      },
-      "languageDetectionWindow": {
-        "title": "语言检测音频",
-        "description": "语言检测器聆听的语音秒数。越长越准确，但越慢。"
-      },
-      "keyboardDiagnostic": {
-        "title": "键盘诊断",
-        "description": "检查键盘事件是否能到达 Handy。仅记录事件数量，绝不记录您按了哪些键。",
-        "run": "运行 10 秒诊断",
-        "running": "正在监听… 请按几次您的快捷键（例如 Option+Space）",
-        "secureInputLabel": "Secure Input",
-        "enabled": "已启用",
-        "disabled": "已禁用",
-        "holder": "被 {{name}}（pid {{pid}}）占用",
-        "holderUnknown": "未发现占用方",
-        "keyDown": "按键按下",
-        "keyUp": "按键释放",
-        "flagsChanged": "修饰键",
-        "mouse": "鼠标",
-        "verdictBlocked": "Secure Input 正在阻止按键事件——在问题解决前，包含普通按键的快捷键无法工作。",
-        "verdictSuspicious": "收到了修饰键事件，但没有按键事件——尽管 Secure Input 报告为已禁用，仍有程序在抑制按键。请在 GitHub 上反馈此问题。",
-        "verdictOk": "按键事件正常到达 Handy。",
-        "verdictNoEvents": "未捕获到任何事件——测试期间您按过键吗？",
-        "failed": "诊断失败：{{error}}"
-      }
-    },
-    "about": {
-      "title": "关于",
-      "version": {
-        "title": "版本",
-        "description": "Handy 的当前版本"
-      },
-      "whatsNewUpdates": {
-        "label": "显示新功能",
-        "description": "Handy 更新后显示发行说明"
-      },
-      "appDataDirectory": {
-        "title": "应用数据目录",
-        "description": "Handy 存储数据的位置"
-      },
-      "sourceCode": {
-        "title": "源代码",
-        "description": "查看源代码并贡献",
-        "button": "在 GitHub 上查看"
-      },
-      "supportDevelopment": {
-        "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
-        "button": "捐赠"
-      },
-      "acknowledgments": {
-        "title": "致谢",
-        "ggml": {
-          "title": "ggml",
-          "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 ggml 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
-        }
-      }
+    "shortcut": {
+      "title": "Handy 快捷键"
     }
   },
-  "footer": {
-    "checkingUpdates": "检查更新中...",
-    "updateAvailableShort": "有可用更新",
-    "upToDate": "已是最新版本",
-    "updateCheckingDisabled": "更新检查已禁用",
-    "downloading": "下载中... {{progress}}%",
-    "installing": "安装中...",
-    "preparing": "准备中...",
-    "checkForUpdates": "检查更新",
-    "portableUpdateTitle": "需要手动更新",
-    "portableUpdateMessage": "便携版无法自动更新。请通过下方按钮下载适用于你的系统的安装程序，运行后安装到同一文件夹，你的 Data/ 文件夹（设置、模型、录音）会保留在原处。",
-    "portableUpdateButton": "下载安装程序",
-    "portableUpdateBrowseMessage": "便携版无法自动更新。请从 GitHub Releases 下载适用于你的系统的最新版本，并安装到同一文件夹，你的 Data/ 文件夹（设置、模型、录音）会保留在原处。",
-    "portableUpdateBrowseButton": "打开 GitHub Releases"
-  },
-  "whatsNew": {
-    "title": "Handy v{{version}} 新功能"
-  },
   "common": {
-    "loading": "加载中...",
-    "delete": "删除",
-    "close": "关闭",
     "open": "打开",
-    "copy": "复制",
-    "clear": "清除",
     "noOptionsFound": "未找到选项"
   },
   "errors": {
-    "loadDirectory": "加载目录时出错: {{error}}",
     "micPermissionDeniedTitle": "麦克风访问被拒绝",
     "micPermissionDenied": {
       "generic": "操作系统拒绝了麦克风访问。请在系统设置中授予麦克风权限。",
@@ -932,28 +91,14 @@
     "noInputDeviceTitle": "未找到麦克风",
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
     "recordingFailed": "录音启动失败: {{error}}",
-    "modelLoadFailed": "加载模型失败: {{model}}",
-    "modelLoadFailedUnknown": "未知模型",
-    "pasteFailedTitle": "粘贴文本失败",
-    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
-    "transcriptionFailedTitle": "转录失败"
-  },
-  "appLanguage": {
-    "title": "应用语言",
-    "description": "更改 Handy 界面的语言"
-  },
-  "theme": {
-    "title": "应用主题",
-    "description": "选择 Handy 跟随系统主题，还是保持浅色或深色",
-    "options": {
-      "system": "跟随系统",
-      "light": "浅色",
-      "dark": "深色"
-    }
+    "modelLoadFailed": "Failed to load the speech model",
+    "transcriptionFailedTitle": "转录失败",
+    "typeFailedTitle": "Failed to Type Text",
+    "typeFailed": "Text could not be typed into the active application.",
+    "modelDownloadFailed": "Failed to download the speech model"
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中...",
     "loadingModel": "正在加载模型..."
   },
   "secureInput": {
@@ -966,5 +111,38 @@
     "learnMore": "如何解决",
     "recorderBlocked": "当前无法录制快捷键——macOS 的 Secure Input 正在阻止按键事件。请先解决 Secure Input 警告。",
     "dismiss": "关闭"
+  },
+  "model": {
+    "ready": "Ready",
+    "downloading": "Downloading {{percent}}%",
+    "cancel": "Cancel",
+    "loading": "Loading model...",
+    "failed": "Download failed",
+    "missing": "Not downloaded",
+    "retry": "Retry",
+    "download": "Download",
+    "size": "{{size}} MB"
+  },
+  "permissions": {
+    "microphone": {
+      "name": "麦克风",
+      "why": "这样 Handy 才能听到您说话。音频只在这台电脑上转成文字，绝不会上传。"
+    },
+    "accessibility": {
+      "name": "辅助功能",
+      "why": "这样快捷键在每个应用中都能使用，Handy 也能把文字输入到光标所在的位置。"
+    },
+    "errors": {
+      "checkFailed": "检查权限失败。请重试。",
+      "requestFailed": "请求权限失败。请重试。"
+    },
+    "titleMac": "两项权限，马上就好",
+    "titleWindows": "一项权限，马上就好",
+    "subtitleMac": "在任何应用收听或输入之前，macOS 都会先征求您的同意。",
+    "subtitleWindows": "在任何应用收听之前，Windows 都会先征求您的同意。",
+    "allow": "允许",
+    "openSettings": "打开设置",
+    "allowed": "已允许",
+    "waiting": "等待中"
   }
 }

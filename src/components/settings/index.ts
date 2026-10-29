@@ -1,35 +1,5 @@
-// Settings section components
-export { GeneralSettings } from "./general/GeneralSettings";
-export { AdvancedSettings } from "./advanced/AdvancedSettings";
-export { DebugSettings } from "./debug/DebugSettings";
-export { HistorySettings } from "./history/HistorySettings";
-export { AboutSettings } from "./about/AboutSettings";
-export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
-export { ModelsSettings } from "./models/ModelsSettings";
-
-// Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";
-export { ChannelSelector } from "./ChannelSelector";
-export { ClamshellMicrophoneSelector } from "./ClamshellMicrophoneSelector";
-export { OutputDeviceSelector } from "./OutputDeviceSelector";
-export { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
-export { ShortcutActivationSetting } from "./ShortcutActivation";
-export { AudioFeedback } from "./AudioFeedback";
-export { ShowOverlay } from "./ShowOverlay";
 export { ShortcutInput } from "./ShortcutInput";
-export { TranslateToEnglish } from "./TranslateToEnglish";
-export { CustomWords } from "./CustomWords";
-export { PostProcessingToggle } from "./PostProcessingToggle";
-export { PostProcessingSettingsApi } from "./PostProcessingSettingsApi";
-export { PostProcessingSettingsPrompts } from "./PostProcessingSettingsPrompts";
-export { FillerWordRemoval } from "./FillerWordRemoval";
-export { ChineseScriptSetting } from "./ChineseScript";
-export { PreferredLanguages } from "./PreferredLanguages";
-export { AppDataDirectory } from "./AppDataDirectory";
-export { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
+export { ShowOverlay } from "./ShowOverlay";
 export { StartHidden } from "./StartHidden";
-export { HistoryLimit } from "./HistoryLimit";
-export { RecordingRetentionPeriodSelector } from "./RecordingRetentionPeriod";
 export { AutostartToggle } from "./AutostartToggle";
-export { UpdateChecksToggle } from "./UpdateChecksToggle";
-export { ShowWhatsNewOnUpdate } from "./ShowWhatsNewOnUpdate";
