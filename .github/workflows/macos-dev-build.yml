@@ -9,7 +9,7 @@ name: "macOS Dev Build"
 
 on:
   push:
-    branches: [v0.2-singlish]
+    branches: [v0.2-singlish, main]
   workflow_dispatch:
 
 concurrency:

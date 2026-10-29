@@ -178,7 +178,7 @@ for options. If auto-detection picks the wrong model, add
 
 ## Phase 4 — macOS build (GitHub Actions)
 
-`.github/workflows/macos-dev-build.yml`: runs on push to `v0.2-singlish` and on manual
+`.github/workflows/macos-dev-build.yml`: runs on push to `v0.2-singlish` or `main` and on manual
 dispatch, on `macos-14` (Apple Silicon). No secrets, no signing, no notarization.
 
 - It does **not** call `build.yml`. My first attempt did, and failed at bundling:
@@ -261,3 +261,11 @@ first (same bundle identifier, so settings and models are shared).
 ```bash
 cd crates/singlish-tools && cargo run --release --features metal --bin bakeoff -- --audio-dir ~/clips --engines parakeet,sensevoice,qwen3asr
 ```
+
+### Upstream's "Main Branch Build" in this fork
+
+It builds all 7 platforms and then signs with cjpais's Apple certificate, Azure
+signing, and Tauri updater key. A fork has none of those secrets, so after merging
+PR #1 every job compiled and then failed at signing. `main-build.yml` now has
+`if: github.repository == 'cjpais/Handy'`, so in this fork it shows as skipped. The
+unsigned `macos-dev-build.yml` also runs on pushes to `main`.

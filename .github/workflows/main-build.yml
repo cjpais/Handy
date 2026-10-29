@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   build:
+    # Needs upstream's signing secrets (Apple, Azure, Tauri updater key); a fork
+    # has none, so every job would fail at signing. Forks use macos-dev-build.yml.
+    if: github.repository == 'cjpais/Handy'
     permissions:
       contents: write
     strategy:
