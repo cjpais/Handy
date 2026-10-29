@@ -30,9 +30,16 @@ fn with_enigo<T: Send + 'static>(
     app_handle
         .run_on_main_thread(move || {
             let result = (|| {
+                // The frontend creates this after its permission screen, but
+                // typing must not depend on that screen having been reached:
+                // transcripts arrive from the tray and the CLI too. Creating it
+                // here is safe because this already runs on the main thread.
+                if app.try_state::<EnigoState>().is_none() {
+                    app.manage(EnigoState::new()?);
+                }
                 let enigo_state = app
                     .try_state::<EnigoState>()
-                    .ok_or("Enigo state not initialized")?;
+                    .ok_or("Enigo state unavailable")?;
                 let mut enigo = enigo_state
                     .0
                     .lock()
@@ -741,19 +748,23 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    // Typing paces itself with a sleep per character, so it must not run on the
-    // main thread the way the clipboard paths do: that would freeze the window
-    // for as long as the transcript takes to type. It needs no TIS lookup
-    // either, so the shared Enigo is driven straight from this worker thread.
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-
-    input::type_text_as_keystrokes(&mut *enigo, text, input::TYPING_KEY_DELAY_MS)
+    // The waiting and the pressing have to happen on different threads. Pacing
+    // sleeps once per character, so doing that on the main thread would freeze
+    // the window for as long as the transcript takes to type; but enigo's macOS
+    // backend traps when it is driven from anywhere else. So this worker thread
+    // keeps the rhythm and hands each individual key press to the main thread,
+    // where each one costs microseconds.
+    input::type_text_as_keystrokes(
+        |key| {
+            with_enigo(app_handle, move |enigo| {
+                enigo
+                    .key(key, Direction::Click)
+                    .map_err(|e| format!("{}", e))
+            })
+        },
+        text,
+        input::TYPING_KEY_DELAY_MS,
+    )
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {

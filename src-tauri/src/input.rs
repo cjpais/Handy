@@ -263,9 +263,9 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo, hold_ms: u64) -> Result<(), St
     Ok(())
 }
 
-/// Gap between characters when typing a transcript, in milliseconds. Fast for a
-/// person, but far enough from instant that every character is its own event.
-pub const TYPING_KEY_DELAY_MS: u64 = 12;
+/// Gap between characters when typing a transcript, in milliseconds. About the
+/// pace of a quick typist, so the text visibly arrives letter by letter.
+pub const TYPING_KEY_DELAY_MS: u64 = 50;
 
 /// Spreads the gap around `base_ms` so the rhythm is uneven, the way a real
 /// keyboard is. Deterministic, so it needs no random number generator.
@@ -291,13 +291,21 @@ fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
 /// This sleeps for roughly `key_delay_ms` per character, so callers must run it
 /// off the main thread.
 ///
-/// Generic over the keyboard so tests can record the exact event sequence
-/// instead of typing into whatever window happens to hold focus.
-pub fn type_text_as_keystrokes<K: Keyboard>(
-    keyboard: &mut K,
+/// `send_key` delivers one key press. It is a closure rather than a `Keyboard`
+/// because the waiting and the pressing belong on different threads on macOS:
+/// enigo's macOS backend traps when driven from anywhere but the main thread,
+/// while sleeping there would freeze the window for the length of the
+/// transcript. Callers hop to the main thread inside `send_key` alone. Tests
+/// pass a closure that records the exact event sequence instead of typing into
+/// whatever window happens to hold focus.
+pub fn type_text_as_keystrokes<F>(
+    mut send_key: F,
     text: &str,
     key_delay_ms: u64,
-) -> Result<(), String> {
+) -> Result<(), String>
+where
+    F: FnMut(Key) -> Result<(), String>,
+{
     let mut typed = 0_usize;
 
     for character in text.chars() {
@@ -319,9 +327,7 @@ pub fn type_text_as_keystrokes<K: Keyboard>(
             other => Key::Unicode(other),
         };
 
-        keyboard
-            .key(key, enigo::Direction::Click)
-            .map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
+        send_key(key).map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
 
         typed += 1;
     }
@@ -344,6 +350,13 @@ mod tests {
         gaps_ms: Vec<u128>,
         bulk_text: Vec<String>,
         last: Option<Instant>,
+    }
+
+    impl RecordingKeyboard {
+        /// Stands in for the main-thread hop the real caller performs.
+        fn click(&mut self, key: Key) -> Result<(), String> {
+            self.key(key, Direction::Click).map_err(|e| e.to_string())
+        }
     }
 
     impl Keyboard for RecordingKeyboard {
@@ -372,7 +385,7 @@ mod tests {
         let mut keyboard = RecordingKeyboard::default();
         let text = "Hello, world!";
 
-        type_text_as_keystrokes(&mut keyboard, text, 0).expect("typing should succeed");
+        type_text_as_keystrokes(|key| keyboard.click(key), text, 0).expect("typing should succeed");
 
         assert!(
             keyboard.bulk_text.is_empty(),
@@ -391,7 +404,8 @@ mod tests {
     fn maps_newline_and_tab_and_drops_the_cr_of_a_crlf_pair() {
         let mut keyboard = RecordingKeyboard::default();
 
-        type_text_as_keystrokes(&mut keyboard, "a\r\nb\tc", 0).expect("typing should succeed");
+        type_text_as_keystrokes(|key| keyboard.click(key), "a\r\nb\tc", 0)
+            .expect("typing should succeed");
 
         let keys: Vec<Key> = keyboard.events.iter().map(|(key, _)| *key).collect();
         assert_eq!(
@@ -411,7 +425,7 @@ mod tests {
         let mut keyboard = RecordingKeyboard::default();
         let text = "the quick brown fox";
 
-        type_text_as_keystrokes(&mut keyboard, text, TYPING_KEY_DELAY_MS)
+        type_text_as_keystrokes(|key| keyboard.click(key), text, TYPING_KEY_DELAY_MS)
             .expect("typing should succeed");
 
         assert_eq!(keyboard.events.len(), text.chars().count());
@@ -468,8 +482,8 @@ mod tests {
             .sum();
 
         assert!(
-            (300..=900).contains(&total),
-            "{characters} characters should take 0.3-0.9s to type, got {total}ms"
+            (1500..=4000).contains(&total),
+            "{characters} characters should take 1.5-4s to type, got {total}ms"
         );
     }
 
@@ -492,7 +506,12 @@ mod tests {
 
         let mut enigo = Enigo::new(&Settings::default()).expect("could not create Enigo");
         let started = std::time::Instant::now();
-        type_text_as_keystrokes(&mut enigo, &text, TYPING_KEY_DELAY_MS).expect("typing failed");
+        type_text_as_keystrokes(
+            |key| enigo.key(key, Direction::Click).map_err(|e| e.to_string()),
+            &text,
+            TYPING_KEY_DELAY_MS,
+        )
+        .expect("typing failed");
 
         eprintln!(
             "typed {} chars in {:?}",
