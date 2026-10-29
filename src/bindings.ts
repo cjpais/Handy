@@ -511,7 +511,7 @@ hold_threshold_ms?: number; audio_feedback?: boolean; audio_feedback_volume?: nu
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; model_unload_timeout?: ModelUnloadTimeout; mute_while_recording?: boolean; app_language?: string; theme?: Theme; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; extra_recording_buffer_ms?: number; vad_enabled?: boolean; 
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; mute_while_recording?: boolean; app_language?: string; theme?: Theme; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; extra_recording_buffer_ms?: number; vad_enabled?: boolean; 
 /**
  * Experimental detector implementation. Silero remains the stable default.
  */
@@ -543,11 +543,6 @@ export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
  * What the settings window shows about the one model.
  */
 export type ModelStatus = { name: string; size_mb: number; is_downloaded: boolean; is_downloading: boolean; is_loaded: boolean }
-/**
- * How long the model stays loaded after its last use. The app is built to be
- * fast, so the default keeps it loaded for good.
- */
-export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base

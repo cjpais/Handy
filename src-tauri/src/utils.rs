@@ -120,11 +120,6 @@ pub fn cancel_current_operation(app: &AppHandle) {
     set_tray_state(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
-    // Unload model if immediate unload is enabled. Done before notifying the
-    // coordinator, so a recording started next always loads afresh; it
-    // doesn't wait for the cancelled work, so it never blocks this thread.
-    tm.maybe_unload_immediately("cancellation");
-
     // Notify coordinator so it can keep lifecycle state coherent.
     if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
         coordinator.notify_cancel(recording_was_active);

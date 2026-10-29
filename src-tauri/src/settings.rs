@@ -108,22 +108,6 @@ pub enum OverlayStyle {
     Live,
 }
 
-/// How long the model stays loaded after its last use. The app is built to be
-/// fast, so the default keeps it loaded for good.
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum ModelUnloadTimeout {
-    #[default]
-    Never,
-    Immediately,
-    Min2,
-    Min5,
-    Min10,
-    Min15,
-    Hour1,
-    Sec15, // Debug mode only
-}
-
 /// How the transcribe shortcut's key events drive a recording.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
@@ -152,30 +136,6 @@ impl Default for KeyboardImplementation {
         return KeyboardImplementation::Tauri;
         #[cfg(not(target_os = "linux"))]
         return KeyboardImplementation::HandyKeys;
-    }
-}
-
-impl ModelUnloadTimeout {
-    pub fn to_minutes(self) -> Option<u64> {
-        match self {
-            ModelUnloadTimeout::Never => None,
-            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Min2 => Some(2),
-            ModelUnloadTimeout::Min5 => Some(5),
-            ModelUnloadTimeout::Min10 => Some(10),
-            ModelUnloadTimeout::Min15 => Some(15),
-            ModelUnloadTimeout::Hour1 => Some(60),
-            ModelUnloadTimeout::Sec15 => Some(0), // Special case for debug - handled separately
-        }
-    }
-
-    pub fn to_seconds(self) -> Option<u64> {
-        match self {
-            ModelUnloadTimeout::Never => None,
-            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Sec15 => Some(15),
-            _ => self.to_minutes().map(|m| m * 60),
-        }
     }
 }
 
@@ -272,8 +232,6 @@ pub struct AppSettings {
     pub debug_mode: bool,
     #[serde(default = "default_log_level")]
     pub log_level: LogLevel,
-    #[serde(default)]
-    pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default = "default_app_language")]
@@ -415,7 +373,6 @@ pub fn get_default_settings() -> AppSettings {
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
-        model_unload_timeout: ModelUnloadTimeout::default(),
         mute_while_recording: false,
         app_language: default_app_language(),
         theme: default_theme(),
@@ -625,20 +582,8 @@ mod tests {
         );
         assert_eq!(settings.hold_threshold_ms, default_hold_threshold_ms());
         assert!(!settings.audio_feedback);
-        assert_eq!(settings.model_unload_timeout, ModelUnloadTimeout::Never);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
-    }
-
-    /// The model stays loaded: every dictation after the first must not wait
-    /// for a cold load.
-    #[test]
-    fn default_settings_never_unload_the_model() {
-        assert_eq!(
-            get_default_settings().model_unload_timeout,
-            ModelUnloadTimeout::Never
-        );
-        assert_eq!(ModelUnloadTimeout::Never.to_seconds(), None);
     }
 
     /// Frozen snapshot of a real v0.9.0-era settings store, as written to
@@ -748,7 +693,6 @@ mod tests {
         assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
-        assert_eq!(settings.model_unload_timeout, ModelUnloadTimeout::Min5);
         assert_eq!(settings.vad_backend, VadBackend::Silero);
 
         assert!(apply_settings_migrations(&mut settings, &stored));

@@ -6,11 +6,9 @@
 //! stops.
 
 use crate::engine_supervisor::{
-    CancelMark, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo, Unloading,
+    CancelMark, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
 };
-use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::ModelManager;
-use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -18,8 +16,8 @@ use specta::Type;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
-use std::time::{Duration, Instant, SystemTime};
-use tauri::{AppHandle, Emitter, Manager};
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter};
 use tauri_specta::Event;
 use transcribe_cpp::{Backend, RunOptions, Task, Transcript};
 
@@ -208,9 +206,6 @@ pub struct TranscriptionManager {
     engine: EngineSupervisor,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
-    last_activity: Arc<AtomicU64>,
-    shutdown_signal: Arc<AtomicBool>,
-    watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
     /// Routes real-time audio frames to the active streaming worker; see
@@ -234,141 +229,23 @@ pub struct TranscriptionManager {
 
 impl TranscriptionManager {
     pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
-        let manager = Self {
+        Ok(Self {
             engine: EngineSupervisor::new(!transcribe_gpu_disabled_for_host()),
             model_manager,
             app_handle: app_handle.clone(),
-            last_activity: Arc::new(AtomicU64::new(Self::now_ms())),
-            shutdown_signal: Arc::new(AtomicBool::new(false)),
-            watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
             router: Arc::new(StreamRouter::new()),
             stream_active: Arc::new(AtomicBool::new(false)),
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
-        };
-
-        // Start the idle watcher
-        {
-            let app_handle_cloned = app_handle.clone();
-            let manager_cloned = manager.clone();
-            let shutdown_signal = manager.shutdown_signal.clone();
-            let handle = thread::spawn(move || {
-                debug!("Idle watcher thread started");
-                while !shutdown_signal.load(Ordering::Relaxed) {
-                    thread::sleep(Duration::from_secs(10)); // Check every 10 seconds
-
-                    // Check shutdown signal again after sleep
-                    if shutdown_signal.load(Ordering::Relaxed) {
-                        break;
-                    }
-
-                    let settings = get_settings(&app_handle_cloned);
-                    let timeout = settings.model_unload_timeout;
-
-                    // Skip Immediately — that variant is handled by
-                    // maybe_unload_immediately() after each transcription.
-                    // Treating it as 0s here would unload the model mid-recording.
-                    if timeout == ModelUnloadTimeout::Immediately {
-                        continue;
-                    }
-
-                    // While recording, keep the idle timer fresh so the model
-                    // is never unloaded mid-session.
-                    let is_recording = app_handle_cloned
-                        .try_state::<Arc<AudioRecordingManager>>()
-                        .is_some_and(|a| a.is_recording());
-                    if is_recording {
-                        manager_cloned.touch_activity();
-                        continue;
-                    }
-
-                    if let Some(limit_seconds) = timeout.to_seconds() {
-                        let last = manager_cloned.last_activity.load(Ordering::Relaxed);
-                        let now_ms = TranscriptionManager::now_ms();
-                        let idle_ms = now_ms.saturating_sub(last);
-                        let limit_ms = limit_seconds * 1000;
-
-                        if idle_ms > limit_ms && manager_cloned.is_model_loaded() {
-                            info!(
-                                "Model idle for {}s (limit: {}s), unloading",
-                                idle_ms / 1000,
-                                limit_seconds
-                            );
-                            if let Err(e) = manager_cloned.unload_model() {
-                                error!("Failed to unload idle model: {}", e);
-                            }
-                        }
-                    }
-                }
-                debug!("Idle watcher thread shutting down gracefully");
-            });
-            *manager.watcher_handle.lock().unwrap() = Some(handle);
-        }
-
-        Ok(manager)
+        })
     }
 
     pub fn is_model_loaded(&self) -> bool {
         // A transcribe-cpp model stays loaded while it is busy, so a batch
         // run or stream in progress never reads as "unloaded".
         self.engine.loaded().is_some()
-    }
-
-    /// Unload the model. Returns once the transcribe-cpp worker has exited,
-    /// which frees all of its memory.
-    pub fn unload_model(&self) -> Result<()> {
-        self.begin_unload().wait();
-        Ok(())
-    }
-
-    /// Unload the model without waiting for the transcribe-cpp worker to
-    /// exit, so it never blocks the caller (e.g. the event loop) behind a
-    /// transcription in progress. The model reads as unloaded at once.
-    pub fn request_unload(&self) {
-        drop(self.begin_unload());
-    }
-
-    /// Every state change of an unload, done now on the caller's thread: a
-    /// dictation started right after sees no model and loads it again, and
-    /// its load is queued behind this unload, so the unload can never affect
-    /// it. Only the worker's exit is left to wait for.
-    fn begin_unload(&self) -> Unloading {
-        let unloading = self.engine.unload();
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "unloaded".to_string(),
-                error: None,
-            },
-        );
-        unloading
-    }
-
-    fn now_ms() -> u64 {
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64
-    }
-
-    /// Reset the idle timer to now.
-    fn touch_activity(&self) {
-        self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
-    }
-
-    /// Unloads the model immediately if the setting is enabled and the model
-    /// is loaded. Never waits for the worker to exit, so it is safe on any
-    /// thread, including the event loop.
-    pub fn maybe_unload_immediately(&self, context: &str) {
-        let settings = get_settings(&self.app_handle);
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
-            && self.is_model_loaded()
-        {
-            info!("Immediately unloading model after {}", context);
-            self.request_unload();
-        }
     }
 
     /// Load the pinned model into the engine. Emits `model-state-changed`
@@ -430,9 +307,6 @@ impl TranscriptionManager {
             info.capabilities.supports_streaming,
             info.capabilities.languages
         );
-
-        // Reset idle timer so the watcher doesn't immediately unload a just-loaded model
-        self.touch_activity();
 
         let _ = self.app_handle.emit(
             "model-state-changed",
@@ -559,8 +433,6 @@ impl TranscriptionManager {
             drain_until_finalize(rx);
             return;
         };
-        self.touch_activity();
-
         while let Ok(cmd) = rx.recv() {
             match cmd {
                 StreamCmd::Feed(pcm) => {
@@ -568,7 +440,6 @@ impl TranscriptionManager {
                     if cancelled.load(Ordering::Acquire) {
                         continue;
                     }
-                    self.touch_activity();
                     session.feed(pcm);
                 }
                 StreamCmd::Finalize { reply } => {
@@ -656,7 +527,6 @@ impl TranscriptionManager {
         debug!("Audio vector length: {}", audio_len);
         if audio.is_empty() {
             debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
             return Ok(String::new());
         }
 
@@ -686,8 +556,6 @@ impl TranscriptionManager {
             );
         }
 
-        self.maybe_unload_immediately("transcription");
-
         Ok(final_result)
     }
 
@@ -696,7 +564,6 @@ impl TranscriptionManager {
     fn decode_batch(&self, audio: Vec<f32>) -> Result<String> {
         // A cancel from here on stops the run.
         let mark = self.engine.cancel_mark();
-        self.touch_activity();
         {
             let mut is_loading = self.is_loading.lock().unwrap();
             while *is_loading {
@@ -718,7 +585,6 @@ impl TranscriptionManager {
         pcm: Vec<f32>,
         run_options: &RunOptions,
     ) -> Result<Transcript, EngineError> {
-        self.touch_activity();
         self.engine
             .transcribe_since(mark, pcm, run_options.clone())
             .inspect_err(|e| {
@@ -899,41 +765,6 @@ fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
 /// emulation on an ARM64 host.
 fn transcribe_gpu_disabled_for_host() -> bool {
     crate::utils::is_windows_x64_emulated_on_arm64()
-}
-
-impl Drop for TranscriptionManager {
-    fn drop(&mut self) {
-        // Skip shutdown unless this is the very last clone. TranscriptionManager
-        // is cloned by initiate_model_load() and the watcher thread — those
-        // clones dropping must not kill the watcher. The watcher thread holds
-        // its own clone, so `last_activity`'s strong_count is always >= 2 while
-        // the watcher is alive. When it reaches 1, only this instance remains
-        // and we can safely shut down.
-        if Arc::strong_count(&self.last_activity) > 1 {
-            return;
-        }
-
-        // Signal the watcher thread to shutdown
-        self.shutdown_signal.store(true, Ordering::Relaxed);
-
-        // Wait for the thread to finish gracefully.
-        // Use match instead of unwrap to avoid panicking if the mutex is
-        // poisoned — a panic inside Drop calls abort().
-        let mut guard = match self.watcher_handle.lock() {
-            Ok(g) => g,
-            Err(e) => {
-                warn!("Recovered poisoned watcher_handle mutex during TranscriptionManager drop — a panic occurred earlier this session");
-                e.into_inner()
-            }
-        };
-        if let Some(handle) = guard.take() {
-            if let Err(e) = handle.join() {
-                warn!("Failed to join idle watcher thread: {:?}", e);
-            } else {
-                debug!("Idle watcher thread joined successfully");
-            }
-        }
-    }
 }
 
 #[cfg(test)]

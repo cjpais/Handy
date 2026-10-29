@@ -123,7 +123,7 @@ Settings are stored using Tauri's store plugin with reactive updates:
 - Keyboard shortcuts (configurable, supports push-to-talk)
 - Microphone selection
 - Overlay style and position, start hidden, launch on startup
-- Model unload timeout (defaults to never)
+- The model never unloads once loaded
 
 ### Single Instance Architecture
 

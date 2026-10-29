@@ -78,12 +78,10 @@ struct RecordingErrorEvent {
     detail: Option<String>,
 }
 
-/// Drop guard that finishes the transcription pipeline, including immediate
-/// model unloading on early exits.
-struct FinishGuard(AppHandle, Arc<TranscriptionManager>);
+/// Drop guard that finishes the transcription pipeline on every exit path.
+struct FinishGuard(AppHandle);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
-        self.1.maybe_unload_immediately("transcription session");
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
@@ -286,7 +284,7 @@ impl ShortcutAction for TranscribeAction {
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
-            let _guard = FinishGuard(ah.clone(), Arc::clone(&tm));
+            let _guard = FinishGuard(ah.clone());
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
