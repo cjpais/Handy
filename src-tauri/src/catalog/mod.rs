@@ -254,6 +254,15 @@ fn generated_description(model: &CatalogModel) -> String {
     }
 }
 
+/// The catalog is a byte-for-byte copy of @handy-computer/models (CI checks
+/// it), so fork-specific labels are applied here rather than in catalog.json.
+fn display_name(m: &CatalogModel) -> String {
+    match m.id.as_str() {
+        "SenseVoiceSmall" => "SenseVoice (Chinese + English)".to_string(),
+        _ => m.name.clone(),
+    }
+}
+
 impl From<&CatalogModel> for ModelDescriptor {
     fn from(m: &CatalogModel) -> Self {
         // The default download file. Its name is folded into the id so a catalog
@@ -274,7 +283,7 @@ impl From<&CatalogModel> for ModelDescriptor {
                 // and guarantees the bytes match the catalog's hashes.
                 revision: m.revision.clone(),
             },
-            name: m.name.clone(),
+            name: display_name(m),
             description: if m.description.is_empty() {
                 generated_description(m)
             } else {

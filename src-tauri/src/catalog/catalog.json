@@ -985,7 +985,7 @@
     },
     {
       "id": "SenseVoiceSmall",
-      "name": "SenseVoice (Chinese + English)",
+      "name": "SenseVoice Small",
       "description": "Instant Mandarin, Japanese, Korean on any machine. Weak Cantonese",
       "repository": "handy-computer/SenseVoiceSmall-gguf",
       "revision": "4a08b8e900b38a977e32eb08d5d0697d6e72ba04",

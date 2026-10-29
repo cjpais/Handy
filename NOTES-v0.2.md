@@ -72,9 +72,11 @@ Rust side has no tag handling of its own.
 Already in Handy (see Phase 0), so no engine work and no `transcribe-rs`/`transcribe-cpp`
 bump. Changes:
 
-- Catalog label changed to **"SenseVoice (Chinese + English)"** (`catalog.json`, id
-  `SenseVoiceSmall` unchanged so downloads and settings keep working). If you merge
-  upstream and `catalog.json` conflicts, re-apply this one-line rename.
+- Label changed to **"SenseVoice (Chinese + English)"** in
+  `catalog/mod.rs::display_name` (id `SenseVoiceSmall` unchanged so downloads and
+  settings keep working). It is not done in `catalog.json`, because CI
+  (`bun run check:catalog`) requires that file to be byte-identical to
+  `@handy-computer/models`.
 - "int8": the GGUF catalog has no int8 file. The default quant is **Q8_0**, the
   closest equivalent (252 MB).
 - Tag stripping: transcribe-cpp drops CONTROL tokens (`<|zh|>`, `<|HAPPY|>`,
