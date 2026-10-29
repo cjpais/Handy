@@ -19,16 +19,17 @@
     "about": "Om"
   },
   "onboarding": {
-    "subtitle": "For at komme i gang skal du vælge en transskriptionsmodel",
-    "existingModelsTitle": "Kompatible modeller",
-    "downloadModelsTitle": "Tilgængelig til download",
-    "showAllModels": "Vis alle {{total}} modeller",
-    "showFewerModels": "Vis færre modeller",
-    "recommended": "Anbefalet",
     "customModelDescription": "Ikke officielt understøttet",
-    "modelCard": {
-      "accuracy": "nøjagtighed",
-      "speed": "hastighed"
+    "migration": {
+      "title": "Dine modeller skal opdateres",
+      "description": "Handy bruger nu en nyere type model. Download den nye version for at fortsætte med at transskribere. Gamle versioner vil blive fjernet.",
+      "replaces": "Erstatter {{name}}",
+      "oldFormat": "Gammelt format",
+      "failed": "Download mislykkedes",
+      "retry": "Prøv igen",
+      "chooseAnother": "Vælg en anden model",
+      "download": "Download modeller ({{size}})",
+      "continue": "Fortsæt"
     },
     "models": {
       "small": {
@@ -47,91 +48,267 @@
         "name": "Whisper Large",
         "description": "God nøjagtighed, men langsom."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Kun engelsk. Den bedste model for engelsktalende."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Hurtig og nøjagtig"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Meget hurtig, kun engelsk. Håndterer accenter godt."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrahurtig, kun engelsk"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Hurtig, kun engelsk. God balance mellem hastighed og nøjagtighed."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Kun engelsk. Høj kvalitet."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimeret til taiwansk mandarin. Understøtter kodeskift."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Meget hurtig. Kinesisk, engelsk, japansk, koreansk, kantonesisk."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russisk talegenkendelse. Hurtig og nøjagtig."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Meget hurtig. Engelsk, tysk, spansk, fransk. Understøtter oversættelse."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Nøjagtig, flersproget. 25 europæiske sprog. Understøtter oversættelse."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "En stor, langsommere, men meget nøjagtig flersproget model."
       }
     },
     "errors": {
       "selectModel": "Kunne ikke vælge model"
     },
     "permissions": {
-      "title": "Tilladelser påkrævet",
-      "description": "Handy har brug for et par tilladelser for at fungere korrekt.",
       "microphone": {
-        "title": "Mikrofonadgang",
-        "description": "Påkrævet for at høre din stemme til transskription."
+        "name": "Mikrofon",
+        "why": "Så Handy kan høre dig. Lyd bliver omdannet til tekst på denne computer og uploades aldrig."
       },
       "accessibility": {
-        "title": "Tilgængelighedsadgang",
-        "description": "Påkrævet for at skrive den transskriberede tekst ind i dine programmer."
+        "name": "Hjælpemidler",
+        "why": "Så din genvej virker i alle apps, og Handy kan skrive teksten dér, hvor din markør er."
       },
-      "grant": "Giv tilladelse",
-      "granted": "Givet",
-      "waiting": "Venter...",
-      "allGranted": "Alt er klar!",
       "errors": {
         "checkFailed": "Kunne ikke tjekke tilladelser. Prøv igen.",
         "requestFailed": "Kunne ikke anmode om tilladelse. Prøv igen."
+      },
+      "titleMac": "To tilladelser, så er du klar",
+      "titleWindows": "Én tilladelse, så er du klar",
+      "subtitleMac": "macOS spørger, før en app må lytte eller skrive.",
+      "subtitleWindows": "Windows spørger, før en app må lytte.",
+      "allow": "Tillad",
+      "openSettings": "Åbn indstillinger",
+      "allowed": "Tilladt",
+      "waiting": "Venter",
+      "turnOnMac": "Slå Handy til i Systemindstillinger, og kom så tilbage hertil.",
+      "turnOnWindows": "Slå adgang til mikrofonen til i Windows-indstillinger, og kom så tilbage hertil.",
+      "hintBoth": "Tillad begge for at fortsætte",
+      "hintMicrophone": "Tillad mikrofonen for at fortsætte",
+      "welcomeBack": "Velkommen tilbage. Vi fortsætter, hvor du slap.",
+      "relaunch": "Reagerer genvejen ikke efter dette? <relaunch>Genstart Handy</relaunch>, så lander du lige her igen."
+    },
+    "shell": {
+      "back": "Tilbage",
+      "continue": "Fortsæt",
+      "progress": "Trin {{step}} af {{count}}"
+    },
+    "welcome": {
+      "title": "Tal i stedet for at skrive, i enhver app",
+      "subtitle": "Vælg de sprog, du vil diktere på",
+      "languagesLabel": "Sprog",
+      "noMatch": "Intet sprog matcher »{{query}}«. Handys modeller dækker omkring 100 sprog; flere findes i indstillingerne.",
+      "appLanguage": "Appens sprog",
+      "menusIn": "Menuer på <b>{{language}}</b>",
+      "chinese": {
+        "question": "Du taler {{languages}}. Hvilke tegn skal Handy skrive?",
+        "label": "Kinesiske tegn",
+        "zh-Hans": "Forenklet",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hongkong"
+      },
+      "hint": {
+        "pickOne": "Vælg mindst ét sprog",
+        "weak_one": "{{languages}}: ingen model forstår det godt endnu",
+        "weak_other": "{{languages}}: ingen model forstår dem godt endnu"
       }
+    },
+    "download": {
+      "checking": "Kontrollerer download…",
+      "ready": "{{name}} er klar",
+      "failed": "Download stoppede",
+      "downloading": "Downloader {{name}}",
+      "progress": "{{done}} af {{total}}",
+      "progressLeft": "{{done}} af {{total}}, {{time}} tilbage",
+      "checkingName": "Kontrollerer {{name}}",
+      "checkingDetail": "Sikrer, at download er fuldført",
+      "stopped": "Download af {{name}} stoppede",
+      "retryDetail": "Forsøger igen fra det sted, hvor den stoppede",
+      "retryDownload": "Prøv download igen",
+      "cardProgress": "Downloader {{percent}} %, {{done}} af {{total}}",
+      "timeLeft": "{{time}} tilbage",
+      "speedLeft": "{{speed}}, {{time}} tilbage"
+    },
+    "model": {
+      "title": "Vælg en talemodel",
+      "subtitle": "Talemodellen omdanner din tale til tekst, direkte på denne computer",
+      "label": "Talemodel",
+      "lines": {
+        "recommended": "Den bedste balance mellem hastighed og nøjagtighed for dine sprog",
+        "faster": "Hurtigere, med lidt flere fejl",
+        "accurate": "Færrest fejl, men langsommere"
+      },
+      "shorts": {
+        "recommended": "Bedste balance for dig",
+        "faster": "Hurtigere, lidt flere fejl",
+        "accurate": "Færrest fejl, men langsommere"
+      },
+      "model": "Model",
+      "showAll": "Vis alle {{count}} modeller",
+      "download": "Download {{size}}",
+      "downloadInstead": "Download {{size}} i stedet",
+      "pauses": "{{name}} holder pause ved {{percent}} %",
+      "resumeLater": "Vælg den igen for at fortsætte, hvor den slap",
+      "hint": "Downloader, mens du gør opsætningen færdig"
+    },
+    "demo": {
+      "title": "Tal i enhver app med én genvej",
+      "hold": "<0>Klik dér, hvor du vil skrive.</0> <1>Hold din genvej nede, og tal.</1> <2>Slip, og dine ord dukker op.</2>",
+      "tap": "<0>Klik dér, hvor du vil skrive.</0> <1>Tryk på din genvej, og tal.</1> <2>Tryk igen, og dine ord dukker op.</2>",
+      "apps": {
+        "messages": "Beskeder",
+        "notes": "Noter"
+      },
+      "chat": "Kommer du stadig i aften?",
+      "noteTitle": "Weekendplaner",
+      "screenLabel": "En bærbar computer: Nogen klikker ind i en app, trykker på genvejen og taler, og ordene dukker op, hvor der blev klikket.",
+      "change": "Skift",
+      "yourShortcut": "Din genvej er",
+      "pressKeys": "Tryk på de nye taster",
+      "addKey": "Tilføj nu en tast",
+      "cancel": "Annuller",
+      "tryIt": "Prøv selv"
+    },
+    "try": {
+      "title": "Giv det et forsøg!",
+      "subtitle": "Handy er i hjørnet og hjælper dig igennem",
+      "noteLabel": "Note",
+      "placeholder": "Ny note",
+      "hold": "Hold <keys/> nede, og tal.",
+      "tapNext": "Tryk nu på <keys/> én gang, og tal.",
+      "letGo": "Slip <keys/>, når du er færdig.",
+      "tapAgain": "Tryk på <keys/> igen, når du er færdig.",
+      "watch": "Se på noten.",
+      "changeKeys": "Skift din genvej, {{keys}}",
+      "doneHold": "Highfive! Det var at holde nede.",
+      "doneHoldNext": "Nu til den håndfri måde.",
+      "doneTap": "Highfive! Det var at trykke.",
+      "doneTapNext": "Prøv nu at holde dem nede, mens du taler.",
+      "giveFive": "Du fik det til! Highfive",
+      "highFive": "Highfive",
+      "slowLine": "{{name}} brugte {{wait}} på denne computer. <faster>Prøv en hurtigere model</faster>",
+      "nothingTyped": "Hmm, der kom ikke noget.",
+      "nothingTypedSub": "Klik først ind i noten, og prøv så igen.",
+      "silent": "Jeg hørte ingenting.",
+      "silentSub": "Der kom ingen lyd fra denne mikrofon. Prøv en anden:",
+      "noWords": "Jeg fangede ingen ord.",
+      "noWordsSub": "Prøv igen, og sig en hel sætning.",
+      "finish": "Afslut",
+      "skip": "Spring over",
+      "seconds": "{{value}} sek."
+    },
+    "done": {
+      "title": "Så er du klar",
+      "subMac": "Handy ligger nu i din menulinje. Hold eller tryk på <keys/> i en vilkårlig app for at tale.",
+      "subTray": "Handy ligger nu i dit meddelelsesområde. Hold eller tryk på <keys/> i en vilkårlig app for at tale.",
+      "hint": "Du kan ændre disse senere i Indstillinger",
+      "highFiveLabel": "Highfive",
+      "atLogin": "Start Handy, når jeg logger ind",
+      "finish": "Færdig",
+      "panel": {
+        "name": "Handy",
+        "ready": "Klar",
+        "languages": "Sprog",
+        "model": "Talemodel",
+        "shortcut": "Genvej",
+        "changeLanguages": "Skift sprog, {{languages}}",
+        "changeModel": "Skift talemodel, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Virker det ikke? <guide>Linux-opsætningsguide</guide>",
+      "done": "Virker det ikke i andre apps? <guide>Linux-opsætningsguide</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Live-forhåndsvisning",
+      "previewTitle": "Viser dine ord i Live-overlayet, mens du taler, og skriver dem, når du stopper",
+      "translate": "Oversætter",
+      "translateTitle": "Kan omdanne det, du siger, til engelsk tekst. Slå det til i indstillingerne"
+    },
+    "rubric": {
+      "gradeTitle": "Nøjagtighed for {{language}}: {{grade}}",
+      "accuracyTitle": "Nøjagtighed for {{language}}",
+      "overallTitle": "Nøjagtighed på dine sprog: {{grade}}",
+      "overall": "Nøjagtighed på dine sprog",
+      "meaning": {
+        "A": "Meget få fejl: dine ord kommer som regel ud, som du sagde dem",
+        "B": "Nogle fejl: regn med at rette et ord hist og her",
+        "C": "Hyppige fejl: nogle detaljer kan gå tabt",
+        "D": "Mange fejl: regn med at tjekke og rette det, der bliver skrevet",
+        "F": "Ofte uklar: meget af det, du siger, kan blive forkert"
+      },
+      "unsupported": "Denne model forstår ikke {{language}}, så den kan ikke skrive det",
+      "unrated": "Denne model forstår {{language}}, men vi har ikke målt, hvor godt endnu",
+      "under": "under {{max}} %",
+      "between": "{{min}} til {{max}} %",
+      "over": "{{min}} % eller mere",
+      "speedTitle": "Hastighed: {{speed}}",
+      "speedName": {
+        "0": "Meget langsom",
+        "1": "Langsom",
+        "2": "Middel",
+        "3": "Hurtig",
+        "4": "Meget hurtig"
+      },
+      "speedMeaning": {
+        "0": "Dine ord dukker op efter lang ventetid",
+        "1": "Dine ord dukker op efter en ventetid",
+        "2": "Dine ord dukker op efter kort ventetid",
+        "3": "Dine ord dukker op næsten med det samme",
+        "4": "Dine ord dukker op med det samme"
+      },
+      "speedPreview": "{{meaning}}, med live-forhåndsvisning, mens du taler",
+      "untimed": "Vi har ikke målt, hvor hurtig den er endnu",
+      "underSeconds": "under {{max}} sek.",
+      "betweenSeconds": "{{min}} til {{max}} sek.",
+      "overSeconds": "{{min}} sek. eller mere"
+    },
+    "roles": {
+      "recommended": "Anbefalet",
+      "faster": "Hurtigere",
+      "accurate": "Mere nøjagtig",
+      "fromAll": "Fra alle modeller"
+    },
+    "speed": "Hastighed",
+    "size": "Størrelse",
+    "accuracy": "Nøjagtighed",
+    "search": "Søg efter modeller",
+    "allLabel": "Talemodeller",
+    "noMatch": "Intet matcher »{{query}}«. Prøv et sprog eller en familie som Whisper eller Parakeet",
+    "noFilterMatch": "Ingen modeller matcher disse filtre",
+    "speedUntested": "Hastighed er ikke målt endnu",
+    "speedWords": {
+      "0": "Meget langsom, ordene dukker op efter lang ventetid",
+      "1": "Langsom, ordene dukker op efter en ventetid",
+      "2": "Middel, ordene dukker op efter kort ventetid",
+      "3": "Hurtig, ordene dukker op næsten med det samme",
+      "4": "Meget hurtig, ordene dukker op med det samme"
+    },
+    "speedWordsPreview": {
+      "0": "Meget langsom, med live-forhåndsvisning, mens du taler",
+      "1": "Langsom, med live-forhåndsvisning, mens du taler",
+      "2": "Middel, med live-forhåndsvisning, mens du taler",
+      "3": "Hurtig, med live-forhåndsvisning, mens du taler",
+      "4": "Meget hurtig, med live-forhåndsvisning, mens du taler"
+    },
+    "missingLanguage": "Mangler et sprog",
+    "allLanguages": "Alle",
+    "downloadingLine": "Downloader {{percent}} % af {{total}}",
+    "customLine": "Tilføjet fra din modelmappe. Ikke bedømt.",
+    "legacyLine": "En ældre download. Ikke bedømt."
+  },
+  "languagePicker": {
+    "search": "Søg efter sprog",
+    "addAnother": "Tilføj et til",
+    "remove": "Fjern {{language}}",
+    "alreadyAdded_one": "{{languages}} er allerede tilføjet.",
+    "alreadyAdded_other": "{{languages}} er allerede tilføjet."
   },
   "modelSelector": {
     "custom": "Brugerdefineret",
-    "legacy": "Forældet",
     "streaming": "Streaming",
     "active": "Aktiv",
-    "switching": "Skifter...",
     "noModelsAvailable": "Ingen modeller tilgængelige",
     "verifying": "Verificerer {{modelName}}...",
     "verifyingGeneric": "Verificerer...",
-    "extracting": "Udpakker {{modelName}}...",
-    "extractingMultiple": "Udpakker {{count}} modeller...",
-    "extractingGeneric": "Udpakker...",
     "downloading": "Downloader {{percentage}}%",
     "downloadingMultiple": "Downloader {{count}} modeller...",
     "modelReady": "Model klar",
@@ -140,19 +317,8 @@
     "modelError": "Modelfejl",
     "modelUnloaded": "Model frigjort",
     "noModelDownloadRequired": "Ingen model - download påkrævet",
-    "deleteModel": "Slet {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Annuller",
-    "cancelDownload": "Annuller download",
-    "capabilities": {
-      "languageSelection": "Understøtter flere inputsprog",
-      "singleLanguage": "Understøtter kun dette sprog",
-      "languageCount": "{{total}} sprog",
-      "languageOnly": "Kun {{language}}",
-      "translation": "Kan oversætte til engelsk",
-      "translate": "Oversæt",
-      "streaming": "Viser live transskription, mens du taler"
-    }
+    "lockedWhileTranscribing": "Du kan skifte model, når transskriberingen i Historik er færdig."
   },
   "settings": {
     "modelSettings": {
@@ -182,9 +348,7 @@
           }
         },
         "errors": {
-          "restore": "Kunne ikke gendanne den oprindelige genvej",
-          "set": "Kunne ikke indstille genvej: {{error}}",
-          "reset": "Kunne ikke nulstille genvej til oprindelig indstilling"
+          "set": "Kunne ikke indstille genvej: {{error}}"
         }
       },
       "language": {
@@ -192,7 +356,22 @@
         "description": "Vælg sproget til talegenkendelse. Auto tyder automatisk sproget, mens valg af et specifikt sprog kan forbedre nøjagtigheden for det pågældende sprog.",
         "searchPlaceholder": "Søg efter sprog...",
         "noResults": "Ingen sprog fundet",
-        "auto": "Automatisk"
+        "auto": "Automatisk",
+        "autoUnavailable": {
+          "title": "Automatisk er slået fra",
+          "oneLanguage": "Kun ét af dine sprog virker med denne model",
+          "undetectable": "Ikke tilgængelig med {{languages}}",
+          "noMatch": "Ingen af dine sprog virker med denne model"
+        },
+        "detectorMissingTitle": "Automatisk kræver en separat download",
+        "detectorMissing": "Denne model kan ikke afgøre, hvilket sprog du taler. Automatisk har brug for en lille sprogregistrering til at finde ud af det",
+        "stopDetectorDownload": "Stop download af sprogregistreringen"
+      },
+      "preferredLanguages": {
+        "title": "Foretrukne sprog",
+        "description": "De sprog, du taler. Handy bruger dem til at anbefale modeller.",
+        "noMatch": "Intet sprog matcher »{{query}}«",
+        "weak": "Ingen model genkender {{languages}} godt endnu."
       },
       "shortcutActivation": {
         "title": "Genvejens adfærd",
@@ -210,24 +389,50 @@
       }
     },
     "models": {
-      "title": "Transskriptionsmodeller",
-      "description": "Vælg en transskriptionsmodel, eller download flere modeller. Forskellige modeller tilbyder varierende niveauer af nøjagtighed og hastighed.",
-      "searchPlaceholder": "Søg efter modeller ved navn…",
-      "yourModels": "Downloadede modeller",
-      "availableModels": "Tilgængelig til download",
-      "deleteConfirm": "Er du sikker på, at du vil slette {{modelName}}? Du skal downloade den igen for at bruge den.",
-      "deleteActiveConfirm": "{{modelName}} er din aktive model. Sletning af den vil stoppe transskriptioner, indtil du vælger en ny model. Er du sikker?",
-      "deleteTitle": "Slet model",
-      "filters": {
-        "allLanguages": "Alle sprog",
-        "streaming": "Filtrer modeller, der understøtter live transskription",
-        "translation": "Filtrer modeller, der understøtter oversættelse til engelsk"
+      "title": "Modeller",
+      "changeLanguages": "Skift sprog",
+      "sections": {
+        "yours": "På denne computer",
+        "fits": "Til dine sprog",
+        "untested": "Ikke testet"
+      },
+      "untestedNote": "Ikke testet med Handy. De kan være langsommere eller lave flere fejl.",
+      "untestedHidden_one": "{{count}} model mere er ikke tilpasset diktering. Søg for at finde den.",
+      "untestedHidden_other": "{{count}} modeller mere er ikke tilpasset diktering. Søg for at finde dem.",
+      "emptyYours": "Ingen modeller endnu. Vælg en nedenfor: den downloades, og så bruger Handy den.",
+      "showMore": "Vis {{count}} flere",
+      "showFewer": "Vis færre",
+      "download": "Download og brug",
+      "downloadingThenUse": "{{percent}} % af {{total}}, så skiftes der",
+      "loading": "Indlæser…",
+      "deleteAsk": "Slet {{name}}? Det frigør {{size}}.",
+      "deleteAskActive": "Slet {{name}}? Handy kan ikke transskribere, før du vælger en anden.",
+      "cancel": "Annuller",
+      "deleteModel": "Slet {{name}}",
+      "cancelDownload": "Stop download af {{name}}",
+      "legend": {
+        "open": "Sådan bedømmes modeller",
+        "accuracyNote": "For hvert af dine sprog: hvor mange ord en model fik forkert i vores testoptagelser.",
+        "speedNote": {
+          "accelerated": "Hvor lang tid 30 sekunders tale tager at skrive ud på vores testcomputers grafikchip. Denne computer kan afvige.",
+          "cpu": "Hvor lang tid 30 sekunders tale tager at skrive ud på vores testcomputers processor. Denne computer kan afvige."
+        },
+        "marks": "? er ikke målt endnu. — forstår ikke det sprog."
+      },
+      "retiredNotice": {
+        "title": "Gamle modeller virker ikke længere med Handy",
+        "description": "De fylder {{size}} på din computer.",
+        "delete": "Slet modeller",
+        "deleted": "Gamle modeller er slettet",
+        "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
       },
       "rescan": {
         "label": "Søg igen",
         "tooltip": "Søg igen efter modeller, der er tilføjet til modelmappen eller Hugging Face-cachen uden for Handy"
-      },
-      "noModelsMatch": "Ingen modeller matcher dette filter."
+      }
+    },
+    "languages": {
+      "title": "Sprog"
     },
     "sound": {
       "title": "Lyd",
@@ -276,12 +481,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp-acceleration",
-          "description": "Hardwareacceleration til transcribe.cpp-modeller (Whisper-familien). Auto bruger GPU, hvis tilgængelig (Metal på macOS, Vulkan på Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX-acceleration",
-          "description": "Hardwareacceleration til ONNX-modeller (Parakeet, Canary, Moonshine osv.). DirectML på Windows er eksperimentelt. Modeller kan fejle under transskription."
+          "title": "Hardwareacceleration",
+          "description": "Vælg den hardware, der bruges til transskription. Automatisk bruger GPU'en, når den er tilgængelig, og falder ellers tilbage til CPU'en."
         },
         "gpuDevice": {
           "auto": "Automatisk"
@@ -387,6 +588,16 @@
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
       },
+      "longFormChunking": {
+        "title": "Opdeling af lang lyd",
+        "description": "Deler lange optagelser ved pauser før transskribering, hvilket typisk forbedrer transskriptionen. Transskriberede filer og lange gentransskriberinger deles altid."
+      },
+      "languageDetection": {
+        "title": "Begræns Automatisk til mine sprog",
+        "description": "Automatisk vælger kun blandt dine foretrukne sprog ved hjælp af en lille sprogregistrering. Slå det til, hvis Automatisk bliver ved med at vælge et sprog, du ikke taler",
+        "downloadHint": "Når du slår det til, downloades en lille sprogregistrering",
+        "downloadingHint": "Sprogregistreringen downloades. Slå det fra for at annullere"
+      },
       "vadBackend": {
         "title": "Stemmedetektions-backend",
         "description": "Vælg den detektor, der bruges til at filtrere stilhed. Earshot er eksperimentel; skift tilbage til Silero, hvis tale klippes eller støj bevares.",
@@ -398,6 +609,16 @@
       "fillerWordRemoval": {
         "title": "Fjern fyldord",
         "description": "Fjerner almindelige tøveord fra transskriptioner. Slå fra for at beholde dem."
+      },
+      "chineseScript": {
+        "title": "Kinesisk skrift",
+        "description": "Skriver mandarin- og kantonesiske transskriptioner med forenklede tegn eller med traditionelle tegn, som de skrives i Taiwan eller Hongkong. Andre sprog forbliver uændrede.",
+        "options": {
+          "asTranscribed": "Som transskriberet",
+          "simplified": "Forenklet",
+          "traditionalTw": "Traditionelle (Taiwan)",
+          "traditionalHk": "Traditionelle (Hongkong)"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +626,18 @@
         "title": "Genvejstast"
       },
       "api": {
-        "title": "API (OpenAI-kompatibel)",
+        "title": "API",
         "provider": {
           "title": "Udbyder",
-          "description": "Vælg en OpenAI-kompatibel udbyder."
+          "description": "Vælg en OpenAI- eller Anthropic-kompatibel udbyder."
+        },
+        "apiFormat": {
+          "title": "API-format",
+          "description": "Det anmodningsformat, som det brugerdefinerede endpoint forventer.",
+          "options": {
+            "openai": "OpenAI-kompatibel (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence er ikke tilgængelig på denne enhed. Kræver en Apple Silicon Mac med macOS Tahoe (26.0) eller nyere med Apple Intelligence aktiveret i Systemindstillinger."
@@ -416,7 +645,8 @@
         "baseUrl": {
           "title": "Basis-URL",
           "description": "API-basis-URL for den valgte udbyder. Kun den brugerdefinerede udbyder kan redigeres.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API-nøgle",
@@ -466,9 +696,21 @@
       "delete": "Slet post",
       "deleteError": "Kunne ikke slette posten. Prøv igen.",
       "retranscribe": "Transskribér igen",
-      "retranscribeError": "Kunne ikke transskribere igen. Prøv igen.",
+      "cancelTranscription": "Annuller transskription",
       "transcribing": "Transskriberer...",
-      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet."
+      "transcriptionFailed": "Transskription mislykkedes. Du kan transskribere igen ved hjælp af genforsøgsikonet.",
+      "notTranscribed": "Ikke transskriberet. Du kan transskribere den ved hjælp af genforsøgsikonet.",
+      "transcribeFile": "Transskriber fil",
+      "mediaFiles": "Lyd og video",
+      "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
+      "readingFile": "Læser {{name}}...",
+      "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
+      "waiting": "Venter på transskription",
+      "transcribingPercent": "Transskriberer, {{percent}} %",
+      "showMore": "Vis mere",
+      "showLess": "Vis mindre",
+      "dropTitle": "Slip for at transskribere",
+      "dropDescription": "Den vises i historikken."
     },
     "debug": {
       "title": "Fejlfinding",
@@ -506,9 +748,27 @@
       "onboardingPreview": {
         "title": "Forhåndsvis introduktion",
         "description": "Forhåndsvis introduktionsskærmene uden at ændre tilladelser, modeller eller fuldførelsesstatus",
-        "permissionsButton": "Tilladelser",
-        "modelsButton": "Modelvalg",
-        "exitButton": "Afslut forhåndsvisning"
+        "exitButton": "Afslut forhåndsvisning",
+        "choose": "Vælg en skærm",
+        "screens": {
+          "welcome": "Velkommen",
+          "permissions": "Tilladelser",
+          "model": "Model",
+          "demo": "Demo",
+          "try": "Prøv det",
+          "done": "Klar"
+        }
+      },
+      "onboardingRun": {
+        "title": "Kør introduktion",
+        "description": "Gennemgå introduktionen for alvor fra start: den beder om tilladelser, downloader modeller og gemmer dine valg",
+        "button": "Start"
+      },
+      "modelMigration": {
+        "title": "Modelmigrering",
+        "description": "Åbn opdateringsskærmen for modeller i det gamle format for alvor: den downloader erstatninger, skifter model og sletter gamle filer",
+        "button": "Åbn",
+        "noRetired": "Ingen modeller i det gamle format på disken"
       },
       "soundTheme": {
         "label": "Lydtema",
@@ -562,11 +822,6 @@
         "description": "Vælg backend til tastaturgenveje.",
         "bindingsReset": "Tastaturgenveje var inkompatible og blev nulstillet til standard"
       },
-      "paths": {
-        "appData": "Appdata:",
-        "models": "Modeller:",
-        "settings": "Indstillinger:"
-      },
       "pasteDelay": {
         "title": "Forsinkelse af indsættelse (før)",
         "description": "Forsinkelse (i millisekunder) efter kopiering af tekst, før tastetrykket for indsætning sendes. Øg, hvis intet bliver indsat."
@@ -586,6 +841,10 @@
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Lyd til sprogregistrering",
+        "description": "Sekunder tale, som sprogregistreringen hører. Længere er mere præcist, men langsommere."
       },
       "keyboardDiagnostic": {
         "title": "Tastaturdiagnostik",
@@ -669,10 +928,6 @@
     "clear": "Ryd",
     "noOptionsFound": "Ingen muligheder fundet"
   },
-  "accessibility": {
-    "permissionsDescription": "Handy har brug for tilgængelighedstilladelser for at skrive den transskriberede tekst.",
-    "openSettings": "Åbn systemindstillinger"
-  },
   "errors": {
     "loadDirectory": "Fejl ved indlæsning af mappe: {{error}}",
     "micPermissionDeniedTitle": "Mikrofonadgang nægtet",
@@ -706,7 +961,8 @@
   },
   "overlay": {
     "transcribing": "Transskriberer...",
-    "processing": "Behandler..."
+    "processing": "Behandler...",
+    "loadingModel": "Indlæser model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} blokerer muligvis 1 genvej",

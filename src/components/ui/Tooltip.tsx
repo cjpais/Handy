@@ -1,114 +1,149 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
-
-type TooltipPosition = "top" | "bottom";
-
-interface TooltipCoords {
-  top: number;
-  left: number;
-  arrowLeft: number;
-  actualPosition: TooltipPosition;
-}
+import { prefersReducedMotion } from "@/lib/utils/motion";
 
 interface TooltipProps {
-  targetRef: React.RefObject<HTMLElement>;
-  position?: TooltipPosition;
-  children: React.ReactNode;
+  /** A name over the line, for an icon with no words of its own. */
+  title?: React.ReactNode;
+  text: React.ReactNode;
+  /** One element; it's described by the tooltip while the tooltip shows. */
+  children: React.ReactElement<{ "aria-describedby"?: string }>;
+  /** Where it goes when there's room; it flips when there isn't. */
+  placement?: "above" | "below";
+  /** Pressing shows it at once, for an element that only explains; otherwise a press hides it. */
+  showOnPress?: boolean;
+  className?: string;
 }
 
-const TOOLTIP_WIDTH = 200;
-const VIEWPORT_PADDING = 12;
+const DELAY = 380;
+const EDGE = 8;
 const GAP = 8;
-const ARROW_MARGIN = 12;
-const DEFAULT_HEIGHT = 60;
 
+// Once a tooltip has shown, the next one under the pointer shows at once, so
+// running along a row of icons reads each without waiting again.
+let lastHidden = 0;
+
+/** Shows after a delay on hover, immediately on keyboard focus; flips sides when there's no room. */
 export const Tooltip: React.FC<TooltipProps> = ({
-  targetRef,
-  position = "top",
+  title,
+  text,
   children,
+  placement = "above",
+  showOnPress = false,
+  className = "",
 }) => {
-  const [coords, setCoords] = useState<TooltipCoords | null>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const timer = useRef<number>(0);
+  const [open, setOpen] = useState(false);
+  const [place, setPlace] = useState<{
+    top: number;
+    left: number;
+    arrow: number;
+    below: boolean;
+  } | null>(null);
 
-  const updatePosition = useCallback(() => {
-    if (!targetRef.current) return;
+  const show = (now = false) => {
+    window.clearTimeout(timer.current);
+    if (now || Date.now() - lastHidden < 600) setOpen(true);
+    else timer.current = window.setTimeout(() => setOpen(true), DELAY);
+  };
+  const hide = () => {
+    window.clearTimeout(timer.current);
+    setOpen((was) => {
+      if (was) lastHidden = Date.now();
+      return false;
+    });
+    setPlace(null);
+  };
 
-    const targetRect = targetRef.current.getBoundingClientRect();
-    const tooltipHeight = tooltipRef.current?.offsetHeight || DEFAULT_HEIGHT;
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-    let actualPosition = position;
-    let top: number;
-
-    if (position === "top") {
-      const spaceAbove = targetRect.top - tooltipHeight - GAP;
-      if (spaceAbove < VIEWPORT_PADDING) {
-        actualPosition = "bottom";
-        top = targetRect.bottom + GAP;
-      } else {
-        top = targetRect.top - GAP - tooltipHeight;
-      }
-    } else {
-      const spaceBelow =
-        window.innerHeight - targetRect.bottom - tooltipHeight - GAP;
-      if (spaceBelow < VIEWPORT_PADDING) {
-        actualPosition = "top";
-        top = targetRect.top - GAP - tooltipHeight;
-      } else {
-        top = targetRect.bottom + GAP;
-      }
-    }
-
-    const targetCenter = targetRect.left + targetRect.width / 2;
-    let left = targetCenter - TOOLTIP_WIDTH / 2;
-
-    if (left < VIEWPORT_PADDING) {
-      left = VIEWPORT_PADDING;
-    } else if (left + TOOLTIP_WIDTH > window.innerWidth - VIEWPORT_PADDING) {
-      left = window.innerWidth - TOOLTIP_WIDTH - VIEWPORT_PADDING;
-    }
-
-    const arrowLeft = Math.min(
-      Math.max(targetCenter - left, ARROW_MARGIN),
-      TOOLTIP_WIDTH - ARROW_MARGIN,
-    );
-
-    setCoords({ top, left, arrowLeft, actualPosition });
-  }, [targetRef, position]);
-
+  // Anything scrolling moves the element out from under its tooltip.
   useEffect(() => {
-    updatePosition();
+    if (!open) return;
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [open]);
 
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current;
+    const tip = tipRef.current;
+    if (!open || !anchor || !tip) return;
+    const a = anchor.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
+    const roomAbove = a.top - GAP - h >= EDGE;
+    const roomBelow = a.bottom + GAP + h <= window.innerHeight - EDGE;
+    const below = placement === "below" ? roomBelow || !roomAbove : !roomAbove;
+    const center = a.left + a.width / 2;
+    const left = Math.min(
+      Math.max(center - w / 2, EDGE),
+      window.innerWidth - w - EDGE,
+    );
+    setPlace({
+      top: below ? a.bottom + GAP : a.top - GAP - h,
+      left,
+      arrow: Math.min(Math.max(center - left, 12), w - 12),
+      below,
+    });
+    if (!prefersReducedMotion())
+      tip.animate(
+        [
+          { opacity: 0, translate: `0 ${below ? -3 : 3}px` },
+          { opacity: 1, translate: "0 0" },
+        ],
+        { duration: 160, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+      );
+  }, [open, placement]);
 
-    return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [updatePosition]);
-
-  const arrowClasses =
-    coords?.actualPosition === "top" ? "top-full" : "bottom-full rotate-180";
-
-  return createPortal(
-    <div
-      ref={tooltipRef}
-      style={{
-        position: "fixed",
-        top: coords?.top ?? -9999,
-        left: coords?.left ?? -9999,
-        width: TOOLTIP_WIDTH,
-        zIndex: 9999,
-        opacity: coords ? 1 : 0,
-      }}
-      className="px-3 py-2 bg-background border border-mid-gray/80 rounded-lg shadow-lg whitespace-normal transition-opacity duration-150"
+  return (
+    <span
+      ref={anchorRef}
+      className={`inline-grid ${className}`}
+      onPointerEnter={(e) => e.pointerType === "mouse" && show()}
+      onPointerLeave={hide}
+      onPointerDown={() => (showOnPress ? show(true) : hide())}
+      onFocus={(e) => e.target.matches(":focus-visible") && show(true)}
+      onBlur={hide}
     >
-      {children}
-      <div
-        style={{ left: coords?.arrowLeft ?? 0 }}
-        className={`absolute ${arrowClasses} transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-mid-gray/80`}
-      />
-    </div>,
-    document.body,
+      {React.cloneElement(children, {
+        "aria-describedby": open ? id : undefined,
+      })}
+      {open &&
+        createPortal(
+          <div
+            ref={tipRef}
+            id={id}
+            role="tooltip"
+            style={{
+              top: place?.top ?? -9999,
+              left: place?.left ?? -9999,
+              visibility: place ? "visible" : "hidden",
+            }}
+            className="pointer-events-none fixed z-[9999] w-max max-w-[248px] rounded-[9px] bg-plum px-[11px] py-[7px] text-start font-ui text-label leading-[17px] text-background shadow-[0_8px_24px_-10px_rgba(0,0,0,0.45)]"
+          >
+            {title && <b className="block font-semibold">{title}</b>}
+            {/* Block, not inline: WebKit applies a grid's margin in an inline span only
+                after the entrance animation, so the tooltip grows onto its element. */}
+            <span className={`block ${title ? "opacity-75" : ""}`}>{text}</span>
+            <span
+              aria-hidden="true"
+              style={{ left: place?.arrow ?? 0 }}
+              className={`absolute size-[8px] -translate-x-1/2 rotate-45 rounded-[1.5px] bg-plum ${
+                place?.below ? "-top-[3.5px]" : "-bottom-[3.5px]"
+              }`}
+            />
+          </div>,
+          document.body,
+        )}
+    </span>
   );
 };

@@ -1,7 +1,7 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.9.7",
+  "version": "0.9.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,9 +19,14 @@
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
     "check:model-languages": "bun scripts/check-model-language-coverage.ts",
+    "sync:catalog": "bun scripts/sync-catalog.ts",
+    "check:catalog": "bun scripts/sync-catalog.ts --check",
+    "build:cjk-font": "bun scripts/build-cjk-font.ts",
+    "check:cjk-font": "bun scripts/build-cjk-font.ts --check",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {
+    "@handy-computer/models": "0.2.3",
     "@tailwindcss/vite": "^4.1.16",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-autostart": "~2.5.1",
@@ -62,6 +67,7 @@
     "eslint": "^9.39.1",
     "eslint-plugin-i18next": "^6.1.3",
     "prettier": "^3.6.2",
+    "subset-font": "2.3.0",
     "typescript": "~5.6.3",
     "vite": "^6.4.1"
   }

@@ -88,7 +88,7 @@ export const AboutSettings: React.FC = () => {
           grouped={true}
           layout="stacked"
         >
-          <div className="text-sm text-mid-gray">
+          <div className="text-sm text-ink-3">
             {t("settings.about.acknowledgments.ggml.details")}
           </div>
         </SettingContainer>

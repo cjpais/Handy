@@ -19,16 +19,17 @@
     "about": "O aplikaci"
   },
   "onboarding": {
-    "subtitle": "Pro začátek vyberte model pro přepis",
-    "existingModelsTitle": "Kompatibilní modely",
-    "downloadModelsTitle": "Dostupné ke stažení",
-    "showAllModels": "Zobrazit všech {{total}} modelů",
-    "showFewerModels": "Zobrazit méně modelů",
-    "recommended": "Doporučeno",
     "customModelDescription": "Oficiálně nepodporováno",
-    "modelCard": {
-      "accuracy": "přesnost",
-      "speed": "rychlost"
+    "migration": {
+      "title": "Vaše modely potřebují aktualizaci",
+      "description": "Handy nyní používá novější typ modelů. Stáhněte si novou verzi, abyste mohli dál přepisovat. Staré verze budou odstraněny.",
+      "replaces": "Nahrazuje {{name}}",
+      "oldFormat": "Starý formát",
+      "failed": "Stahování selhalo",
+      "retry": "Zkusit znovu",
+      "chooseAnother": "Vybrat jiný model",
+      "download": "Stáhnout modely ({{size}})",
+      "continue": "Pokračovat"
     },
     "models": {
       "small": {
@@ -47,78 +48,259 @@
         "name": "Whisper Large",
         "description": "Dobrá přesnost, ale pomalý."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "Pouze angličtina. Nejlepší model pro anglicky mluvící."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Rychlý a přesný"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultrarychlý, pouze angličtina"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Rychlý, pouze angličtina. Dobrý poměr rychlosti a přesnosti."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "Pouze angličtina. Vysoká kvalita."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimalizováno pro tchajwanskou mandarínštinu. Podpora přepínání jazyků."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Rozpoznávání ruské řeči. Rychlé a přesné."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Velmi rychlý. Angličtina, němčina, španělština, francouzština. Podporuje překlad."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
       }
     },
     "errors": {
       "selectModel": "Nepodařilo se vybrat model"
     },
     "permissions": {
-      "title": "Vyžadována oprávnění",
-      "description": "Handy potřebuje několik oprávnění pro správné fungování.",
       "microphone": {
-        "title": "Přístup k mikrofonu",
-        "description": "Potřebný pro zachycení vašeho hlasu k přepisu."
+        "name": "Mikrofon",
+        "why": "Aby vás Handy slyšel. Zvuk se mění na text přímo v tomto počítači a nikam se neodesílá."
       },
       "accessibility": {
-        "title": "Přístup k usnadnění",
-        "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
+        "name": "Zpřístupnění",
+        "why": "Aby vaše zkratka fungovala v každé aplikaci a Handy mohl psát text tam, kde máte kurzor."
       },
-      "grant": "Udělit oprávnění",
-      "granted": "Uděleno",
-      "waiting": "Čekání...",
-      "allGranted": "Vše připraveno!",
       "errors": {
         "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
+      },
+      "titleMac": "Dvě oprávnění a máte hotovo",
+      "titleWindows": "Jedno oprávnění a máte hotovo",
+      "subtitleMac": "macOS se zeptá, než jakákoli aplikace smí poslouchat nebo psát.",
+      "subtitleWindows": "Windows se zeptá, než jakákoli aplikace smí poslouchat.",
+      "allow": "Povolit",
+      "openSettings": "Otevřít nastavení",
+      "allowed": "Povoleno",
+      "waiting": "Čeká se",
+      "turnOnMac": "Zapněte Handy v Nastavení systému a pak se vraťte sem.",
+      "turnOnWindows": "Zapněte přístup k mikrofonu v Nastavení Windows a pak se vraťte sem.",
+      "hintBoth": "Pro pokračování povolte obojí",
+      "hintMicrophone": "Pro pokračování povolte mikrofon",
+      "welcomeBack": "Vítejte zpět. Pokračujeme tam, kde jste skončili.",
+      "relaunch": "Zkratka po tomhle nereaguje? <relaunch>Restartujte Handy</relaunch> a skončíte hned zase tady."
+    },
+    "shell": {
+      "back": "Zpět",
+      "continue": "Pokračovat",
+      "progress": "Krok {{step}} z {{count}}"
+    },
+    "welcome": {
+      "title": "Mluvte místo psaní, v jakékoli aplikaci",
+      "subtitle": "Vyberte jazyky, ve kterých budete diktovat",
+      "languagesLabel": "Jazyky",
+      "noMatch": "Žádný jazyk neodpovídá „{{query}}“. Modely Handy pokrývají zhruba 100 jazyků, další najdete v nastavení.",
+      "appLanguage": "Jazyk aplikace",
+      "menusIn": "Nabídky v jazyce: <b>{{language}}</b>",
+      "chinese": {
+        "question": "Mluvíte jazykem: {{languages}}. Jaké znaky má Handy psát?",
+        "label": "Čínské znaky",
+        "zh-Hans": "Zjednodušené",
+        "zh-Hant": "Tchaj-wan",
+        "zh-HK": "Hongkong"
+      },
+      "hint": {
+        "pickOne": "Vyberte alespoň jeden jazyk",
+        "weak_one": "{{languages}}: zatím ho žádný model dobře neslyší",
+        "weak_other": "{{languages}}: zatím je žádný model dobře neslyší"
       }
+    },
+    "download": {
+      "checking": "Kontrola stahování…",
+      "ready": "{{name}} je připraven",
+      "failed": "Stahování se zastavilo",
+      "downloading": "Stahuje se {{name}}",
+      "progress": "{{done}} z {{total}}",
+      "progressLeft": "{{done}} z {{total}}, zbývá {{time}}",
+      "checkingName": "Kontrola: {{name}}",
+      "checkingDetail": "Ověřujeme, že je stahování kompletní",
+      "stopped": "Stahování {{name}} se zastavilo",
+      "retryDetail": "Další pokus naváže tam, kde stahování skončilo",
+      "retryDownload": "Zkusit stáhnout znovu",
+      "cardProgress": "Stahuje se {{percent}} %, {{done}} z {{total}}",
+      "timeLeft": "zbývá {{time}}",
+      "speedLeft": "{{speed}}, zbývá {{time}}"
+    },
+    "model": {
+      "title": "Vyberte model řeči",
+      "subtitle": "Model řeči mění vaši řeč na text, přímo v tomto počítači",
+      "label": "Model řeči",
+      "lines": {
+        "recommended": "Nejlepší poměr rychlosti a přesnosti pro vaše jazyky",
+        "faster": "Rychlejší, s několika chybami navíc",
+        "accurate": "Nejméně chyb, ale pomalejší"
+      },
+      "shorts": {
+        "recommended": "Nejlepší volba pro vás",
+        "faster": "Rychlejší, o něco více chyb",
+        "accurate": "Nejméně chyb, ale pomalejší"
+      },
+      "model": "Model",
+      "showAll": "Zobrazit všech {{count}} modelů",
+      "download": "Stáhnout {{size}}",
+      "downloadInstead": "Stáhnout raději {{size}}",
+      "pauses": "{{name}} se pozastaví na {{percent}} %",
+      "resumeLater": "Vyberte jej znovu a stahování naváže tam, kde skončilo",
+      "hint": "Stahuje se, zatímco dokončujete nastavení"
+    },
+    "demo": {
+      "title": "Mluvte v jakékoli aplikaci jedinou zkratkou",
+      "hold": "<0>Klikněte tam, kam byste psali.</0> <1>Podržte zkratku a mluvte.</1> <2>Pusťte ji a vaše slova se objeví.</2>",
+      "tap": "<0>Klikněte tam, kam byste psali.</0> <1>Klepněte na zkratku a mluvte.</1> <2>Klepněte znovu a vaše slova se objeví.</2>",
+      "apps": {
+        "messages": "Zprávy",
+        "notes": "Poznámky"
+      },
+      "chat": "Přijdeš dneska večer?",
+      "noteTitle": "Plány na víkend",
+      "screenLabel": "Notebook: někdo klikne do aplikace, stiskne zkratku a mluví a slova se objeví tam, kam kliknul.",
+      "change": "Změnit",
+      "yourShortcut": "Vaše zkratka je",
+      "pressKeys": "Stiskněte nové klávesy",
+      "addKey": "Teď přidejte klávesu",
+      "cancel": "Zrušit",
+      "tryIt": "Vyzkoušejte si to"
+    },
+    "try": {
+      "title": "Zkuste to!",
+      "subtitle": "Handy je v rohu a provede vás tím",
+      "noteLabel": "Poznámka",
+      "placeholder": "Nová poznámka",
+      "hold": "Podržte <keys/> a mluvte.",
+      "tapNext": "Teď jednou klepněte na <keys/> a mluvte.",
+      "letGo": "Až domluvíte, pusťte <keys/>.",
+      "tapAgain": "Až domluvíte, klepněte na <keys/> znovu.",
+      "watch": "Sledujte poznámku.",
+      "changeKeys": "Změnit zkratku, {{keys}}",
+      "doneHold": "Plácnem si! Tohle bylo podržení.",
+      "doneHoldNext": "Teď to bez rukou.",
+      "doneTap": "Plácnem si! Tohle bylo klepnutí.",
+      "doneTapNext": "Teď to zkuste s podržením, zatímco mluvíte.",
+      "giveFive": "Povedlo se! Plácněte si",
+      "highFive": "Plácnout si",
+      "slowLine": "{{name}} to na tomto počítači trvalo {{wait}}. <faster>Zkuste rychlejší model</faster>",
+      "nothingTyped": "Hmm, nic se nenapsalo.",
+      "nothingTypedSub": "Nejdřív klikněte do poznámky a zkuste to znovu.",
+      "silent": "Nic jsem neslyšel.",
+      "silentSub": "Z tohoto mikrofonu nešel žádný zvuk. Zkuste jiný:",
+      "noWords": "Nezachytil jsem žádná slova.",
+      "noWordsSub": "Zkuste to znovu a řekněte celou větu.",
+      "finish": "Dokončit",
+      "skip": "Přeskočit",
+      "seconds": "{{value}} s"
+    },
+    "done": {
+      "title": "Hotovo",
+      "subMac": "Handy je teď na řádku nabídek. Podržte nebo klepněte na <keys/> v jakékoli aplikaci a mluvte.",
+      "subTray": "Handy je teď v oznamovací oblasti. Podržte nebo klepněte na <keys/> v jakékoli aplikaci a mluvte.",
+      "hint": "Tohle můžete později změnit v Nastavení",
+      "highFiveLabel": "Plácnout si",
+      "atLogin": "Spustit Handy po přihlášení",
+      "finish": "Hotovo",
+      "panel": {
+        "name": "Handy",
+        "ready": "Připraveno",
+        "languages": "Jazyky",
+        "model": "Model řeči",
+        "shortcut": "Zkratka",
+        "changeLanguages": "Změnit jazyky, {{languages}}",
+        "changeModel": "Změnit model řeči, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Nefunguje to? <guide>Průvodce nastavením pro Linux</guide>",
+      "done": "Nefunguje to v jiných aplikacích? <guide>Průvodce nastavením pro Linux</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Živý náhled",
+      "previewTitle": "Zobrazuje vaše slova v překryvu Živě, zatímco mluvíte, a po skončení je napíše",
+      "translate": "Překládá",
+      "translateTitle": "Umí změnit to, co řeknete, na anglický text. Zapnete to v nastavení"
+    },
+    "rubric": {
+      "gradeTitle": "Přesnost pro {{language}}: {{grade}}",
+      "accuracyTitle": "Přesnost pro {{language}}",
+      "overallTitle": "Přesnost ve vašich jazycích: {{grade}}",
+      "overall": "Přesnost ve vašich jazycích",
+      "meaning": {
+        "A": "Velmi málo chyb: vaše slova obvykle vyjdou tak, jak jste je řekli",
+        "B": "Několik chyb: občas budete muset opravit slovo",
+        "C": "Časté chyby: některé detaily se mohou ztratit",
+        "D": "Mnoho chyb: počítejte s tím, že napsaný text budete kontrolovat a opravovat",
+        "F": "Často nesrozumitelné: velká část toho, co řeknete, může vyjít špatně"
+      },
+      "unsupported": "Tento model nerozumí jazyku {{language}}, takže v něm nemůže psát",
+      "unrated": "Tento model rozumí jazyku {{language}}, ale zatím jsme neměřili, jak dobře",
+      "under": "pod {{max}} %",
+      "between": "{{min}} až {{max}} %",
+      "over": "{{min}} % nebo více",
+      "speedTitle": "Rychlost: {{speed}}",
+      "speedName": {
+        "0": "Velmi pomalý",
+        "1": "Pomalý",
+        "2": "Střední",
+        "3": "Rychlý",
+        "4": "Velmi rychlý"
+      },
+      "speedMeaning": {
+        "0": "Vaše slova se objeví po dlouhém čekání",
+        "1": "Vaše slova se objeví po chvíli čekání",
+        "2": "Vaše slova se objeví po krátkém čekání",
+        "3": "Vaše slova se objeví téměř okamžitě",
+        "4": "Vaše slova se objeví okamžitě"
+      },
+      "speedPreview": "{{meaning}}, s živým náhledem během mluvení",
+      "untimed": "Rychlost zatím nebyla změřena",
+      "underSeconds": "pod {{max}} s",
+      "betweenSeconds": "{{min}} až {{max}} s",
+      "overSeconds": "{{min}} s nebo více"
+    },
+    "roles": {
+      "recommended": "Doporučeno",
+      "faster": "Rychlejší",
+      "accurate": "Přesnější",
+      "fromAll": "Ze všech modelů"
+    },
+    "speed": "Rychlost",
+    "size": "Velikost",
+    "accuracy": "Přesnost",
+    "search": "Hledat modely",
+    "allLabel": "Modely řeči",
+    "noMatch": "Pro „{{query}}“ nic nenalezeno. Zkuste jazyk nebo rodinu modelů, například Whisper či Parakeet",
+    "noFilterMatch": "Těmto filtrům žádné modely neodpovídají",
+    "speedUntested": "Rychlost zatím nebyla změřena",
+    "speedWords": {
+      "0": "Velmi pomalý, slova se objeví po dlouhém čekání",
+      "1": "Pomalý, slova se objeví po chvíli čekání",
+      "2": "Střední, slova se objeví po krátkém čekání",
+      "3": "Rychlý, slova se objeví téměř okamžitě",
+      "4": "Velmi rychlý, slova se objeví okamžitě"
+    },
+    "speedWordsPreview": {
+      "0": "Velmi pomalý, s živým náhledem během mluvení",
+      "1": "Pomalý, s živým náhledem během mluvení",
+      "2": "Střední, s živým náhledem během mluvení",
+      "3": "Rychlý, s živým náhledem během mluvení",
+      "4": "Velmi rychlý, s živým náhledem během mluvení"
+    },
+    "missingLanguage": "Chybí jazyk",
+    "allLanguages": "Vše",
+    "downloadingLine": "Stahuje se {{percent}} % z {{total}}",
+    "customLine": "Přidáno z vaší složky modelů. Nehodnoceno.",
+    "legacyLine": "Starší stažená verze. Nehodnoceno."
+  },
+  "languagePicker": {
+    "search": "Hledat jazyky",
+    "addAnother": "Přidat další",
+    "remove": "Odebrat: {{language}}",
+    "alreadyAdded_one": "{{languages}} je již přidán.",
+    "alreadyAdded_other": "{{languages}} jsou již přidány."
   },
   "modelSelector": {
     "custom": "Vlastní",
@@ -127,9 +309,6 @@
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "verifying": "Ověřování {{modelName}}...",
     "verifyingGeneric": "Ověřování...",
-    "extracting": "Rozbaluji {{modelName}}...",
-    "extractingMultiple": "Rozbaluji {{count}} modelů...",
-    "extractingGeneric": "Rozbalování...",
     "downloading": "Stahování {{percentage}}%",
     "downloadingMultiple": "Stahování {{count}} modelů...",
     "modelReady": "Model připraven",
@@ -138,45 +317,12 @@
     "modelError": "Chyba modelu",
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
-    "deleteModel": "Smazat {{modelName}}",
-    "switching": "Přepínání...",
     "downloadSpeed": "{{speed}} MB/s",
-    "capabilities": {
-      "languageSelection": "Podporuje více vstupních jazyků",
-      "languageCount": "{{total}} jazyků",
-      "translation": "Umí překládat do angličtiny",
-      "translate": "Přeložit do angličtiny",
-      "singleLanguage": "Podporuje pouze tento jazyk",
-      "languageOnly": "Pouze {{language}}",
-      "streaming": "Zobrazuje přepis živě, jak mluvíte"
-    },
-    "cancel": "Zrušit",
-    "cancelDownload": "Zrušit stahování",
-    "legacy": "Zastaralé"
+    "lockedWhileTranscribing": "Model můžete změnit, až se dokončí přepis v Historii."
   },
   "settings": {
     "modelSettings": {
       "title": "Nastavení {{model}}"
-    },
-    "models": {
-      "title": "Modely přepisu",
-      "description": "Vyberte model přepisu nebo stáhněte další modely. Různé modely nabízejí různé úrovně přesnosti a rychlosti.",
-      "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
-      "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
-      "deleteTitle": "Smazat model",
-      "filters": {
-        "allLanguages": "Všechny jazyky",
-        "streaming": "Filtrovat modely podporující živý přepis",
-        "translation": "Filtrovat modely podporující překlad do angličtiny"
-      },
-      "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
-      "yourModels": "Stažené modely",
-      "availableModels": "Dostupné ke stažení",
-      "searchPlaceholder": "Hledat modely podle názvu…",
-      "rescan": {
-        "label": "Znovu prohledat",
-        "tooltip": "Znovu prohledat modely přidané do složky modelů nebo mezipaměti Hugging Face mimo Handy"
-      }
     },
     "general": {
       "title": "Obecné",
@@ -202,9 +348,7 @@
           }
         },
         "errors": {
-          "restore": "Nepodařilo se obnovit původní zkratku",
-          "set": "Nepodařilo se nastavit zkratku: {{error}}",
-          "reset": "Nepodařilo se vrátit zkratku na původní hodnotu"
+          "set": "Nepodařilo se nastavit zkratku: {{error}}"
         }
       },
       "language": {
@@ -212,7 +356,22 @@
         "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Automaticky"
+        "auto": "Automaticky",
+        "autoUnavailable": {
+          "title": "Automaticky je vypnuto",
+          "oneLanguage": "S tímto modelem funguje jen jeden z vašich jazyků",
+          "undetectable": "Není k dispozici pro {{languages}}",
+          "noMatch": "Žádný z vašich jazyků s tímto modelem nefunguje"
+        },
+        "detectorMissingTitle": "Automaticky vyžaduje samostatné stažení",
+        "detectorMissing": "Tento model nepozná, jakým jazykem mluvíte. Režim Automaticky potřebuje malý detektor jazyka, který to zjistí",
+        "stopDetectorDownload": "Zastavit stahování detektoru jazyka"
+      },
+      "preferredLanguages": {
+        "title": "Preferované jazyky",
+        "description": "Jazyky, kterými mluvíte. Handy podle nich doporučuje modely.",
+        "noMatch": "Žádný jazyk neodpovídá „{{query}}“",
+        "weak": "Zatím žádný model dobře nerozpoznává: {{languages}}."
       },
       "shortcutActivation": {
         "title": "Chování zkratky",
@@ -228,6 +387,52 @@
           "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
         }
       }
+    },
+    "models": {
+      "title": "Modely",
+      "changeLanguages": "Změnit jazyky",
+      "sections": {
+        "yours": "V tomto počítači",
+        "fits": "Pro vaše jazyky",
+        "untested": "Netestováno"
+      },
+      "untestedNote": "Netestováno s Handy. Mohou být pomalejší nebo dělat více chyb.",
+      "untestedHidden_one": "Další {{count}} model není vyladěn pro diktování. Najdete ho hledáním.",
+      "untestedHidden_other": "Dalších {{count}} modelů není vyladěno pro diktování. Najdete je hledáním.",
+      "emptyYours": "Zatím žádné modely. Vyberte některý níže: stáhne se a Handy ho začne používat.",
+      "showMore": "Zobrazit další ({{count}})",
+      "showFewer": "Zobrazit méně",
+      "download": "Stáhnout a použít",
+      "downloadingThenUse": "{{percent}} % z {{total}}, poté se přepne",
+      "loading": "Načítání…",
+      "deleteAsk": "Smazat {{name}}? Uvolní se {{size}}.",
+      "deleteAskActive": "Smazat {{name}}? Handy nebude moci přepisovat, dokud nevyberete jiný model.",
+      "cancel": "Zrušit",
+      "deleteModel": "Smazat {{name}}",
+      "cancelDownload": "Zastavit stahování {{name}}",
+      "legend": {
+        "open": "Jak se modely hodnotí",
+        "accuracyNote": "Pro každý z vašich jazyků: kolik slov model v našich testovacích nahrávkách napsal špatně.",
+        "speedNote": {
+          "accelerated": "Jak dlouho trvá napsat 30 sekund řeči na grafickém čipu našeho testovacího notebooku. Tento počítač se může lišit.",
+          "cpu": "Jak dlouho trvá napsat 30 sekund řeči na procesoru našeho testovacího notebooku. Tento počítač se může lišit."
+        },
+        "marks": "? zatím nebylo změřeno. — tomuto jazyku nerozumí."
+      },
+      "retiredNotice": {
+        "title": "Staré modely už s Handy nefungují",
+        "description": "Zabírají {{size}} na vašem počítači.",
+        "delete": "Smazat modely",
+        "deleted": "Staré modely byly smazány",
+        "deleteFailed": "Některé staré modely se nepodařilo smazat. Podrobnosti najdete v protokolu."
+      },
+      "rescan": {
+        "label": "Znovu prohledat",
+        "tooltip": "Znovu prohledat modely přidané do složky modelů nebo mezipaměti Hugging Face mimo Handy"
+      }
+    },
+    "languages": {
+      "title": "Jazyky"
     },
     "sound": {
       "title": "Zvuk",
@@ -276,12 +481,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "Akcelerace Whisper",
-          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
-        },
-        "ort": {
-          "title": "Akcelerace ONNX",
-          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
+          "title": "Hardwarová akcelerace",
+          "description": "Vyberte hardware, který se použije pro přepis. Automatický režim používá GPU, pokud je k dispozici, jinak přejde na CPU."
         },
         "gpuDevice": {
           "auto": "Automaticky"
@@ -387,6 +588,16 @@
         "title": "Detekce hlasové aktivity",
         "description": "Odfiltruje ticho z nahrávek. Modely podporující streaming používají delší doběh VAD; vypnutí VAD nahrává surový zvuk."
       },
+      "longFormChunking": {
+        "title": "Dělení dlouhého zvuku",
+        "description": "Před přepisem rozdělí dlouhé nahrávky v pauzách, což obvykle zlepšuje kvalitu přepisu. Přepisované soubory a dlouhé opakované přepisy se rozdělují vždy."
+      },
+      "languageDetection": {
+        "title": "Omezit Automaticky na mé jazyky",
+        "description": "Automaticky vybírá jen z vašich preferovaných jazyků pomocí malého detektoru jazyka. Zapněte to, pokud Automaticky stále volí jazyk, kterým nemluvíte",
+        "downloadHint": "Zapnutím se stáhne malý detektor jazyka",
+        "downloadingHint": "Stahuje se detektor jazyka. Vypnutím stahování zrušíte"
+      },
       "vadBackend": {
         "title": "Backend detekce hlasu",
         "description": "Vyberte detektor používaný k filtrování ticha. Earshot je experimentální; pokud je řeč ořezávána nebo zůstává šum, přepněte zpět na Silero.",
@@ -398,6 +609,16 @@
       "fillerWordRemoval": {
         "title": "Odstranit výplňová slova",
         "description": "Odstraňuje běžná slova vyjadřující váhání z přepisů. Vypnutím je zachováte."
+      },
+      "chineseScript": {
+        "title": "Čínské písmo",
+        "description": "Přepisy v mandarínštině a kantonštině se píší zjednodušenými znaky nebo tradičními znaky, jak se píší na Tchaj-wanu či v Hongkongu. Ostatní jazyky zůstanou beze změny.",
+        "options": {
+          "asTranscribed": "Jak bylo přepsáno",
+          "simplified": "Zjednodušené",
+          "traditionalTw": "Tradiční (Tchaj-wan)",
+          "traditionalHk": "Tradiční (Hongkong)"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +626,18 @@
         "title": "Klávesová zkratka"
       },
       "api": {
-        "title": "API (kompatibilní s OpenAI)",
+        "title": "API",
         "provider": {
           "title": "Poskytovatel",
-          "description": "Vyberte poskytovatele kompatibilního s OpenAI."
+          "description": "Vyberte poskytovatele kompatibilního s OpenAI nebo Anthropic."
+        },
+        "apiFormat": {
+          "title": "Formát API",
+          "description": "Formát požadavku očekávaný vaším vlastním endpointem.",
+          "options": {
+            "openai": "Kompatibilní s OpenAI (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence není na tomto zařízení k dispozici. Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novější a povolené Apple Intelligence v Nastavení systému."
@@ -416,7 +645,8 @@
         "baseUrl": {
           "title": "Základní URL",
           "description": "Základní URL API pro vybraného poskytovatele. Upravitelné je pouze u vlastního poskytovatele.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API klíč",
@@ -466,9 +696,21 @@
       "delete": "Smazat záznam",
       "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
       "retranscribe": "Přepsat znovu",
-      "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
+      "cancelTranscription": "Zrušit přepis",
       "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování.",
+      "notTranscribed": "Nepřepsáno. Můžete to přepsat pomocí ikony opakování.",
+      "transcribeFile": "Přepsat soubor",
+      "mediaFiles": "Zvuk a video",
+      "fileUnsupported": "Ze souboru {{name}} se nepodařilo načíst zvuk.",
+      "readingFile": "Načítání {{name}}...",
+      "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
+      "waiting": "Čeká na přepis",
+      "transcribingPercent": "Přepisuji, {{percent}} %",
+      "showMore": "Zobrazit více",
+      "showLess": "Zobrazit méně",
+      "dropTitle": "Pusťte pro přepis",
+      "dropDescription": "Zobrazí se v historii."
     },
     "debug": {
       "title": "Ladění",
@@ -495,6 +737,38 @@
         "label": "Kontrolovat aktualizace",
         "description": "Automaticky kontrolovat nové verze Handy",
         "lockedDescription": "Zakázáno systémovou konfigurací (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "Náhled novinek",
+        "description": "Otevřít nejnovější přibalené poznámky k vydání bez označení jako zobrazené",
+        "button": "Náhled",
+        "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
+        "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
+      },
+      "onboardingPreview": {
+        "title": "Náhled úvodního nastavení",
+        "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
+        "exitButton": "Ukončit náhled",
+        "choose": "Vyberte obrazovku",
+        "screens": {
+          "welcome": "Vítejte",
+          "permissions": "Oprávnění",
+          "model": "Model",
+          "demo": "Ukázka",
+          "try": "Vyzkoušet",
+          "done": "Hotovo"
+        }
+      },
+      "onboardingRun": {
+        "title": "Spustit úvodní nastavení",
+        "description": "Projděte úvodním nastavením doopravdy od začátku: požádá o oprávnění, stáhne modely a uloží vaše volby",
+        "button": "Spustit"
+      },
+      "modelMigration": {
+        "title": "Migrace modelů",
+        "description": "Doopravdy otevře obrazovku aktualizace modelů starého formátu: stáhne náhrady, přepne modely a smaže staré soubory",
+        "button": "Otevřít",
+        "noRetired": "Na disku nejsou žádné modely starého formátu"
       },
       "soundTheme": {
         "label": "Zvukový motiv",
@@ -548,11 +822,6 @@
         "description": "Zvolte backend pro klávesové zkratky.",
         "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
-      "paths": {
-        "appData": "Data aplikace:",
-        "models": "Modely:",
-        "settings": "Nastavení:"
-      },
       "pasteDelay": {
         "title": "Zpoždění vložení (před)",
         "description": "Zpoždění (v milisekundách) po zkopírování textu, před odesláním klávesy pro vložení. Zvyšte, pokud se nic nevloží."
@@ -573,6 +842,10 @@
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
       },
+      "languageDetectionWindow": {
+        "title": "Zvuk pro rozpoznání jazyka",
+        "description": "Kolik sekund řeči detektor jazyka slyší. Delší je přesnější, ale pomalejší."
+      },
       "keyboardDiagnostic": {
         "title": "Diagnostika klávesnice",
         "description": "Ověří, zda události klávesnice dorazí do Handy. Zaznamenává se pouze počet událostí — nikdy to, které klávesy stisknete.",
@@ -592,20 +865,6 @@
         "verdictOk": "Události kláves dorazí do Handy normálně.",
         "verdictNoEvents": "Nebyly zachyceny žádné události — stiskli jste během testu nějaké klávesy?",
         "failed": "Diagnostika selhala: {{error}}"
-      },
-      "whatsNewPreview": {
-        "title": "Náhled novinek",
-        "description": "Otevřít nejnovější přibalené poznámky k vydání bez označení jako zobrazené",
-        "button": "Náhled",
-        "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
-        "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
-      },
-      "onboardingPreview": {
-        "title": "Náhled úvodního nastavení",
-        "description": "Prohlédněte si obrazovky úvodního nastavení beze změny oprávnění, modelů nebo stavu dokončení",
-        "permissionsButton": "Oprávnění",
-        "modelsButton": "Výběr modelu",
-        "exitButton": "Ukončit náhled"
       }
     },
     "about": {
@@ -613,6 +872,10 @@
       "version": {
         "title": "Verze",
         "description": "Aktuální verze Handy"
+      },
+      "whatsNewUpdates": {
+        "label": "Zobrazovat novinky",
+        "description": "Zobrazovat poznámky k vydání po aktualizacích Handy"
       },
       "appDataDirectory": {
         "title": "Adresář dat aplikace",
@@ -635,10 +898,6 @@
           "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
           "details": "Handy používá ggml pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
-      },
-      "whatsNewUpdates": {
-        "label": "Zobrazovat novinky",
-        "description": "Zobrazovat poznámky k vydání po aktualizacích Handy"
       }
     }
   },
@@ -657,6 +916,9 @@
     "portableUpdateBrowseMessage": "Přenosné instalace nelze aktualizovat automaticky. Stáhněte nejnovější verzi pro svůj systém z GitHub Releases a nainstalujte ji do stejné složky — vaše složka Data/ (nastavení, modely, nahrávky) zůstane na místě.",
     "portableUpdateBrowseButton": "Otevřít GitHub Releases"
   },
+  "whatsNew": {
+    "title": "Novinky v Handy v{{version}}"
+  },
   "common": {
     "loading": "Načítání...",
     "delete": "Smazat",
@@ -665,10 +927,6 @@
     "copy": "Kopírovat",
     "clear": "Vymazat",
     "noOptionsFound": "Nenalezeny žádné možnosti"
-  },
-  "accessibility": {
-    "permissionsDescription": "Handy potřebuje oprávnění usnadnění přístupu, aby mohlo psát přepsaný text.",
-    "openSettings": "Otevřít Nastavení systému"
   },
   "errors": {
     "loadDirectory": "Chyba při načítání adresáře: {{error}}",
@@ -703,10 +961,8 @@
   },
   "overlay": {
     "transcribing": "Přepisuji...",
-    "processing": "Zpracovávám..."
-  },
-  "whatsNew": {
-    "title": "Novinky v Handy v{{version}}"
+    "processing": "Zpracovávám...",
+    "loadingModel": "Načítání modelu..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} může blokovat 1 zkratku",

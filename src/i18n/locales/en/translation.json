@@ -19,16 +19,17 @@
     "about": "About"
   },
   "onboarding": {
-    "subtitle": "To get started, choose a transcription model",
-    "existingModelsTitle": "Compatible Models",
-    "downloadModelsTitle": "Available to Download",
-    "showAllModels": "Show all {{total}} models",
-    "showFewerModels": "Show fewer models",
-    "recommended": "Recommended",
     "customModelDescription": "Not officially supported",
-    "modelCard": {
-      "accuracy": "accuracy",
-      "speed": "speed"
+    "migration": {
+      "title": "Your models need an update",
+      "description": "Handy now uses a newer kind of model. Download the new version to keep transcribing. Old versions will be removed.",
+      "replaces": "Replaces {{name}}",
+      "oldFormat": "Old format",
+      "failed": "Download failed",
+      "retry": "Try again",
+      "chooseAnother": "Choose a different model",
+      "download": "Download models ({{size}})",
+      "continue": "Continue"
     },
     "models": {
       "small": {
@@ -47,91 +48,267 @@
         "name": "Whisper Large",
         "description": "Good accuracy, but slow."
       },
-      "parakeet-tdt-0.6b-v2": {
-        "name": "Parakeet V2",
-        "description": "English only. The best model for English speakers."
-      },
-      "parakeet-tdt-0.6b-v3": {
-        "name": "Parakeet V3",
-        "description": "Fast and accurate"
-      },
-      "moonshine-base": {
-        "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
-      },
-      "moonshine-tiny-streaming-en": {
-        "name": "Moonshine V2 Tiny",
-        "description": "Ultra-fast, English only"
-      },
-      "moonshine-small-streaming-en": {
-        "name": "Moonshine V2 Small",
-        "description": "Fast, English only. Good balance of speed and accuracy."
-      },
-      "moonshine-medium-streaming-en": {
-        "name": "Moonshine V2 Medium",
-        "description": "English only. High quality."
-      },
       "breeze-asr": {
         "name": "Breeze ASR",
         "description": "Optimized for Taiwanese Mandarin. Code-switching support."
-      },
-      "sense-voice-int8": {
-        "name": "SenseVoice",
-        "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
-      },
-      "gigaam-v3-e2e-ctc": {
-        "name": "GigaAM v3",
-        "description": "Russian speech recognition. Fast and accurate."
-      },
-      "canary-180m-flash": {
-        "name": "Canary 180M Flash",
-        "description": "Very fast. English, German, Spanish, French. Supports translation."
-      },
-      "canary-1b-v2": {
-        "name": "Canary 1B v2",
-        "description": "Accurate multilingual. 25 European languages. Supports translation."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "A large, slower, but very accurate multilingual model."
       }
     },
     "errors": {
       "selectModel": "Failed to select model"
     },
     "permissions": {
-      "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
       "microphone": {
-        "title": "Microphone Access",
-        "description": "Required to hear your voice for transcription."
+        "name": "Microphone",
+        "why": "So Handy can hear you. Audio is turned into text on this computer and never uploaded."
       },
       "accessibility": {
-        "title": "Accessibility Access",
-        "description": "Required to type transcribed text into your applications."
+        "name": "Accessibility",
+        "why": "So your shortcut works in every app, and Handy can type the text where your cursor is."
       },
-      "grant": "Grant Permission",
-      "granted": "Granted",
-      "waiting": "Waiting...",
-      "allGranted": "All set!",
       "errors": {
         "checkFailed": "Failed to check permissions. Please try again.",
         "requestFailed": "Failed to request permission. Please try again."
+      },
+      "titleMac": "Two permissions, then you're set",
+      "titleWindows": "One permission, then you're set",
+      "subtitleMac": "macOS asks before any app can listen or type.",
+      "subtitleWindows": "Windows asks before any app can listen.",
+      "allow": "Allow",
+      "openSettings": "Open settings",
+      "allowed": "Allowed",
+      "waiting": "Waiting",
+      "turnOnMac": "Turn on Handy in System Settings, then come back here.",
+      "turnOnWindows": "Turn on microphone access in Windows Settings, then come back here.",
+      "hintBoth": "Allow both to continue",
+      "hintMicrophone": "Allow the microphone to continue",
+      "welcomeBack": "Welcome back. Picking up where you left off.",
+      "relaunch": "Shortcut not responding after this? <relaunch>Relaunch Handy</relaunch> and you'll land right back here."
+    },
+    "shell": {
+      "back": "Back",
+      "continue": "Continue",
+      "progress": "Step {{step}} of {{count}}"
+    },
+    "welcome": {
+      "title": "Speak instead of typing, in any app",
+      "subtitle": "Pick the languages you will dictate in",
+      "languagesLabel": "Languages",
+      "noMatch": "No language matches “{{query}}”. Handy's models cover about 100 languages; more are in settings.",
+      "appLanguage": "App language",
+      "menusIn": "Menus in <b>{{language}}</b>",
+      "chinese": {
+        "question": "You speak {{languages}}. Which characters should Handy write?",
+        "label": "Chinese characters",
+        "zh-Hans": "Simplified",
+        "zh-Hant": "Taiwan",
+        "zh-HK": "Hong Kong"
+      },
+      "hint": {
+        "pickOne": "Pick at least one language",
+        "weak_one": "{{languages}}: no model hears it well yet",
+        "weak_other": "{{languages}}: no model hears these well yet"
       }
+    },
+    "download": {
+      "checking": "Checking the download…",
+      "ready": "{{name}} is ready",
+      "failed": "Download stopped",
+      "downloading": "Downloading {{name}}",
+      "progress": "{{done}} of {{total}}",
+      "progressLeft": "{{done}} of {{total}}, {{time}} left",
+      "checkingName": "Checking {{name}}",
+      "checkingDetail": "Making sure the download is complete",
+      "stopped": "{{name}} stopped downloading",
+      "retryDetail": "Retry picks up where it stopped",
+      "retryDownload": "Retry download",
+      "cardProgress": "Downloading {{percent}}%, {{done}} of {{total}}",
+      "timeLeft": "{{time}} left",
+      "speedLeft": "{{speed}}, {{time}} left"
+    },
+    "model": {
+      "title": "Choose a speech model",
+      "subtitle": "The speech model turns your speech into text, right on this computer",
+      "label": "Speech model",
+      "lines": {
+        "recommended": "The best balance of speed and accuracy for your languages",
+        "faster": "Quicker, with a few more mistakes",
+        "accurate": "Fewest mistakes, but slower"
+      },
+      "shorts": {
+        "recommended": "Best balance for you",
+        "faster": "Quicker, a few more mistakes",
+        "accurate": "Fewest mistakes, but slower"
+      },
+      "model": "Model",
+      "showAll": "Show all {{count}} models",
+      "download": "Download {{size}}",
+      "downloadInstead": "Download {{size}} instead",
+      "pauses": "{{name}} pauses at {{percent}}%",
+      "resumeLater": "Pick it again to pick up where it left off",
+      "hint": "Downloads while you finish setup"
+    },
+    "demo": {
+      "title": "Talk in any app, with one shortcut",
+      "hold": "<0>Click where you’d type.</0> <1>Hold your shortcut and talk.</1> <2>Let go, and your words appear.</2>",
+      "tap": "<0>Click where you’d type.</0> <1>Tap your shortcut and talk.</1> <2>Tap again, and your words appear.</2>",
+      "apps": {
+        "messages": "Messages",
+        "notes": "Notes"
+      },
+      "chat": "Are you still coming tonight?",
+      "noteTitle": "Weekend plans",
+      "screenLabel": "A laptop: someone clicks into an app, presses the shortcut and talks, and the words appear where they clicked.",
+      "change": "Change",
+      "yourShortcut": "Your shortcut is",
+      "pressKeys": "Press the new keys",
+      "addKey": "Now add a key",
+      "cancel": "Cancel",
+      "tryIt": "Try it yourself"
+    },
+    "try": {
+      "title": "Give it a try!",
+      "subtitle": "Handy's in the corner to help walk you through it",
+      "noteLabel": "Note",
+      "placeholder": "New note",
+      "hold": "Hold <keys/> and talk.",
+      "tapNext": "Now tap <keys/> once, then talk.",
+      "letGo": "Let go of <keys/> when you're done.",
+      "tapAgain": "Tap <keys/> again when you're done.",
+      "watch": "Watch the note.",
+      "changeKeys": "Change your shortcut, {{keys}}",
+      "doneHold": "High five! That's holding.",
+      "doneHoldNext": "Next, the hands-free way.",
+      "doneTap": "Up top! That's tapping.",
+      "doneTapNext": "Now try holding them while you talk.",
+      "giveFive": "You got it! Give me five",
+      "highFive": "High five",
+      "slowLine": "{{name}} took {{wait}} on this computer. <faster>Try a faster model</faster>",
+      "nothingTyped": "Hmm, nothing landed.",
+      "nothingTypedSub": "Click into the note first, then try again.",
+      "silent": "I didn't hear anything.",
+      "silentSub": "No sound came from this microphone. Try another:",
+      "noWords": "I didn't catch any words.",
+      "noWordsSub": "Try again, and say a whole sentence.",
+      "finish": "Finish",
+      "skip": "Skip",
+      "seconds": "{{value}}s"
+    },
+    "done": {
+      "title": "You're all set",
+      "subMac": "Handy's in your menu bar now. Hold or tap <keys/> in any app to talk.",
+      "subTray": "Handy's in your system tray now. Hold or tap <keys/> in any app to talk.",
+      "hint": "You can change these later in Settings",
+      "highFiveLabel": "High five",
+      "atLogin": "Start Handy when I log in",
+      "finish": "Done",
+      "panel": {
+        "name": "Handy",
+        "ready": "Ready",
+        "languages": "Languages",
+        "model": "Speech model",
+        "shortcut": "Shortcut",
+        "changeLanguages": "Change languages, {{languages}}",
+        "changeModel": "Change speech model, {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Not working? <guide>Linux setup guide</guide>",
+      "done": "Not working in other apps? <guide>Linux setup guide</guide>"
     }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Live preview",
+      "previewTitle": "Shows your words in the Live overlay while you talk, then types them when you stop",
+      "translate": "Translates",
+      "translateTitle": "Can turn what you say into English text. Turn it on in settings"
+    },
+    "rubric": {
+      "gradeTitle": "{{language}} accuracy: {{grade}}",
+      "accuracyTitle": "{{language}} accuracy",
+      "overallTitle": "Accuracy in your languages: {{grade}}",
+      "overall": "Accuracy in your languages",
+      "meaning": {
+        "A": "Very few mistakes: your words usually come out as you said them",
+        "B": "Some mistakes: expect to fix a word here and there",
+        "C": "Frequent mistakes: some details may get lost",
+        "D": "Many mistakes: expect to check and correct what it types",
+        "F": "Often unclear: much of what you say may come out wrong"
+      },
+      "unsupported": "This model doesn't understand {{language}}, so it can't type it",
+      "unrated": "This model understands {{language}}, but we haven't measured how well yet",
+      "under": "under {{max}}%",
+      "between": "{{min}} to {{max}}%",
+      "over": "{{min}}% or more",
+      "speedTitle": "Speed: {{speed}}",
+      "speedName": {
+        "0": "Very slow",
+        "1": "Slow",
+        "2": "Moderate",
+        "3": "Fast",
+        "4": "Very fast"
+      },
+      "speedMeaning": {
+        "0": "Your words appear after a long wait",
+        "1": "Your words appear after a wait",
+        "2": "Your words appear after a short wait",
+        "3": "Your words appear almost right away",
+        "4": "Your words appear right away"
+      },
+      "speedPreview": "{{meaning}}, with a live preview while you talk",
+      "untimed": "We haven't measured how fast it is yet",
+      "underSeconds": "under {{max}} s",
+      "betweenSeconds": "{{min}} to {{max}} s",
+      "overSeconds": "{{min}} s or more"
+    },
+    "roles": {
+      "recommended": "Recommended",
+      "faster": "Faster",
+      "accurate": "More accurate",
+      "fromAll": "From all models"
+    },
+    "speed": "Speed",
+    "size": "Size",
+    "accuracy": "Accuracy",
+    "search": "Search models",
+    "allLabel": "Speech models",
+    "noMatch": "Nothing matches “{{query}}”. Try a language, or a family like Whisper or Parakeet",
+    "noFilterMatch": "No models match these filters",
+    "speedUntested": "Speed not measured yet",
+    "speedWords": {
+      "0": "Very slow, words appear after a long wait",
+      "1": "Slow, words appear after a wait",
+      "2": "Moderate, words appear after a short wait",
+      "3": "Fast, words appear almost right away",
+      "4": "Very fast, words appear right away"
+    },
+    "speedWordsPreview": {
+      "0": "Very slow, with a live preview while you talk",
+      "1": "Slow, with a live preview while you talk",
+      "2": "Moderate, with a live preview while you talk",
+      "3": "Fast, with a live preview while you talk",
+      "4": "Very fast, with a live preview while you talk"
+    },
+    "missingLanguage": "Missing a language",
+    "allLanguages": "All",
+    "downloadingLine": "Downloading {{percent}}% of {{total}}",
+    "customLine": "Added from your models folder. Not graded.",
+    "legacyLine": "An older download. Not graded."
+  },
+  "languagePicker": {
+    "search": "Search languages",
+    "addAnother": "Add another",
+    "remove": "Remove {{language}}",
+    "alreadyAdded_one": "{{languages}} is already added.",
+    "alreadyAdded_other": "{{languages}} are already added."
   },
   "modelSelector": {
     "custom": "Custom",
-    "legacy": "Legacy",
     "streaming": "Streaming",
     "active": "Active",
-    "switching": "Switching...",
     "noModelsAvailable": "No models available",
     "verifying": "Verifying {{modelName}}...",
     "verifyingGeneric": "Verifying...",
-    "extracting": "Extracting {{modelName}}...",
-    "extractingMultiple": "Extracting {{count}} models...",
-    "extractingGeneric": "Extracting...",
     "downloading": "Downloading {{percentage}}%",
     "downloadingMultiple": "Downloading {{count}} models...",
     "modelReady": "Model Ready",
@@ -140,19 +317,8 @@
     "modelError": "Model Error",
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
-    "deleteModel": "Delete {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
-    "cancel": "Cancel",
-    "cancelDownload": "Cancel download",
-    "capabilities": {
-      "languageSelection": "Supports multiple input languages",
-      "singleLanguage": "Supports this language only",
-      "languageCount": "{{total}} languages",
-      "languageOnly": "{{language}} only",
-      "translation": "Can translate to English",
-      "translate": "Translate",
-      "streaming": "Shows live transcription as you speak"
-    }
+    "lockedWhileTranscribing": "You can switch models once History finishes transcribing."
   },
   "settings": {
     "modelSettings": {
@@ -182,9 +348,7 @@
           }
         },
         "errors": {
-          "restore": "Failed to restore original shortcut",
-          "set": "Failed to set shortcut: {{error}}",
-          "reset": "Failed to reset shortcut to original value"
+          "set": "Failed to set shortcut: {{error}}"
         }
       },
       "language": {
@@ -192,7 +356,22 @@
         "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
         "searchPlaceholder": "Search languages...",
         "noResults": "No languages found",
-        "auto": "Auto"
+        "auto": "Auto",
+        "autoUnavailable": {
+          "title": "Auto is disabled",
+          "oneLanguage": "Only one of your languages works with this model",
+          "undetectable": "Not available with {{languages}}",
+          "noMatch": "None of your languages work with this model"
+        },
+        "detectorMissingTitle": "Auto needs a separate download",
+        "detectorMissing": "This model can't tell which language you're speaking. Auto needs a small language detector to figure it out",
+        "stopDetectorDownload": "Stop downloading the language detector"
+      },
+      "preferredLanguages": {
+        "title": "Preferred Languages",
+        "description": "The languages you speak. Handy uses them to recommend models.",
+        "noMatch": "No language matches “{{query}}”",
+        "weak": "No model recognizes {{languages}} well yet."
       },
       "shortcutActivation": {
         "title": "Shortcut Behavior",
@@ -210,24 +389,50 @@
       }
     },
     "models": {
-      "title": "Transcription Models",
-      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
-      "searchPlaceholder": "Search models by name…",
-      "yourModels": "Downloaded Models",
-      "availableModels": "Available to Download",
-      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
-      "deleteActiveConfirm": "{{modelName}} is your active model. Deleting it will stop transcriptions until you select a new model. Are you sure?",
-      "deleteTitle": "Delete Model",
-      "filters": {
-        "allLanguages": "All Languages",
-        "streaming": "Filter models that support live streaming transcription",
-        "translation": "Filter models that support translation to English"
+      "title": "Models",
+      "changeLanguages": "Change languages",
+      "sections": {
+        "yours": "On this computer",
+        "fits": "For your languages",
+        "untested": "Untested"
+      },
+      "untestedNote": "Not tested with Handy. They may be slower or make more mistakes.",
+      "untestedHidden_one": "{{count}} more model isn’t tuned for dictation. Search to find it.",
+      "untestedHidden_other": "{{count}} more models aren’t tuned for dictation. Search to find one.",
+      "emptyYours": "No models yet. Pick one below: it downloads, then Handy uses it.",
+      "showMore": "Show {{count}} more",
+      "showFewer": "Show fewer",
+      "download": "Download and use",
+      "downloadingThenUse": "{{percent}}% of {{total}}, then switches",
+      "loading": "Loading…",
+      "deleteAsk": "Delete {{name}}? It frees {{size}}.",
+      "deleteAskActive": "Delete {{name}}? Handy can’t transcribe until you pick another.",
+      "cancel": "Cancel",
+      "deleteModel": "Delete {{name}}",
+      "cancelDownload": "Stop downloading {{name}}",
+      "legend": {
+        "open": "How models are graded",
+        "accuracyNote": "For each of your languages: how many words a model got wrong in our test recordings.",
+        "speedNote": {
+          "accelerated": "How long 30 seconds of speech takes to type out on our test laptop’s graphics chip. This computer may differ.",
+          "cpu": "How long 30 seconds of speech takes to type out on our test laptop’s processor. This computer may differ."
+        },
+        "marks": "? hasn’t been measured yet. — doesn’t hear that language."
+      },
+      "retiredNotice": {
+        "title": "Old models no longer work with Handy",
+        "description": "They're taking up {{size}} on your computer.",
+        "delete": "Delete models",
+        "deleted": "Deleted old models",
+        "deleteFailed": "Some old models couldn't be deleted. Check the log for details."
       },
       "rescan": {
         "label": "Rescan",
         "tooltip": "Rescan for models added to the models folder or Hugging Face cache outside Handy"
-      },
-      "noModelsMatch": "No models match this filter."
+      }
+    },
+    "languages": {
+      "title": "Languages"
     },
     "sound": {
       "title": "Sound",
@@ -276,12 +481,8 @@
       },
       "acceleration": {
         "transcribe": {
-          "title": "transcribe.cpp Acceleration",
-          "description": "Hardware acceleration for transcribe.cpp (Whisper-family) models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
-        },
-        "ort": {
-          "title": "ONNX Acceleration",
-          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+          "title": "Hardware Acceleration",
+          "description": "Choose the hardware used for transcription. Auto uses the GPU when available and falls back to the CPU."
         },
         "gpuDevice": {
           "auto": "Auto"
@@ -387,6 +588,16 @@
         "title": "Voice Activity Detection",
         "description": "Filter silence from recordings. Streaming-capable models use a longer VAD tail; disabling VAD records raw audio."
       },
+      "longFormChunking": {
+        "title": "Long Audio Chunking",
+        "description": "Splits long recordings at pauses before transcribing, which typically improves transcription performance. Transcribed files and long re-transcriptions are always split."
+      },
+      "languageDetection": {
+        "title": "Limit Auto to My Languages",
+        "description": "Auto only picks from your preferred languages, using a small language detector. Turn this on if Auto keeps choosing a language you don't speak",
+        "downloadHint": "Turning this on downloads a small language detector",
+        "downloadingHint": "Downloading the language detector. Turn this off to cancel"
+      },
       "vadBackend": {
         "title": "Voice Activity Backend",
         "description": "Choose the detector used to filter silence. Earshot is experimental; switch back to Silero if speech is clipped or noise is retained.",
@@ -398,6 +609,16 @@
       "fillerWordRemoval": {
         "title": "Remove Filler Words",
         "description": "Removes common hesitation words from transcriptions. Turn off to keep them."
+      },
+      "chineseScript": {
+        "title": "Chinese Script",
+        "description": "Writes Mandarin and Cantonese transcriptions in Simplified characters, or in Traditional characters as written in Taiwan or Hong Kong. Other languages are left unchanged.",
+        "options": {
+          "asTranscribed": "As Transcribed",
+          "simplified": "Simplified",
+          "traditionalTw": "Traditional (Taiwan)",
+          "traditionalHk": "Traditional (Hong Kong)"
+        }
       }
     },
     "postProcessing": {
@@ -405,10 +626,18 @@
         "title": "Hotkey"
       },
       "api": {
-        "title": "API (OpenAI Compatible)",
+        "title": "API",
         "provider": {
           "title": "Provider",
-          "description": "Select an OpenAI-compatible provider."
+          "description": "Select an OpenAI-compatible or Anthropic-compatible provider."
+        },
+        "apiFormat": {
+          "title": "API Format",
+          "description": "Request format expected by your custom endpoint.",
+          "options": {
+            "openai": "OpenAI Compatible (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
         },
         "appleIntelligence": {
           "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
@@ -416,7 +645,8 @@
         "baseUrl": {
           "title": "Base URL",
           "description": "API base URL for the selected provider. Only the custom provider can be edited.",
-          "placeholder": "https://api.openai.com/v1"
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
         },
         "apiKey": {
           "title": "API Key",
@@ -466,9 +696,21 @@
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again.",
       "retranscribe": "Re-transcribe",
-      "retranscribeError": "Failed to re-transcribe. Please try again.",
+      "cancelTranscription": "Cancel transcription",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+      "notTranscribed": "Not transcribed. You can transcribe it using the retry icon.",
+      "transcribeFile": "Transcribe File",
+      "mediaFiles": "Audio and video",
+      "fileUnsupported": "Couldn't read audio from {{name}}.",
+      "readingFile": "Reading {{name}}...",
+      "transcribeFailed": "Transcription failed. Please try again.",
+      "waiting": "Waiting to transcribe",
+      "transcribingPercent": "Transcribing, {{percent}}%",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "dropTitle": "Drop to transcribe",
+      "dropDescription": "It'll show up in History."
     },
     "debug": {
       "title": "Debug",
@@ -506,9 +748,27 @@
       "onboardingPreview": {
         "title": "Preview Onboarding",
         "description": "Preview onboarding screens without changing permissions, models, or completion state",
-        "permissionsButton": "Permissions",
-        "modelsButton": "Model Selection",
-        "exitButton": "Exit Preview"
+        "exitButton": "Exit Preview",
+        "choose": "Choose a screen",
+        "screens": {
+          "welcome": "Welcome",
+          "permissions": "Permissions",
+          "model": "Model",
+          "demo": "Demo",
+          "try": "Try it",
+          "done": "All set"
+        }
+      },
+      "onboardingRun": {
+        "title": "Run Onboarding",
+        "description": "Go through onboarding for real from the start: it asks for permissions, downloads models and saves your choices",
+        "button": "Start"
+      },
+      "modelMigration": {
+        "title": "Model Migration",
+        "description": "Open the old-format model update screen for real: it downloads replacements, switches models and deletes old files",
+        "button": "Open",
+        "noRetired": "No old-format models on disk"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -562,11 +822,6 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
-      "paths": {
-        "appData": "App Data:",
-        "models": "Models:",
-        "settings": "Settings:"
-      },
       "pasteDelay": {
         "title": "Paste Delay (Before)",
         "description": "Delay (in milliseconds) after copying text, before sending the paste keystroke. Increase if nothing gets pasted."
@@ -586,6 +841,10 @@
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
         "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Language Detection Audio",
+        "description": "Seconds of speech the language detector hears. Longer is more accurate but slower."
       },
       "keyboardDiagnostic": {
         "title": "Keyboard Diagnostic",
@@ -669,10 +928,6 @@
     "clear": "Clear",
     "noOptionsFound": "No options found"
   },
-  "accessibility": {
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
-    "openSettings": "Open System Settings"
-  },
   "errors": {
     "loadDirectory": "Error loading directory: {{error}}",
     "micPermissionDeniedTitle": "Microphone Access Denied",
@@ -706,7 +961,8 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "loadingModel": "Loading model..."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",
