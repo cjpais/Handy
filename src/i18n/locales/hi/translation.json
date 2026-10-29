@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "सेटिंग...",
-    "checkUpdates": "अपडेट जांचें...",
-    "copyLastTranscript": "पिछला ट्रांसक्रिप्ट कॉपी करें",
-    "unloadModel": "मॉडल अनलोड करें",
-    "model": "मॉडल",
     "quit": "बाहर निकलें",
     "cancel": "रद्द करें",
     "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं"

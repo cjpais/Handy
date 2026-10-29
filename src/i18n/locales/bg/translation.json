@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Настройки...",
-    "checkUpdates": "Проверка за актуализации...",
-    "copyLastTranscript": "Копиране на последния транскрипт",
-    "unloadModel": "Разтоварване на модела",
-    "model": "Модел",
     "quit": "Изход",
     "cancel": "Отказ",
     "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input"

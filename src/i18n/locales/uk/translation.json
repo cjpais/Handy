@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Налаштування...",
-    "checkUpdates": "Перевірити оновлення...",
-    "copyLastTranscript": "Скопіювати останню транскрипцію",
-    "unloadModel": "Вивантажити модель",
-    "model": "Модель",
     "quit": "Вийти",
     "cancel": "Скасувати",
     "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input"

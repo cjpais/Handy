@@ -12,8 +12,6 @@
 //! 2. Add translations to other locale files
 //! 3. Update tray.rs to use the new field (e.g., strings.new_field)
 
-use crate::chinese_script::chinese_script_for_locale;
-use crate::settings::ChineseScript;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
@@ -34,10 +32,19 @@ pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
     let exact_match = TRANSLATIONS
         .iter()
         .find_map(|(code, strings)| code.eq_ignore_ascii_case(&normalized).then_some(strings));
-    let fallback = match chinese_script_for_locale(&normalized) {
-        Some(ChineseScript::TraditionalTw | ChineseScript::TraditionalHk) => "zh-TW",
-        Some(_) => "zh",
-        None => language,
+    // Chinese locales: Traditional scripts and the Taiwan/Hong Kong/Macau
+    // regions use zh-TW; every other Chinese locale uses zh.
+    let fallback = if language == "zh" || language == "yue" {
+        let traditional = ["hant", "tw", "hk", "mo"]
+            .iter()
+            .any(|tag| normalized.split('-').skip(1).any(|part| part == *tag));
+        if traditional {
+            "zh-TW"
+        } else {
+            "zh"
+        }
+    } else {
+        language
     };
 
     exact_match

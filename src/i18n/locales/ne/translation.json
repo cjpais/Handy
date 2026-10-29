@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "सेटिङहरू...",
-    "checkUpdates": "अपडेटहरू जाँच गर्नुहोस्...",
-    "copyLastTranscript": "पछिल्लो ट्रान्सक्रिप्ट कपी गर्नुहोस्",
-    "unloadModel": "मोडेल अनलोड गर्नुहोस्",
-    "model": "मोडेल",
     "quit": "बाहिर निस्कनुहोस्",
     "cancel": "रद्द गर्नुहोस्",
     "secureInputWarning": "⚠ Secure Input ले सर्टकटहरू रोकेको छ"

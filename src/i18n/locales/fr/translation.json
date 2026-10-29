@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Paramètres...",
-    "checkUpdates": "Rechercher des mises à jour...",
-    "copyLastTranscript": "Copier la dernière transcription",
-    "unloadModel": "Décharger le modèle",
-    "model": "Modèle",
     "quit": "Quitter",
     "cancel": "Annuler",
     "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input"

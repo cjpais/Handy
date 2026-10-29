@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Pengaturan...",
-    "checkUpdates": "Periksa Pembaruan...",
-    "copyLastTranscript": "Salin Transkripsi Terakhir",
-    "unloadModel": "Keluarkan Model dari Memori",
-    "model": "Model",
     "quit": "Keluar",
     "cancel": "Batal",
     "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input"

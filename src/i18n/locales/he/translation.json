@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "הגדרות...",
-    "checkUpdates": "בדוק עדכונים...",
-    "copyLastTranscript": "העתק את התמלול האחרון",
-    "unloadModel": "פרוק מודל",
-    "model": "מודל",
     "quit": "יציאה",
     "cancel": "ביטול",
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"

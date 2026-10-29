@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Ayarlar...",
-    "checkUpdates": "Güncellemeleri Kontrol Et...",
-    "copyLastTranscript": "Son Transkripti Kopyala",
-    "unloadModel": "Modeli Boşalt",
-    "model": "Model",
     "quit": "Çıkış",
     "cancel": "İptal",
     "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor"

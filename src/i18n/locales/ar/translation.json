@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "الإعدادات...",
-    "checkUpdates": "التحقق من وجود تحديثات...",
-    "copyLastTranscript": "نسخ آخر نص تم تفريغه",
-    "unloadModel": "تفريغ النموذج",
-    "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء",
     "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input"

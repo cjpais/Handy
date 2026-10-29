@@ -480,9 +480,6 @@ mod imp {
                 if id == "cancel" && !state.cancel_requested.load(Ordering::SeqCst) {
                     continue;
                 }
-                if id == "transcribe_with_post_process" && !settings.post_process_enabled {
-                    continue;
-                }
 
                 match plan_fallback_binding(id, binding) {
                     ShadowPlan::Immune => immune += 1,

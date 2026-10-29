@@ -1,10 +1,6 @@
 {
   "tray": {
     "settings": "Configuració...",
-    "checkUpdates": "Comprova si hi ha actualitzacions...",
-    "copyLastTranscript": "Copia l'última transcripció",
-    "unloadModel": "Allibera el model de la memòria",
-    "model": "Model",
     "quit": "Surt",
     "cancel": "Cancel·la",
     "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura"

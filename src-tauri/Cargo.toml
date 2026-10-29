@@ -26,9 +26,6 @@ serde = { version = "1", features = ["derive"] }
 
 [dependencies]
 once_cell = "1"
-# The OS's preferred languages (macOS, Linux; Windows' fallback). Already
-# pulled in by tauri-plugin-os.
-sys-locale = "0.3"
 tauri = { version = "2.11.5", features = [
   "protocol-asset",
   "macos-private-api",
@@ -39,14 +36,9 @@ tauri-plugin-log = "2.7.1"
 tauri-plugin-opener = "2.5.2"
 tauri-plugin-store = "2.4.1"
 tauri-plugin-os = "2.3.2"
-tauri-plugin-clipboard-manager = "2.3.2"
 tauri-plugin-macos-permissions = "2.3.0"
-tauri-plugin-process = "2.3.1"
-rusqlite_migration = "2.3"
-tauri-plugin-fs = "2.4.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rdev = { git = "https://github.com/rustdesk-org/rdev" }
 anyhow = "1.0.95"
 hound = "3.5.1"
 log = "0.4.25"
@@ -56,25 +48,8 @@ earshot = "1.2.2"
 enigo = "0.6.1"
 # Feedback sounds. No `recording`: microphone capture is handy-recorder's.
 rodio = { version = "0.23.0", default-features = false, features = ["playback", "wav", "flac", "mp3", "vorbis"] }
-# Decodes files for transcription. rodio's version, plus the M4A/MP4 (AAC,
-# ALAC) and AIFF support rodio leaves out.
-symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "aiff"] }
-# Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
-rubato = "5"
 handy-recorder = "0.1"
-reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
-futures-util = "0.3"
 rustfft = "6.4.0"
-strsim = "0.11.0"
-natural = "0.5.0"
-regex = "1"
-# Text-based language ID (filler-word removal fallback); isolang bridges the
-# ISO 639-1 codes in model metadata to whatlang's 639-3 codes.
-whatlang = "0.16"
-isolang = "2"
-chrono = "0.4"
-rusqlite = { version = "0.37", features = ["bundled"] }
-sha2 = "0.10"
 libc = "0.2"
 # Every model runs through transcribe-cpp (GGUF/ggml, native backends).
 # Per-platform backend features are added in the target tables (Cargo unifies
@@ -83,12 +58,10 @@ transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "serde",
 ] }
 handy-keys = "0.3.4"
-ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
-tauri-plugin-dialog = "2.6"
 hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downloads", features = [
   "tokio",
 ] }
@@ -100,7 +73,6 @@ signal-hook = "0.3"
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
-tauri-plugin-updater = "2.10.1"
 
 [target.'cfg(windows)'.dependencies]
 # Used to reach ICoreWebView2Settings3 through the webview's controller
@@ -159,10 +131,7 @@ transcribe-cpp = { version = "0.4.0", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-# Used by the receipt-sequenced ("reliable") paste path for lazy NSPasteboard
-# promises. Versions track what Tauri already pulls in.
 objc2 = "0.6"
-objc2-foundation = "0.3"
 objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
 
