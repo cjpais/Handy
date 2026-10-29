@@ -1,0 +1,62 @@
+name: "macOS Dev Build"
+
+# Unsigned, un-notarized Apple Silicon build of the v0.2 branch. Uses no
+# secrets. This does not call build.yml: that workflow always exports
+# APPLE_CERTIFICATE (as an empty string when not signing) and Tauri treats an
+# empty-but-set value as "import this certificate", which fails the bundle.
+# Steps below mirror build.yml's macOS path. The updater artifact is switched
+# off via src-tauri/tauri.dev.conf.json because it needs a signing key.
+
+on:
+  push:
+    branches: [v0.2-singlish]
+  workflow_dispatch:
+
+concurrency:
+  group: macos-dev-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-14 # Apple Silicon
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: macos-14-aarch64-apple-darwin-dev-v1
+          cache-bin: false
+
+      - name: Install frontend dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build with Tauri (unsigned)
+        run: bun run tauri build --target aarch64-apple-darwin --config src-tauri/tauri.dev.conf.json
+
+      - name: Zip the app
+        run: |
+          cd src-tauri/target/aarch64-apple-darwin/release/bundle/macos
+          ditto -c -k --keepParent Handy.app "$GITHUB_WORKSPACE/Handy-v0.2-dev-aarch64.app.zip"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: handy-v0.2-dev-aarch64-apple-darwin
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            Handy-v0.2-dev-aarch64.app.zip
+          if-no-files-found: error
+          retention-days: 30

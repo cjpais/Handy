@@ -120,6 +120,17 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens the user-editable Singlish vocabulary JSON in the system editor.
+#[specta::specta]
+#[tauri::command]
+pub fn open_singlish_vocabulary_file(app: AppHandle) -> Result<(), String> {
+    let path = crate::singlish::ensure_file(&app)?;
+    app.opener()
+        .open_path(path.to_string_lossy().as_ref().to_string(), None::<String>)
+        .map_err(|e| format!("Failed to open vocabulary file: {}", e))?;
+    Ok(())
+}
+
 /// Check if Apple Intelligence is available on this device.
 /// Called by the frontend when the user selects Apple Intelligence provider.
 #[specta::specta]

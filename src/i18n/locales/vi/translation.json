@@ -576,6 +576,13 @@
           "sec15": "Sau 15 giây (Gỡ lỗi)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "Từ tùy chỉnh",
         "description": "Giúp các mô hình được hỗ trợ nhận dạng tên và thuật ngữ chuyên ngành. Tính năng sửa gần đúng hiện chỉ áp dụng cho các từ sử dụng chữ cái A–Z và chữ số.",

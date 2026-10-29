@@ -576,6 +576,13 @@
           "sec15": "After 15 seconds (Debug)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "Custom Words",
         "description": "Help supported models recognize names and specialized terms. Fuzzy correction is currently limited to words using A–Z and numbers.",

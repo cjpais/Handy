@@ -576,6 +576,13 @@
           "sec15": "15 सेकेन्डपछि (डिबग)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "कस्टम शब्दहरू",
         "description": "समर्थित मोडेलहरूलाई नाम र विशेष शब्दावली चिन्न मद्दत गर्नुहोस्। फजी सुधार हाल A–Z अक्षर र अङ्क प्रयोग भएका शब्दहरूमा मात्र सीमित छ।",

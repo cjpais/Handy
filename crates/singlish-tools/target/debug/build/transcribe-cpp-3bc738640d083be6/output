@@ -1,0 +1,7 @@
+cargo:rerun-if-env-changed=DEP_TRANSCRIBE_INCLUDE_DIR
+cargo:include_dir=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include
+cargo:rerun-if-env-changed=DEP_TRANSCRIBE_LIB_DIR
+cargo:lib_dir=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib
+cargo:rerun-if-env-changed=DEP_TRANSCRIBE_RUNTIME_DIR
+cargo:rerun-if-env-changed=DEP_TRANSCRIBE_BIN_DIR
+cargo:rerun-if-env-changed=DEP_TRANSCRIBE_MODULE_DIR

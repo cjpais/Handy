@@ -576,6 +576,13 @@
           "sec15": "Через 15 секунд (Дебаг)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "Власні слова",
         "description": "Допоможіть підтримуваним моделям розпізнавати імена та спеціалізовані терміни. Нечітке виправлення наразі обмежене словами, що містять літери A–Z і цифри.",

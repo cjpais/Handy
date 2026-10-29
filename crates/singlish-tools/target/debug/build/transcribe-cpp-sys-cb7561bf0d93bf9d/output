@@ -1,0 +1,287 @@
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/CMakeLists.txt
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/CMakePresets.json
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/include
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/src
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/ggml
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/cmake
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/bindings/rust/sys/build.rs
+cargo:rerun-if-changed=/root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/transcribe-cpp-sys-0.4.1/bindings/rust/sys/src
+cargo:rerun-if-env-changed=TRANSCRIBE_DIR
+cargo:rerun-if-env-changed=TRANSCRIBE_CMAKE_ARGS
+cargo:rerun-if-env-changed=CMAKE_ARGS
+CMAKE_TOOLCHAIN_FILE_x86_64-unknown-linux-gnu = None
+CMAKE_TOOLCHAIN_FILE_x86_64_unknown_linux_gnu = None
+HOST_CMAKE_TOOLCHAIN_FILE = None
+CMAKE_TOOLCHAIN_FILE = None
+CMAKE_GENERATOR_x86_64-unknown-linux-gnu = None
+CMAKE_GENERATOR_x86_64_unknown_linux_gnu = None
+HOST_CMAKE_GENERATOR = None
+CMAKE_GENERATOR = None
+CMAKE_PREFIX_PATH_x86_64-unknown-linux-gnu = None
+CMAKE_PREFIX_PATH_x86_64_unknown_linux_gnu = None
+HOST_CMAKE_PREFIX_PATH = None
+CMAKE_PREFIX_PATH = None
+CMAKE_x86_64-unknown-linux-gnu = None
+CMAKE_x86_64_unknown_linux_gnu = None
+HOST_CMAKE = None
+CMAKE = None
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- transcribe version: 0.4.1 (commit unknown)
+-- The ASM compiler identification is GNU
+-- Found assembler: /usr/bin/cc
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86_64
+-- GGML_SYSTEM_ARCH: x86
+-- Including CPU backend
+-- x86 detected
+-- Adding CPU backend variant ggml-cpu: -march=native 
+-- ggml version: 0.26.0
+-- ggml commit:  unknown
+-- Looking for cblas.h
+-- Looking for cblas.h - found
+-- transcribe: BLAS found — decoder will use cblas_sgemv
+-- transcribe install: 0.4.1 shared=OFF backends: cpu (link manifest: lib/transcribe-link.json)
+-- Configuring done (1.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/build
+[  1%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml.c.o
+[  2%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o
+[  2%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml.cpp.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o
+[  3%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o
+[  4%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o
+[  4%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o
+[  5%] Building C object ggml/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o
+[  6%] Building CXX object ggml/src/CMakeFiles/ggml-base.dir/gguf.cpp.o
+[  6%] Linking CXX static library libggml-base.a
+[  6%] Built target ggml-base
+[  6%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o
+[  7%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o
+[  8%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o
+[  9%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o
+[  9%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o
+[ 10%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o
+[ 10%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o
+[ 11%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o
+[ 12%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled.cpp.o
+[ 12%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/tiled/tiled-kernel.cpp.o
+[ 13%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o
+[ 13%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o
+[ 14%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o
+[ 14%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o
+[ 15%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/llamafile/sgemm.cpp.o
+[ 16%] Building C object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o
+[ 16%] Building CXX object ggml/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o
+[ 17%] Linking CXX static library libggml-cpu.a
+[ 17%] Built target ggml-cpu
+[ 18%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o
+[ 18%] Building CXX object ggml/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o
+[ 18%] Linking CXX static library libggml.a
+[ 18%] Built target ggml
+[ 19%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-langid.cpp.o
+[ 19%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-asr.cpp.o
+[ 20%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-diarize.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-vad.cpp.o
+[ 21%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-loader.cpp.o
+[ 22%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-arch.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-meta.cpp.o
+[ 23%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-kaldi-fbank.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-mel.cpp.o
+[ 24%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-model.cpp.o
+[ 25%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-tokenizer.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-prompting.cpp.o
+[ 26%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-unicode.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-unicode-data.cpp.o
+[ 27%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-debug.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-env.cpp.o
+[ 28%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-flash-policy.cpp.o
+[ 29%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-backend.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-load-common.cpp.o
+[ 30%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-mmap.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-weights-util.cpp.o
+[ 31%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-bin-loader.cpp.o
+[ 32%] Building CXX object src/CMakeFiles/transcribe.dir/transcribe-batch-util.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/transcribe.dir/conformer/conformer.cpp.o
+[ 33%] Building CXX object src/CMakeFiles/transcribe.dir/sanm/sanm.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/transcribe.dir/causal_lm/causal_lm.cpp.o
+[ 34%] Building CXX object src/CMakeFiles/transcribe.dir/granite_conformer/shaw_attn.cpp.o
+[ 35%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/model.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/longform.cpp.o
+[ 36%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/multitalker.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/capabilities.cpp.o
+[ 37%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/weights.cpp.o
+[ 38%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/encoder.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/transcribe.dir/arch/parakeet/decoder.cpp.o
+[ 39%] Building CXX object src/CMakeFiles/transcribe.dir/arch/cohere/model.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/transcribe.dir/arch/cohere/capabilities.cpp.o
+[ 40%] Building CXX object src/CMakeFiles/transcribe.dir/arch/cohere/weights.cpp.o
+[ 41%] Building CXX object src/CMakeFiles/transcribe.dir/arch/cohere/encoder.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/transcribe.dir/arch/cohere/decoder.cpp.o
+[ 42%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary/model.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary/capabilities.cpp.o
+[ 43%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary/weights.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary/encoder.cpp.o
+[ 44%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary/decoder.cpp.o
+[ 45%] Building CXX object src/CMakeFiles/transcribe.dir/arch/qwen3_asr/model.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/transcribe.dir/arch/qwen3_asr/capabilities.cpp.o
+[ 46%] Building CXX object src/CMakeFiles/transcribe.dir/arch/qwen3_asr/weights.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/transcribe.dir/arch/qwen3_asr/encoder.cpp.o
+[ 47%] Building CXX object src/CMakeFiles/transcribe.dir/arch/qwen3_asr/decoder.cpp.o
+[ 48%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/model.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/capabilities.cpp.o
+[ 49%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/diarize.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/weights.cpp.o
+[ 50%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/encoder.cpp.o
+[ 51%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moss/decoder.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sortformer/model.cpp.o
+[ 52%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sortformer/stream.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sortformer/weights.cpp.o
+[ 53%] Building CXX object src/CMakeFiles/transcribe.dir/arch/ecapa_tdnn/graph.cpp.o
+[ 54%] Building CXX object src/CMakeFiles/transcribe.dir/arch/ecapa_tdnn/model.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/transcribe.dir/arch/ecapa_tdnn/weights.cpp.o
+[ 55%] Building CXX object src/CMakeFiles/transcribe.dir/arch/silero_vad/decoder.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/transcribe.dir/arch/silero_vad/encoder.cpp.o
+[ 56%] Building CXX object src/CMakeFiles/transcribe.dir/arch/silero_vad/model.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/transcribe.dir/arch/silero_vad/weights.cpp.o
+[ 57%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral/model.cpp.o
+[ 58%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral/capabilities.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral/weights.cpp.o
+[ 59%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral/encoder.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral/decoder.cpp.o
+[ 60%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral_realtime/model.cpp.o
+[ 61%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral_realtime/capabilities.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral_realtime/weights.cpp.o
+[ 62%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral_realtime/encoder.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/transcribe.dir/arch/voxtral_realtime/decoder.cpp.o
+[ 63%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary_qwen/model.cpp.o
+[ 64%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary_qwen/capabilities.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary_qwen/weights.cpp.o
+[ 65%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary_qwen/encoder.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/transcribe.dir/arch/canary_qwen/decoder.cpp.o
+[ 66%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/model.cpp.o
+[ 67%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/capabilities.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/weights.cpp.o
+[ 68%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/encoder.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/decoder.cpp.o
+[ 69%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/bin_load.cpp.o
+[ 70%] Building CXX object src/CMakeFiles/transcribe.dir/arch/whisper/public.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine/model.cpp.o
+[ 71%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine/capabilities.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine/weights.cpp.o
+[ 72%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine/encoder.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine/decoder.cpp.o
+[ 73%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine_streaming/model.cpp.o
+[ 74%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine_streaming/capabilities.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine_streaming/weights.cpp.o
+[ 75%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine_streaming/encoder.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/transcribe.dir/arch/moonshine_streaming/decoder.cpp.o
+[ 76%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sensevoice/model.cpp.o
+[ 77%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sensevoice/capabilities.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sensevoice/weights.cpp.o
+[ 78%] Building CXX object src/CMakeFiles/transcribe.dir/arch/sensevoice/encoder.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/model.cpp.o
+[ 79%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/capabilities.cpp.o
+[ 80%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/weights.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/encoder.cpp.o
+[ 81%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/decoder.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/transcribe.dir/arch/funasr_nano/adaptor.cpp.o
+[ 82%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/model.cpp.o
+[ 83%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/capabilities.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/weights.cpp.o
+[ 84%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/encoder.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/decoder.cpp.o
+[ 85%] Building CXX object src/CMakeFiles/transcribe.dir/arch/gigaam/mel.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/model.cpp.o
+[ 86%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/diarize.cpp.o
+[ 87%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/capabilities.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/weights.cpp.o
+[ 88%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/encoder.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/projector.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite/decoder.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite5_ctc/model.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite5_ctc/capabilities.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite5_ctc/weights.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite5_ctc/encoder.cpp.o
+[ 92%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite5_ctc/decoder.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/model.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/capabilities.cpp.o
+[ 94%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/weights.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/encoder.cpp.o
+[ 95%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/projector.cpp.o
+[ 96%] Building CXX object src/CMakeFiles/transcribe.dir/arch/granite_nar/decoder.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/transcribe.dir/arch/medasr/model.cpp.o
+[ 97%] Building CXX object src/CMakeFiles/transcribe.dir/arch/medasr/capabilities.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/transcribe.dir/arch/medasr/weights.cpp.o
+[ 98%] Building CXX object src/CMakeFiles/transcribe.dir/arch/medasr/encoder.cpp.o
+[ 99%] Building C object src/CMakeFiles/transcribe.dir/third_party/miniz/miniz.c.o
+[100%] Linking CXX static library libtranscribe.a
+[100%] Built target transcribe
+Install the project...
+-- Install configuration: "Release"
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/libggml-cpu.a
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/libggml.a
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-cpu.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-alloc.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-backend.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-blas.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-cann.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-cpp.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-cuda.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-opt.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-metal.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-rpc.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-virtgpu.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-sycl.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-vulkan.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-webgpu.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-zendnn.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/ggml-openvino.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/gguf.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/libggml-base.a
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/cmake/ggml/ggml-config.cmake
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/cmake/ggml/ggml-config-version.cmake
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe.abihash
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/vad.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/sortformer.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/whisper.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/extensions.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/diarize.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/voxtral_realtime.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/langid.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/moonshine_streaming.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include/transcribe/parakeet.h
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/share/licenses/transcribe/LICENSE.silero_vad
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/libtranscribe.a
+-- Installing: /home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib/transcribe-link.json
+cargo:root=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out
+cargo:rustc-link-search=native=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib
+cargo:rustc-link-lib=static=transcribe
+cargo:rustc-link-lib=static=ggml
+cargo:rustc-link-lib=static=ggml-cpu
+cargo:rustc-link-lib=static=ggml-base
+cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu
+cargo:rustc-link-lib=dylib=openblas
+cargo:rustc-link-lib=dylib=stdc++
+cargo:rustc-link-lib=dylib=m
+cargo:rustc-link-lib=dylib=pthread
+cargo:rustc-link-lib=dylib=dl
+cargo:include_dir=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/include
+cargo:lib_dir=/home/user/Handy/crates/singlish-tools/target/debug/build/transcribe-cpp-sys-cb7561bf0d93bf9d/out/lib

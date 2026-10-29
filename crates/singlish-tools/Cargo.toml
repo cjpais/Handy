@@ -1,0 +1,26 @@
+[package]
+name = "singlish-tools"
+version = "0.1.0"
+edition = "2021"
+description = "Singlish vocabulary replacement and evaluation helpers for Handy v0.2"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hound = "3.5"
+
+# transcribe-cpp builds ggml, so the engine-backed bakeoff is opt-in and the
+# crate's tests stay light: `cargo test` never compiles it.
+transcribe-cpp = { version = "=0.4.0", default-features = false, optional = true }
+
+[features]
+engines = ["dep:transcribe-cpp"]
+metal = ["engines", "transcribe-cpp/metal"]
+
+[[bin]]
+name = "bakeoff"
+path = "src/bin/bakeoff.rs"
+required-features = ["engines"]
+
+[workspace]

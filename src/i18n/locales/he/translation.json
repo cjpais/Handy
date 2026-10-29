@@ -576,6 +576,13 @@
           "sec15": "אחרי 15 שניות (דיבאג)"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "מילים מותאמות אישית",
         "description": "עזרו למודלים נתמכים לזהות שמות ומונחים מקצועיים. תיקון בקירוב מוגבל כרגע למילים המשתמשות באותיות A–Z ובמספרים.",

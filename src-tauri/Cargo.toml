@@ -62,6 +62,7 @@ symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "ai
 # Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
 rubato = "5"
 handy-recorder = "0.1"
+singlish-tools = { path = "../crates/singlish-tools" }
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
 futures-util = "0.3"
 rustfft = "6.4.0"

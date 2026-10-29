@@ -576,6 +576,13 @@
           "sec15": "15 秒後（偵錯）"
         }
       },
+      "singlishVocabulary": {
+        "label": "Singlish vocabulary",
+        "description": "Fix common mis-hearings of Singlish words (lah, leh, lor, shiok...) and the casing of protected terms after transcription",
+        "editTitle": "Vocabulary file",
+        "editDescription": "Edit the replacements and protected terms in your system editor. Changes apply to the next transcription.",
+        "openFile": "Open file"
+      },
       "customWords": {
         "title": "自訂詞彙",
         "description": "協助支援的模型辨識名稱和專業術語。目前，模糊修正僅適用於使用 A–Z 字母和數字的詞語。",

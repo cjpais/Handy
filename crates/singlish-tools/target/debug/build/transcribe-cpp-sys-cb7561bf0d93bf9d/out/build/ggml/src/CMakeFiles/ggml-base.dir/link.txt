@@ -1,0 +1,2 @@
+/usr/bin/ar qc libggml-base.a "CMakeFiles/ggml-base.dir/ggml.c.o" "CMakeFiles/ggml-base.dir/ggml.cpp.o" "CMakeFiles/ggml-base.dir/ggml-alloc.c.o" "CMakeFiles/ggml-base.dir/ggml-backend.cpp.o" "CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o" "CMakeFiles/ggml-base.dir/ggml-opt.cpp.o" "CMakeFiles/ggml-base.dir/ggml-threading.cpp.o" "CMakeFiles/ggml-base.dir/ggml-quants.c.o" "CMakeFiles/ggml-base.dir/gguf.cpp.o"
+/usr/bin/ranlib libggml-base.a
