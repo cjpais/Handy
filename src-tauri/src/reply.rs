@@ -133,28 +133,32 @@ fn api_key() -> Result<String, String> {
     ))
 }
 
-/// Reads the chat on screen and returns the reply to type.
-pub fn draft_reply_from_screen() -> Result<String, String> {
-    let key = api_key()?;
-    let png = capture_screen_png()?;
-    let body = build_request(&base64::engine::general_purpose::STANDARD.encode(png));
-
+/// Sends one request to the Messages API at `url` and returns the reply text.
+fn request_reply(url: &str, key: &str, body: &Value) -> Result<String, String> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(REQUEST_TIMEOUT))
         .http_status_as_error(false)
         .build()
         .into();
     let mut response = agent
-        .post(API_URL)
-        .header("x-api-key", &key)
+        .post(url)
+        .header("x-api-key", key)
         .header("anthropic-version", API_VERSION)
-        .send_json(&body)
+        .send_json(body)
         .map_err(|e| format!("Could not reach the model: {e}"))?;
     let json: Value = response
         .body_mut()
         .read_json()
         .map_err(|e| format!("Unreadable model response: {e}"))?;
     parse_reply(&json)
+}
+
+/// Reads the chat on screen and returns the reply to type.
+pub fn draft_reply_from_screen() -> Result<String, String> {
+    let key = api_key()?;
+    let png = capture_screen_png()?;
+    let body = build_request(&base64::engine::general_purpose::STANDARD.encode(png));
+    request_reply(API_URL, &key, &body)
 }
 
 #[cfg(test)]
@@ -215,5 +219,67 @@ mod tests {
     fn an_empty_response_is_an_error() {
         assert!(parse_reply(&json!({ "content": [] })).is_err());
         assert!(parse_reply(&json!({ "content": [{ "type": "text", "text": "  " }] })).is_err());
+    }
+
+    /// Serves one canned HTTP response on localhost and returns the request it got.
+    fn serve_once(status: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
+        use std::io::{Read, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/v1/messages", listener.local_addr().unwrap());
+        let reply = format!(
+            "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        let handle = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut received = Vec::new();
+            let mut chunk = [0u8; 4096];
+            loop {
+                let n = stream.read(&mut chunk).unwrap();
+                received.extend_from_slice(&chunk[..n]);
+                let text = String::from_utf8_lossy(&received).to_string();
+                if let Some(split) = text.find("\r\n\r\n") {
+                    let length = text[..split]
+                        .lines()
+                        .find_map(|l| {
+                            l.to_lowercase()
+                                .strip_prefix("content-length:")
+                                .map(|v| v.trim().parse::<usize>().unwrap())
+                        })
+                        .unwrap_or(0);
+                    if received.len() >= split + 4 + length {
+                        break;
+                    }
+                }
+            }
+            stream.write_all(reply.as_bytes()).unwrap();
+            String::from_utf8_lossy(&received).to_string()
+        });
+        (url, handle)
+    }
+
+    #[test]
+    fn the_http_call_sends_the_key_and_the_screenshot_and_returns_the_reply() {
+        let (url, server) = serve_once(
+            "200 OK",
+            r#"{"content":[{"type":"text","text":"Hi Tarek, thanks."}]}"#,
+        );
+        let reply = request_reply(&url, "test-key", &build_request("QUJD")).unwrap();
+        let request = server.join().unwrap().to_lowercase();
+        assert_eq!(reply, "Hi Tarek, thanks.");
+        assert!(request.contains("x-api-key: test-key"));
+        assert!(request.contains("anthropic-version: 2023-06-01"));
+        assert!(request.contains("\"data\": \"qujd\""));
+    }
+
+    #[test]
+    fn an_http_error_from_the_api_is_reported_and_never_typed() {
+        let (url, server) = serve_once(
+            "401 Unauthorized",
+            r#"{"error":{"type":"authentication_error","message":"invalid x-api-key"}}"#,
+        );
+        let error = request_reply(&url, "bad", &build_request("QUJD")).unwrap_err();
+        server.join().unwrap();
+        assert!(error.contains("invalid x-api-key"));
     }
 }
