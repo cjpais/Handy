@@ -13,7 +13,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
@@ -471,9 +471,44 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+// Draft Reply Action
+struct DraftReplyAction;
+
+/// True while a reply is being drafted, so a second press does not start a second request.
+static DRAFTING: AtomicBool = AtomicBool::new(false);
+
+impl ShortcutAction for DraftReplyAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        if DRAFTING.swap(true, Ordering::SeqCst) {
+            debug!("A reply is already being drafted");
+            return;
+        }
+        let app = app.clone();
+        // Reading the screen and calling the model take seconds, and typing sleeps
+        // between keys: none of it may run on the shortcut's thread.
+        std::thread::spawn(move || {
+            match crate::reply::draft_reply_from_screen() {
+                Ok(reply) => {
+                    if let Err(e) = crate::clipboard::paste(reply, app) {
+                        error!("Failed to type the drafted reply: {e}");
+                    }
+                }
+                Err(e) => error!("Failed to draft a reply: {e}"),
+            }
+            DRAFTING.store(false, Ordering::SeqCst);
+        });
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
+    map.insert(
+        "draft_reply".to_string(),
+        Arc::new(DraftReplyAction) as Arc<dyn ShortcutAction>,
+    );
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,

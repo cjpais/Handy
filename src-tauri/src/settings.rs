@@ -345,6 +345,21 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "macos")]
+    let draft_reply_shortcut = "option+shift+space";
+    #[cfg(not(target_os = "macos"))]
+    let draft_reply_shortcut = "ctrl+shift+space";
+    bindings.insert(
+        "draft_reply".to_string(),
+        ShortcutBinding {
+            id: "draft_reply".to_string(),
+            name: "Draft reply".to_string(),
+            description: "Reads the chat on screen and types a reply into the focused input."
+                .to_string(),
+            default_binding: draft_reply_shortcut.to_string(),
+            current_binding: draft_reply_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {

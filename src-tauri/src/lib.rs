@@ -12,6 +12,7 @@ mod managers;
 mod memory;
 mod overlay;
 pub mod portable;
+mod reply;
 mod secure_input;
 mod settings;
 mod shortcut;

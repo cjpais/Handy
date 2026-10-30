@@ -46,6 +46,9 @@ env_filter = "0.1.0"
 tokio = "1.43.0"
 earshot = "1.2.2"
 enigo = "0.6.1"
+# Both are already built for the model downloader; direct dependencies add no new code.
+ureq = { version = "3", features = ["json"] }
+base64 = "0.22"
 # Feedback sounds. No `recording`: microphone capture is handy-recorder's.
 rodio = { version = "0.23.0", default-features = false, features = ["playback", "wav", "flac", "mp3", "vorbis"] }
 handy-recorder = "0.1"

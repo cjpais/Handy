@@ -2106,6 +2106,7 @@ name = "handy"
 version = "0.9.8"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "clap",
  "earshot",
  "enigo",
@@ -2144,6 +2145,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-cpp",
+ "ureq",
  "webview2-com",
  "windows 0.61.3",
  "winreg 0.55.0",
