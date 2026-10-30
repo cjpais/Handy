@@ -91,8 +91,10 @@ fn instructions() -> String {
          - Internal notes are private to the team. Follow what a note tells the team to do or \
            avoid, but never quote it, repeat it or hint at it, never mention that a note exists, \
            and never tell the other side a fact that appears only in a note.\n\
-         - Match the language, length and tone of the user's earlier messages. A chat reply \
-           is short, like a text message. Write an email only when the conversation is an \
+         - Match the language and tone of the user's earlier messages.\n\
+         - Write a full reply, usually two to four sentences: answer every point in the \
+           newest messages from the other side, then add a related thought or question that \
+           keeps the conversation going. Write an email only when the conversation is an \
            email: then greet by first name and sign off the way the user's earlier replies do.\n\
          - Answer only what the messages ask. Do not invent facts, prices, dates, links or \
            promises. If the messages do not give enough to answer, ask one short question.\n\
@@ -323,6 +325,7 @@ mod tests {
     fn the_instructions_fit_any_chat_keep_notes_private_and_ask_for_three_messages() {
         let text = instructions();
         assert!(text.contains("First, find the conversation"));
+        assert!(text.contains("two to four sentences"));
         for app in ["WhatsApp", "Gleap", "Slack", "Instagram"] {
             assert!(!text.contains(app), "the instructions must not name {app}");
         }
