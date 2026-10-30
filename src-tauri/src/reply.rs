@@ -62,41 +62,38 @@ const PROVIDERS: [Provider; 3] = [
     },
 ];
 
-/// Written for the Gleap support inbox, so the model knows which part of the
-/// screen is the conversation and which parts the customer never sees.
+/// Written for any chat app, so the model can tell the open conversation from
+/// the rest of the screen and the user's own messages from the other side's.
 ///
 /// Internal notes may inform the reply but never appear in it: a live test
 /// replied "only available on our Pro plan, and I'm unable to offer refunds",
 /// both taken from a note the customer could not see.
 fn instructions() -> String {
     format!(
-        "The image is a screenshot of the Gleap support inbox. A support agent is working on \
-         the open conversation. Write the reply the agent should send next.\n\
+        "The image is a screenshot of a conversation in a chat app. It can be any app: \
+         WhatsApp, Slack, Messenger, a support inbox such as Gleap or Intercom, or email. \
+         The user of this tool is about to reply. Write the reply the user should send next.\n\
          \n\
-         How the Gleap inbox looks:\n\
-         - The left column lists other conversations. Ignore it.\n\
-         - The middle column is the open conversation. The subject is at the top. \
-           \"Description\" holds the customer's first message. Later messages follow below it, \
-           oldest first.\n\
-         - Internal notes are dark yellow boxes in the middle column. Only the team sees them. \
-           The customer never sees them.\n\
-         - The right column, \"Details\", shows facts about the customer, such as Name, Email, \
-           Company and Plan. \"Kai Copilot\" is a tab, not part of the conversation.\n\
-         - The reply box is at the bottom of the middle column, next to \"Reply\".\n\
+         How to read the screen:\n\
+         - Find the open conversation. Ignore lists of other chats, menus and sidebars. \
+           Use a profile or details panel only to understand who the other side is.\n\
+         - The user's own messages are usually on the right, in a coloured bubble (green in \
+           WhatsApp), or marked \"You\". The other side's messages are usually on the left.\n\
+         - Support tools can show internal notes, often as yellow boxes or labelled \"Note\" \
+           or \"Internal\". The other side never sees them.\n\
          \n\
          Rules:\n\
-         - Read the last {MESSAGES_TO_READ} messages that the customer can see. Reply to the \
-           newest one.\n\
+         - Read the last {MESSAGES_TO_READ} messages that the other side can see. Reply to the \
+           newest message from the other side.\n\
          - Internal notes are private to the team. Follow what a note tells the team to do or \
            avoid, but never quote it, repeat it or hint at it, never mention that a note exists, \
-           and never tell the customer a fact that appears only in a note.\n\
-         - If the conversation is an email (it shows \"Description\" or \"Original email\"), \
-           write an email: greet the customer by first name, use short paragraphs, and sign off \
-           the way the agent's earlier replies do. If it is a chat, write a short chat message.\n\
-         - Match the language and the tone of the agent's earlier replies.\n\
+           and never tell the other side a fact that appears only in a note.\n\
+         - Match the language, length and tone of the user's earlier messages. A chat reply \
+           is short, like a text message. Write an email only when the conversation is an \
+           email: then greet by first name and sign off the way the user's earlier replies do.\n\
          - Answer only what the messages ask. Do not invent facts, prices, dates, links or \
            promises. If the messages do not give enough to answer, ask one short question.\n\
-         - Write plain text. The reply box shows Markdown symbols as they are, so use no \
+         - Write plain text. Chat boxes show Markdown symbols as they are, so use no \
            asterisks, no headings and no bullet symbols.\n\
          - Reply with the message text only. No greeting label, no quotes, no explanation."
     )
@@ -320,9 +317,9 @@ mod tests {
     }
 
     #[test]
-    fn the_instructions_describe_gleap_keep_notes_private_and_ask_for_three_messages() {
+    fn the_instructions_fit_any_chat_keep_notes_private_and_ask_for_three_messages() {
         let text = instructions();
-        assert!(text.contains("Gleap support inbox"));
+        assert!(text.contains("It can be any app: WhatsApp"));
         assert!(text.contains("last 3 messages"));
         assert!(text.contains("Internal notes are private to the team"));
         assert!(text.contains("never quote it, repeat it or hint at it"));

@@ -101,7 +101,13 @@ where
         }
 
         let strokes = match character {
-            '\n' => vec![click(Key::Return)],
+            // Return alone sends the message in WhatsApp, Slack and most chat
+            // boxes. Shift+Return adds a new line there and in plain text fields.
+            '\n' => vec![
+                Stroke::Key(Key::Shift, Direction::Press),
+                click(Key::Return),
+                Stroke::Key(Key::Shift, Direction::Release),
+            ],
             '\t' => vec![click(Key::Tab)],
             other if needs_shift(other) => vec![
                 Stroke::Key(Key::Shift, Direction::Press),
@@ -194,21 +200,22 @@ mod tests {
     }
 
     #[test]
-    fn maps_newline_and_tab_and_drops_the_cr_of_a_crlf_pair() {
+    fn a_new_line_is_shift_return_so_it_never_sends_the_message() {
         let mut keyboard = RecordingKeyboard::default();
 
         type_text_as_keystrokes(|stroke| keyboard.send(stroke), "a\r\nb\tc", 0)
             .expect("typing should succeed");
 
-        let keys: Vec<Key> = keyboard.events.iter().map(|(key, _)| *key).collect();
         assert_eq!(
-            keys,
+            keyboard.events,
             vec![
-                Key::Unicode('a'),
-                Key::Return,
-                Key::Unicode('b'),
-                Key::Tab,
-                Key::Unicode('c'),
+                (Key::Unicode('a'), Direction::Click),
+                (Key::Shift, Direction::Press),
+                (Key::Return, Direction::Click),
+                (Key::Shift, Direction::Release),
+                (Key::Unicode('b'), Direction::Click),
+                (Key::Tab, Direction::Click),
+                (Key::Unicode('c'), Direction::Click),
             ]
         );
     }
