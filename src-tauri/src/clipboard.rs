@@ -1,5 +1,5 @@
 use crate::input::{self, EnigoState};
-use enigo::{Direction, Enigo, Keyboard};
+use enigo::{Enigo, Keyboard};
 use std::sync::{mpsc, Mutex, PoisonError};
 use tauri::{AppHandle, Manager};
 
@@ -51,11 +51,13 @@ fn paste_direct(text: &str, app_handle: &AppHandle) -> Result<(), String> {
     // keeps the rhythm and hands each individual key press to the main thread,
     // where each one costs microseconds.
     input::type_text_as_keystrokes(
-        |key| {
+        |stroke| {
             with_enigo(app_handle, move |enigo| {
-                enigo
-                    .key(key, Direction::Click)
-                    .map_err(|e| format!("{}", e))
+                match stroke {
+                    input::Stroke::Key(key, direction) => enigo.key(key, direction),
+                    input::Stroke::Text(character) => enigo.text(&character.to_string()),
+                }
+                .map_err(|e| format!("{}", e))
             })
         },
         text,

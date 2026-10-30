@@ -1,4 +1,4 @@
-use enigo::{Enigo, Key, Mouse, Settings};
+use enigo::{Direction, Enigo, Key, Mouse, Settings};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
@@ -39,6 +39,24 @@ fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
     base_ms - spread + scrambled % (2 * spread + 1)
 }
 
+/// One thing to send to the keyboard while typing.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Stroke {
+    /// A key event, sent with `Keyboard::key`.
+    Key(Key, Direction),
+    /// A character with no key on the layout, sent with `Keyboard::text`.
+    Text(char),
+}
+
+/// True when the character sits on the shifted layer of a US/ABC layout.
+///
+/// enigo's macOS backend finds the key for `Key::Unicode('A')` but presses it
+/// without Shift, so "A" arrives as "a" and "?" as "/". Shift has to be held
+/// around the key, the way a person types it.
+fn needs_shift(character: char) -> bool {
+    character.is_ascii_uppercase() || "~!@#$%^&*()_+{}|:\"<>?".contains(character)
+}
+
 /// Types `text` one character at a time, each character its own key event.
 ///
 /// `Enigo::text` is deliberately not used. On macOS it posts one event per
@@ -50,7 +68,7 @@ fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
 /// This sleeps for roughly `key_delay_ms` per character, so callers must run it
 /// off the main thread.
 ///
-/// `send_key` delivers one key press. It is a closure rather than a `Keyboard`
+/// `send_key` delivers one stroke. It is a closure rather than a `Keyboard`
 /// because the waiting and the pressing belong on different threads on macOS:
 /// enigo's macOS backend traps when driven from anywhere but the main thread,
 /// while sleeping there would freeze the window for the length of the
@@ -63,8 +81,10 @@ pub fn type_text_as_keystrokes<F>(
     key_delay_ms: u64,
 ) -> Result<(), String>
 where
-    F: FnMut(Key) -> Result<(), String>,
+    F: FnMut(Stroke) -> Result<(), String>,
 {
+    let click = |key| Stroke::Key(key, Direction::Click);
+
     let mut typed = 0_usize;
 
     for character in text.chars() {
@@ -80,13 +100,22 @@ where
             }
         }
 
-        let key = match character {
-            '\n' => Key::Return,
-            '\t' => Key::Tab,
-            other => Key::Unicode(other),
+        let strokes = match character {
+            '\n' => vec![click(Key::Return)],
+            '\t' => vec![click(Key::Tab)],
+            other if needs_shift(other) => vec![
+                Stroke::Key(Key::Shift, Direction::Press),
+                click(Key::Unicode(other)),
+                Stroke::Key(Key::Shift, Direction::Release),
+            ],
+            // enigo maps a character it cannot find on the layout to the "a" key.
+            other if !other.is_ascii() => vec![Stroke::Text(other)],
+            other => vec![click(Key::Unicode(other))],
         };
 
-        send_key(key).map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
+        for stroke in strokes {
+            send_key(stroke).map_err(|e| format!("Failed to type {:?}: {}", character, e))?;
+        }
 
         typed += 1;
     }
@@ -97,7 +126,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use enigo::{Direction, InputResult, Keyboard};
+    use enigo::{InputResult, Keyboard};
     use std::collections::HashSet;
     use std::time::Instant;
 
@@ -113,8 +142,12 @@ mod tests {
 
     impl RecordingKeyboard {
         /// Stands in for the main-thread hop the real caller performs.
-        fn click(&mut self, key: Key) -> Result<(), String> {
-            self.key(key, Direction::Click).map_err(|e| e.to_string())
+        fn send(&mut self, stroke: Stroke) -> Result<(), String> {
+            match stroke {
+                Stroke::Key(key, direction) => self.key(key, direction),
+                Stroke::Text(character) => self.text(&character.to_string()),
+            }
+            .map_err(|e| e.to_string())
         }
     }
 
@@ -142,9 +175,10 @@ mod tests {
     #[test]
     fn sends_one_key_event_per_character_and_never_bulk_text() {
         let mut keyboard = RecordingKeyboard::default();
-        let text = "Hello, world!";
+        let text = "hello, world.";
 
-        type_text_as_keystrokes(|key| keyboard.click(key), text, 0).expect("typing should succeed");
+        type_text_as_keystrokes(|stroke| keyboard.send(stroke), text, 0)
+            .expect("typing should succeed");
 
         assert!(
             keyboard.bulk_text.is_empty(),
@@ -163,7 +197,7 @@ mod tests {
     fn maps_newline_and_tab_and_drops_the_cr_of_a_crlf_pair() {
         let mut keyboard = RecordingKeyboard::default();
 
-        type_text_as_keystrokes(|key| keyboard.click(key), "a\r\nb\tc", 0)
+        type_text_as_keystrokes(|stroke| keyboard.send(stroke), "a\r\nb\tc", 0)
             .expect("typing should succeed");
 
         let keys: Vec<Key> = keyboard.events.iter().map(|(key, _)| *key).collect();
@@ -180,11 +214,44 @@ mod tests {
     }
 
     #[test]
+    fn holds_shift_for_capitals_and_shifted_symbols() {
+        // Found live: without Shift, a drafted reply arrived with no capitals.
+        let mut keyboard = RecordingKeyboard::default();
+
+        type_text_as_keystrokes(|stroke| keyboard.send(stroke), "Hi?", 0)
+            .expect("typing should succeed");
+
+        assert_eq!(
+            keyboard.events,
+            vec![
+                (Key::Shift, Direction::Press),
+                (Key::Unicode('H'), Direction::Click),
+                (Key::Shift, Direction::Release),
+                (Key::Unicode('i'), Direction::Click),
+                (Key::Shift, Direction::Press),
+                (Key::Unicode('?'), Direction::Click),
+                (Key::Shift, Direction::Release),
+            ]
+        );
+    }
+
+    #[test]
+    fn sends_characters_off_the_layout_one_at_a_time_as_text() {
+        let mut keyboard = RecordingKeyboard::default();
+
+        type_text_as_keystrokes(|stroke| keyboard.send(stroke), "a’é", 0)
+            .expect("typing should succeed");
+
+        assert_eq!(keyboard.events, vec![(Key::Unicode('a'), Direction::Click)]);
+        assert_eq!(keyboard.bulk_text, vec!["’".to_string(), "é".to_string()]);
+    }
+
+    #[test]
     fn paces_characters_instead_of_bursting_them() {
         let mut keyboard = RecordingKeyboard::default();
         let text = "the quick brown fox";
 
-        type_text_as_keystrokes(|key| keyboard.click(key), text, TYPING_KEY_DELAY_MS)
+        type_text_as_keystrokes(|stroke| keyboard.send(stroke), text, TYPING_KEY_DELAY_MS)
             .expect("typing should succeed");
 
         assert_eq!(keyboard.events.len(), text.chars().count());
@@ -266,7 +333,13 @@ mod tests {
         let mut enigo = Enigo::new(&Settings::default()).expect("could not create Enigo");
         let started = std::time::Instant::now();
         type_text_as_keystrokes(
-            |key| enigo.key(key, Direction::Click).map_err(|e| e.to_string()),
+            |stroke| {
+                match stroke {
+                    Stroke::Key(key, direction) => enigo.key(key, direction),
+                    Stroke::Text(character) => enigo.text(&character.to_string()),
+                }
+                .map_err(|e| e.to_string())
+            },
             &text,
             TYPING_KEY_DELAY_MS,
         )

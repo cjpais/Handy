@@ -75,6 +75,8 @@ fn instructions() -> String {
          - Match the language and the tone of the agent's earlier replies.\n\
          - Answer only what the messages ask. Do not invent facts, prices, dates or promises. \
            If the messages do not give enough to answer, ask one short question.\n\
+         - Write plain text. Chat boxes show Markdown symbols as they are, so use no \
+           asterisks, no headings and no bullet symbols.\n\
          - Reply with the message text only. No greeting label, no quotes, no explanation."
     )
 }
