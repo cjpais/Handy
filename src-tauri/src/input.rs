@@ -101,8 +101,8 @@ where
         }
 
         let strokes = match character {
-            // Return alone sends the message in WhatsApp, Slack and most chat
-            // boxes. Shift+Return adds a new line there and in plain text fields.
+            // Return alone sends the message in most chat boxes. Shift+Return
+            // adds a new line there and in plain text fields.
             '\n' => vec![
                 Stroke::Key(Key::Shift, Direction::Press),
                 click(Key::Return),

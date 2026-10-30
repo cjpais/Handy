@@ -62,27 +62,30 @@ const PROVIDERS: [Provider; 3] = [
     },
 ];
 
-/// Written for any chat app, so the model can tell the open conversation from
-/// the rest of the screen and the user's own messages from the other side's.
+/// Names no app on purpose: the model finds the conversation from what is on
+/// screen, so the same instructions work wherever the user is chatting.
 ///
 /// Internal notes may inform the reply but never appear in it: a live test
 /// replied "only available on our Pro plan, and I'm unable to offer refunds",
 /// both taken from a note the customer could not see.
 fn instructions() -> String {
     format!(
-        "The image is a screenshot of a conversation in a chat app. It can be any app: \
-         WhatsApp, Slack, Messenger, a support inbox such as Gleap or Intercom, or email. \
-         The user of this tool is about to reply. Write the reply the user should send next.\n\
+        "The image is a screenshot of the user's screen. Somewhere on it is a conversation \
+         the user is about to reply to. Write the reply the user should send next.\n\
          \n\
-         How to read the screen:\n\
-         - Find the open conversation. Ignore lists of other chats, menus and sidebars. \
-           Use a profile or details panel only to understand who the other side is.\n\
-         - The user's own messages are usually on the right, in a coloured bubble (green in \
-           WhatsApp), or marked \"You\". The other side's messages are usually on the left.\n\
-         - Support tools can show internal notes, often as yellow boxes or labelled \"Note\" \
-           or \"Internal\". The other side never sees them.\n\
+         First, find the conversation:\n\
+         - It is the area that shows a run of messages between the user and one or more \
+           others, usually with a box for typing next to it. Use only that area.\n\
+         - Ignore everything else on the screen, such as lists of other conversations, menus, \
+           sidebars, ads and notifications. Use a profile or details panel only to understand \
+           who the other side is.\n\
+         - Tell the two sides apart. The user's own messages usually sit on one side, often \
+           the right, in a different colour, or are marked \"You\" or \"Me\". The other side's \
+           messages sit on the other side, often with a name or a picture.\n\
+         - Some screens show notes that only the user's team can see, often in a yellow box \
+           or labelled \"Note\" or \"Internal\". The other side never sees them.\n\
          \n\
-         Rules:\n\
+         Then write the reply:\n\
          - Read the last {MESSAGES_TO_READ} messages that the other side can see. Reply to the \
            newest message from the other side.\n\
          - Internal notes are private to the team. Follow what a note tells the team to do or \
@@ -319,7 +322,10 @@ mod tests {
     #[test]
     fn the_instructions_fit_any_chat_keep_notes_private_and_ask_for_three_messages() {
         let text = instructions();
-        assert!(text.contains("It can be any app: WhatsApp"));
+        assert!(text.contains("First, find the conversation"));
+        for app in ["WhatsApp", "Gleap", "Slack", "Instagram"] {
+            assert!(!text.contains(app), "the instructions must not name {app}");
+        }
         assert!(text.contains("last 3 messages"));
         assert!(text.contains("Internal notes are private to the team"));
         assert!(text.contains("never quote it, repeat it or hint at it"));
