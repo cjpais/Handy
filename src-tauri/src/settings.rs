@@ -345,9 +345,8 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_shortcut.to_string(),
         },
     );
-    #[cfg(target_os = "macos")]
-    let draft_reply_shortcut = "option+shift+space";
-    #[cfg(not(target_os = "macos"))]
+    // Control chords insert no text, so the shortcut leaves the reply box empty.
+    // option+shift+space typed a space into it.
     let draft_reply_shortcut = "ctrl+shift+space";
     bindings.insert(
         "draft_reply".to_string(),

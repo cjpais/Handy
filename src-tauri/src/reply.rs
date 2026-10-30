@@ -62,20 +62,41 @@ const PROVIDERS: [Provider; 3] = [
     },
 ];
 
+/// Written for the Gleap support inbox, so the model knows which part of the
+/// screen is the conversation and which parts the customer never sees.
+///
+/// Internal notes may inform the reply but never appear in it: a live test
+/// replied "only available on our Pro plan, and I'm unable to offer refunds",
+/// both taken from a note the customer could not see.
 fn instructions() -> String {
     format!(
-        "The image is a screenshot of a customer support conversation that a support agent is \
-         working on. Read the last {MESSAGES_TO_READ} messages that the customer can see. \
-         Write the reply the agent should send next.\n\
+        "The image is a screenshot of the Gleap support inbox. A support agent is working on \
+         the open conversation. Write the reply the agent should send next.\n\
+         \n\
+         How the Gleap inbox looks:\n\
+         - The left column lists other conversations. Ignore it.\n\
+         - The middle column is the open conversation. The subject is at the top. \
+           \"Description\" holds the customer's first message. Later messages follow below it, \
+           oldest first.\n\
+         - Internal notes are dark yellow boxes in the middle column. Only the team sees them. \
+           The customer never sees them.\n\
+         - The right column, \"Details\", shows facts about the customer, such as Name, Email, \
+           Company and Plan. \"Kai Copilot\" is a tab, not part of the conversation.\n\
+         - The reply box is at the bottom of the middle column, next to \"Reply\".\n\
          \n\
          Rules:\n\
-         - Internal notes are not part of the conversation. They are often shaded yellow or \
-           labelled as a note. Never use them, quote them or mention them.\n\
-         - Ignore menus, sidebars and ticket details. They are not messages.\n\
+         - Read the last {MESSAGES_TO_READ} messages that the customer can see. Reply to the \
+           newest one.\n\
+         - Internal notes are private to the team. Follow what a note tells the team to do or \
+           avoid, but never quote it, repeat it or hint at it, never mention that a note exists, \
+           and never tell the customer a fact that appears only in a note.\n\
+         - If the conversation is an email (it shows \"Description\" or \"Original email\"), \
+           write an email: greet the customer by first name, use short paragraphs, and sign off \
+           the way the agent's earlier replies do. If it is a chat, write a short chat message.\n\
          - Match the language and the tone of the agent's earlier replies.\n\
-         - Answer only what the messages ask. Do not invent facts, prices, dates or promises. \
-           If the messages do not give enough to answer, ask one short question.\n\
-         - Write plain text. Chat boxes show Markdown symbols as they are, so use no \
+         - Answer only what the messages ask. Do not invent facts, prices, dates, links or \
+           promises. If the messages do not give enough to answer, ask one short question.\n\
+         - Write plain text. The reply box shows Markdown symbols as they are, so use no \
            asterisks, no headings and no bullet symbols.\n\
          - Reply with the message text only. No greeting label, no quotes, no explanation."
     )
@@ -299,11 +320,13 @@ mod tests {
     }
 
     #[test]
-    fn the_instructions_exclude_internal_notes_and_ask_for_three_messages() {
+    fn the_instructions_describe_gleap_keep_notes_private_and_ask_for_three_messages() {
         let text = instructions();
+        assert!(text.contains("Gleap support inbox"));
         assert!(text.contains("last 3 messages"));
-        assert!(text.contains("Internal notes are not part of the conversation"));
-        assert!(text.contains("Never use them"));
+        assert!(text.contains("Internal notes are private to the team"));
+        assert!(text.contains("never quote it, repeat it or hint at it"));
+        assert!(text.contains("a fact that appears only in a note"));
     }
 
     #[test]
