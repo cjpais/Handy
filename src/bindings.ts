@@ -101,6 +101,14 @@ async changeOverlayStyleSetting(style: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async changeTypingSpeedSetting(speed: TypingSpeed) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_typing_speed_setting", { speed }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeDebugModeSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_debug_mode_setting", { enabled }) };
@@ -520,7 +528,7 @@ vad_backend?: VadBackend;
  * Which recording overlay to show: None / Minimal / Live. Migrated from the
  * old `overlay_position` (position `none` → style `None`).
  */
-overlay_style?: OverlayStyle }
+overlay_style?: OverlayStyle; typing_speed?: TypingSpeed }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type CustomSounds = { start: boolean; stop: boolean }
@@ -678,6 +686,12 @@ export type TranscriptionOutcome =
  * Transcribing or typing failed.
  */
 "failed"
+/**
+ * How fast transcripts and drafted replies are typed. Choices rather than a
+ * number: with no gap the text lands in bursts that some fields reject as
+ * pasted, and a long gap makes a four-sentence reply take half a minute.
+ */
+export type TypingSpeed = "slow" | "normal" | "fast"
 export type VadBackend = "silero" | "earshot"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { listen } from "@tauri-apps/api/event";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  TypingSpeed,
+} from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -48,6 +52,8 @@ const settingUpdaters: {
   overlay_position: (value) =>
     commands.changeOverlayPositionSetting(value as string),
   overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
+  typing_speed: (value) =>
+    commands.changeTypingSpeedSetting(value as TypingSpeed),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

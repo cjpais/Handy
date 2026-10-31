@@ -21,7 +21,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{
     self, get_settings, KeyboardImplementation, OverlayPosition, OverlayStyle, ShortcutActivation,
-    ShortcutBinding, SoundTheme, Theme, VadBackend,
+    ShortcutBinding, SoundTheme, Theme, TypingSpeed, VadBackend,
 };
 use crate::tray;
 
@@ -714,6 +714,15 @@ pub fn change_overlay_style_setting(app: AppHandle, style: String) -> Result<(),
     // Reposition in case the window needs to re-center for the new style.
     crate::utils::update_overlay_position(&app);
 
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_typing_speed_setting(app: AppHandle, speed: TypingSpeed) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.typing_speed = speed;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 

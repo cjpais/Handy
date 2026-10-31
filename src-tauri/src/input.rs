@@ -22,10 +22,6 @@ pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
     enigo.location().ok()
 }
 
-/// Gap between characters when typing a transcript, in milliseconds. About the
-/// pace of a quick typist, so the text visibly arrives letter by letter.
-pub const TYPING_KEY_DELAY_MS: u64 = 50;
-
 /// Spreads the gap around `base_ms` so the rhythm is uneven, the way a real
 /// keyboard is. Deterministic, so it needs no random number generator.
 fn jittered_delay_ms(base_ms: u64, index: usize) -> u64 {
@@ -132,6 +128,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::settings::TypingSpeed;
     use enigo::{InputResult, Keyboard};
     use std::collections::HashSet;
     use std::time::Instant;
@@ -258,8 +255,12 @@ mod tests {
         let mut keyboard = RecordingKeyboard::default();
         let text = "the quick brown fox";
 
-        type_text_as_keystrokes(|stroke| keyboard.send(stroke), text, TYPING_KEY_DELAY_MS)
-            .expect("typing should succeed");
+        type_text_as_keystrokes(
+            |stroke| keyboard.send(stroke),
+            text,
+            TypingSpeed::Normal.key_delay_ms(),
+        )
+        .expect("typing should succeed");
 
         assert_eq!(keyboard.events.len(), text.chars().count());
         assert!(
@@ -311,7 +312,7 @@ mod tests {
         // must now land in human territory.
         let characters = 52_usize;
         let total: u64 = (1..characters)
-            .map(|i| jittered_delay_ms(TYPING_KEY_DELAY_MS, i))
+            .map(|i| jittered_delay_ms(TypingSpeed::Normal.key_delay_ms(), i))
             .sum();
 
         assert!(
@@ -348,7 +349,7 @@ mod tests {
                 .map_err(|e| e.to_string())
             },
             &text,
-            TYPING_KEY_DELAY_MS,
+            TypingSpeed::Normal.key_delay_ms(),
         )
         .expect("typing failed");
 

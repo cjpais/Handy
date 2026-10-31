@@ -108,6 +108,32 @@ pub enum OverlayStyle {
     Live,
 }
 
+/// How fast transcripts and drafted replies are typed. Choices rather than a
+/// number: with no gap the text lands in bursts that some fields reject as
+/// pasted, and a long gap makes a four-sentence reply take half a minute.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TypingSpeed {
+    Slow,
+    #[default]
+    Normal,
+    Fast,
+}
+
+impl TypingSpeed {
+    /// Average gap between characters, in milliseconds.
+    pub fn key_delay_ms(self) -> u64 {
+        match self {
+            // About 130 words a minute.
+            TypingSpeed::Slow => 90,
+            // About 240 words a minute, the pace before this was a setting.
+            TypingSpeed::Normal => 50,
+            // About 600 words a minute.
+            TypingSpeed::Fast => 20,
+        }
+    }
+}
+
 /// How the transcribe shortcut's key events drive a recording.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
@@ -255,6 +281,8 @@ pub struct AppSettings {
     /// old `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    #[serde(default)]
+    pub typing_speed: TypingSpeed,
 }
 
 fn default_hold_threshold_ms() -> u64 {
@@ -397,6 +425,7 @@ pub fn get_default_settings() -> AppSettings {
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
         overlay_style: default_overlay_style(),
+        typing_speed: TypingSpeed::default(),
     }
 }
 
@@ -733,6 +762,34 @@ mod tests {
         assert_eq!(salvaged.hold_threshold_ms, 450);
         assert_eq!(salvaged.bindings["transcribe"].current_binding, "f13");
         assert_eq!(salvaged.sound_theme, default_sound_theme());
+    }
+
+    #[test]
+    fn typing_speed_defaults_to_the_pace_before_it_was_a_setting() {
+        let mut stored = default_settings_json();
+        stored.as_object_mut().unwrap().remove("typing_speed");
+        let settings: AppSettings = serde_json::from_value(stored).unwrap();
+        assert_eq!(settings.typing_speed, TypingSpeed::Normal);
+        assert_eq!(settings.typing_speed.key_delay_ms(), 50);
+    }
+
+    #[test]
+    fn typing_speeds_are_ordered_and_never_burst() {
+        let slow = TypingSpeed::Slow.key_delay_ms();
+        let normal = TypingSpeed::Normal.key_delay_ms();
+        let fast = TypingSpeed::Fast.key_delay_ms();
+        assert!(slow > normal && normal > fast && fast > 0);
+    }
+
+    #[test]
+    fn an_unknown_typing_speed_falls_back_to_normal() {
+        let mut stored = default_settings_json();
+        stored
+            .as_object_mut()
+            .unwrap()
+            .insert("typing_speed".into(), serde_json::json!("warp"));
+        let salvaged = salvage_settings(&stored);
+        assert_eq!(salvaged.typing_speed, TypingSpeed::Normal);
     }
 
     #[test]

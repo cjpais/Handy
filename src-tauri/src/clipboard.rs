@@ -61,6 +61,9 @@ fn paste_direct(text: &str, app_handle: &AppHandle) -> Result<(), String> {
     // reply into another window after the user clicked away, so typing stops
     // as soon as a different app comes to the front.
     let front_app = with_enigo(app_handle, |_| Ok(front_app_pid()))?;
+    let key_delay_ms = crate::settings::get_settings(app_handle)
+        .typing_speed
+        .key_delay_ms();
 
     // The waiting and the pressing have to happen on different threads. Pacing
     // sleeps once per character, so doing that on the main thread would freeze
@@ -82,7 +85,7 @@ fn paste_direct(text: &str, app_handle: &AppHandle) -> Result<(), String> {
             })
         },
         text,
-        input::TYPING_KEY_DELAY_MS,
+        key_delay_ms,
     )
 }
 

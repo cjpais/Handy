@@ -67,7 +67,16 @@
       }
     },
     "basics": {
-      "title": "Basics"
+      "title": "Basics",
+      "typingSpeed": {
+        "title": "Typing Speed",
+        "description": "How fast Handy types your text. Normal suits most apps. Slow looks most like a person typing; Fast finishes long replies sooner.",
+        "options": {
+          "slow": "Slow",
+          "normal": "Normal",
+          "fast": "Fast"
+        }
+      }
     },
     "microphone": {
       "title": "麦克风"

@@ -15,6 +15,7 @@ import {
   ShortcutInput,
   ShowOverlay,
   StartHidden,
+  TypingSpeed,
 } from "./components/settings";
 import { SettingsGroup } from "./components/ui/SettingsGroup";
 import HandyTextLogo from "./components/icons/HandyTextLogo";
@@ -169,6 +170,7 @@ function App() {
             </SettingsGroup>
             <SettingsGroup title={t("settings.basics.title")}>
               <ShowOverlay descriptionMode="tooltip" grouped={true} />
+              <TypingSpeed descriptionMode="tooltip" grouped={true} />
               <StartHidden descriptionMode="tooltip" grouped={true} />
               <AutostartToggle descriptionMode="tooltip" grouped={true} />
             </SettingsGroup>
