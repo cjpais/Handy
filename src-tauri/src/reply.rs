@@ -114,6 +114,11 @@ fn instructions() -> String {
            back.\n\
          - Never use the word love or any word made from it, such as loved, loving or \
            lovely. Use other words instead, such as enjoy, like, glad or happy.\n\
+         - Never say the user is free, available or has nothing planned, and never offer a \
+           time when the user could be. If the other side asks whether the user is free or \
+           what the user is doing, do not answer it and do not refuse. Stay light and warm, \
+           and turn it back with a curious question, such as what they have in mind or how \
+           their day is going.\n\
          - If the other side says they have feelings for the user, or sends compliments, pet \
            names or kisses, never ignore it and never return it. Acknowledge it in one short, \
            warm and light sentence, such as thanking them for the kind words or saying it made \
@@ -254,8 +259,15 @@ fn shares_contact_details(text: &str) -> bool {
     email || phone
 }
 
-/// Phrases that say the user is coming, or ask where to meet.
-const MEETUP_PROMISES: [&str; 18] = [
+/// Phrases that say the user is coming or is free, or ask where to meet.
+const MEETUP_PROMISES: [&str; 25] = [
+    "i'm free",
+    "i am free",
+    "i'll be free",
+    "i will be free",
+    "i'm available",
+    "i am available",
+    "nothing planned",
     "on my way",
     "omw",
     "be there",
@@ -276,10 +288,10 @@ const MEETUP_PROMISES: [&str; 18] = [
     "find you",
 ];
 
-/// True when the reply promises to meet in person: it uses a phrase from
-/// `MEETUP_PROMISES` or names a clock time such as "12:30" or "12pm". The user
-/// never meets in person, so such a reply is never typed, whatever the prompt
-/// told the model.
+/// True when the reply promises to meet in person or says the user is free: it
+/// uses a phrase from `MEETUP_PROMISES` or names a clock time such as "12:30"
+/// or "12pm". The user never meets in person, so such a reply is never typed,
+/// whatever the prompt told the model.
 fn promises_to_meet(text: &str) -> bool {
     let text = text.to_lowercase().replace('\u{2019}', "'");
     if MEETUP_PROMISES.iter().any(|phrase| text.contains(phrase)) {
@@ -519,6 +531,13 @@ mod tests {
     }
 
     #[test]
+    fn the_instructions_never_say_the_user_is_free() {
+        let text = instructions();
+        assert!(text.contains("Never say the user is free, available or has nothing planned"));
+        assert!(text.contains("turn it back with a curious question"));
+    }
+
+    #[test]
     fn the_instructions_acknowledge_feelings_without_returning_them() {
         let text = instructions();
         assert!(text.contains("never ignore it and never return it"));
@@ -577,6 +596,9 @@ mod tests {
             "Sure, see you at 1 p.m.",
             "On my way!",
             "I\u{2019}m coming, give me five.",
+            "Yes I'm free tonight, what's up?",
+            "I am available all weekend.",
+            "I've got nothing planned, why?",
         ] {
             let response = json!({ "choices": [{ "message": { "content": reply } }] });
             let error = parse_reply(&response).unwrap_err();
@@ -590,7 +612,8 @@ mod tests {
             "I'm so glad you asked, but I can't make it to lunch today! How has your week been?",
             "So sorry, I can't make it today, don't wait for me. Enjoy that beer! How was work?",
             "I have 3 amazing ideas for your project and 2 questions about the budget.",
-            "I am free to chat whenever, and I'm happy to help with the 2024 report.",
+            "Haha why, what did you have in mind? How has your day been?",
+            "I'm happy to help with the 2024 report, and nothing online beats a good chat.",
         ] {
             let response = json!({ "choices": [{ "message": { "content": reply } }] });
             assert_eq!(parse_reply(&response).unwrap(), reply);
