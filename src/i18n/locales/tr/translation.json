@@ -676,6 +676,7 @@
         "promptInstructions": "Prompt Talimatları",
         "promptInstructionsPlaceholder": "Transkripsiyondan sonra çalıştırılacak talimatları yazın. Örnek: Aşağıdaki metnin dilbilgisini ve açıklığını iyileştir: ${output}",
         "promptTip": "İpucu: Transkribe edilen metni promptunuza eklemek için <code>${output}</code> kullanın.",
+        "missingOutputPlaceholder": "Bu istemde ${output} yok, bu yüzden transkript otomatik olarak sona eklenir. Metnin gelmesini istediğiniz yere ${output} ekleyin.",
         "updatePrompt": "Promptu Güncelle",
         "deletePrompt": "Promptu Sil",
         "createPrompt": "Prompt Oluştur",

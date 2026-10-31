@@ -676,6 +676,7 @@
         "promptInstructions": "Instruksi Prompt",
         "promptInstructionsPlaceholder": "Tulis instruksi yang dijalankan setelah transkripsi. Contoh: Perbaiki tata bahasa dan kejelasan teks berikut: ${output}",
         "promptTip": "Tips: Gunakan <code>${output}</code> untuk menyisipkan teks hasil transkripsi ke prompt Anda.",
+        "missingOutputPlaceholder": "Prompt ini tidak berisi ${output}, jadi transkrip ditambahkan secara otomatis di bagian akhir. Tambahkan ${output} di posisi tempat teks seharusnya muncul.",
         "updatePrompt": "Perbarui Prompt",
         "deletePrompt": "Hapus Prompt",
         "createPrompt": "Buat Prompt",

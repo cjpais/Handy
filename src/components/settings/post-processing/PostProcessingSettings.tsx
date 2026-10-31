@@ -22,6 +22,8 @@ import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePos
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
 
+const OUTPUT_PLACEHOLDER = "${output}";
+
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
@@ -183,7 +185,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
 
 const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating, refreshSettings } =
+  const { settings, getSetting, updateSetting, isUpdating, refreshSettings } =
     useSettings();
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -193,6 +195,20 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const selectedPromptId = getSetting("post_process_selected_prompt_id") || "";
   const selectedPrompt =
     prompts.find((prompt) => prompt.id === selectedPromptId) || null;
+
+  // Providers without structured output get the whole prompt as a single user
+  // message, so the transcription has to be embedded in the prompt text itself.
+  const providers = settings?.post_process_providers || [];
+  const activeProviderId =
+    settings?.post_process_provider_id || providers[0]?.id || "";
+  const activeProvider =
+    providers.find((provider) => provider.id === activeProviderId) ||
+    providers[0];
+  const promptNeedsPlaceholder = activeProvider
+    ? !activeProvider.supports_structured_output
+    : false;
+  const draftHasPlaceholder = draftText.includes(OUTPUT_PLACEHOLDER);
+  const showPlaceholderWarning = promptNeedsPlaceholder && !draftHasPlaceholder;
 
   useEffect(() => {
     if (isCreating) return;
@@ -359,6 +375,13 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                   components={{ code: <code /> }}
                 />
               </p>
+              {showPlaceholderWarning && (
+                <Alert variant="warning" contained>
+                  {t(
+                    "settings.postProcessing.prompts.missingOutputPlaceholder",
+                  )}
+                </Alert>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -426,6 +449,13 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                   components={{ code: <code /> }}
                 />
               </p>
+              {showPlaceholderWarning && (
+                <Alert variant="warning" contained>
+                  {t(
+                    "settings.postProcessing.prompts.missingOutputPlaceholder",
+                  )}
+                </Alert>
+              )}
             </div>
 
             <div className="flex gap-2 pt-2">

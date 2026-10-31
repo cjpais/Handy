@@ -676,6 +676,7 @@
         "promptInstructions": "Instrukce promptu",
         "promptInstructionsPlaceholder": "Napište instrukce, které se mají spustit po přepisu. Příklad: Zlepšete gramatiku a srozumitelnost následujícího textu: ${output}",
         "promptTip": "Tip: Použijte <code>${output}</code> pro vložení přepsaného textu do promptu.",
+        "missingOutputPlaceholder": "Tento prompt neobsahuje ${output}, takže se přepis automaticky připojí na konec. Přidejte ${output} tam, kde má být text.",
         "updatePrompt": "Aktualizovat prompt",
         "deletePrompt": "Smazat prompt",
         "createPrompt": "Vytvořit prompt",

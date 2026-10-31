@@ -676,6 +676,7 @@
         "promptInstructions": "Prompt-Anweisungen",
         "promptInstructionsPlaceholder": "Schreibe die Anweisungen, die nach der Transkription ausgeführt werden sollen. Beispiel: Verbessere Grammatik und Klarheit für folgenden Text: ${output}",
         "promptTip": "Tipp: Verwende <code>${output}</code>, um den transkribierten Text in deinen Prompt einzufügen.",
+        "missingOutputPlaceholder": "Dieser Prompt enthält kein ${output}, daher wird die Transkription automatisch am Ende angehängt. Füge ${output} dort ein, wo der Text stehen soll.",
         "updatePrompt": "Prompt aktualisieren",
         "deletePrompt": "Prompt löschen",
         "createPrompt": "Prompt erstellen",

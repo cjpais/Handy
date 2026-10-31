@@ -676,6 +676,7 @@
         "promptInstructions": "Promptinstruktioner",
         "promptInstructionsPlaceholder": "Skriv de instruktioner, der skal køres efter transskription. Eksempel: Forbedr grammatik og klarhed for følgende tekst: ${output}",
         "promptTip": "Tip: Brug <code>${output}</code> til at indsætte den transskriberede tekst i din prompt.",
+        "missingOutputPlaceholder": "Denne prompt indeholder ikke ${output}, så transskriptionen tilføjes automatisk til sidst. Tilføj ${output} der, hvor teksten skal stå.",
         "updatePrompt": "Opdater prompt",
         "deletePrompt": "Slet prompt",
         "createPrompt": "Opret prompt",
