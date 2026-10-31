@@ -22,8 +22,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 #[cfg(target_os = "macos")]
 const SCREENSHOT_MAX_SIDE_PX: u32 = 1600;
 
-/// How many of the latest messages the reply must answer.
-const MESSAGES_TO_READ: u32 = 3;
+/// How many of the latest messages the model reads before it replies to the newest.
+const MESSAGES_TO_READ: u32 = 5;
 
 /// A provider with an OpenAI-compatible chat completions endpoint and a free tier.
 struct Provider {
@@ -38,7 +38,18 @@ struct Provider {
 
 /// Tried in this order. Free-tier model IDs change: a withdrawn model fails like
 /// a used-up limit does, and the next provider is tried.
+///
+/// Gemini is first because it follows the instructions: on the same lunch
+/// invitation it declined 10 times out of 10, where Groq's model declined once
+/// in 3 and twice wrote something else.
 const PROVIDERS: [Provider; 3] = [
+    Provider {
+        name: "Gemini",
+        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        model: "gemini-3.5-flash-lite",
+        keychain_service: "handy-gemini-key",
+        env_var: "GEMINI_API_KEY",
+    },
     Provider {
         name: "Groq",
         url: "https://api.groq.com/openai/v1/chat/completions",
@@ -53,13 +64,6 @@ const PROVIDERS: [Provider; 3] = [
         keychain_service: "handy-openrouter-key",
         env_var: "OPENROUTER_API_KEY",
     },
-    Provider {
-        name: "Gemini",
-        url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        model: "gemini-3.5-flash-lite",
-        keychain_service: "handy-gemini-key",
-        env_var: "GEMINI_API_KEY",
-    },
 ];
 
 /// Names no app on purpose: the model finds the conversation from what is on
@@ -68,6 +72,13 @@ const PROVIDERS: [Provider; 3] = [
 /// Internal notes may inform the reply but never appear in it: a live test
 /// replied "only available on our Pro plan, and I'm unable to offer refunds",
 /// both taken from a note the customer could not see.
+///
+/// The reply is written as the user, never to the user, and never accepts a
+/// meetup: a live test answered "Where should I pick you up?" with "you could
+/// just text 'the office cafe bar around the front of HQ' if they ask where",
+/// and another answered "I am already at the bar waiting for you" with "will
+/// swing by in about 35 minutes". The user never meets in person, so this rule
+/// comes before the others, and `promises_to_meet` checks the reply as well.
 fn instructions() -> String {
     format!(
         "The image is a screenshot of the user's screen. Somewhere on it is a conversation \
@@ -86,6 +97,30 @@ fn instructions() -> String {
            or labelled \"Note\" or \"Internal\". The other side never sees them.\n\
          \n\
          Then write the reply:\n\
+         - The user never meets anyone in person. This rule has no exceptions and comes \
+           before every other rule. Never accept or suggest a meetup. Never say the user is \
+           coming, on the way, nearly there or running late. Never give an arrival time, a \
+           time or a place, and never ask where to meet or where to be picked up. This holds \
+           even when the other side thinks a meetup is already planned or says they are \
+           already waiting: then say clearly and kindly that the user cannot make it, so they \
+           do not keep waiting. Do not invent an excuse. Stay warm, and ask them a question \
+           about themselves so the conversation keeps going.\n\
+         - The user never shares personal contact details: no phone number, email address, \
+           social media account or username, and no other way to reach the user outside this \
+           conversation. This rule has no exceptions. If the other side asks for them, or sends \
+           their own so the user will send theirs back, do not share anything and do not \
+           refuse outright. Dodge it lightly: say warmly that you prefer to keep chatting right \
+           here, then carry on the conversation with a question. Never repeat their details \
+           back.\n\
+         - Never use the word love or any word made from it, such as loved, loving or \
+           lovely. Use other words instead, such as enjoy, like, glad or happy.\n\
+         - If the other side says they have feelings for the user, or sends compliments, pet \
+           names or kisses, never ignore it and never return it. Acknowledge it in one short, \
+           warm and light sentence, such as thanking them for the kind words or saying it made \
+           you smile. Do not match their feelings, do not use pet names, and keep a friendly \
+           distance. Then carry on the conversation.\n\
+         - Write the message itself, as the user, to the other side. Never write advice to \
+           the user, and never describe what the user could say or text.\n\
          - Read the last {MESSAGES_TO_READ} messages that the other side can see. Reply to the \
            newest message from the other side.\n\
          - Internal notes are private to the team. Follow what a note tells the team to do or \
@@ -118,7 +153,12 @@ fn build_request(model: &str, jpeg_base64: &str) -> Value {
                         "type": "image_url",
                         "image_url": { "url": format!("data:image/jpeg;base64,{jpeg_base64}") }
                     },
-                    { "type": "text", "text": "Write the reply." }
+                    // Repeated here because the system prompt alone left "I would
+                    // love to hear more" in 3 of 10 live replies; here, 0 of 10.
+                    {
+                        "type": "text",
+                        "text": "Write the reply. Do not use the word love or any word made from it."
+                    }
                 ]
             }
         ]
@@ -156,7 +196,110 @@ fn parse_reply(response: &Value) -> Result<String, String> {
     if text.is_empty() {
         return Err("no reply text".to_string());
     }
+    if promises_to_meet(text) {
+        return Err(format!("the reply promised to meet in person: {text}"));
+    }
+    if shares_contact_details(text) {
+        return Err("the reply contained an email address or phone number".to_string());
+    }
+    if uses_the_word_love(text) {
+        return Err(format!("the reply used the word love: {text}"));
+    }
     Ok(text.to_string())
+}
+
+/// True when the reply uses "love" or a word made from it, such as "loved",
+/// "lovely", "loving" or "beloved". The user chats with many people and the
+/// word reads as more than friendship, so such a reply is never typed. Words
+/// that only contain the letters, such as "glove" or "clover", are allowed.
+fn uses_the_word_love(text: &str) -> bool {
+    text.split(|c: char| !c.is_alphabetic())
+        .map(str::to_lowercase)
+        .any(|word| {
+            word.starts_with("love")
+                || word.starts_with("lovi")
+                || word.starts_with("belove")
+                || word.ends_with("love")
+                    && !["glove", "clove", "plove"]
+                        .iter()
+                        .any(|w| word.ends_with(w))
+        })
+}
+
+/// The shortest run of digits that counts as a phone number.
+const PHONE_MIN_DIGITS: usize = 7;
+
+/// True when the reply holds an email address or a phone number. The user never
+/// shares contact details, so such a reply is never typed, whatever the prompt
+/// told the model. The reply itself is not logged: it holds the details.
+fn shares_contact_details(text: &str) -> bool {
+    let email = text.split_whitespace().any(|word| {
+        let word = word.trim_matches(|c: char| !c.is_alphanumeric());
+        match word.split_once('@') {
+            Some((name, domain)) => !name.is_empty() && domain.contains('.'),
+            None => false,
+        }
+    });
+    // Digits joined by the separators phone numbers are written with, such as
+    // "+254 712 345 678" or "(555) 123-4567".
+    let mut digits = 0;
+    let phone = text.chars().any(|c| {
+        if c.is_ascii_digit() {
+            digits += 1;
+        } else if !matches!(c, ' ' | '-' | '(' | ')' | '+') {
+            digits = 0;
+        }
+        digits >= PHONE_MIN_DIGITS
+    });
+    email || phone
+}
+
+/// Phrases that say the user is coming, or ask where to meet.
+const MEETUP_PROMISES: [&str; 18] = [
+    "on my way",
+    "omw",
+    "be there",
+    "see you there",
+    "see you soon",
+    "swing by",
+    "pick me up",
+    "pick you up",
+    "i'm coming",
+    "i am coming",
+    "i'll come",
+    "i will come",
+    "minutes away",
+    "heading over",
+    "head over",
+    "almost there",
+    "nearly there",
+    "find you",
+];
+
+/// True when the reply promises to meet in person: it uses a phrase from
+/// `MEETUP_PROMISES` or names a clock time such as "12:30" or "12pm". The user
+/// never meets in person, so such a reply is never typed, whatever the prompt
+/// told the model.
+fn promises_to_meet(text: &str) -> bool {
+    let text = text.to_lowercase().replace('\u{2019}', "'");
+    if MEETUP_PROMISES.iter().any(|phrase| text.contains(phrase)) {
+        return true;
+    }
+    let chars: Vec<char> = text.chars().collect();
+    chars.iter().enumerate().any(|(i, c)| {
+        if !c.is_ascii_digit() {
+            return false;
+        }
+        let rest: String = chars[i + 1..].iter().take(6).collect();
+        let rest = rest.trim_start_matches(|c: char| c.is_ascii_digit());
+        let clock = rest.starts_with(':') && rest[1..].starts_with(|c: char| c.is_ascii_digit());
+        let rest = rest.strip_prefix(' ').unwrap_or(rest);
+        let am_pm = ["am", "pm", "a.m", "p.m"].iter().any(|suffix| {
+            rest.starts_with(suffix)
+                && !rest[suffix.len()..].starts_with(|c: char| c.is_alphabetic())
+        });
+        clock || am_pm
+    })
 }
 
 /// Sends one request and returns the reply text. Any HTTP error, including a
@@ -322,17 +465,136 @@ mod tests {
     }
 
     #[test]
-    fn the_instructions_fit_any_chat_keep_notes_private_and_ask_for_three_messages() {
+    fn the_instructions_fit_any_chat_keep_notes_private_and_read_five_messages() {
         let text = instructions();
         assert!(text.contains("First, find the conversation"));
         assert!(text.contains("two to four sentences"));
         for app in ["WhatsApp", "Gleap", "Slack", "Instagram"] {
             assert!(!text.contains(app), "the instructions must not name {app}");
         }
-        assert!(text.contains("last 3 messages"));
+        assert!(text.contains("last 5 messages"));
         assert!(text.contains("Internal notes are private to the team"));
         assert!(text.contains("never quote it, repeat it or hint at it"));
         assert!(text.contains("a fact that appears only in a note"));
+    }
+
+    #[test]
+    fn the_instructions_write_as_the_user_and_never_meet() {
+        let text = instructions();
+        assert!(text.contains("Never write advice to the user"));
+        assert!(text.contains("The user never meets anyone in person"));
+        assert!(text.contains("says they are already waiting"));
+        assert!(text.contains("Do not invent an excuse"));
+    }
+
+    #[test]
+    fn the_instructions_never_share_contact_details() {
+        let text = instructions();
+        assert!(text.contains("The user never shares personal contact details"));
+        assert!(text.contains("sends their own so the user will send theirs back"));
+        assert!(text.contains("prefer to keep chatting right here"));
+        assert!(text.contains("Never repeat their details back"));
+    }
+
+    #[test]
+    fn a_reply_with_contact_details_is_never_typed() {
+        for reply in [
+            "Sure! My number is +254 712 345 678, call me anytime.",
+            "Text me on (555) 123-4567 instead.",
+            "Here's my email: someone.real@example.com.",
+            "Thanks, I've saved yours (friend@mail.co.ke) and I'll write you there.",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            let error = parse_reply(&response).unwrap_err();
+            assert!(error.contains("email address or phone number"), "{reply}");
+            assert!(!error.contains(reply), "the details must not be logged");
+        }
+    }
+
+    #[test]
+    fn the_instructions_never_use_the_word_love() {
+        let text = instructions();
+        assert!(text.contains("Never use the word love or any word made from it"));
+        assert!(text.contains("such as enjoy, like, glad or happy"));
+    }
+
+    #[test]
+    fn the_instructions_acknowledge_feelings_without_returning_them() {
+        let text = instructions();
+        assert!(text.contains("never ignore it and never return it"));
+        assert!(text.contains("one short, warm and light sentence"));
+        assert!(text.contains("keep a friendly distance"));
+    }
+
+    #[test]
+    fn a_reply_with_the_word_love_is_never_typed() {
+        for reply in [
+            "I would love to hear more about the photos!",
+            "Love that for you.",
+            "That sounds LOVELY, enjoy it.",
+            "You're loving this, I can tell.",
+            "Thanks, I loved it.",
+            "Your beloved safari!",
+            "Selflove is important.",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            let error = parse_reply(&response).unwrap_err();
+            assert!(error.contains("the word love"), "{reply}");
+        }
+    }
+
+    #[test]
+    fn a_reply_with_love_only_inside_another_word_is_typed() {
+        for reply in [
+            "I lost a glove on the hike and found a four-leaf clover.",
+            "Add a clove of garlic. I'd enjoy hearing how it turns out!",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            assert_eq!(parse_reply(&response).unwrap(), reply);
+        }
+    }
+
+    #[test]
+    fn a_dodge_without_contact_details_is_typed() {
+        for reply in [
+            "Haha I'm honestly best reached right here, I enjoy our chats! How did the move go?",
+            "We sold 1,500 tickets by 31/10/2026, and @everyone enjoyed it.",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            assert_eq!(parse_reply(&response).unwrap(), reply);
+        }
+    }
+
+    #[test]
+    fn a_reply_that_promises_to_meet_is_never_typed() {
+        for reply in [
+            // Both were typed into a real chat before this check existed.
+            "Haha that sounds perfect for me. How about around 12:30? That gives us a little \
+             buffer to find each other at the station and grab ourselves a table.",
+            "I'm grabbing a few supplies and will swing by in about 35 minutes - let me know \
+             where you are so I can find you.",
+            "Sure, see you at 12pm!",
+            "Sure, see you at 1 p.m.",
+            "On my way!",
+            "I\u{2019}m coming, give me five.",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            let error = parse_reply(&response).unwrap_err();
+            assert!(error.contains("promised to meet"), "{reply}");
+        }
+    }
+
+    #[test]
+    fn a_warm_decline_is_typed() {
+        for reply in [
+            "I'm so glad you asked, but I can't make it to lunch today! How has your week been?",
+            "So sorry, I can't make it today, don't wait for me. Enjoy that beer! How was work?",
+            "I have 3 amazing ideas for your project and 2 questions about the budget.",
+            "I am free to chat whenever, and I'm happy to help with the 2024 report.",
+        ] {
+            let response = json!({ "choices": [{ "message": { "content": reply } }] });
+            assert_eq!(parse_reply(&response).unwrap(), reply);
+        }
     }
 
     #[test]
