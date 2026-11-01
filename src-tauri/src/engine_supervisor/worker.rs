@@ -24,9 +24,9 @@ use transcribe_cpp::{
 pub(super) const LOG_LINE_PREFIX: &str = "\u{1}";
 
 /// A request as handed from the stdin reader to the main loop.
-struct Incoming {
-    request: Request,
-    pcm: Vec<f32>,
+pub(super) struct Incoming {
+    pub request: Request,
+    pub pcm: Vec<f32>,
 }
 
 pub fn run() -> i32 {
@@ -56,6 +56,11 @@ pub fn run() -> i32 {
     {
         error!("Failed to start the request reader: {}", e);
         return 2;
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    if std::env::args_os().any(|arg| arg == super::OPENVINO_FLAG) {
+        return super::openvino::serve(protocol_out, &requests);
     }
 
     transcribe_cpp::init_logging();

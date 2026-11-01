@@ -19,10 +19,16 @@
 //! all: a driver that crashes or hangs while initializing can't take the CPU
 //! fallback down with it.
 //!
+//! A worker started with [`OPENVINO_FLAG`] serves the same protocol with
+//! OpenVINO GenAI instead, for Whisper on an Intel NPU (`openvino`).
+//!
 //! - `protocol`: the framed request/response protocol between the two.
 //! - `supervisor`: the parent side ([`EngineSupervisor`]).
 //! - `worker`: the child process.
+//! - `openvino`: the worker's OpenVINO engine.
 
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+mod openvino;
 mod protocol;
 mod supervisor;
 mod worker;
@@ -37,6 +43,9 @@ pub use supervisor::{
 pub const WORKER_FLAG: &str = "--transcribe-worker";
 /// Worker argument: register only the CPU backends.
 const CPU_ONLY_FLAG: &str = "--cpu-only";
+/// Worker argument: serve with the OpenVINO engine, not transcribe.cpp.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+const OPENVINO_FLAG: &str = "--openvino";
 const LOG_LEVEL_ENV: &str = "HANDY_TRANSCRIBE_WORKER_LOG";
 
 /// Whether this process was launched as a transcription worker. Checked in

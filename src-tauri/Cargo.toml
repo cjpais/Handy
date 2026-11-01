@@ -93,6 +93,10 @@ hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downl
   "tokio",
 ] }
 
+[target.'cfg(any(target_os = "linux", target_os = "windows"))'.dependencies]
+# OpenVINO (Whisper on Intel NPUs) is optional: its C API is loaded at runtime.
+libloading = "0.8"
+
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 

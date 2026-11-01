@@ -27,7 +27,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command as ProcessCommand, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{mpsc, Arc, Mutex, MutexGuard};
+use std::sync::{mpsc, Arc, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 use transcribe_cpp::{Backend, RunOptions, StreamOptions, StreamText, StreamUpdate, Transcript};
@@ -38,6 +38,10 @@ use transcribe_cpp::{Backend, RunOptions, StreamOptions, StreamText, StreamUpdat
 const HELLO_TIMEOUT: Duration = Duration::from_secs(60);
 /// Model loads stay generous: a slow load is slow, not hung (#1841).
 const LOAD_TIMEOUT: Duration = Duration::from_secs(180);
+/// The first OpenVINO load of a model compiles it for the NPU, which takes
+/// minutes; later loads come from the compile cache in seconds.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+const OPENVINO_LOAD_TIMEOUT: Duration = Duration::from_secs(600);
 /// Floor for stream calls that do no decoding (begin, reset).
 const CALL_FLOOR: Duration = Duration::from_secs(30);
 /// How long a worker gets to exit after its stdin closes before it's killed.
@@ -223,6 +227,9 @@ struct Shared {
     loaded: Mutex<Option<LoadedInfo>>,
     /// The compute devices as last listed by a worker; `None` until one has.
     devices: Mutex<Option<Vec<DeviceInfo>>>,
+    /// The devices an OpenVINO worker listed, once per run: listed along
+    /// with every transcribe.cpp worker's devices.
+    openvino_devices: OnceLock<Vec<DeviceInfo>>,
     /// Held for the length of a device probe, so concurrent callers wait for
     /// the one probe instead of starting their own.
     probing: Mutex<()>,
@@ -243,6 +250,9 @@ impl Shared {
     /// and crashes or hangs doing so, the GPU is marked unavailable.
     fn probe_devices(&self) {
         let cpu_only = !self.gpu_allowed;
+        if !cpu_only {
+            self.probe_openvino_devices();
+        }
         match self.hello(cpu_only, true) {
             Ok(worker) => drop(worker),
             Err(failure) => {
@@ -274,7 +284,35 @@ impl Shared {
         }
     }
 
-    fn set_devices(&self, new: Vec<DeviceInfo>) {
+    /// List the OpenVINO devices once. Without OpenVINO installed the worker
+    /// fails its hello at once, and none are listed.
+    fn probe_openvino_devices(&self) {
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
+        self.openvino_devices.get_or_init(|| {
+            let listed = Worker::spawn_openvino()
+                .map_err(Failure::Spawn)
+                .and_then(|mut worker| {
+                    worker.call(&Request::Hello { list_devices: true }, None, HELLO_TIMEOUT)
+                });
+            match listed {
+                Ok(Response::Hello {
+                    devices: Some(devices),
+                }) => devices,
+                Ok(other) => {
+                    debug!("No OpenVINO transcription devices: {:?}", other);
+                    Vec::new()
+                }
+                Err(failure) => {
+                    // The usual case: OpenVINO is optional and most machines lack it.
+                    info!("No OpenVINO devices: {}", failure);
+                    Vec::new()
+                }
+            }
+        });
+    }
+
+    fn set_devices(&self, mut new: Vec<DeviceInfo>) {
+        new.extend(self.openvino_devices.get().into_iter().flatten().cloned());
         let mut current = lock(&self.devices);
         if let Some(old) = &*current {
             let identity = |d: &DeviceInfo| (d.key.clone(), d.index);
@@ -735,6 +773,19 @@ impl Owner {
     /// see the CPU, so it doesn't list.
     fn start_worker(&self, spec: &LoadSpec) -> Result<(Worker, LoadedInfo), Failure> {
         let cpu_only = self.cpu_only_worker(spec);
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
+        if !cpu_only && super::openvino::selects(&spec.device) {
+            let mut worker = Worker::spawn_openvino().map_err(Failure::Spawn)?;
+            worker.call(
+                &Request::Hello {
+                    list_devices: false,
+                },
+                None,
+                HELLO_TIMEOUT,
+            )?;
+            let info = worker.load_within(spec, OPENVINO_LOAD_TIMEOUT)?;
+            return Ok((worker, info));
+        }
         let mut worker = self.shared.hello(cpu_only, !cpu_only)?;
         let info = worker.load(spec)?;
         Ok((worker, info))
@@ -1120,6 +1171,35 @@ impl Worker {
     /// Start a worker process. A `cpu_only` worker never registers a GPU
     /// backend.
     fn spawn(cpu_only: bool) -> io::Result<Self> {
+        Self::start(cpu_only, |_| {})
+    }
+
+    /// Start a worker that serves with the OpenVINO engine, with the
+    /// libraries of an OpenVINO install from `INTEL_OPENVINO_DIR` on its
+    /// library path.
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    fn spawn_openvino() -> io::Result<Self> {
+        Self::start(false, |command| {
+            command.arg(super::OPENVINO_FLAG);
+            let dirs = super::openvino::library_dirs();
+            if dirs.is_empty() {
+                return;
+            }
+            #[cfg(windows)]
+            let var = "PATH";
+            #[cfg(not(windows))]
+            let var = "LD_LIBRARY_PATH";
+            let inherited = std::env::var_os(var);
+            let paths = dirs
+                .into_iter()
+                .chain(inherited.iter().flat_map(std::env::split_paths));
+            if let Ok(joined) = std::env::join_paths(paths) {
+                command.env(var, joined);
+            }
+        })
+    }
+
+    fn start(cpu_only: bool, configure: impl FnOnce(&mut ProcessCommand)) -> io::Result<Self> {
         // Under `cargo test` the current exe is the test harness; tests point
         // this at the built app instead.
         #[cfg(test)]
@@ -1140,6 +1220,7 @@ impl Worker {
         if cpu_only {
             command.arg(CPU_ONLY_FLAG);
         }
+        configure(&mut command);
         command
             .env(LOG_LEVEL_ENV, log::max_level().as_str())
             .stdin(Stdio::piped())
@@ -1212,12 +1293,16 @@ impl Worker {
     }
 
     fn load(&mut self, spec: &LoadSpec) -> Result<LoadedInfo, Failure> {
+        self.load_within(spec, LOAD_TIMEOUT)
+    }
+
+    fn load_within(&mut self, spec: &LoadSpec, timeout: Duration) -> Result<LoadedInfo, Failure> {
         let request = Request::Load {
             path: spec.path.clone(),
             backend: spec.backend,
             device: spec.device.clone(),
         };
-        match self.call(&request, None, LOAD_TIMEOUT)? {
+        match self.call(&request, None, timeout)? {
             Response::Loaded(info) => {
                 self.info = Some(info.clone());
                 Ok(info)
