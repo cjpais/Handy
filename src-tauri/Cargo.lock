@@ -2522,6 +2522,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-cpp",
+ "webkit2gtk-sys",
  "webview2-com",
  "whatlang",
  "windows 0.61.3",

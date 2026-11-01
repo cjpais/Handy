@@ -168,6 +168,9 @@ objc2-service-management = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+# Renderer policy in src/webkit_renderer.rs compares the linked WebKitGTK
+# version against the release that introduced damage-based compositing.
+webkit2gtk-sys = "2.0"
 gtk = "0.18"
 transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",
