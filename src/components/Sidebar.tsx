@@ -4,6 +4,7 @@ import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
+import { SnippetsSettings } from "./settings/Snippets";
 import {
   GeneralSettings,
   AdvancedSettings,
@@ -54,6 +55,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.advanced",
     icon: Cog,
     component: AdvancedSettings,
+    enabled: () => true,
+  },
+  snippets: {
+    labelKey: "sidebar.snippets",
+    icon: Sparkles,
+    component: SnippetsSettings,
     enabled: () => true,
   },
   postprocessing: {

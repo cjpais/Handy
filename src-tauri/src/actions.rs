@@ -434,6 +434,25 @@ pub(crate) async fn process_transcription_output(
         }
     }
 
+    // Expand only finalized output, after optional AI processing, so saved
+    // addresses are pasted literally and never sent to the polishing provider.
+    if settings.snippets_enabled {
+        let expanded = crate::snippets::apply_snippets(
+            &final_text,
+            settings.snippets_enabled,
+            settings
+                .snippets
+                .iter()
+                .map(|s| (s.phrase.as_str(), s.replacement.as_str(), s.enabled)),
+        );
+        if expanded != final_text {
+            // History already stores both the original transcription and an
+            // optional final version; retain both without a database migration.
+            post_processed_text = Some(expanded.clone());
+            final_text = expanded;
+        }
+    }
+
     ProcessedTranscription {
         final_text,
         post_processed_text,

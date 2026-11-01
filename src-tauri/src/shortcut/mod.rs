@@ -901,6 +901,27 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
 
 #[tauri::command]
 #[specta::specta]
+pub fn update_snippets(app: AppHandle, snippets: Vec<settings::Snippet>) -> Result<(), String> {
+    crate::snippets::validate_snippets(
+        snippets
+            .iter()
+            .map(|s| (s.id.as_str(), s.phrase.as_str(), s.replacement.as_str())),
+    )?;
+    let mut settings = settings::get_settings(&app);
+    settings.snippets = snippets;
+    settings::write_settings_checked(&app, settings)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_snippets_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.snippets_enabled = enabled;
+    settings::write_settings_checked(&app, settings)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,

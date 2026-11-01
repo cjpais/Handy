@@ -87,6 +87,26 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
+/// A literal spoken phrase and its saved expansion. Disabled entries are kept.
+#[derive(Serialize, Deserialize, Clone, Type)]
+pub struct Snippet {
+    pub id: String,
+    pub phrase: String,
+    pub replacement: String,
+    pub enabled: bool,
+}
+
+impl fmt::Debug for Snippet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Settings are logged at startup; saved text can contain private data.
+        f.debug_struct("Snippet")
+            .field("enabled", &self.enabled)
+            .field("phrase_chars", &self.phrase.chars().count())
+            .field("replacement_chars", &self.replacement.chars().count())
+            .finish()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
     pub id: String,
@@ -461,6 +481,10 @@ pub struct AppSettings {
     pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
+    #[serde(default)]
+    pub snippets_enabled: bool,
+    #[serde(default)]
+    pub snippets: Vec<Snippet>,
     #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
@@ -1018,6 +1042,8 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        snippets_enabled: false,
+        snippets: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
@@ -1397,6 +1423,25 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
     store.set("settings", serde_json::to_value(&settings).unwrap());
 }
 
+/// Snippet edits report persistence failures and restore the previous in-memory
+/// value, so the editor never claims an unsaved change succeeded.
+pub fn write_settings_checked(app: &AppHandle, settings: AppSettings) -> Result<(), String> {
+    let store = app
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .map_err(|_| "Could not open settings".to_string())?;
+    let previous = store.get("settings");
+    let value =
+        serde_json::to_value(&settings).map_err(|_| "Could not encode settings".to_string())?;
+    store.set("settings", value);
+    if store.save().is_err() {
+        if let Some(previous) = previous {
+            store.set("settings", previous);
+        }
+        return Err("Could not save settings to disk".to_string());
+    }
+    Ok(())
+}
+
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
     let settings = get_settings(app);
 
@@ -1459,9 +1504,24 @@ mod tests {
         );
         assert_eq!(settings.hold_threshold_ms, default_hold_threshold_ms());
         assert!(!settings.audio_feedback);
+        assert!(!settings.snippets_enabled);
+        assert!(settings.snippets.is_empty());
         assert!(settings.filler_word_removal_enabled);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
+    }
+
+    #[test]
+    fn snippet_debug_does_not_log_saved_text() {
+        let snippet = Snippet {
+            id: "private-id".into(),
+            phrase: "private spoken phrase".into(),
+            replacement: "private@example.com".into(),
+            enabled: true,
+        };
+        let logged = format!("{snippet:?}");
+        assert!(!logged.contains("private"));
+        assert!(logged.contains("replacement_chars"));
     }
 
     /// Frozen snapshot of a real v0.9.0-era settings store, as written to

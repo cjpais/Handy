@@ -10,6 +10,7 @@ import type {
   ShortcutActivation,
   VadBackend,
   LanguageDetectionMode,
+  Snippet,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
@@ -144,6 +145,16 @@ const settingUpdaters: {
     commands.changeOverlayPositionSetting(value as string),
   debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
   custom_words: (value) => commands.updateCustomWords(value as string[]),
+  snippets: async (value) => {
+    const result = await commands.updateSnippets(value as Snippet[]);
+    if (result.status === "error") throw new Error(result.error);
+  },
+  snippets_enabled: async (value) => {
+    const result = await commands.changeSnippetsEnabledSetting(
+      value as boolean,
+    );
+    if (result.status === "error") throw new Error(result.error);
+  },
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_delay_ms: (value) =>
@@ -350,6 +361,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
         }
+        if (key === "snippets" || key === "snippets_enabled") throw error;
       } finally {
         setUpdating(updateKey, false);
       }

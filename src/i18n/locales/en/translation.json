@@ -10,6 +10,7 @@
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   },
   "sidebar": {
+    "snippets": "Snippets",
     "general": "General",
     "models": "Models",
     "advanced": "Advanced",
@@ -575,6 +576,33 @@
           "hour1": "After 1 hour",
           "sec15": "After 15 seconds (Debug)"
         }
+      },
+      "snippets": {
+        "title": "Snippets",
+        "description": "Replace spoken phrases with saved text in your final output. The dictionary remains separate and helps recognize words.",
+        "matching": "Matches whole phrases, ignoring capitalization and extra spaces. A standalone trigger inserts exactly your saved text, without automatic sentence punctuation. In sentences, surrounding punctuation stays. Your original transcript stays in History.",
+        "empty": "No snippets yet. Add a phrase and the text it should insert.",
+        "addTitle": "Add a snippet",
+        "editTitle": "Edit snippet",
+        "phrase": "Spoken phrase (up to 100 characters)",
+        "replacement": "Replacement text (up to 4,000 characters)",
+        "phrasePlaceholder": "my email address",
+        "replacementPlaceholder": "you@example.com",
+        "add": "Add snippet",
+        "save": "Save changes",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "remove": "Remove",
+        "enableRow": "Enable snippet: {{phrase}}",
+        "editRow": "Edit snippet: {{phrase}}",
+        "removeRow": "Remove snippet: {{phrase}}",
+        "invalidPhrase": "Enter a spoken phrase of 1 to 100 characters.",
+        "phraseNeedsWord": "A spoken phrase must contain at least one letter or number.",
+        "limitReached": "You can save up to 500 snippets. Remove a snippet before adding another.",
+        "invalidReplacement": "Enter replacement text of 1 to 4,000 characters. It can contain multiple lines.",
+        "duplicate": "A snippet already uses this phrase. Letter case and extra spaces do not make a phrase unique.",
+        "missing": "This snippet was removed elsewhere. Cancel editing to add a new snippet.",
+        "saveFailed": "Could not save snippets. Your draft is still here; try again."
       },
       "customWords": {
         "title": "Custom Words",

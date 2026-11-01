@@ -23,6 +23,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod snippets;
 mod system_languages;
 mod transcription_coordinator;
 mod tray;
@@ -590,6 +591,18 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
         times_ms.push(t.elapsed().as_millis() as u64);
     }
     let best_ms = times_ms.iter().copied().min().unwrap_or(0);
+    // Headless file transcription uses the same optional snippet expansion as
+    // interactive dictation. Preserve recognized text in machine-readable output.
+    let original_text = text.clone();
+    let settings = get_settings(app);
+    text = crate::snippets::apply_snippets(
+        &text,
+        settings.snippets_enabled,
+        settings
+            .snippets
+            .iter()
+            .map(|s| (s.phrase.as_str(), s.replacement.as_str(), s.enabled)),
+    );
     let rtf = if best_ms > 0 {
         audio_secs / (best_ms as f64 / 1000.0)
     } else {
@@ -609,6 +622,7 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
                 "best_ms": best_ms,
                 "rtf": rtf,
                 "text": text,
+                "original_text": original_text,
             })
         );
     } else {
@@ -699,6 +713,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
             shortcut::update_custom_words,
+            shortcut::update_snippets,
+            shortcut::change_snippets_enabled_setting,
             shortcut::suspend_all_bindings,
             shortcut::resume_all_bindings,
             shortcut::change_mute_while_recording_setting,

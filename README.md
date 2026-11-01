@@ -481,3 +481,13 @@ Handy is open-source software, but the Handy name, logo, icon, and brand assets 
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better
+
+## Spoken snippets
+
+Open **Snippets** in settings to map a spoken phrase, such as `my work email`, to exact saved text. Add a phrase and replacement, then turn Snippets on. It is off by default; individual entries can also be disabled without deleting them.
+
+Expansion runs locally on finalized output, after optional post-processing. Whole phrases match regardless of capitalization or whitespace, and the longest matching phrase wins. Inserted text is literal and is never expanded again. Punctuation around a phrase in a sentence is preserved; a standalone trigger ignores automatic trailing sentence punctuation. History retains the original transcription and stores expanded output in its processed-text field. Headless file transcription also applies snippets and includes `original_text` in JSON output.
+
+Recognition must identify the trigger correctly; matching is not fuzzy. Choose distinct phrases that you do not say in ordinary conversation. Replacements support line breaks. Limits are 500 entries, 100 characters per phrase, and 4,000 per replacement. Phrases differing only in case or whitespace count as duplicates. Normal paste preferences, including **Append Trailing Space**, still apply. Turning Snippets off restores ordinary output for subsequent transcriptions.
+
+![Snippets settings](docs/images/snippets-settings.png)
