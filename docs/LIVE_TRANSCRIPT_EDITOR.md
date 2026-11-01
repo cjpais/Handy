@@ -1,5 +1,9 @@
 # Live transcript editing on Windows
 
+![Live transcript editor in a mocked browser fixture](images/live-transcript-editor.png)
+
+Mocked browser fixture: recognition, native window focus, and paste delivery are simulated.
+
 With the Live recording overlay enabled, click the transcript to edit while
 recording continues. Manual corrections take precedence as recognition updates.
 Choose **Stop & review** (or **Ctrl+Enter**) to finish recognition, then choose
