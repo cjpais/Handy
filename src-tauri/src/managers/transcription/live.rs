@@ -5,6 +5,7 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
 use log::{debug, error, info};
+use tauri::Manager;
 use transcribe_cpp::StreamOptions;
 
 use super::chunked::{ChunkSetup, ChunkedDecode, PendingSetup};
@@ -168,6 +169,9 @@ impl<'a> StreamSession<'a> {
         let on_progress = {
             let perf = Arc::clone(&perf);
             let app_handle = tm.app_handle.clone();
+            let session_id = app_handle
+                .state::<crate::overlay_edit::OverlayEditor>()
+                .session_id();
             let languages = setup.languages.clone();
             let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
             move |progress: StreamProgress| {
@@ -178,7 +182,7 @@ impl<'a> StreamSession<'a> {
                     perf.record_emit();
                     let (committed, tentative) =
                         preview_script.convert(&text.committed, &text.tentative, &languages);
-                    emit_stream_text(&app_handle, &committed, &tentative);
+                    emit_stream_text(&app_handle, session_id, &committed, &tentative);
                 }
                 perf.maybe_log();
             }

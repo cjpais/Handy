@@ -958,7 +958,25 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing...",
-    "loadingModel": "Loading model..."
+    "loadingModel": "Loading model...",
+    "editLiveTranscript": "Edit live transcript",
+    "editTranscript": "Edit transcript",
+    "editPreparing": "Preparing transcript...",
+    "editRecording": "Recording continues while you edit",
+    "editFinalizing": "Finalizing transcript...",
+    "editConflict": "Some new speech could not be merged. Review the latest recognition below and copy anything you want into your draft. Paste confirms your draft.",
+    "editLatestRecognition": "Latest recognition",
+    "editPasting": "Pasting...",
+    "editPaste": "Paste",
+    "editStopReview": "Stop & review",
+    "editPasteShortcut": "Paste (Ctrl+Enter)",
+    "editStopReviewShortcut": "Stop recording and review the final transcript (Ctrl+Enter). Paste sends it after you review.",
+    "editCancel": "Cancel",
+    "editUnsupported": "Editing live transcripts is currently available on Windows only.",
+    "editBeginError": "Could not open the editor. Click the transcript to retry.",
+    "editSaveError": "Could not save this draft. Your text is still here; Paste will use it.",
+    "editPasteError": "Could not paste. Check the destination before retrying. Your draft is kept.",
+    "editCancelError": "Could not cancel. Please try again."
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

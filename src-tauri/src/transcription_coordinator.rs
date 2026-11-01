@@ -201,6 +201,7 @@ enum Command {
     Input(InputEvent),
     Cancel { recording_was_active: bool },
     ProcessingFinished,
+    StopForEdit,
 }
 
 /// Decide whether a key-up should be deferred (so auto-repeat can cancel it)
@@ -254,6 +255,20 @@ struct CoordinatorState {
 }
 
 impl CoordinatorState {
+    fn stop_for_edit(&mut self) -> Option<Effect> {
+        let Stage::Recording(binding_id) = &self.stage else {
+            return None;
+        };
+        let binding_id = binding_id.clone();
+        self.stage = Stage::Processing;
+        self.hold = None;
+        self.pending_release = None;
+        self.pending_press = None;
+        Some(Effect::Stop {
+            binding_id,
+            hotkey_string: "overlay-edit".into(),
+        })
+    }
     fn new() -> Self {
         Self {
             stage: Stage::Idle,
@@ -606,6 +621,13 @@ impl TranscriptionCoordinator {
                     let was_locked = state.is_recording_locked();
                     match cmd {
                         Command::Input(input) => {
+                            // Recording shortcuts may still STOP a live edited take,
+                            // but must not start/queue a new one over a retained draft.
+                            if !matches!(state.stage, Stage::Recording(_))
+                                && app.state::<crate::overlay_edit::OverlayEditor>().active()
+                            {
+                                continue;
+                            }
                             if let Some(effect) = state.on_input(input, Instant::now()) {
                                 run_effect(&app, &mut state, effect);
                             }
@@ -623,6 +645,11 @@ impl TranscriptionCoordinator {
                         }
                         Command::ProcessingFinished => {
                             if let Some(effect) = state.on_processing_finished() {
+                                run_effect(&app, &mut state, effect);
+                            }
+                        }
+                        Command::StopForEdit => {
+                            if let Some(effect) = state.stop_for_edit() {
                                 run_effect(&app, &mut state, effect);
                             }
                         }
@@ -716,6 +743,10 @@ impl TranscriptionCoordinator {
             warn!("Transcription coordinator channel closed");
         }
     }
+
+    pub fn stop_for_edit(&self) {
+        let _ = self.tx.send(Command::StopForEdit);
+    }
 }
 
 fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
@@ -768,6 +799,38 @@ fn stop(app: &AppHandle, binding_id: &str, hotkey_string: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn editor_stop_consumes_deferred_key_release_once() {
+        let mut state = CoordinatorState::new();
+        let now = Instant::now();
+        assert!(matches!(
+            state.on_input(input(ShortcutActivation::HoldOrToggle, true), now),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state
+            .on_input(
+                input(ShortcutActivation::HoldOrToggle, false),
+                now + ms(800)
+            )
+            .is_none());
+        assert!(state.pending_release.is_some());
+        assert!(
+            matches!(state.stop_for_edit(), Some(Effect::Stop { binding_id, .. }) if binding_id == BINDING)
+        );
+        assert!(state.pending_release.is_none());
+        assert!(state.hold.is_none());
+        assert!(state.on_grace_expired().is_none());
+        assert!(state.on_processing_finished().is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    #[test]
+    fn editor_stop_cannot_toggle_an_idle_session_on() {
+        let mut state = CoordinatorState::new();
+        assert!(state.stop_for_edit().is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
 
     #[test]
     fn push_to_talk_release_while_recording_defers_release() {

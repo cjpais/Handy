@@ -1,0 +1,3 @@
+Handy uses similar 3.2.1 (https://github.com/mitsuhiko/similar)
+for local text-difference calculation. It is licensed under Apache-2.0.
+The full license is provided in similar-LICENSE.txt in this directory.

@@ -18,6 +18,33 @@ use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 /// Serializes pastes: overlapping ones would restore each other's transcript as
 /// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
+struct ReviewTarget {
+    target: crate::overlay_edit::focus::PasteTarget,
+    app: AppHandle,
+    session: u64,
+}
+static REVIEW_TARGET: Mutex<Option<ReviewTarget>> = Mutex::new(None);
+struct ReviewTargetGuard;
+impl Drop for ReviewTargetGuard {
+    fn drop(&mut self) {
+        *REVIEW_TARGET.lock().unwrap_or_else(|e| e.into_inner()) = None;
+    }
+}
+
+fn check_review_target() -> Result<(), String> {
+    let guard = REVIEW_TARGET.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(context) = guard.as_ref() {
+        if !context
+            .app
+            .state::<crate::overlay_edit::OverlayEditor>()
+            .requested(context.session)
+        {
+            return Err("Review was cancelled".into());
+        }
+        context.target.check_focused()?;
+    }
+    Ok(())
+}
 
 /// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
 /// and waits for the result. Runs inline if already on the main thread, so no deadlock.
@@ -30,6 +57,7 @@ fn with_enigo<T: Send + 'static>(
     app_handle
         .run_on_main_thread(move || {
             let result = (|| {
+                check_review_target()?;
                 let enigo_state = app
                     .try_state::<EnigoState>()
                     .ok_or("Enigo state not initialized")?;
@@ -798,6 +826,29 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 /// thread: it sleeps between steps (input injection hops via `with_enigo`).
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    paste_inner(text, app_handle)
+}
+
+/// Reviewed text is never injected into an unverified foreground window.
+pub fn paste_to_target(
+    text: String,
+    app_handle: AppHandle,
+    target: crate::overlay_edit::focus::PasteTarget,
+    session: u64,
+) -> Result<(), String> {
+    let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    target.restore(&app_handle)?;
+    *REVIEW_TARGET.lock().unwrap_or_else(|e| e.into_inner()) = Some(ReviewTarget {
+        target,
+        app: app_handle.clone(),
+        session,
+    });
+    let _target = ReviewTargetGuard;
+    paste_inner(text, app_handle)
+}
+
+fn paste_inner(text: String, app_handle: AppHandle) -> Result<(), String> {
+    check_review_target()?;
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
@@ -835,7 +886,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             // clipboard handling) asynchronously; on failure fall through to
             // the legacy path untouched.
             #[cfg(any(target_os = "macos", target_os = "windows"))]
-            if settings.reliable_paste {
+            // Deferred reliable-paste auto-submit would outlive the focus guard.
+            // Reviewed output uses the guarded synchronous path instead.
+            if settings.reliable_paste
+                && REVIEW_TARGET
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .is_none()
+            {
                 // Runs entirely on the main thread, as it requires.
                 let (text, app) = (text.clone(), app_handle.clone());
                 let (auto_submit, auto_submit_key, clipboard_handling) = (
@@ -870,6 +928,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?
         }
         PasteMethod::ExternalScript => {
+            check_review_target()?;
             let script_path = settings
                 .external_script_path
                 .as_ref()

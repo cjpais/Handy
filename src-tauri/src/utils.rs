@@ -100,6 +100,8 @@ fn native_windows_machine() -> Option<u16> {
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
 pub fn cancel_current_operation(app: &AppHandle) {
+    app.state::<crate::overlay_edit::OverlayEditor>()
+        .cancel(app);
     info!("Initiating operation cancellation...");
 
     // Unregister the cancel shortcut asynchronously

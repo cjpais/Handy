@@ -407,3 +407,119 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.stext-editable {
+  cursor: text;
+}
+.stext-editable[aria-disabled="true"] {
+  cursor: default;
+}
+.stext-editable:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: -3px;
+}
+
+/* The native editor window is 400 x 320. Keep the same Live card surface and
+   anchor, reserving space for actions even with a long transcript or an error. */
+.scard.editor,
+.ov-stage.top .scard.editor {
+  box-sizing: border-box;
+  width: 392px;
+  height: min(312px, 100vh);
+  max-width: calc(100vw - 2px);
+  flex-direction: column;
+  border-radius: 16px;
+  padding: 12px;
+  gap: 8px;
+  animation: none;
+}
+.sedit-heading {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--s-muted);
+  font-size: 12px;
+}
+.sedit-timer {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+.sedit-conflict {
+  flex: none;
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--s-muted);
+}
+.sedit-conflict p {
+  margin: 0 0 4px;
+}
+.sedit-conflict label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sedit-recognition {
+  box-sizing: border-box;
+  height: 48px;
+  width: 100%;
+  resize: none;
+  overflow: auto;
+  background: var(--s-hair);
+  border: 1px solid var(--s-border);
+  border-radius: 5px;
+  padding: 4px;
+  font: 11px/1.3 var(--s-font);
+  color: var(--color-text);
+}
+.sedit-input {
+  box-sizing: border-box;
+  width: 100%;
+  flex: 1;
+  min-height: 32px;
+  resize: none;
+  overflow: auto;
+  border: 1px solid var(--s-border);
+  border-radius: 7px;
+  padding: 8px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: 14px/1.4 var(--s-font);
+}
+.sedit-input:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: -1px;
+}
+.sedit-error {
+  flex: none;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text);
+}
+.sedit-actions {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.sedit-actions button {
+  border: 1px solid var(--s-border);
+  border-radius: 7px;
+  padding: 5px 14px;
+  background: var(--s-hair);
+  color: var(--color-text);
+  font: 12px var(--s-font);
+  cursor: pointer;
+}
+.sedit-actions .sedit-paste {
+  background: var(--s-accent-soft);
+}
+.sedit-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sedit-actions button:focus-visible {
+  outline: 2px solid var(--s-accent);
+  outline-offset: 1px;
+}

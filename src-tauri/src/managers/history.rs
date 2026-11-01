@@ -432,6 +432,25 @@ impl HistoryManager {
         Ok(entry)
     }
 
+    /// Save a reviewed draft without modifying original recognition or language.
+    pub fn update_review_text(&self, id: i64, text: String) -> Result<()> {
+        let conn = self.get_connection()?;
+        let changed = conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1 WHERE id = ?2",
+            params![text, id],
+        )?;
+        if changed == 0 {
+            return Err(anyhow!("History entry no longer exists"));
+        }
+        let entry = conn.query_row(
+            &format!("SELECT {ENTRY_COLUMNS} FROM transcription_history WHERE id = ?1"),
+            params![id],
+            Self::map_history_entry,
+        )?;
+        let _ = (HistoryUpdatePayload::Updated { entry }).emit(&self.app_handle);
+        Ok(())
+    }
+
     pub fn cleanup_old_entries(&self) -> Result<()> {
         let retention_period = crate::settings::get_recording_retention_period(&self.app_handle);
 

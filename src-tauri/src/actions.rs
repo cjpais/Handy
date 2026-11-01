@@ -90,9 +90,12 @@ struct RecordingErrorEvent {
 
 /// Drop guard that finishes the transcription pipeline, including immediate
 /// model unloading on early exits.
-struct FinishGuard(AppHandle, Arc<TranscriptionManager>);
+struct FinishGuard(AppHandle, Arc<TranscriptionManager>, u64);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
+        self.0
+            .state::<crate::overlay_edit::OverlayEditor>()
+            .finish_recording(&self.0, self.2);
         self.1.maybe_unload_immediately("transcription session");
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
@@ -443,6 +446,9 @@ pub(crate) async fn process_transcription_output(
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        if app.state::<crate::overlay_edit::OverlayEditor>().active() {
+            return;
+        }
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
@@ -475,7 +481,9 @@ impl ShortcutAction for TranscribeAction {
         }
 
         let binding_id = binding_id.to_string();
-        RECORDING_SESSION.fetch_add(1, Ordering::SeqCst);
+        let session_id = RECORDING_SESSION.fetch_add(1, Ordering::SeqCst) + 1;
+        app.state::<crate::overlay_edit::OverlayEditor>()
+            .start(app, session_id);
         let tray_started = Instant::now();
         set_tray_state(app, TrayIconState::Recording);
         let tray_elapsed = tray_started.elapsed();
@@ -620,6 +628,9 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        let edit_session = RECORDING_SESSION.load(Ordering::SeqCst);
+        app.state::<crate::overlay_edit::OverlayEditor>()
+            .stopped(app, edit_session);
         // Prevent a slow microphone from emitting a ready event or start chime
         // after the user has already requested stop.
         app.state::<Arc<AudioRecordingManager>>()
@@ -645,7 +656,12 @@ impl ShortcutAction for TranscribeAction {
         // Capture this before finalizing the stream so every later working state
         // targets the same overlay that was shown for this transcription.
         let use_streaming_overlay = should_use_streaming_overlay(style, tm.is_streaming());
-        if use_streaming_overlay {
+        if app
+            .state::<crate::overlay_edit::OverlayEditor>()
+            .requested(edit_session)
+        {
+            crate::overlay::show_editing_overlay(app);
+        } else if use_streaming_overlay {
             tm.emit_stream_working(StreamWorkKind::Transcribing);
         } else {
             show_transcribing_overlay(app);
@@ -662,7 +678,7 @@ impl ShortcutAction for TranscribeAction {
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
-            let _guard = FinishGuard(ah.clone(), Arc::clone(&tm));
+            let _guard = FinishGuard(ah.clone(), Arc::clone(&tm), edit_session);
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
@@ -755,7 +771,11 @@ impl ShortcutAction for TranscribeAction {
                                 utils::redact_text(&transcription)
                             );
 
-                            if post_process {
+                            if post_process
+                                && !ah
+                                    .state::<crate::overlay_edit::OverlayEditor>()
+                                    .requested(edit_session)
+                            {
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
@@ -782,17 +802,34 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             // Save to history if WAV was saved
-                            if wav_saved {
-                                if let Err(err) = hm.save_entry(
+                            let history_id = if wav_saved {
+                                match hm.save_entry(
                                     file_name,
-                                    transcription,
+                                    transcription.clone(),
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                     language,
                                 ) {
-                                    error!("Failed to save history entry: {}", err);
+                                    Ok(entry) => Some(entry.id),
+                                    Err(err) => {
+                                        error!("Failed to save history entry: {}", err);
+                                        None
+                                    }
                                 }
+                            } else {
+                                None
+                            };
+
+                            if ah.state::<crate::overlay_edit::OverlayEditor>().finalize(
+                                &ah,
+                                edit_session,
+                                processed.final_text.clone(),
+                                history_id,
+                            ) {
+                                // The microphone/engine buffers can drain now. A retained
+                                // draft blocks new starts until explicit Paste or Cancel.
+                                return;
                             }
 
                             if processed.final_text.is_empty() {

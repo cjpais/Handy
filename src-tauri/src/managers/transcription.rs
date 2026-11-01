@@ -1369,7 +1369,15 @@ fn agreed_language(transcripts: &[Transcript]) -> Option<String> {
         .filter(|first| detected.all(|language| language.as_ref() == Some(first)))
 }
 
-fn emit_stream_text(app_handle: &AppHandle, committed: &str, tentative: &str) {
+fn emit_stream_text(app_handle: &AppHandle, session_id: u64, committed: &str, tentative: &str) {
+    let visible = if committed.is_empty() {
+        tentative.to_string()
+    } else {
+        format!("{committed} {tentative}")
+    };
+    app_handle
+        .state::<crate::overlay_edit::OverlayEditor>()
+        .observe(app_handle, session_id, visible);
     let _ = StreamTextEvent {
         committed: committed.to_string(),
         tentative: tentative.to_string(),

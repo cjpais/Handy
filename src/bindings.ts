@@ -344,6 +344,38 @@ async updateCustomWords(words: string[]) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getOverlayEditState() : Promise<Result<OverlayEditSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_overlay_edit_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async beginOverlayEdit() : Promise<Result<OverlayEditSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("begin_overlay_edit") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateOverlayEditDraft(sessionId: number, userRevision: number, baseAsr: string, text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_overlay_edit_draft", { sessionId, userRevision, baseAsr, text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async submitOverlayEdit(sessionId: number, userRevision: number, baseAsr: string, text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("submit_overlay_edit", { sessionId, userRevision, baseAsr, text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Temporarily unregister all bindings while the user is recording a
  * shortcut in the UI. This avoids firing actions while keys are recorded.
@@ -1292,6 +1324,8 @@ sha256: string | null } } |
  */
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type OverlayEditPhase = "inactive" | "recording" | "finalizing" | "review" | "pasting"
+export type OverlayEditSnapshot = { session_id: number; phase: OverlayEditPhase; text: string; asr_text: string; revision: number; user_revision: number; conflict: boolean; paste_requested: boolean; supported: boolean }
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base
