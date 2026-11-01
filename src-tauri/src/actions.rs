@@ -22,7 +22,7 @@ use specta::Type;
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
@@ -82,6 +82,31 @@ const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 /// doesn't reset the tray or hide the overlay of a newer one.
 static RECORDING_SESSION: AtomicU64 = AtomicU64::new(0);
 
+struct ContextSelection {
+    session: u64,
+    text: String,
+}
+
+/// Selection captured at the start of a context-scribe recording, keyed by
+/// [`RECORDING_SESSION`] so a newer take cannot consume an older one.
+static CONTEXT_SELECTION: Mutex<Option<ContextSelection>> = Mutex::new(None);
+
+fn store_context_selection(session: u64, text: String) {
+    *CONTEXT_SELECTION
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner) = Some(ContextSelection { session, text });
+}
+
+fn take_context_selection(session: u64) -> Option<String> {
+    let mut slot = CONTEXT_SELECTION
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    match slot.as_ref() {
+        Some(captured) if captured.session == session => slot.take().map(|captured| captured.text),
+        _ => None,
+    }
+}
+
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
     error_type: String,
@@ -113,6 +138,9 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Read the focused OS selection and send it with the transcript.
+    /// Implies post-processing. Only the context-scribe hotkey sets this.
+    context_scribe: bool,
 }
 
 /// Field name for structured output JSON schema
@@ -136,10 +164,91 @@ fn strip_think_block(s: &str) -> &str {
     s
 }
 
+const OUTPUT_PLACEHOLDER: &str = "${output}";
+const SELECTION_PLACEHOLDER: &str = "${selection}";
+
+/// Substitute `${output}` and `${selection}` without scanning the inserted
+/// values, so a selection that itself contains `${output}` is left alone.
+fn expand_prompt_template(template: &str, output: &str, selection: &str) -> String {
+    let mut expanded = String::with_capacity(template.len() + output.len() + selection.len());
+    let mut rest = template;
+    while !rest.is_empty() {
+        let output_at = rest.find(OUTPUT_PLACEHOLDER);
+        let selection_at = rest.find(SELECTION_PLACEHOLDER);
+        let (index, placeholder, value) = match (output_at, selection_at) {
+            (None, None) => {
+                expanded.push_str(rest);
+                break;
+            }
+            (Some(index), None) => (index, OUTPUT_PLACEHOLDER, output),
+            (None, Some(index)) => (index, SELECTION_PLACEHOLDER, selection),
+            (Some(output_index), Some(selection_index)) if output_index <= selection_index => {
+                (output_index, OUTPUT_PLACEHOLDER, output)
+            }
+            (Some(_), Some(selection_index)) => (selection_index, SELECTION_PLACEHOLDER, selection),
+        };
+        expanded.push_str(&rest[..index]);
+        expanded.push_str(value);
+        rest = &rest[index + placeholder.len()..];
+    }
+    expanded
+}
+
 /// Build a system prompt from the user's prompt template.
-/// Removes `${output}` placeholder since the transcription is sent as the user message.
-fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+/// Removes `${output}` because the transcription is sent as the user message,
+/// and inserts `${selection}` for context scribe.
+fn build_system_prompt(prompt_template: &str, selection: &str) -> String {
+    expand_prompt_template(prompt_template, "", selection)
+        .trim()
+        .to_string()
+}
+
+/// What to type after transcription, and whether that typing must replace a
+/// captured selection instead of following the user's usual paste settings.
+#[derive(Debug, PartialEq, Eq)]
+struct TranscriptionPaste {
+    /// Empty means do not paste.
+    text: String,
+    replace_selection: bool,
+}
+
+fn resolve_transcription_paste(
+    transcription: &str,
+    post_process: bool,
+    llm_output: Option<String>,
+    selection: Option<&str>,
+) -> TranscriptionPaste {
+    let replacing = selection.is_some_and(|text| !text.is_empty());
+    if !post_process {
+        return TranscriptionPaste {
+            text: transcription.to_string(),
+            replace_selection: false,
+        };
+    }
+
+    match llm_output {
+        // A blank model reply must not wipe the text the user had selected.
+        Some(text) if replacing && text.trim().is_empty() => TranscriptionPaste {
+            text: String::new(),
+            replace_selection: false,
+        },
+        Some(text) => {
+            let replace_selection = replacing && !text.is_empty();
+            TranscriptionPaste {
+                text,
+                replace_selection,
+            }
+        }
+        // The model produced nothing. Keep the selection; do not type the dictation over it.
+        None if replacing => TranscriptionPaste {
+            text: String::new(),
+            replace_selection: false,
+        },
+        None => TranscriptionPaste {
+            text: transcription.to_string(),
+            replace_selection: false,
+        },
+    }
 }
 
 /// Returns `true` when a transcription has no meaningful content to
@@ -175,7 +284,11 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+    selection: &str,
+) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
@@ -250,7 +363,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt);
+        let system_prompt = build_system_prompt(&prompt, selection);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -364,8 +477,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Legacy mode: the whole template is the user message, with both placeholders filled.
+    let processed_prompt = expand_prompt_template(&prompt, transcription, selection);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -405,22 +518,28 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    /// Paste with Ctrl/Cmd+V and without a trailing space or auto-submit.
+    pub replace_selection: bool,
 }
 
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
     post_process: bool,
+    selection: Option<String>,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
-    let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
+    let mut llm_output: Option<String> = None;
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) =
+            post_process_transcription(&settings, transcription, selection.as_deref().unwrap_or(""))
+                .await
+        {
             post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+            llm_output = Some(processed_text);
 
             if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
                 if let Some(prompt) = settings
@@ -434,10 +553,18 @@ pub(crate) async fn process_transcription_output(
         }
     }
 
+    let resolved = resolve_transcription_paste(
+        transcription,
+        post_process,
+        llm_output,
+        selection.as_deref(),
+    );
+
     ProcessedTranscription {
-        final_text,
+        final_text: resolved.text,
         post_processed_text,
         post_process_prompt,
+        replace_selection: resolved.replace_selection,
     }
 }
 
@@ -475,7 +602,18 @@ impl ShortcutAction for TranscribeAction {
         }
 
         let binding_id = binding_id.to_string();
-        RECORDING_SESSION.fetch_add(1, Ordering::SeqCst);
+        let session = RECORDING_SESSION.fetch_add(1, Ordering::SeqCst) + 1;
+        if self.context_scribe {
+            // Before the overlay and the microphone. The hotkey chord may still
+            // be held; the accessibility/UI Automation path does not care, and
+            // the clipboard fallback waits for those modifiers.
+            let selected = crate::selection::capture_focused_selection(app);
+            debug!(
+                "Context scribe captured {} characters of selected text",
+                selected.chars().count()
+            );
+            store_context_selection(session, selected);
+        }
         let tray_started = Instant::now();
         set_tray_state(app, TrayIconState::Recording);
         let tray_elapsed = tray_started.elapsed();
@@ -597,6 +735,9 @@ impl ShortcutAction for TranscribeAction {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
+            if self.context_scribe {
+                let _ = take_context_selection(session);
+            }
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             tm.cancel_stream();
@@ -659,10 +800,19 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let context_scribe = self.context_scribe;
+        let session = RECORDING_SESSION.load(Ordering::SeqCst);
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone(), Arc::clone(&tm));
+            // Take this session's selection before any await so a newer
+            // recording can store its own without us consuming it later.
+            let selection = if context_scribe {
+                take_context_selection(session)
+            } else {
+                None
+            };
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
@@ -763,7 +913,12 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
+                                process_transcription_output(
+                                    &ah,
+                                    &transcription,
+                                    post_process,
+                                    selection,
+                                ),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
                             .await
@@ -808,6 +963,7 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let replace_selection = processed.replace_selection;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -826,21 +982,27 @@ impl ShortcutAction for TranscribeAction {
                                             return;
                                         }
 
-                                        let outcome =
-                                            match utils::paste(final_text, ah_clone.clone()) {
-                                                Ok(()) => {
-                                                    debug!(
-                                                        "Text pasted successfully in {:?}",
-                                                        paste_time.elapsed()
-                                                    );
-                                                    TranscriptionOutcome::Typed
-                                                }
-                                                Err(e) => {
-                                                    error!("Failed to paste transcription: {}", e);
-                                                    let _ = ah_clone.emit("paste-error", ());
-                                                    TranscriptionOutcome::Failed
-                                                }
-                                            };
+                                        let outcome = match if replace_selection {
+                                            utils::paste_replacing_selection(
+                                                final_text,
+                                                ah_clone.clone(),
+                                            )
+                                        } else {
+                                            utils::paste(final_text, ah_clone.clone())
+                                        } {
+                                            Ok(()) => {
+                                                debug!(
+                                                    "Text pasted successfully in {:?}",
+                                                    paste_time.elapsed()
+                                                );
+                                                TranscriptionOutcome::Typed
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to paste transcription: {}", e);
+                                                let _ = ah_clone.emit("paste-error", ());
+                                                TranscriptionOutcome::Failed
+                                            }
+                                        };
                                         // A new session may have started while
                                         // this paste ran; the UI is now its.
                                         if RECORDING_SESSION.load(Ordering::SeqCst) == session {
@@ -968,11 +1130,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            context_scribe: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            context_scribe: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_with_context_scribe".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: true,
+            context_scribe: true,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
@@ -988,8 +1161,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        build_system_prompt, complete_unless_cancelled, expand_prompt_template,
+        is_blank_transcription, resolve_transcription_paste, should_use_streaming_overlay,
+        strip_think_block, TranscriptionPaste,
     };
     use crate::settings::OverlayStyle;
     use std::future;
@@ -1071,5 +1245,91 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    #[test]
+    fn prompt_expansion_fills_output_and_selection_without_rescanning() {
+        let template = "Instruction.\n<selection>\n${selection}\n</selection>\n<transcript>\n${output}\n</transcript>";
+        let expanded = expand_prompt_template(
+            template,
+            "say ${selection} please",
+            "keep ${output} literal",
+        );
+        assert_eq!(
+            expanded,
+            "Instruction.\n<selection>\nkeep ${output} literal\n</selection>\n<transcript>\nsay ${selection} please\n</transcript>"
+        );
+
+        let system = build_system_prompt(template, "keep ${output} literal");
+        assert!(!system.contains("${selection}"));
+        assert!(!system.contains("${output}\n"));
+        assert!(system.contains("keep ${output} literal"));
+        assert!(system.contains("<transcript>"));
+    }
+
+    #[test]
+    fn legacy_prompt_without_selection_placeholder_is_unchanged() {
+        let template = "Clean this:\n${output}";
+        assert_eq!(
+            expand_prompt_template(template, "hello", "selected paragraph"),
+            "Clean this:\nhello"
+        );
+    }
+
+    #[test]
+    fn llm_none_with_selection_does_not_paste_raw_dictation() {
+        let paste = resolve_transcription_paste(
+            "make it shorter",
+            true,
+            None,
+            Some("the selected paragraph"),
+        );
+        assert_eq!(
+            paste,
+            TranscriptionPaste {
+                text: String::new(),
+                replace_selection: false,
+            }
+        );
+    }
+
+    #[test]
+    fn blank_llm_reply_does_not_replace_a_selection() {
+        let paste = resolve_transcription_paste(
+            "make it shorter",
+            true,
+            Some("  \n".to_string()),
+            Some("the selected paragraph"),
+        );
+        assert_eq!(paste.text, "");
+        assert!(!paste.replace_selection);
+    }
+
+    #[test]
+    fn llm_text_replaces_a_non_empty_selection() {
+        let paste = resolve_transcription_paste(
+            "make it shorter",
+            true,
+            Some("shorter paragraph".to_string()),
+            Some("the selected paragraph"),
+        );
+        assert_eq!(
+            paste,
+            TranscriptionPaste {
+                text: "shorter paragraph".to_string(),
+                replace_selection: true,
+            }
+        );
+    }
+
+    #[test]
+    fn llm_none_without_selection_pastes_the_dictation() {
+        let paste = resolve_transcription_paste("make it shorter", true, None, Some(""));
+        assert_eq!(paste.text, "make it shorter");
+        assert!(!paste.replace_selection);
+
+        let missing = resolve_transcription_paste("make it shorter", true, None, None);
+        assert_eq!(missing.text, "make it shorter");
+        assert!(!missing.replace_selection);
     }
 }

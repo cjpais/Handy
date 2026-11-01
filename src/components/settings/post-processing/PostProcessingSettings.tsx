@@ -20,6 +20,7 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
+import { ContextScribeToggle } from "../ContextScribeToggle";
 import { useSettings } from "../../../hooks/useSettings";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
@@ -356,7 +357,10 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <p className="text-xs text-ink-3">
                 <Trans
                   i18nKey="settings.postProcessing.prompts.promptTip"
-                  components={{ code: <code /> }}
+                  components={{
+                    output: <code />,
+                    selection: <code />,
+                  }}
                 />
               </p>
             </div>
@@ -423,7 +427,10 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <p className="text-xs text-ink-3">
                 <Trans
                   i18nKey="settings.postProcessing.prompts.promptTip"
-                  components={{ code: <code /> }}
+                  components={{
+                    output: <code />,
+                    selection: <code />,
+                  }}
                 />
               </p>
             </div>
@@ -470,6 +477,12 @@ export const PostProcessingSettings: React.FC = () => {
       <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
         <ShortcutInput
           shortcutId="transcribe_with_post_process"
+          descriptionMode="tooltip"
+          grouped={true}
+        />
+        <ContextScribeToggle descriptionMode="tooltip" grouped={true} />
+        <ShortcutInput
+          shortcutId="transcribe_with_context_scribe"
           descriptionMode="tooltip"
           grouped={true}
         />

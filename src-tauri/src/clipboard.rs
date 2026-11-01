@@ -5,10 +5,14 @@ use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMetho
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(target_os = "linux")]
 use std::sync::OnceLock;
 use std::sync::{mpsc, Mutex, PoisonError};
 use std::time::Duration;
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+use std::time::Instant;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -797,14 +801,38 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 /// Pastes `text` into the focused app. Call from a worker thread, never the main
 /// thread: it sleeps between steps (input injection hops via `with_enigo`).
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+    paste_inner(text, app_handle, false)
+}
+
+/// Pastes over a selection captured by context scribe.
+///
+/// Uses Ctrl/Cmd+V even when the user prefers direct typing or Shift+Insert
+/// (on X11 Shift+Insert pastes PRIMARY, not the clipboard). Skips the trailing
+/// space and auto-submit so the replacement is exactly the model text.
+/// `PasteMethod::None` and an external script are left alone.
+pub fn paste_replacing_selection(text: String, app_handle: AppHandle) -> Result<(), String> {
+    paste_inner(text, app_handle, true)
+}
+
+fn paste_inner(text: String, app_handle: AppHandle, replace_selection: bool) -> Result<(), String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
-    let paste_method = settings.paste_method;
+    let mut paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
+    let mut append_trailing_space = settings.append_trailing_space;
+    let mut auto_submit = settings.auto_submit;
+    if replace_selection {
+        append_trailing_space = false;
+        auto_submit = false;
+        paste_method = match paste_method {
+            PasteMethod::None | PasteMethod::ExternalScript => paste_method,
+            _ => PasteMethod::CtrlV,
+        };
+    }
 
     // Append trailing space if setting is enabled
-    let text = if settings.append_trailing_space {
+    let text = if append_trailing_space {
         format!("{} ", text)
     } else {
         text
@@ -839,7 +867,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 // Runs entirely on the main thread, as it requires.
                 let (text, app) = (text.clone(), app_handle.clone());
                 let (auto_submit, auto_submit_key, clipboard_handling) = (
-                    settings.auto_submit,
+                    auto_submit,
                     settings.auto_submit_key,
                     settings.clipboard_handling,
                 );
@@ -879,7 +907,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
     }
 
-    if should_send_auto_submit(settings.auto_submit, paste_method) {
+    if should_send_auto_submit(auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
         let auto_submit_key = settings.auto_submit_key;
         if let Err(error) = with_enigo(&app_handle, move |enigo| {
@@ -895,6 +923,90 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+/// Copies the focused control's selection by synthesizing Ctrl/Cmd+C.
+///
+/// The previous clipboard (text, or an image when there was no text) is
+/// restored before this returns. A private marker distinguishes "the app
+/// copied nothing" from "the selection happened to match the clipboard".
+///
+/// Windows and macOS only. Call after shortcut modifiers have been released:
+/// a physical Shift still held turns this into Ctrl+Shift+C.
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+pub(crate) fn copy_selection_from_focused_app(app: &AppHandle) -> Result<String, String> {
+    let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
+    let clipboard = app.clipboard();
+    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
+    let saved_image = if saved_text.is_none() {
+        clipboard.read_image().ok().map(|image| image.to_owned())
+    } else {
+        None
+    };
+
+    let marker = context_scribe_copy_marker();
+    write_text_to_clipboard(app, &marker)?;
+    let restore = ClipboardRestore {
+        app: app.clone(),
+        text: saved_text,
+        image: saved_image,
+    };
+
+    let copied = (|| -> Result<Option<String>, String> {
+        with_enigo(app, |enigo| input::send_copy_ctrl_c(enigo, 40))?;
+        let deadline = Instant::now() + Duration::from_millis(300);
+        loop {
+            if let Ok(text) = app.clipboard().read_text() {
+                if text != marker {
+                    return Ok(Some(text));
+                }
+            }
+            if Instant::now() >= deadline {
+                return Ok(None);
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    })();
+
+    drop(restore);
+
+    match copied {
+        Ok(Some(text)) if !text.is_empty() => Ok(text),
+        Ok(_) => Err("focused app did not copy a selection".into()),
+        Err(error) => Err(error),
+    }
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+fn context_scribe_copy_marker() -> String {
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!(
+        "\u{2060}handy-context-scribe-{}-{n}\u{2060}",
+        std::process::id()
+    )
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+struct ClipboardRestore {
+    app: AppHandle,
+    text: Option<String>,
+    image: Option<tauri::image::Image<'static>>,
+}
+
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+impl Drop for ClipboardRestore {
+    fn drop(&mut self) {
+        let clipboard = self.app.clipboard();
+        if let Some(text) = self.text.take() {
+            let _ = write_text_to_clipboard(&self.app, &text);
+        } else if let Some(image) = self.image.take() {
+            info!("Restoring image to clipboard after selection copy");
+            let _ = clipboard.write_image(&image);
+        } else {
+            let _ = clipboard.clear();
+        }
+    }
 }
 
 #[cfg(test)]

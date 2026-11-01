@@ -20,6 +20,7 @@ mod overlay;
 mod paste_tx;
 pub mod portable;
 mod secure_input;
+mod selection;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -687,6 +688,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_auto_submit_setting,
             shortcut::change_auto_submit_key_setting,
             shortcut::change_post_process_enabled_setting,
+            shortcut::change_context_scribe_enabled_setting,
             shortcut::change_experimental_enabled_setting,
             shortcut::change_post_process_base_url_setting,
             shortcut::change_post_process_api_format_setting,

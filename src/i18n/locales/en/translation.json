@@ -345,6 +345,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_with_context_scribe": {
+            "name": "Context Scribe Hotkey",
+            "description": "Records speech, reads the text selected in the focused app, and sends both to the post-processing model. The selection is sent to your external provider. The reply replaces the selection. Windows and macOS only; Linux does not read a selection."
           }
         },
         "errors": {
@@ -666,7 +670,7 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Selected Prompt",
-          "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
+          "description": "Select a template for refining transcriptions or create a new one. Use ${output} for the captured transcript and ${selection} for the text selected in the focused app. ${selection} is sent to your external provider."
         },
         "noPrompts": "No prompts available",
         "selectPrompt": "Select a prompt",
@@ -675,7 +679,7 @@
         "promptLabelPlaceholder": "Enter prompt name",
         "promptInstructions": "Prompt Instructions",
         "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
-        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "promptTip": "Tip: Use <output>${output}</output> for the transcribed speech and <selection>${selection}</selection> for the text selected in the focused app. The selection is sent to your external provider.",
         "updatePrompt": "Update Prompt",
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",
@@ -804,6 +808,10 @@
       "postProcessingToggle": {
         "label": "Post Processing",
         "description": "Enable AI-powered text refinement after transcription"
+      },
+      "contextScribeToggle": {
+        "label": "Context Scribe",
+        "description": "Register a separate hotkey that reads the selected text and sends it to the external provider with your dictation. The model reply replaces that selection. Windows and macOS only."
       },
       "muteWhileRecording": {
         "label": "Mute While Recording",

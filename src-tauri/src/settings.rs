@@ -491,6 +491,11 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    /// Separate hotkey: dictate an instruction, read the focused selection,
+    /// and send both through the post-processing template. Off until the user
+    /// turns it on, so the default chord is not grabbed on upgrade.
+    #[serde(default)]
+    pub context_scribe_enabled: bool,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -980,6 +985,26 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "windows")]
+    let default_context_scribe_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_context_scribe_shortcut = "ctrl+option+space";
+    #[cfg(target_os = "linux")]
+    let default_context_scribe_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_context_scribe_shortcut = "alt+shift+space";
+
+    bindings.insert(
+        "transcribe_with_context_scribe".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_context_scribe".to_string(),
+            name: "Context Scribe".to_string(),
+            description: "Reads the selected text, transcribes your instruction, and asks the post-processing model to rewrite the selection."
+                .to_string(),
+            default_binding: default_context_scribe_shortcut.to_string(),
+            current_binding: default_context_scribe_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -1033,6 +1058,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        context_scribe_enabled: false,
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -1076,6 +1102,17 @@ impl AppSettings {
     pub fn language_detection_window_samples(&self) -> usize {
         let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
         self.language_detection_window_secs.clamp(min, max) as usize * 16_000
+    }
+
+    /// Whether this binding should be registered with the OS right now.
+    /// Cancel is registered dynamically by the recording lifecycle and is
+    /// reported as active here; callers still skip it on the static path.
+    pub fn registers_binding(&self, id: &str) -> bool {
+        match id {
+            "transcribe_with_post_process" => self.post_process_enabled,
+            "transcribe_with_context_scribe" => self.context_scribe_enabled,
+            _ => true,
+        }
     }
 
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
@@ -1575,6 +1612,7 @@ mod tests {
             .expect("a stored v0.9.0 settings object must keep parsing strictly");
 
         assert_eq!(settings.selected_model, "whisper-large-v3-turbo");
+        assert!(!settings.context_scribe_enabled);
         assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
         assert_eq!(settings.log_level, LogLevel::Debug);
         assert_eq!(settings.sound_theme, SoundTheme::Pop);
