@@ -1647,7 +1647,10 @@ mod tests {
     #[test]
     fn default_shortcuts_do_not_conflict_with_ibus_input_method_switch() {
         let defaults = get_default_settings();
-        assert_eq!(defaults.bindings["transcribe"].current_binding, "ctrl+alt+space");
+        assert_eq!(
+            defaults.bindings["transcribe"].current_binding,
+            "ctrl+alt+space"
+        );
         assert_eq!(
             defaults.bindings["transcribe_with_post_process"].current_binding,
             "ctrl+alt+shift+space",
