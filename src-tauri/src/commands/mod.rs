@@ -10,6 +10,80 @@ use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
+/// Open a directory in the system's file manager.
+///
+/// `tauri_plugin_opener`'s `open_path` sends a directory through the desktop's
+/// generic MIME/scheme resolution, which on some setups hands the folder to the
+/// default web browser as a `file://` URL (#2294) — the reporter's GNOME
+/// Wayland system opens every Handy folder button in Chrome this way, while
+/// `xdg-open`, `gio open` and a `file://` URL all correctly reach Nautilus
+/// from a shell. The freedesktop FileManager1 D-Bus interface asks the file
+/// manager to show a folder directly, with no MIME resolution in the way, so
+/// it is tried first on Linux; a desktop without the service (or without
+/// gdbus) falls back to `open_path` exactly as before.
+fn open_folder(app: &AppHandle, dir: &std::path::Path) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        if show_folder_via_file_manager1(dir).is_ok() {
+            return Ok(());
+        }
+    }
+    let path = dir.to_string_lossy().as_ref().to_string();
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| e.to_string())
+}
+
+/// Percent-encode a filesystem path into the `file://` URL the FileManager1
+/// interface expects (RFC 3986: unreserved characters stay literal; spaces
+/// and non-ASCII bytes are percent-encoded).
+#[cfg(target_os = "linux")]
+fn folder_file_url(dir: &std::path::Path) -> String {
+    let mut url = String::from("file://");
+    for byte in dir.to_string_lossy().bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'/' | b'-' | b'_' | b'.' | b'~' => {
+                url.push(byte as char);
+            }
+            _ => url.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    url
+}
+
+/// Ask the freedesktop file manager to show a folder over D-Bus.
+///
+/// Returns Err when the interface is unavailable (org.freedesktop.FileManager1
+/// is not on the session bus, or gdbus is missing), so the caller can fall
+/// back to the generic opener.
+#[cfg(target_os = "linux")]
+fn show_folder_via_file_manager1(dir: &std::path::Path) -> Result<(), std::io::Error> {
+    std::process::Command::new("gdbus")
+        .args([
+            "call",
+            "--session",
+            "--dest",
+            "org.freedesktop.FileManager1",
+            "--object-path",
+            "/org/freedesktop/FileManager1",
+            "--method",
+            "org.freedesktop.FileManager1.ShowFolders",
+            &format!("[\"{}\"]", folder_file_url(dir)),
+            "\"\"",
+        ])
+        .status()
+        .and_then(|status| {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "org.freedesktop.FileManager1.ShowFolders call failed",
+                ))
+            }
+        })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
@@ -84,10 +158,7 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
 
     let recordings_dir = app_data_dir.join("recordings");
 
-    let path = recordings_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
+    open_folder(&app, &recordings_dir).map_err(|e| format!("Failed to open recordings folder: {}", e))?;
 
     Ok(())
 }
@@ -98,10 +169,7 @@ pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
     let log_dir = crate::portable::app_log_dir(&app)
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
-    let path = log_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open log directory: {}", e))?;
+    open_folder(&app, &log_dir).map_err(|e| format!("Failed to open log directory: {}", e))?;
 
     Ok(())
 }
@@ -112,10 +180,7 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
     let app_data_dir = crate::portable::app_data_dir(&app)
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
 
-    let path = app_data_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open app data directory: {}", e))?;
+    open_folder(&app, &app_data_dir).map_err(|e| format!("Failed to open app data directory: {}", e))?;
 
     Ok(())
 }
