@@ -945,7 +945,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_shortcut = "option+space";
     #[cfg(target_os = "linux")]
-    let default_shortcut = "ctrl+space";
+    let default_shortcut = "ctrl+alt+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_shortcut = "alt+space";
 
@@ -965,7 +965,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_post_process_shortcut = "option+shift+space";
     #[cfg(target_os = "linux")]
-    let default_post_process_shortcut = "ctrl+shift+space";
+    let default_post_process_shortcut = "ctrl+alt+shift+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_post_process_shortcut = "alt+shift+space";
 
@@ -1641,6 +1641,17 @@ mod tests {
         assert_eq!(salvaged.paste_delay_ms, default_paste_delay_ms());
         assert_eq!(salvaged.sound_theme, default_sound_theme());
         assert_eq!(salvaged.custom_words, vec!["handy".to_string()]);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn default_shortcuts_do_not_conflict_with_ibus_input_method_switch() {
+        let defaults = get_default_settings();
+        assert_eq!(defaults.bindings["transcribe"].current_binding, "ctrl+alt+space");
+        assert_eq!(
+            defaults.bindings["transcribe_with_post_process"].current_binding,
+            "ctrl+alt+shift+space",
+        );
     }
 
     #[test]
