@@ -483,7 +483,7 @@ pub struct AppSettings {
     pub lazy_stream_close: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
-    /// Allow Windows shortcut keys to reach other apps (applied at startup).
+    /// Allow Windows shortcut keys to reach other apps.
     #[serde(default)]
     pub shortcut_passthrough: bool,
     #[serde(default = "default_show_tray_icon")]

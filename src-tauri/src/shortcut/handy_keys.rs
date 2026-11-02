@@ -31,7 +31,7 @@ use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener}
 use log::{debug, error, info};
 use serde::Serialize;
 use specta::Type;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -51,6 +51,10 @@ enum ManagerCommand {
     },
     Unregister {
         binding_id: String,
+        response: Sender<Result<(), String>>,
+    },
+    SetPassthrough {
+        enabled: bool,
         response: Sender<Result<(), String>>,
     },
     Shutdown,
@@ -110,8 +114,8 @@ impl HandyKeysState {
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
         info!("handy-keys manager thread started");
 
-        // The manager owns the keyboard hook; mode changes take effect on restart.
-        let manager = match create_hotkey_manager(get_settings(&app).shortcut_passthrough) {
+        let mut passthrough = get_settings(&app).shortcut_passthrough;
+        let mut manager = match create_hotkey_manager(passthrough) {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
@@ -123,6 +127,8 @@ impl HandyKeysState {
         let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();
         let mut hotkey_to_binding: HashMap<HotkeyId, (String, String)> = HashMap::new(); // (binding_id, hotkey_string)
 
+        let mut pressed_hotkeys = HashSet::new();
+
         loop {
             // Check for hotkey events (non-blocking)
             while let Some(event) = manager.try_recv() {
@@ -132,6 +138,11 @@ impl HandyKeysState {
                         binding_id, hotkey_string, event.state
                     );
                     let is_pressed = event.state == HotkeyState::Pressed;
+                    if is_pressed {
+                        pressed_hotkeys.insert(event.id);
+                    } else {
+                        pressed_hotkeys.remove(&event.id);
+                    }
                     handle_shortcut_event(&app, binding_id, hotkey_string, is_pressed);
                 }
             }
@@ -163,6 +174,28 @@ impl HandyKeysState {
                             &mut hotkey_to_binding,
                             &binding_id,
                         );
+                        pressed_hotkeys.retain(|id| hotkey_to_binding.contains_key(id));
+                        let _ = response.send(result);
+                    }
+                    ManagerCommand::SetPassthrough { enabled, response } => {
+                        let result = if !pressed_hotkeys.is_empty()
+                            || super::CANCEL_REQUESTED.load(Ordering::SeqCst)
+                        {
+                            Err("Finish recording and release the shortcut before changing pass-through".to_string())
+                        } else if enabled == passthrough {
+                            Ok(())
+                        } else {
+                            replace_hotkey_manager(
+                                &mut manager,
+                                &mut binding_to_hotkey,
+                                &mut hotkey_to_binding,
+                                enabled,
+                            )
+                            .map(|()| {
+                                passthrough = enabled;
+                                info!("Shortcut pass-through applied: {}", enabled);
+                            })
+                        };
                         let _ = response.send(result);
                     }
                     ManagerCommand::Shutdown => {
@@ -257,6 +290,24 @@ impl HandyKeysState {
 
         rx.recv()
             .map_err(|_| "Failed to receive unregister response")?
+    }
+
+    /// Apply pass-through to the running manager, preserving its registered bindings.
+    pub fn set_passthrough(&self, enabled: bool) -> Result<(), String> {
+        if self.is_recording.load(Ordering::SeqCst) {
+            return Err("Finish editing the shortcut before changing pass-through".into());
+        }
+        let (tx, rx) = mpsc::channel();
+        self.command_sender
+            .lock()
+            .map_err(|_| "Failed to lock command_sender")?
+            .send(ManagerCommand::SetPassthrough {
+                enabled,
+                response: tx,
+            })
+            .map_err(|_| "Failed to send pass-through command")?;
+        rx.recv()
+            .map_err(|_| "Failed to receive pass-through response")?
     }
 
     /// Start recording mode for a specific binding
@@ -473,12 +524,41 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     state.unregister(&binding)
 }
 
+/// Prepare a complete replacement before dropping the old hook, so a failed
+/// registration leaves the working manager and its routing maps untouched.
+fn replace_hotkey_manager(
+    manager: &mut HotkeyManager,
+    binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+    hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
+    enabled: bool,
+) -> Result<(), String> {
+    let replacement = create_hotkey_manager(enabled)
+        .map_err(|e| format!("Failed to change shortcut pass-through: {e}"))?;
+    let mut new_binding_to_hotkey = HashMap::new();
+    let mut new_hotkey_to_binding = HashMap::new();
+    for (binding_id, hotkey_string) in hotkey_to_binding.values() {
+        HandyKeysState::do_register(
+            &replacement,
+            &mut new_binding_to_hotkey,
+            &mut new_hotkey_to_binding,
+            binding_id,
+            hotkey_string,
+        )?;
+    }
+    *manager = replacement;
+    *binding_to_hotkey = new_binding_to_hotkey;
+    *hotkey_to_binding = new_hotkey_to_binding;
+    Ok(())
+}
+
 /// Pass-through is opt-in and only supported on Windows.
 fn shortcut_keys_pass_through(enabled: bool) -> bool {
     cfg!(target_os = "windows") && enabled
 }
 
-fn create_hotkey_manager(enabled: bool) -> Result<HotkeyManager, impl std::fmt::Display> {
+fn create_hotkey_manager(
+    enabled: bool,
+) -> Result<HotkeyManager, impl std::fmt::Display + std::fmt::Debug> {
     if shortcut_keys_pass_through(enabled) {
         HotkeyManager::new()
     } else {
@@ -544,6 +624,49 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::shortcut_keys_pass_through;
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn shortcut_passthrough_switch_preserves_registered_bindings_in_both_directions() {
+        use super::*;
+        let mut manager = create_hotkey_manager(false).unwrap();
+        let mut bindings = HashMap::new();
+        let mut routes = HashMap::new();
+        for (binding, key) in [("transcribe", "f23"), ("cancel", "f22")] {
+            HandyKeysState::do_register(&manager, &mut bindings, &mut routes, binding, key)
+                .unwrap();
+        }
+        for enabled in [true, false, true, false] {
+            replace_hotkey_manager(&mut manager, &mut bindings, &mut routes, enabled).unwrap();
+            assert_eq!(bindings.len(), 2);
+            assert_eq!(routes.len(), 2);
+            for (binding, key) in [("transcribe", "f23"), ("cancel", "f22")] {
+                let id = bindings[binding];
+                assert_eq!(manager.get_hotkey(id), Some(key.parse::<Hotkey>().unwrap()));
+                assert_eq!(routes[&id], (binding.to_string(), key.to_string()));
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn shortcut_passthrough_failed_replacement_keeps_working_manager() {
+        use super::*;
+        let mut manager = create_hotkey_manager(false).unwrap();
+        let mut bindings = HashMap::new();
+        let mut routes = HashMap::new();
+        HandyKeysState::do_register(&manager, &mut bindings, &mut routes, "transcribe", "f23")
+            .unwrap();
+        let id = bindings["transcribe"];
+        // A rejected replacement must leave the previously registered shortcut usable.
+        routes.insert(id, ("transcribe".to_string(), "invalid-key".to_string()));
+        assert!(replace_hotkey_manager(&mut manager, &mut bindings, &mut routes, true).is_err());
+        assert_eq!(bindings["transcribe"], id);
+        assert_eq!(
+            manager.get_hotkey(id),
+            Some("f23".parse::<Hotkey>().unwrap())
+        );
+    }
 
     #[test]
     fn shortcut_passthrough_is_opt_in_and_windows_only() {

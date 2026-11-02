@@ -272,7 +272,7 @@
       },
       "shortcutPassthrough": {
         "label": "Pass shortcuts through to other apps",
-        "description": "Allow Handy shortcuts, including Escape to cancel, to also reach the focused app or Windows. Requires restarting Handy. Applies only to Handy Keys on Windows."
+        "description": "Allow Handy shortcuts, including Escape to cancel, to also reach the focused app or Windows. Changes apply immediately. Applies only to Handy Keys on Windows."
       },
       "lazyStreamClose": {
         "label": "Keep Mic Open Between Transcriptions",
