@@ -423,7 +423,6 @@
         "title": "Les anciens modèles ne fonctionnent plus avec Handy",
         "description": "Ils occupent {{size}} sur votre ordinateur.",
         "delete": "Supprimer les modèles",
-        "deleted": "Anciens modèles supprimés",
         "deleteFailed": "Certains anciens modèles n'ont pas pu être supprimés. Consultez le journal pour plus de détails."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transcrire un fichier",
       "mediaFiles": "Audio et vidéo",
       "fileUnsupported": "Impossible de lire l'audio de {{name}}.",
-      "readingFile": "Lecture de {{name}}...",
       "transcribeFailed": "La transcription a échoué. Veuillez réessayer.",
       "waiting": "En attente de transcription",
       "transcribingPercent": "Transcription, {{percent}} %",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Aperçu des nouveautés",
         "description": "Ouvrir la dernière note de version intégrée sans la marquer comme vue",
-        "button": "Aperçu",
-        "noNotes": "Aucune note de version intégrée trouvée",
-        "error": "Impossible d’afficher l’aperçu des notes de version"
+        "button": "Aperçu"
       },
       "onboardingPreview": {
         "title": "Aperçu de la configuration initiale",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Migration des modèles",
         "description": "Ouvrir pour de vrai l'écran de mise à jour des modèles à l'ancien format : il télécharge les remplacements, change de modèle et supprime les anciens fichiers",
-        "button": "Ouvrir",
-        "noRetired": "Aucun modèle à l'ancien format sur le disque"
+        "button": "Ouvrir"
       },
       "soundTheme": {
         "label": "Thème sonore",
@@ -935,11 +930,10 @@
     },
     "noInputDeviceTitle": "Aucun microphone trouvé",
     "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
-    "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "recordingFailedTitle": "Échec de l'enregistrement",
-    "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
+    "modelLoadFailed": "Handy n'a pas pu charger ce modèle. Réessayez ou choisissez-en un autre.",
     "modelLoadFailedTitle": "Échec du chargement du modèle",
-    "modelLoadFailedUnknown": "modèle inconnu",
+    "modelDownloadFailed": "Échec du téléchargement",
     "pasteFailedTitle": "Échec du collage du texte",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
     "postProcessFailedTitle": "Collé sans post-traitement",
@@ -953,8 +947,7 @@
     "errorMany": "{{n}} erreurs",
     "warningOne": "{{n}} avertissement",
     "warningMany": "{{n}} avertissements",
-    "errorsAndWarnings": "{{errors}}, {{warnings}}",
-    "show": "Afficher"
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Langue de l'application",

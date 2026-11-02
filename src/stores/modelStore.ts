@@ -3,7 +3,10 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
-import { toast } from "sonner";
+import i18n from "@/i18n";
+import { notify, useNoticeStore } from "@/stores/noticeStore";
+
+const downloadNoticeKey = (modelId: string) => `model-download:${modelId}`;
 
 export interface DownloadProgress {
   model_id: string;
@@ -151,6 +154,7 @@ export const useModelStore = create<ModelsStore>()(
 
     downloadModel: async (modelId: string) => {
       try {
+        useNoticeStore.getState().clearLocal(downloadNoticeKey(modelId));
         set({ error: null });
         set(
           produce((state) => {
@@ -290,7 +294,11 @@ export const useModelStore = create<ModelsStore>()(
               state.error = error;
             }),
           );
-          toast.error(error);
+          notify({
+            title: i18n.t("errors.modelDownloadFailed"),
+            detail: error,
+            key: downloadNoticeKey(modelId),
+          });
         },
       );
 

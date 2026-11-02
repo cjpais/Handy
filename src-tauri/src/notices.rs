@@ -26,12 +26,14 @@ pub enum NoticeLevel {
 }
 
 /// Each source has one slot in the store. Only dictation notices use the
-/// overlay: a file job finishes while the user is doing something else.
+/// overlay: a file job finishes while the user is doing something else, and
+/// `Model` is a switch the user made in Settings or the tray.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum NoticeSource {
     Dictation,
     File,
+    Model,
 }
 
 /// The frontend maps each code to its text in `src/lib/notices.ts`.

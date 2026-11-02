@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import { commands } from "@/bindings";
 import { SECURE_INPUT_HELP_URL } from "@/components/SecureInputWarning";
 import { useSettings } from "@/hooks/useSettings";
@@ -73,9 +73,11 @@ export const useShortcutCapture = (
         if (!inert) await updateBinding(bindingId, binding);
       } catch (error) {
         console.error("Failed to change binding:", error);
-        toast.error(
-          t("settings.general.shortcut.errors.set", { error: String(error) }),
-        );
+        notify({
+          title: t("settings.general.shortcut.errors.set", {
+            error: String(error),
+          }),
+        });
       }
       await finish();
     },
@@ -87,22 +89,25 @@ export const useShortcutCapture = (
     if (held.current) return false;
     if (handyKeys) {
       // Refused while macOS Secure Input is on (no key events would arrive);
-      // the backend also shows the warning banner the toast points at.
+      // the backend also shows the warning banner the notice points at.
       const result = await commands
         .startHandyKeysRecording(bindingId)
         .catch((error) => ({ status: "error" as const, error: String(error) }));
       if (result.status === "error") {
         if (String(result.error).includes("secure-input-active")) {
-          toast.error(t("secureInput.recorderBlocked"), {
+          notify({
+            title: t("secureInput.recorderBlocked"),
             action: {
               label: t("secureInput.learnMore"),
               onClick: () => openUrl(SECURE_INPUT_HELP_URL),
             },
           });
         } else {
-          toast.error(
-            t("settings.general.shortcut.errors.set", { error: result.error }),
-          );
+          notify({
+            title: t("settings.general.shortcut.errors.set", {
+              error: result.error,
+            }),
+          });
         }
         return false;
       }

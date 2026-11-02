@@ -487,7 +487,7 @@ impl ShortcutAction for TranscribeAction {
             {
                 warn!("Not starting recording: no model can transcribe it ({})", e);
                 if !load_started {
-                    tm.raise_model_load_failed(&selected_model);
+                    tm.raise_model_load_failed(&selected_model, &e);
                 }
                 return;
             }

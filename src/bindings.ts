@@ -1330,9 +1330,10 @@ export type NoticeLevel =
 "warning"
 /**
  * Each source has one slot in the store. Only dictation notices use the
- * overlay: a file job finishes while the user is doing something else.
+ * overlay: a file job finishes while the user is doing something else, and
+ * `Model` is a switch the user made in Settings or the tray.
  */
-export type NoticeSource = "dictation" | "file"
+export type NoticeSource = "dictation" | "file" | "model"
 export type NoticesChanged = { 
 /**
  * Every active notice, newest first.

@@ -675,6 +675,10 @@ impl TranscriptionManager {
                 error: None,
             },
         );
+        // Only this code: the source's other notices aren't about the model.
+        for source in [NoticeSource::Dictation, NoticeSource::Model] {
+            notices::dismiss_notice(self.app_handle.clone(), source, NoticeCode::ModelLoadFailed);
+        }
 
         let load_duration = load_start.elapsed();
         debug!(
@@ -711,7 +715,7 @@ impl TranscriptionManager {
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
                 if raise_notice {
-                    self_clone.raise_model_load_failed(&settings.selected_model);
+                    self_clone.raise_model_load_failed(&settings.selected_model, &e);
                 }
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
@@ -721,10 +725,22 @@ impl TranscriptionManager {
         true
     }
 
-    pub fn raise_model_load_failed(&self, model_id: &str) {
-        let model_name = self.model_manager.get_model_info(model_id).map(|m| m.name);
-        let notice = Notice::new(NoticeCode::ModelLoadFailed, NoticeSource::Dictation)
-            .with_detail(model_name);
+    /// Ends when a model next loads.
+    pub fn model_load_notice(
+        &self,
+        model_id: &str,
+        error: &anyhow::Error,
+        source: NoticeSource,
+    ) -> Notice {
+        let detail = match self.model_manager.get_model_info(model_id) {
+            Some(model) => format!("{}: {error}", model.name),
+            None => error.to_string(),
+        };
+        Notice::new(NoticeCode::ModelLoadFailed, source).with_detail(detail)
+    }
+
+    pub fn raise_model_load_failed(&self, model_id: &str, error: &anyhow::Error) {
+        let notice = self.model_load_notice(model_id, error, NoticeSource::Dictation);
         // A recording in progress keeps the overlay; its transcription fails
         // next and reports that itself.
         if overlay::is_session_showing() {

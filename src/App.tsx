@@ -6,15 +6,12 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent } from "./lib/types/events";
 import "./App.css";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
@@ -35,9 +32,9 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { commands, events } from "@/bindings";
+import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
-import { showNoticeToast } from "@/lib/noticeToast";
+import { NoticePanel } from "@/components/notices/NoticePanel";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
@@ -88,8 +85,6 @@ function App() {
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const showHistory = useCallback(() => setCurrentSection("history"), []);
-  const footerShownRef = useRef(false);
-  footerShownRef.current = onboardingStep === "done" && !onboardingPreview;
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -153,38 +148,6 @@ function App() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [settings?.debug_mode, updateSetting]);
-
-  // The footer lists notices; during onboarding there's no footer, so toast.
-  useEffect(() => {
-    const unlisten = events.noticesChanged.listen(({ payload }) => {
-      if (payload.raised && !footerShownRef.current) {
-        showNoticeToast(t, payload.raised);
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for model loading failures and show a toast
-  useEffect(() => {
-    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
-      if (event.payload.event_type === "loading_failed") {
-        toast.error(
-          t("errors.modelLoadFailed", {
-            model:
-              event.payload.model_name || t("errors.modelLoadFailedUnknown"),
-          }),
-          {
-            description: event.payload.error,
-          },
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
 
   const revealMainWindowForPermissions = async () => {
     try {
@@ -284,7 +247,7 @@ function App() {
   const runModelMigration = async () => {
     const retired = await commands.getRetiredModels();
     if (retired.length === 0) {
-      toast.info(t("settings.debug.modelMigration.noRetired"));
+      console.info("Model migration: no old-format models on disk");
       return;
     }
     const selected = settings?.selected_model;
@@ -302,36 +265,13 @@ function App() {
     setOnboardingStep("done");
   };
 
-  // Rendered once around every step below (including onboarding) so
-  // toast.error() calls surface to the user. sonner renders via a portal, so
-  // its position in the tree doesn't affect layout. Without this, errors during
-  // onboarding (e.g. a model download failing because blob.handy.computer is
-  // unreachable) are silently swallowed and the wizard just appears to "blink".
-  const toaster = (
-    <Toaster
-      theme="system"
-      toastOptions={{
-        unstyled: true,
-        classNames: {
-          toast:
-            "bg-background border border-line rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-          title: "font-medium",
-          description: "text-ink-3",
-          actionButton:
-            "px-2 py-1 text-xs font-medium rounded-lg border bg-wash border-line hover:bg-logo-primary/20 hover:border-logo-primary cursor-pointer whitespace-nowrap",
-        },
-      }}
-    />
-  );
-
   // Still checking onboarding status
   if (onboardingStep === null) {
     return null;
   }
 
-  // Select the content for the current step. The Toaster is rendered once, in a
-  // stable wrapper around this node, so crossing between onboarding steps and
-  // the main app never remounts it (which would drop any in-flight toast).
+  // Select the content for the current step. NoticePanel is rendered once,
+  // beside this node, so errors surface on every step, including onboarding.
   let content: ReactNode;
   if (onboardingPreview) {
     // Previews render in the same top-level slot as real onboarding, inert:
@@ -410,7 +350,7 @@ function App() {
           </div>
         </div>
         {/* Fixed footer at bottom */}
-        <Footer onShowHistory={showHistory} onShowSection={setCurrentSection} />
+        <Footer onShowHistory={showHistory} />
         <FileDropOverlay onDropped={showHistory} />
       </div>
     );
@@ -418,8 +358,8 @@ function App() {
 
   return (
     <>
-      {toaster}
       {content}
+      <NoticePanel />
     </>
   );
 }

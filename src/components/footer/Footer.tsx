@@ -2,17 +2,15 @@ import React, { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
 import ModelSelector from "../model-selector";
-import type { SidebarSection } from "../Sidebar";
 import UpdateChecker from "../update-checker";
 import NoticeChip from "./NoticeChip";
 import TranscriptionStatus from "./TranscriptionStatus";
 
 interface FooterProps {
   onShowHistory: () => void;
-  onShowSection: (section: SidebarSection) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ onShowHistory, onShowSection }) => {
+const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -35,15 +33,17 @@ const Footer: React.FC<FooterProps> = ({ onShowHistory, onShowSection }) => {
         <div className="flex items-center gap-4">
           <ModelSelector />
           <TranscriptionStatus onShowHistory={onShowHistory} />
-          <NoticeChip onShowSection={onShowSection} />
         </div>
 
-        {/* Update Status */}
-        <div className="flex items-center gap-1">
-          <UpdateChecker />
-          <span>•</span>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span>v{version}</span>
+        <div className="flex items-center gap-3">
+          {/* Update Status */}
+          <div className="flex items-center gap-1">
+            <UpdateChecker />
+            <span>•</span>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <span>v{version}</span>
+          </div>
+          <NoticeChip />
         </div>
       </div>
     </div>
