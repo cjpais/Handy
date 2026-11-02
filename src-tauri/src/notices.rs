@@ -4,6 +4,10 @@
 //! Don't add a new event, toast or overlay state for a background failure.
 //! Things done in the settings window keep their toast or inline state.
 //!
+//! A dictation notice takes over the overlay when it's raised, so a failure
+//! site calls [`raise`] instead of hiding the overlay. If another session owns
+//! the overlay by then, call [`raise_without_overlay`].
+//!
 //! # Adding a new error
 //!
 //! 1. Add a [`NoticeCode`] and give it a level in [`NoticeCode::level`].
@@ -29,6 +33,7 @@
 //! then raises its own, so a warning about a success survives that success.
 //! Nothing persists across restarts.
 
+use crate::overlay;
 use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -146,8 +151,18 @@ fn publish(app: &AppHandle, active: &[Notice], raised: Option<Notice>) {
 }
 
 /// Report a problem to the user. This is the one way to do it: see the module
-/// docs. Replaces the source's previous notice, then tells the frontend.
+/// docs. Replaces the source's previous notice and tells the frontend. A
+/// dictation notice also replaces the overlay.
 pub fn raise(app: &AppHandle, notice: Notice) {
+    if notice.source == NoticeSource::Dictation {
+        overlay::show_overlay_notice(app, &notice);
+    }
+    raise_without_overlay(app, notice);
+}
+
+/// [`raise`] for a failure that isn't the session on the overlay, such as a
+/// late paste from an earlier one.
+pub fn raise_without_overlay(app: &AppHandle, notice: Notice) {
     let store = app.state::<NoticeStore>();
     let mut active = store.lock();
     insert(&mut active, notice.clone());
@@ -168,6 +183,13 @@ pub fn clear(app: &AppHandle, source: NoticeSource) {
 #[specta::specta]
 pub fn get_active_notices(store: State<'_, NoticeStore>) -> Vec<Notice> {
     store.lock().clone()
+}
+
+/// A click on the overlay notice. The notice stays active everywhere else.
+#[tauri::command]
+#[specta::specta]
+pub fn dismiss_overlay_notice(app: AppHandle) {
+    overlay::dismiss_overlay_notice(&app);
 }
 
 #[cfg(test)]

@@ -787,6 +787,7 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
             notices::get_active_notices,
+            notices::dismiss_overlay_notice,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,

@@ -1,7 +1,6 @@
 import type { TFunction } from "i18next";
 import { platform } from "@tauri-apps/plugin-os";
-import { toast } from "sonner";
-import type { Notice, NoticeCode } from "@/bindings";
+import type { NoticeCode } from "@/bindings";
 import type { SidebarSection } from "@/components/Sidebar";
 
 interface NoticeDisplay {
@@ -48,24 +47,3 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];
-
-export const showNoticeToast = (t: TFunction, notice: Notice) => {
-  switch (notice.code) {
-    // The model-state-changed listener in App.tsx already toasts every failed
-    // load, including those from Settings, which aren't notices.
-    case "ModelLoadFailed":
-      return;
-    case "RecordingFailed":
-      toast.error(
-        t("errors.recordingFailed", {
-          error: notice.detail ?? "Unknown error",
-        }),
-      );
-      return;
-  }
-
-  const { title, explanation } = noticeDisplay(notice.code);
-  toast.error(t(title), {
-    description: explanation?.(t) ?? notice.detail,
-  });
-};

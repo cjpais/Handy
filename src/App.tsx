@@ -37,7 +37,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands, events } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
-import { showNoticeToast } from "@/lib/notices";
+import { showNoticeToast } from "@/lib/noticeToast";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 // flow is first-run onboarding; the rest are single screens for returning users.

@@ -598,7 +598,6 @@ impl ShortcutAction for TranscribeAction {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             tm.cancel_stream();
-            utils::hide_recording_overlay(app);
             set_tray_state(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
                 notices::raise(
@@ -822,7 +821,11 @@ impl ShortcutAction for TranscribeAction {
                                             return;
                                         }
 
-                                        let outcome =
+                                        // A new session may have started while
+                                        // this paste ran; the UI is now its.
+                                        let owns_ui =
+                                            || RECORDING_SESSION.load(Ordering::SeqCst) == session;
+                                        let (outcome, notice) =
                                             match utils::paste(final_text, ah_clone.clone()) {
                                                 Ok(()) => {
                                                     debug!(
@@ -832,32 +835,38 @@ impl ShortcutAction for TranscribeAction {
                                                     // Clear before raising anything
                                                     // about this session, and leave a
                                                     // newer session's notice alone.
-                                                    if RECORDING_SESSION.load(Ordering::SeqCst)
-                                                        == session
-                                                    {
+                                                    if owns_ui() {
                                                         notices::clear(
                                                             &ah_clone,
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    TranscriptionOutcome::Typed
+                                                    (TranscriptionOutcome::Typed, None)
                                                 }
                                                 Err(e) => {
                                                     error!("Failed to paste transcription: {}", e);
-                                                    notices::raise(
-                                                        &ah_clone,
-                                                        Notice::new(
+                                                    (
+                                                        TranscriptionOutcome::Failed,
+                                                        Some(Notice::new(
                                                             NoticeCode::PasteFailed,
                                                             NoticeSource::Dictation,
-                                                        ),
-                                                    );
-                                                    TranscriptionOutcome::Failed
+                                                        )),
+                                                    )
                                                 }
                                             };
-                                        // A new session may have started while
-                                        // this paste ran; the UI is now its.
-                                        if RECORDING_SESSION.load(Ordering::SeqCst) == session {
-                                            utils::hide_recording_overlay(&ah_clone);
+                                        match (owns_ui(), notice) {
+                                            (true, Some(notice)) => {
+                                                notices::raise(&ah_clone, notice)
+                                            }
+                                            (true, None) => {
+                                                utils::hide_recording_overlay(&ah_clone)
+                                            }
+                                            (false, Some(notice)) => {
+                                                notices::raise_without_overlay(&ah_clone, notice)
+                                            }
+                                            (false, None) => {}
+                                        }
+                                        if owns_ui() {
                                             set_tray_state(&ah_clone, TrayIconState::Idle);
                                         }
                                         emit_transcription_complete(
@@ -915,7 +924,6 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
-                            utils::hide_recording_overlay(&ah);
                             set_tray_state(&ah, TrayIconState::Idle);
                             emit_transcription_complete(
                                 &ah,

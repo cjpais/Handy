@@ -1,8 +1,9 @@
 use crate::input;
+use crate::notices::Notice;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -45,17 +46,29 @@ tauri_panel! {
 //
 // Compact overlay (Minimal / transcribing / processing): the 40h pill animates
 // width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
-// the window must fit the widest state plus a little slack.
-const OVERLAY_WIDTH: f64 = 256.0;
+// the window must fit the widest state plus a little slack. A notice pill hugs
+// its title, and the longest titles need nearly all of this width.
+const OVERLAY_WIDTH: f64 = 266.0;
 const OVERLAY_HEIGHT: f64 = 50.0;
 
 // Actual is 394x118, just a little extra
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
+const NOTICE_STATE: &str = "notice";
+const LIVE_NOTICE_STATE: &str = "live_notice";
+
+/// How long a notice holds before the overlay fades it.
+const NOTICE_HOLD: Duration = Duration::from_secs(4);
+
+/// Whether `state` uses the larger Live window.
+fn is_live_state(state: &str) -> bool {
+    state == "streaming" || state == LIVE_NOTICE_STATE
+}
+
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
-    if state == "streaming" {
+    if is_live_state(state) {
         (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
     } else {
         (OVERLAY_WIDTH, OVERLAY_HEIGHT)
@@ -493,6 +506,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     if settings.overlay_style == OverlayStyle::None {
         return;
     }
+    OVERLAY_SESSION_SHOWING.store(true, Ordering::SeqCst);
 
     // The rest queries monitors and the cursor and mutates window geometry. On
     // Linux the monitor/cursor lookups hit GDK/Xlib on the process's shared X11
@@ -538,7 +552,7 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             let _ =
                 overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
             #[cfg(target_os = "windows")]
-            WINDOWS_OVERLAY_IS_STREAMING.store(state == "streaming", Ordering::Relaxed);
+            WINDOWS_OVERLAY_IS_STREAMING.store(is_live_state(state), Ordering::Relaxed);
             let size_elapsed = size_started.elapsed();
 
             let pos_started = std::time::Instant::now();
@@ -630,6 +644,55 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
+/// Shows `notice` in place of the current session's overlay, then fades it
+/// after [`NOTICE_HOLD`] unless something newer has been shown by then. With
+/// the overlay off there's nothing to show, but the session's overlay still
+/// has to go, in case the setting changed during it.
+pub fn show_overlay_notice(app_handle: &AppHandle, notice: &Notice) {
+    if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
+        hide_recording_overlay(app_handle);
+        return;
+    }
+    OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
+
+    let state = if settings::get_settings(app_handle).overlay_style == OverlayStyle::Live {
+        LIVE_NOTICE_STATE
+    } else {
+        NOTICE_STATE
+    };
+    let handle = app_handle.clone();
+    let notice = notice.clone();
+    // On the main thread for the same reason as show_overlay_state.
+    let _ = app_handle.run_on_main_thread(move || {
+        let _ = handle.emit_to("recording_overlay", "overlay-notice", notice);
+        show_overlay_state_on_main(&handle, state);
+
+        let generation = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+        OVERLAY_NOTICE_GENERATION.store(generation, Ordering::SeqCst);
+        std::thread::spawn(move || {
+            std::thread::sleep(NOTICE_HOLD);
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == generation {
+                hide_recording_overlay(&handle);
+            }
+        });
+    });
+}
+
+/// Fades the notice early. The click may land just as a new session shows the
+/// overlay, so this only hides a notice that is still on screen.
+pub fn dismiss_overlay_notice(app_handle: &AppHandle) {
+    let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+    if OVERLAY_NOTICE_GENERATION.load(Ordering::SeqCst) == shown {
+        hide_recording_overlay(app_handle);
+    }
+}
+
+/// Whether a session is using the overlay, so a notice from elsewhere must
+/// leave it alone.
+pub fn is_session_showing() -> bool {
+    OVERLAY_SESSION_SHOWING.load(Ordering::SeqCst)
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     // Positioning queries monitors/cursor (GDK/Xlib on Linux) and moves the
@@ -685,8 +748,16 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 /// the instant it drained, well inside the 300 ms hide delay.
 static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 
+/// The show generation of the latest notice. It's on screen while this matches
+/// `OVERLAY_SHOW_GENERATION`.
+static OVERLAY_NOTICE_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
+
+/// Set while the overlay shows a recording or transcribing session.
+static OVERLAY_SESSION_SHOWING: AtomicBool = AtomicBool::new(false);
+
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
+    OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -771,6 +842,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_live_notice_uses_the_live_window() {
+        assert_eq!(
+            overlay_dimensions(LIVE_NOTICE_STATE),
+            overlay_dimensions("streaming")
+        );
+        assert_eq!(
+            overlay_dimensions(NOTICE_STATE),
+            overlay_dimensions("recording")
+        );
+    }
+
+    #[test]
     fn monitor_hit_test_uses_half_open_physical_bounds() {
         let position = PhysicalPosition::new(-2560, -200);
         let size = PhysicalSize::new(2560, 1440);
@@ -824,7 +907,7 @@ mod tests {
                 OVERLAY_HEIGHT,
                 OverlayPosition::Bottom,
             ),
-            (3648, 2025, 384, 75)
+            (3641, 2025, 399, 75)
         );
         assert_eq!(
             windows_overlay_bounds(
@@ -836,7 +919,7 @@ mod tests {
                 OVERLAY_HEIGHT,
                 OverlayPosition::Top,
             ),
-            (3648, 6, 384, 75)
+            (3641, 6, 399, 75)
         );
     }
 

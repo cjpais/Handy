@@ -1033,6 +1033,12 @@ async isLaptop() : Promise<Result<boolean, string>> {
  */
 async getActiveNotices() : Promise<Notice[]> {
     return await TAURI_INVOKE("get_active_notices");
+},
+/**
+ * A click on the overlay notice. The notice stays active everywhere else.
+ */
+async dismissOverlayNotice() : Promise<void> {
+    await TAURI_INVOKE("dismiss_overlay_notice");
 }
 }
 

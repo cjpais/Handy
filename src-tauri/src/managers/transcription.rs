@@ -15,6 +15,7 @@ use crate::language_detection::{
 use crate::managers::audio::{create_smoothed_detector, AudioRecordingManager};
 use crate::managers::model::ModelManager;
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
+use crate::overlay;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
 };
@@ -724,11 +725,15 @@ impl TranscriptionManager {
     /// Tells the user that the model a dictation needs couldn't load.
     pub fn raise_model_load_failed(&self, model_id: &str) {
         let model_name = self.model_manager.get_model_info(model_id).map(|m| m.name);
-        notices::raise(
-            &self.app_handle,
-            Notice::new(NoticeCode::ModelLoadFailed, NoticeSource::Dictation)
-                .with_detail(model_name),
-        );
+        let notice = Notice::new(NoticeCode::ModelLoadFailed, NoticeSource::Dictation)
+            .with_detail(model_name);
+        // The load runs alongside the recording, and that recording's overlay
+        // stays: its transcription fails next, and reports itself.
+        if overlay::is_session_showing() {
+            notices::raise_without_overlay(&self.app_handle, notice);
+        } else {
+            notices::raise(&self.app_handle, notice);
+        }
     }
 
     pub fn get_current_model(&self) -> Option<String> {
