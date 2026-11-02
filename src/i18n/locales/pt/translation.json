@@ -7,7 +7,9 @@
     "model": "Modelo",
     "quit": "Sair",
     "cancel": "Cancelar",
-    "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input"
+    "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input",
+    "language": "Idioma",
+    "autoLanguage": "Automático"
   },
   "sidebar": {
     "general": "Geral",

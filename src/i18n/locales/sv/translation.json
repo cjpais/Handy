@@ -7,7 +7,9 @@
     "model": "Modell",
     "quit": "Avsluta",
     "cancel": "Avbryt",
-    "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input"
+    "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input",
+    "language": "Språk",
+    "autoLanguage": "Automatiskt"
   },
   "sidebar": {
     "general": "Allmänt",

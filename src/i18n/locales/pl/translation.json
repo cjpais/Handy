@@ -7,7 +7,9 @@
     "model": "Model",
     "quit": "Zamknij",
     "cancel": "Anuluj",
-    "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input"
+    "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input",
+    "language": "Język",
+    "autoLanguage": "Automatycznie"
   },
   "sidebar": {
     "general": "Ogólne",

@@ -7,7 +7,9 @@
     "model": "Model",
     "quit": "Ukončit",
     "cancel": "Zrušit",
-    "secureInputWarning": "⚠ Zkratky blokuje Secure Input"
+    "secureInputWarning": "⚠ Zkratky blokuje Secure Input",
+    "language": "Jazyk",
+    "autoLanguage": "Automaticky"
   },
   "sidebar": {
     "general": "Obecné",

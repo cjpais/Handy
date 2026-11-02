@@ -7,7 +7,9 @@
     "model": "Model",
     "quit": "Afslut",
     "cancel": "Annuller",
-    "secureInputWarning": "⚠ Genveje blokeret af Secure Input"
+    "secureInputWarning": "⚠ Genveje blokeret af Secure Input",
+    "language": "Sprog",
+    "autoLanguage": "Automatisk"
   },
   "sidebar": {
     "general": "Generelt",

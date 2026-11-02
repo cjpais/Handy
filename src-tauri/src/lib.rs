@@ -13,6 +13,7 @@ pub mod engine_supervisor;
 mod helpers;
 mod input;
 mod language_detection;
+mod languages;
 mod llm_client;
 mod managers;
 mod memory;
@@ -346,6 +347,16 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     }
                     tray::update_tray_menu(&app_clone);
                 });
+            }
+            id if id.starts_with("language_select:") => {
+                let language = id.strip_prefix("language_select:").unwrap().to_string();
+                if let Err(e) =
+                    shortcut::change_selected_language_setting(app.clone(), language.clone())
+                {
+                    log::error!("Failed to switch language via tray: {}", e);
+                    return;
+                }
+                log::info!("Language switched to {} via tray.", language);
             }
             _ => {}
         })

@@ -7,7 +7,9 @@
     "model": "Modello",
     "quit": "Esci",
     "cancel": "Annulla",
-    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
+    "language": "Lingua",
+    "autoLanguage": "Automatico"
   },
   "sidebar": {
     "general": "Generale",

@@ -7,7 +7,9 @@
     "model": "Modèle",
     "quit": "Quitter",
     "cancel": "Annuler",
-    "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input"
+    "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input",
+    "language": "Langue",
+    "autoLanguage": "Automatique"
   },
   "sidebar": {
     "general": "Général",
