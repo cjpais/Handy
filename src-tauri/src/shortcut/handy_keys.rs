@@ -110,10 +110,8 @@ impl HandyKeysState {
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
         info!("handy-keys manager thread started");
 
-        // On Windows, let registered shortcut keys reach the focused app too.
-        // Blocking mode swallows the chord, preventing other apps from seeing it.
-        // Keep blocking behavior on macOS and Linux.
-        let manager = match create_hotkey_manager() {
+        // The manager owns the keyboard hook; mode changes take effect on restart.
+        let manager = match create_hotkey_manager(get_settings(&app).shortcut_passthrough) {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
@@ -475,14 +473,13 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     state.unregister(&binding)
 }
 
-/// Windows passes shortcut keys through to the focused app. Other platforms
-/// block the registered chord so it cannot also trigger that app.
-pub fn shortcut_keys_pass_through() -> bool {
-    cfg!(target_os = "windows")
+/// Pass-through is opt-in and only supported on Windows.
+fn shortcut_keys_pass_through(enabled: bool) -> bool {
+    cfg!(target_os = "windows") && enabled
 }
 
-fn create_hotkey_manager() -> Result<HotkeyManager, impl std::fmt::Display> {
-    if shortcut_keys_pass_through() {
+fn create_hotkey_manager(enabled: bool) -> Result<HotkeyManager, impl std::fmt::Display> {
+    if shortcut_keys_pass_through(enabled) {
         HotkeyManager::new()
     } else {
         HotkeyManager::new_with_blocking()
@@ -549,7 +546,11 @@ mod tests {
     use super::shortcut_keys_pass_through;
 
     #[test]
-    fn windows_does_not_swallow_registered_shortcut_keys() {
-        assert_eq!(shortcut_keys_pass_through(), cfg!(target_os = "windows"));
+    fn shortcut_passthrough_is_opt_in_and_windows_only() {
+        assert!(!shortcut_keys_pass_through(false));
+        assert_eq!(
+            shortcut_keys_pass_through(true),
+            cfg!(target_os = "windows")
+        );
     }
 }

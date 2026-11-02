@@ -483,6 +483,9 @@ pub struct AppSettings {
     pub lazy_stream_close: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    /// Allow Windows shortcut keys to reach other apps (applied at startup).
+    #[serde(default)]
+    pub shortcut_passthrough: bool,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
@@ -977,6 +980,7 @@ pub fn get_default_settings() -> AppSettings {
         experimental_enabled: false,
         lazy_stream_close: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        shortcut_passthrough: false,
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
@@ -1301,6 +1305,20 @@ mod tests {
 
     fn default_settings_json() -> serde_json::Value {
         serde_json::to_value(get_default_settings()).unwrap()
+    }
+
+    #[test]
+    fn shortcut_passthrough_defaults_off_and_round_trips() {
+        let defaults: AppSettings = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert!(!defaults.shortcut_passthrough);
+        assert!(!get_default_settings().shortcut_passthrough);
+        for enabled in [false, true] {
+            let mut settings = get_default_settings();
+            settings.shortcut_passthrough = enabled;
+            let stored = serde_json::to_value(settings).unwrap();
+            let restored: AppSettings = serde_json::from_value(stored).unwrap();
+            assert_eq!(restored.shortcut_passthrough, enabled);
+        }
     }
 
     /// Every field must survive a partial store: a missing key must never fail

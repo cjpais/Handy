@@ -270,6 +270,10 @@
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
       },
+      "shortcutPassthrough": {
+        "label": "Pass shortcuts through to other apps",
+        "description": "Allow Handy shortcuts, including Escape to cancel, to also reach the focused app or Windows. Requires restarting Handy. Applies only to Handy Keys on Windows."
+      },
       "lazyStreamClose": {
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
