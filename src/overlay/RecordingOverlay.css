@@ -158,6 +158,42 @@
   width: var(--ov-work-w);
 }
 
+/* Post-result diff: the live panel's width and surface, text only. */
+.scard.diff {
+  width: var(--ov-open-w);
+  border-radius: 16px;
+}
+.scard.diff .stext {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.diff-cap {
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1.4;
+  max-height: 148px;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.diff-line {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.diff-line:last-child {
+  margin-bottom: 0;
+}
+.diff-insert {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.22);
+  border-radius: 2px;
+}
+.diff-delete {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.2);
+  border-radius: 2px;
+}
+
 /* text region — auto-height open via grid-rows trick; region fades as a whole */
 .stext {
   display: grid;

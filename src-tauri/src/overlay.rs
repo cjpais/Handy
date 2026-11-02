@@ -2,7 +2,8 @@ use crate::input;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{Mutex, PoisonError};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -53,14 +54,23 @@ const OVERLAY_HEIGHT: f64 = 50.0;
 const OVERLAY_STREAM_WIDTH: f64 = 400.0;
 const OVERLAY_STREAM_HEIGHT: f64 = 120.0;
 
+// Result diff: same width as the live panel, tall enough for a few changed lines.
+const OVERLAY_DIFF_WIDTH: f64 = 400.0;
+const OVERLAY_DIFF_HEIGHT: f64 = 200.0;
+
+/// How long a "selection too long" notice stays up.
+const NOTICE_OVERLAY_HIDE_AFTER: Duration = Duration::from_secs(4);
+
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
-    if state == "streaming" {
-        (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
-    } else {
-        (OVERLAY_WIDTH, OVERLAY_HEIGHT)
+    match state {
+        "streaming" => (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT),
+        "diff" => (OVERLAY_DIFF_WIDTH, OVERLAY_DIFF_HEIGHT),
+        _ => (OVERLAY_WIDTH, OVERLAY_HEIGHT),
     }
 }
+
+static PENDING_DIFF: Mutex<Option<crate::text_diff::DiffOverlay>> = Mutex::new(None);
 
 static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
 const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
@@ -589,23 +599,25 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             );
         }
 
+        if state == "diff" {
+            if let Some(diff) = PENDING_DIFF
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take()
+            {
+                let _ = overlay_window.emit("post-result-diff", diff);
+            }
+        }
+
         let _ = overlay_window.emit("show-overlay", state);
 
-        if state == "notice" {
-            let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
-            let window = overlay_window.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(4));
-                if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
-                    return;
-                }
-                let _ = window.emit("hide-overlay", ());
-                std::thread::sleep(std::time::Duration::from_millis(300));
-                if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
-                    return;
-                }
-                let _ = window.hide();
-            });
+        let dismiss_after = match state {
+            "diff" => Some(crate::text_diff::DIFF_OVERLAY_HIDE_AFTER),
+            "notice" => Some(NOTICE_OVERLAY_HIDE_AFTER),
+            _ => None,
+        };
+        if let Some(delay) = dismiss_after {
+            schedule_overlay_dismiss(overlay_window.clone(), delay);
         }
     }
 }
@@ -651,6 +663,23 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
 /// unless a newer recording shows the overlay again.
 pub fn show_notice_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "notice");
+}
+
+/// Shows the post-result diff in the recording overlay's place.
+///
+/// Returns false when overlays are disabled, so the caller still hides the
+/// recording pill. A later `show_overlay_state` (the next recording) bumps
+/// the generation and the diff's timer will not hide that recording.
+pub fn show_diff_overlay(app_handle: &AppHandle, diff: crate::text_diff::DiffOverlay) -> bool {
+    if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
+        return false;
+    }
+    if app_handle.get_webview_window("recording_overlay").is_none() {
+        return false;
+    }
+    *PENDING_DIFF.lock().unwrap_or_else(PoisonError::into_inner) = Some(diff);
+    show_overlay_state(app_handle, "diff");
+    true
 }
 
 /// Updates the overlay window position based on current settings
@@ -707,6 +736,24 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 /// press the coordinator remembered while the pipeline was busy and started
 /// the instant it drained, well inside the 300 ms hide delay.
 static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// Fade the overlay out, then hide the window, unless a newer show landed.
+fn schedule_overlay_dismiss(window: tauri::WebviewWindow, delay: Duration) {
+    let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+    std::thread::spawn(move || {
+        std::thread::sleep(delay);
+        if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
+            return;
+        }
+        let _ = window.emit("hide-overlay", ());
+        std::thread::sleep(Duration::from_millis(300));
+        if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
+            log::debug!("Skipping stale overlay hide: a newer session is showing the overlay");
+            return;
+        }
+        let _ = window.hide();
+    });
+}
 
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {

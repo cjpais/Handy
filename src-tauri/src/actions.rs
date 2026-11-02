@@ -1020,6 +1020,7 @@ impl ShortcutAction for TranscribeAction {
                                     show_processing_overlay(&ah);
                                 }
                             }
+                            let selection_for_diff = selection.clone();
                             let Some(processed) = complete_unless_cancelled(
                                 process_transcription_output(
                                     &ah,
@@ -1045,6 +1046,12 @@ impl ShortcutAction for TranscribeAction {
                                 return;
                             }
 
+                            let diff = crate::text_diff::result_overlay(
+                                context_scribe,
+                                selection_for_diff.as_deref().unwrap_or(""),
+                                &transcription,
+                                processed.post_processed_text.as_deref(),
+                            );
                             // Save to history if WAV was saved
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
@@ -1077,6 +1084,10 @@ impl ShortcutAction for TranscribeAction {
                                     stop_time,
                                 );
                             } else {
+                                let showed_diff = match diff {
+                                    Some(diff) => crate::overlay::show_diff_overlay(&ah, diff),
+                                    None => false,
+                                };
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
@@ -1122,8 +1133,12 @@ impl ShortcutAction for TranscribeAction {
                                         };
                                         // A new session may have started while
                                         // this paste ran; the UI is now its.
+                                        // A result diff hides itself on a timer
+                                        // and must survive this paste finishing.
                                         if RECORDING_SESSION.load(Ordering::SeqCst) == session {
-                                            utils::hide_recording_overlay(&ah_clone);
+                                            if !showed_diff {
+                                                utils::hide_recording_overlay(&ah_clone);
+                                            }
                                             set_tray_state(&ah_clone, TrayIconState::Idle);
                                         }
                                         emit_transcription_complete(
@@ -1136,7 +1151,9 @@ impl ShortcutAction for TranscribeAction {
                                     .map(|_| ())
                                     .unwrap_or_else(|e| {
                                         error!("Failed to start the paste thread: {:?}", e);
-                                        utils::hide_recording_overlay(&ah);
+                                        if !showed_diff {
+                                            utils::hide_recording_overlay(&ah);
+                                        }
                                         set_tray_state(&ah, TrayIconState::Idle);
                                         emit_transcription_complete(
                                             &ah,
