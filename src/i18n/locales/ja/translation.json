@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "不明なモデル",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
+    "postProcessFailedTitle": "後処理なしで貼り付けました",
+    "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
     "transcriptionFailedTitle": "文字起こしに失敗しました"
   },
   "notices": {

@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "mô hình không xác định",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
+    "postProcessFailedTitle": "Đã dán không qua xử lý sau",
+    "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },
   "notices": {

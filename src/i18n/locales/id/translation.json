@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "model tidak dikenal",
     "pasteFailedTitle": "Gagal Menempelkan Teks",
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
+    "postProcessFailedTitle": "Ditempel Tanpa Pascaproses",
+    "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
     "transcriptionFailedTitle": "Transkripsi Gagal"
   },
   "notices": {

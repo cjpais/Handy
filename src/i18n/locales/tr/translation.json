@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "bilinmeyen model",
     "pasteFailedTitle": "Metin yapıştırılamadı",
     "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı.",
+    "postProcessFailedTitle": "Son işlem olmadan yapıştırıldı",
+    "postProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi yapıştırıldı.",
     "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
   },
   "notices": {

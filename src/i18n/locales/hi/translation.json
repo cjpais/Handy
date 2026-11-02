@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "अज्ञात मॉडल",
     "pasteFailedTitle": "टेक्स्ट पेस्ट नहीं हो सका",
     "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",
+    "postProcessFailedTitle": "पोस्ट प्रोसेस के बिना पेस्ट किया गया",
+    "postProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही पेस्ट किया गया।",
     "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
   },
   "notices": {

@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "ukendt model",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
+    "postProcessFailedTitle": "Indsat uden efterbehandling",
+    "postProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev indsat, som den er.",
     "transcriptionFailedTitle": "Transskription mislykkedes"
   },
   "notices": {

@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "model desconegut",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
+    "postProcessFailedTitle": "Enganxat sense postprocessament",
+    "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
     "transcriptionFailedTitle": "La transcripció ha fallat"
   },
   "notices": {

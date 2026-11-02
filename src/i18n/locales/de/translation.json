@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
+    "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "notices": {

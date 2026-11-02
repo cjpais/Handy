@@ -44,6 +44,11 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.modelLoadFailedTitle",
     page: "models",
   },
+  PostProcessFailed: {
+    title: "errors.postProcessFailedTitle",
+    explanation: (t) => t("errors.postProcessFailed"),
+    page: "postprocessing",
+  },
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];

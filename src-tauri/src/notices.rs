@@ -71,6 +71,7 @@ pub enum NoticeCode {
     MicPermissionDenied,
     RecordingFailed,
     ModelLoadFailed,
+    PostProcessFailed,
 }
 
 impl NoticeCode {
@@ -82,6 +83,7 @@ impl NoticeCode {
             | Self::MicPermissionDenied
             | Self::RecordingFailed
             | Self::ModelLoadFailed => NoticeLevel::Error,
+            Self::PostProcessFailed => NoticeLevel::Warning,
         }
     }
 
@@ -95,6 +97,7 @@ impl NoticeCode {
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,
             Self::RecordingFailed => &strings.recording_failed_title,
             Self::ModelLoadFailed => &strings.model_load_failed_title,
+            Self::PostProcessFailed => &strings.post_process_failed_title,
         }
     }
 }
@@ -249,6 +252,9 @@ mod tests {
     fn level_comes_from_the_code() {
         let notice = dictation(NoticeCode::PasteFailed);
         assert_eq!(notice.level, NoticeLevel::Error);
+
+        let notice = dictation(NoticeCode::PostProcessFailed);
+        assert_eq!(notice.level, NoticeLevel::Warning);
     }
 
     #[test]
@@ -315,6 +321,18 @@ mod tests {
     }
 
     #[test]
+    fn headline_prefers_an_older_error_to_a_newer_warning() {
+        let mut active = Vec::new();
+        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, dictation(NoticeCode::PostProcessFailed));
+
+        assert_eq!(
+            headline(&active),
+            Some(&file(NoticeCode::TranscriptionFailed))
+        );
+    }
+
+    #[test]
     fn headline_is_the_newest_notice() {
         let mut active = Vec::new();
         assert_eq!(headline(&active), None);
@@ -329,8 +347,8 @@ mod tests {
         let mut active = vec![dictation(NoticeCode::PasteFailed)];
 
         remove(&mut active, NoticeSource::Dictation);
-        insert(&mut active, dictation(NoticeCode::RecordingFailed));
+        insert(&mut active, dictation(NoticeCode::PostProcessFailed));
 
-        assert_eq!(active, vec![dictation(NoticeCode::RecordingFailed)]);
+        assert_eq!(active, vec![dictation(NoticeCode::PostProcessFailed)]);
     }
 }

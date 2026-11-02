@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "modèle inconnu",
     "pasteFailedTitle": "Échec du collage du texte",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
+    "postProcessFailedTitle": "Collé sans post-traitement",
+    "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
     "transcriptionFailedTitle": "Échec de la transcription"
   },
   "notices": {

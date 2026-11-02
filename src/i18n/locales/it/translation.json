@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "modello sconosciuto",
     "pasteFailedTitle": "Impossibile incollare il testo",
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
+    "postProcessFailedTitle": "Incollato senza post-elaborazione",
+    "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },
   "notices": {

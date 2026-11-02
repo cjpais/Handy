@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "nieznany model",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
+    "postProcessFailedTitle": "Wklejono bez postprocesu",
+    "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },
   "notices": {

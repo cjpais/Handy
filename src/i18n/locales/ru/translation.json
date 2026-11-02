@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "неизвестная модель",
     "pasteFailedTitle": "Не удалось вставить текст",
     "pasteFailed": "Не удалось вставить текст в активное приложение.",
+    "postProcessFailedTitle": "Вставлено без постобработки",
+    "postProcessFailed": "Постобработка не завершилась, поэтому расшифровка вставлена как есть.",
     "transcriptionFailedTitle": "Ошибка транскрипции"
   },
   "notices": {

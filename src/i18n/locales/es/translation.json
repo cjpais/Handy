@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "modelo desconocido",
     "pasteFailedTitle": "Error al pegar el texto",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
+    "postProcessFailedTitle": "Pegado sin post proceso",
+    "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
     "transcriptionFailedTitle": "Error de transcripción"
   },
   "notices": {

@@ -19,7 +19,8 @@ export const showNoticeToast = (t: TFunction, notice: Notice) => {
   }
 
   const { title, explanation } = noticeDisplay(notice.code);
-  toast.error(t(title), {
+  const show = notice.level === "warning" ? toast.warning : toast.error;
+  show(t(title), {
     description: explanation?.(t) ?? notice.detail,
   });
 };

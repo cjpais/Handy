@@ -1315,7 +1315,7 @@ detail: string | null }
  * Every error Handy reports. The frontend maps each one to its text in
  * `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Handy can't do its job.

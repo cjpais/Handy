@@ -169,17 +169,30 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+/// What became of a transcription's post-processing.
+#[derive(Debug, PartialEq, Eq)]
+enum PostProcessOutcome {
+    /// It wasn't set up to run. Not a problem to report.
+    Skipped,
+    Done(String),
+    /// It ran and produced nothing, so the transcript goes out as it is.
+    Failed,
+}
+
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+) -> PostProcessOutcome {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
-        return None;
+        return PostProcessOutcome::Skipped;
     }
 
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
             debug!("Post-processing enabled but no provider is selected");
-            return None;
+            return PostProcessOutcome::Skipped;
         }
     };
 
@@ -194,14 +207,14 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             "Post-processing skipped because provider '{}' has no model configured",
             provider.id
         );
-        return None;
+        return PostProcessOutcome::Skipped;
     }
 
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
-            return None;
+            return PostProcessOutcome::Skipped;
         }
     };
 
@@ -216,13 +229,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 "Post-processing skipped because prompt '{}' was not found",
                 selected_prompt_id
             );
-            return None;
+            return PostProcessOutcome::Skipped;
         }
     };
 
     if prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
-        return None;
+        return PostProcessOutcome::Skipped;
     }
 
     debug!(
@@ -255,7 +268,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                     debug!(
                         "Apple Intelligence selected but not currently available on this device"
                     );
-                    return None;
+                    return PostProcessOutcome::Skipped;
                 }
 
                 let token_limit = model.trim().parse::<i32>().unwrap_or(0);
@@ -267,19 +280,19 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                     Ok(result) => {
                         if result.trim().is_empty() {
                             debug!("Apple Intelligence returned an empty response");
-                            None
+                            PostProcessOutcome::Failed
                         } else {
                             let result = strip_invisible_chars(&result);
                             debug!(
                                 "Apple Intelligence post-processing succeeded. Output length: {} chars",
                                 result.len()
                             );
-                            Some(result)
+                            PostProcessOutcome::Done(result)
                         }
                     }
                     Err(err) => {
                         error!("Apple Intelligence post-processing failed: {}", err);
-                        None
+                        PostProcessOutcome::Failed
                     }
                 };
             }
@@ -287,7 +300,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
             {
                 debug!("Apple Intelligence provider selected on unsupported platform");
-                return None;
+                return PostProcessOutcome::Skipped;
             }
         }
 
@@ -329,10 +342,10 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                                 provider.id,
                                 result.len()
                             );
-                            return Some(result);
+                            return PostProcessOutcome::Done(result);
                         } else {
                             error!("Structured output response missing 'transcription' field");
-                            return Some(strip_invisible_chars(content));
+                            return PostProcessOutcome::Done(strip_invisible_chars(content));
                         }
                     }
                     Err(e) => {
@@ -340,13 +353,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                             "Failed to parse structured output JSON: {}. Returning raw content.",
                             e
                         );
-                        return Some(strip_invisible_chars(content));
+                        return PostProcessOutcome::Done(strip_invisible_chars(content));
                     }
                 }
             }
             Ok(None) => {
                 error!("LLM API response has no content");
-                return None;
+                return PostProcessOutcome::Failed;
             }
             Err(e) => {
                 warn!(
@@ -378,11 +391,11 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 provider.id,
                 content.len()
             );
-            Some(content)
+            PostProcessOutcome::Done(content)
         }
         Ok(None) => {
             error!("LLM API response has no content");
-            None
+            PostProcessOutcome::Failed
         }
         Err(e) => {
             error!(
@@ -390,7 +403,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 provider.id,
                 e
             );
-            None
+            PostProcessOutcome::Failed
         }
     }
 }
@@ -399,6 +412,8 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    /// Post-processing ran and failed, so `final_text` is the bare transcript.
+    pub post_process_failed: bool,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -410,19 +425,24 @@ pub(crate) async fn process_transcription_output(
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
+    let mut post_process_failed = false;
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+        match post_process_transcription(&settings, &final_text).await {
+            PostProcessOutcome::Skipped => {}
+            PostProcessOutcome::Failed => post_process_failed = true,
+            PostProcessOutcome::Done(processed_text) => {
+                post_processed_text = Some(processed_text.clone());
+                final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
-                    post_process_prompt = Some(prompt.prompt.clone());
+                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                    if let Some(prompt) = settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|prompt| &prompt.id == prompt_id)
+                    {
+                        post_process_prompt = Some(prompt.prompt.clone());
+                    }
                 }
             }
         }
@@ -432,6 +452,7 @@ pub(crate) async fn process_transcription_output(
         final_text,
         post_processed_text,
         post_process_prompt,
+        post_process_failed,
     }
 }
 
@@ -803,6 +824,7 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let post_process_failed = processed.post_process_failed;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -841,7 +863,13 @@ impl ShortcutAction for TranscribeAction {
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    (TranscriptionOutcome::Typed, None)
+                                                    let notice = post_process_failed.then(|| {
+                                                        Notice::new(
+                                                            NoticeCode::PostProcessFailed,
+                                                            NoticeSource::Dictation,
+                                                        )
+                                                    });
+                                                    (TranscriptionOutcome::Typed, notice)
                                                 }
                                                 Err(e) => {
                                                     error!("Failed to paste transcription: {}", e);
@@ -1016,15 +1044,101 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        complete_unless_cancelled, is_blank_transcription, post_process_transcription,
+        should_use_streaming_overlay, strip_think_block, PostProcessOutcome,
     };
-    use crate::settings::OverlayStyle;
+    use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
+
+    /// Settings that run post-processing against `base_url`, without the
+    /// structured output path.
+    fn post_process_settings(base_url: &str) -> AppSettings {
+        let mut settings = get_default_settings();
+        let provider = settings
+            .post_process_providers
+            .iter_mut()
+            .find(|provider| provider.id == settings.post_process_provider_id)
+            .expect("the default provider exists");
+        provider.base_url = base_url.to_string();
+        provider.supports_structured_output = false;
+        let provider_id = provider.id.clone();
+        settings
+            .post_process_models
+            .insert(provider_id, "model".to_string());
+        settings.post_process_selected_prompt_id =
+            settings.post_process_prompts.first().map(|p| p.id.clone());
+        settings
+    }
+
+    /// Answers one chat completion request with `body`, and returns its URL.
+    fn serve_once(body: &'static str) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0; 8192];
+            let _ = stream.read(&mut request);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+        format!("http://{address}")
+    }
+
+    fn run_post_process(settings: &AppSettings, transcription: &str) -> PostProcessOutcome {
+        tauri::async_runtime::block_on(post_process_transcription(settings, transcription))
+    }
+
+    #[test]
+    fn post_processing_that_cannot_run_is_skipped() {
+        let settings = get_default_settings();
+        assert_eq!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::Skipped
+        );
+
+        let settings = post_process_settings("http://127.0.0.1:1");
+        assert_eq!(
+            run_post_process(&settings, "  "),
+            PostProcessOutcome::Skipped
+        );
+    }
+
+    #[test]
+    fn a_post_processing_reply_is_done() {
+        let url = serve_once(r#"{"choices":[{"message":{"content":"polished"}}]}"#);
+        assert_eq!(
+            run_post_process(&post_process_settings(&url), "hello"),
+            PostProcessOutcome::Done("polished".to_string())
+        );
+    }
+
+    #[test]
+    fn a_post_processing_reply_with_no_content_failed() {
+        let url = serve_once(r#"{"choices":[]}"#);
+        assert_eq!(
+            run_post_process(&post_process_settings(&url), "hello"),
+            PostProcessOutcome::Failed
+        );
+    }
+
+    #[test]
+    fn an_unreachable_provider_failed() {
+        let settings = post_process_settings("http://127.0.0.1:1");
+        assert_eq!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::Failed
+        );
+    }
 
     #[test]
     fn blank_transcription_is_detected() {

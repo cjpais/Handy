@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "onbekend model",
     "pasteFailedTitle": "Tekst plakken mislukt",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
+    "postProcessFailedTitle": "Geplakt zonder naverwerking",
+    "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
     "transcriptionFailedTitle": "Transcriptie mislukt"
   },
   "notices": {

@@ -942,6 +942,8 @@
     "modelLoadFailedUnknown": "neznámý model",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "postProcessFailedTitle": "Vloženo bez následného zpracování",
+    "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
     "transcriptionFailedTitle": "Přepis selhal"
   },
   "notices": {
