@@ -944,6 +944,8 @@
     "pasteFailed": "Text could not be pasted into the active application.",
     "postProcessFailedTitle": "Pasted Without Post-Processing",
     "postProcessFailed": "Post Process didn't finish, so the transcript was pasted as is.",
+    "filePostProcessFailedTitle": "Transcribed Without Post-Processing",
+    "filePostProcessFailed": "Post Process didn't finish, so the transcript was saved as is.",
     "transcriptionFailedTitle": "Transcription Failed"
   },
   "notices": {

@@ -944,6 +944,8 @@
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
     "postProcessFailedTitle": "Inklistrat utan efterbearbetning",
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
+    "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",
+    "filePostProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen sparades som den är.",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
   },
   "notices": {

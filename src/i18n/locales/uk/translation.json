@@ -944,6 +944,8 @@
     "pasteFailed": "Не вдалося вставити текст до активної програми.",
     "postProcessFailedTitle": "Вставлено без постобробки",
     "postProcessFailed": "Постобробка не завершилася, тому розшифровку вставлено як є.",
+    "filePostProcessFailedTitle": "Розшифровано без постобробки",
+    "filePostProcessFailed": "Постобробка не завершилася, тому розшифровку збережено як є.",
     "transcriptionFailedTitle": "Помилка транскрипції"
   },
   "notices": {

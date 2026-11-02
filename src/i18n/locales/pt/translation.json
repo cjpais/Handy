@@ -944,6 +944,8 @@
     "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
     "postProcessFailedTitle": "Colado sem pós-processamento",
     "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
+    "filePostProcessFailedTitle": "Transcrito sem pós-processamento",
+    "filePostProcessFailed": "O pós-processamento não terminou, então a transcrição foi salva como está.",
     "transcriptionFailedTitle": "Falha na transcrição"
   },
   "notices": {

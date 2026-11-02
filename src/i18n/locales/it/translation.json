@@ -944,6 +944,8 @@
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
     "postProcessFailedTitle": "Incollato senza post-elaborazione",
     "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
+    "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
+    "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },
   "notices": {

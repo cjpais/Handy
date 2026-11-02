@@ -944,6 +944,8 @@
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
     "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
+    "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
+    "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
     "transcriptionFailedTitle": "התמלול נכשל"
   },
   "notices": {

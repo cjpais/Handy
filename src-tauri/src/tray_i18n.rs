@@ -5,7 +5,8 @@
 //!
 //! The English translation.json is the single source of truth:
 //! - TrayStrings struct fields are derived from the English "tray" keys, plus
-//!   every `errors.*Title` for notice titles
+//!   every `errors.*Title` and `settings.history.transcribeFailed` for notice
+//!   titles
 //! - All languages are auto-discovered from the locales directory
 //!
 //! To add a new tray menu item:

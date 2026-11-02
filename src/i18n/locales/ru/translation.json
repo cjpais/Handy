@@ -944,6 +944,8 @@
     "pasteFailed": "Не удалось вставить текст в активное приложение.",
     "postProcessFailedTitle": "Вставлено без постобработки",
     "postProcessFailed": "Постобработка не завершилась, поэтому расшифровка вставлена как есть.",
+    "filePostProcessFailedTitle": "Расшифровано без постобработки",
+    "filePostProcessFailed": "Постобработка не завершилась, поэтому расшифровка сохранена как есть.",
     "transcriptionFailedTitle": "Ошибка транскрипции"
   },
   "notices": {

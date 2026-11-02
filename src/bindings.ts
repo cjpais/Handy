@@ -1315,7 +1315,7 @@ detail: string | null }
  * Every error Handy reports. The frontend maps each one to its text in
  * `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Handy can't do its job.
@@ -1326,7 +1326,9 @@ export type NoticeLevel =
  */
 "warning"
 /**
- * What a notice belongs to: each source has one slot in the store.
+ * What a notice belongs to: each source has one slot in the store, and only
+ * dictation notices use the overlay. File jobs finish while the user is doing
+ * something else, so a pill appearing then would have no context.
  */
 export type NoticeSource = "dictation" | "file"
 /**

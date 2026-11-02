@@ -944,6 +944,8 @@
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
     "postProcessFailedTitle": "Pegado sin post proceso",
     "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
+    "filePostProcessFailedTitle": "Transcrito sin post proceso",
+    "filePostProcessFailed": "El post proceso no terminó, así que la transcripción se guardó tal cual.",
     "transcriptionFailedTitle": "Error de transcripción"
   },
   "notices": {

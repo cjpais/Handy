@@ -944,6 +944,8 @@
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
     "postProcessFailedTitle": "Ditempel Tanpa Pascaproses",
     "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
+    "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
+    "filePostProcessFailed": "Pascaproses tidak selesai, jadi transkrip disimpan apa adanya.",
     "transcriptionFailedTitle": "Transkripsi Gagal"
   },
   "notices": {

@@ -944,6 +944,8 @@
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
     "postProcessFailedTitle": "Enganxat sense postprocessament",
     "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
+    "filePostProcessFailedTitle": "Transcrit sense postprocessament",
+    "filePostProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha desat tal qual.",
     "transcriptionFailedTitle": "La transcripció ha fallat"
   },
   "notices": {

@@ -944,6 +944,8 @@
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
     "postProcessFailedTitle": "Collé sans post-traitement",
     "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
+    "filePostProcessFailedTitle": "Transcrit sans post-traitement",
+    "filePostProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été enregistrée telle quelle.",
     "transcriptionFailedTitle": "Échec de la transcription"
   },
   "notices": {

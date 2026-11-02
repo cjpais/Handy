@@ -944,6 +944,8 @@
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
     "postProcessFailedTitle": "已貼上，未經後處理",
     "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
+    "filePostProcessFailedTitle": "已轉錄，未經後處理",
+    "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
     "transcriptionFailedTitle": "轉錄失敗"
   },
   "notices": {

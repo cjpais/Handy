@@ -267,7 +267,8 @@ fn split_versioned_so(name: &str) -> Option<(&str, usize)> {
 ///
 /// Source of truth: src/i18n/locales/*/translation.json
 /// The English "tray" section defines the struct fields, along with every
-/// `errors.*Title`, so the tray shows a notice's title without its own copy.
+/// `errors.*Title` and `settings.history.transcribeFailed`, so the tray shows a
+/// notice's title without its own copy.
 fn generate_tray_translations() {
     use std::collections::BTreeMap;
     use std::fs;
@@ -304,6 +305,9 @@ fn generate_tray_translations() {
                 .filter(|(key, _)| key.ends_with("Title"));
             for (key, title) in titles {
                 tray[key] = title.clone();
+            }
+            if let Some(title) = parsed.pointer("/settings/history/transcribeFailed") {
+                tray["transcribeFailed"] = title.clone();
             }
             translations.insert(lang, tray);
         }

@@ -944,6 +944,8 @@
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
     "postProcessFailedTitle": "Wklejono bez postprocesu",
     "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
+    "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
+    "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },
   "notices": {

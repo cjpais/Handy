@@ -944,6 +944,8 @@
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
     "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
+    "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",
+    "filePostProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert gespeichert.",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "notices": {

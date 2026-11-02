@@ -49,6 +49,15 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     explanation: (t) => t("errors.postProcessFailed"),
     page: "postprocessing",
   },
+  FileTranscriptionFailed: {
+    title: "settings.history.transcribeFailed",
+    page: "history",
+  },
+  FilePostProcessFailed: {
+    title: "errors.filePostProcessFailedTitle",
+    explanation: (t) => t("errors.filePostProcessFailed"),
+    page: "history",
+  },
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];

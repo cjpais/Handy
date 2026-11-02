@@ -944,6 +944,8 @@
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
     "postProcessFailedTitle": "Đã dán không qua xử lý sau",
     "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
+    "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
+    "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },
   "notices": {

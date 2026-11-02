@@ -53,7 +53,9 @@ pub enum NoticeLevel {
     Warning,
 }
 
-/// What a notice belongs to: each source has one slot in the store.
+/// What a notice belongs to: each source has one slot in the store, and only
+/// dictation notices use the overlay. File jobs finish while the user is doing
+/// something else, so a pill appearing then would have no context.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum NoticeSource {
@@ -72,6 +74,8 @@ pub enum NoticeCode {
     RecordingFailed,
     ModelLoadFailed,
     PostProcessFailed,
+    FileTranscriptionFailed,
+    FilePostProcessFailed,
 }
 
 impl NoticeCode {
@@ -82,8 +86,9 @@ impl NoticeCode {
             | Self::NoMicrophone
             | Self::MicPermissionDenied
             | Self::RecordingFailed
-            | Self::ModelLoadFailed => NoticeLevel::Error,
-            Self::PostProcessFailed => NoticeLevel::Warning,
+            | Self::ModelLoadFailed
+            | Self::FileTranscriptionFailed => NoticeLevel::Error,
+            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
         }
     }
 
@@ -98,6 +103,8 @@ impl NoticeCode {
             Self::RecordingFailed => &strings.recording_failed_title,
             Self::ModelLoadFailed => &strings.model_load_failed_title,
             Self::PostProcessFailed => &strings.post_process_failed_title,
+            Self::FileTranscriptionFailed => &strings.transcribe_failed,
+            Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
         }
     }
 }
@@ -279,21 +286,21 @@ mod tests {
     #[test]
     fn each_source_keeps_its_own_notice_newest_first() {
         let mut active = Vec::new();
-        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, file(NoticeCode::FileTranscriptionFailed));
         insert(&mut active, dictation(NoticeCode::PasteFailed));
         assert_eq!(
             active,
             vec![
                 dictation(NoticeCode::PasteFailed),
-                file(NoticeCode::TranscriptionFailed),
+                file(NoticeCode::FileTranscriptionFailed),
             ]
         );
 
-        insert(&mut active, file(NoticeCode::RecordingFailed));
+        insert(&mut active, file(NoticeCode::FilePostProcessFailed));
         assert_eq!(
             active,
             vec![
-                file(NoticeCode::RecordingFailed),
+                file(NoticeCode::FilePostProcessFailed),
                 dictation(NoticeCode::PasteFailed),
             ]
         );
@@ -302,11 +309,11 @@ mod tests {
     #[test]
     fn clearing_one_source_leaves_the_other() {
         let mut active = Vec::new();
-        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, file(NoticeCode::FileTranscriptionFailed));
         insert(&mut active, dictation(NoticeCode::PasteFailed));
 
         assert!(remove(&mut active, NoticeSource::Dictation));
-        assert_eq!(active, vec![file(NoticeCode::TranscriptionFailed)]);
+        assert_eq!(active, vec![file(NoticeCode::FileTranscriptionFailed)]);
 
         assert!(remove(&mut active, NoticeSource::File));
         assert!(active.is_empty());
@@ -314,30 +321,30 @@ mod tests {
 
     #[test]
     fn clearing_an_empty_source_changes_nothing() {
-        let mut active = vec![file(NoticeCode::TranscriptionFailed)];
+        let mut active = vec![file(NoticeCode::FileTranscriptionFailed)];
 
         assert!(!remove(&mut active, NoticeSource::Dictation));
-        assert_eq!(active, vec![file(NoticeCode::TranscriptionFailed)]);
+        assert_eq!(active, vec![file(NoticeCode::FileTranscriptionFailed)]);
     }
 
     #[test]
     fn headline_prefers_an_older_error_to_a_newer_warning() {
         let mut active = Vec::new();
-        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, file(NoticeCode::FileTranscriptionFailed));
         insert(&mut active, dictation(NoticeCode::PostProcessFailed));
 
         assert_eq!(
             headline(&active),
-            Some(&file(NoticeCode::TranscriptionFailed))
+            Some(&file(NoticeCode::FileTranscriptionFailed))
         );
     }
 
     #[test]
-    fn headline_is_the_newest_notice() {
+    fn headline_is_the_newest_notice_at_the_highest_level() {
         let mut active = Vec::new();
         assert_eq!(headline(&active), None);
 
-        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, file(NoticeCode::FileTranscriptionFailed));
         insert(&mut active, dictation(NoticeCode::PasteFailed));
         assert_eq!(headline(&active), active.first());
     }
