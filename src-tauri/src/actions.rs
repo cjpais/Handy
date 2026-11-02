@@ -903,10 +903,13 @@ impl ShortcutAction for TranscribeAction {
                                                     error!("Failed to paste transcription: {}", e);
                                                     (
                                                         TranscriptionOutcome::Failed,
-                                                        Some(Notice::new(
-                                                            NoticeCode::PasteFailed,
-                                                            NoticeSource::Dictation,
-                                                        )),
+                                                        Some(
+                                                            Notice::new(
+                                                                NoticeCode::PasteFailed,
+                                                                NoticeSource::Dictation,
+                                                            )
+                                                            .with_detail(e),
+                                                        ),
                                                     )
                                                 }
                                             };
