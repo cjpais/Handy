@@ -7,7 +7,10 @@
     "model": "मोडेल",
     "quit": "बाहिर निस्कनुहोस्",
     "cancel": "रद्द गर्नुहोस्",
-    "secureInputWarning": "⚠ Secure Input ले सर्टकटहरू रोकेको छ"
+    "secureInputWarning": "⚠ Secure Input ले सर्टकटहरू रोकेको छ",
+    "language": "भाषा",
+    "autoLanguage": "स्वतः",
+    "otherLanguages": "अन्य भाषाहरू"
   },
   "sidebar": {
     "general": "सामान्य",

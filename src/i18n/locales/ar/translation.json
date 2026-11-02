@@ -7,7 +7,10 @@
     "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء",
-    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input"
+    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
+    "language": "اللغة",
+    "autoLanguage": "تلقائي",
+    "otherLanguages": "لغات أخرى"
   },
   "sidebar": {
     "general": "عام",

@@ -7,7 +7,10 @@
     "model": "모델",
     "quit": "종료",
     "cancel": "취소",
-    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
+    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨",
+    "language": "언어",
+    "autoLanguage": "자동",
+    "otherLanguages": "기타 언어"
   },
   "sidebar": {
     "general": "일반",

@@ -7,7 +7,10 @@
     "model": "Modell",
     "quit": "Beenden",
     "cancel": "Abbrechen",
-    "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert"
+    "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert",
+    "language": "Sprache",
+    "autoLanguage": "Automatisch",
+    "otherLanguages": "Weitere Sprachen"
   },
   "sidebar": {
     "general": "Allgemein",

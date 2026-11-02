@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Çıkış",
     "cancel": "İptal",
-    "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor"
+    "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor",
+    "language": "Dil",
+    "autoLanguage": "Otomatik",
+    "otherLanguages": "Diğer Diller"
   },
   "sidebar": {
     "general": "Genel",

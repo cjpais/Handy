@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Surt",
     "cancel": "Cancel·la",
-    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura"
+    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura",
+    "language": "Llengua",
+    "autoLanguage": "Automàtica",
+    "otherLanguages": "Altres llengües"
   },
   "sidebar": {
     "general": "General",

@@ -7,7 +7,10 @@
     "model": "Модел",
     "quit": "Изход",
     "cancel": "Отказ",
-    "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input"
+    "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input",
+    "language": "Език",
+    "autoLanguage": "Автоматично",
+    "otherLanguages": "Други езици"
   },
   "sidebar": {
     "general": "Общи",

@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Afsluiten",
     "cancel": "Annuleren",
-    "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input"
+    "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input",
+    "language": "Taal",
+    "autoLanguage": "Automatisch",
+    "otherLanguages": "Andere talen"
   },
   "sidebar": {
     "general": "Algemeen",

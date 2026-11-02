@@ -7,7 +7,10 @@
     "model": "मॉडल",
     "quit": "बाहर निकलें",
     "cancel": "रद्द करें",
-    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं"
+    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं",
+    "language": "भाषा",
+    "autoLanguage": "ऑटो",
+    "otherLanguages": "अन्य भाषाएँ"
   },
   "sidebar": {
     "general": "सामान्य",

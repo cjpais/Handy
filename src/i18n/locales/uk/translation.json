@@ -7,7 +7,10 @@
     "model": "Модель",
     "quit": "Вийти",
     "cancel": "Скасувати",
-    "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input"
+    "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input",
+    "language": "Мова",
+    "autoLanguage": "Авто",
+    "otherLanguages": "Інші мови"
   },
   "sidebar": {
     "general": "Загальні",

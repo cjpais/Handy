@@ -7,7 +7,10 @@
     "model": "Mô hình",
     "quit": "Thoát",
     "cancel": "Hủy",
-    "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn"
+    "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn",
+    "language": "Ngôn ngữ",
+    "autoLanguage": "Tự động",
+    "otherLanguages": "Ngôn ngữ khác"
   },
   "sidebar": {
     "general": "Chung",

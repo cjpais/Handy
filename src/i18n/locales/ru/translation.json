@@ -7,7 +7,10 @@
     "model": "Модель",
     "quit": "Выход",
     "cancel": "Отмена",
-    "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input"
+    "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input",
+    "language": "Язык",
+    "autoLanguage": "Авто",
+    "otherLanguages": "Другие языки"
   },
   "sidebar": {
     "general": "Общие",

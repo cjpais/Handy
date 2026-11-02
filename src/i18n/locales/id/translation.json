@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Keluar",
     "cancel": "Batal",
-    "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input"
+    "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input",
+    "language": "Bahasa",
+    "autoLanguage": "Otomatis",
+    "otherLanguages": "Bahasa Lain"
   },
   "sidebar": {
     "general": "Umum",

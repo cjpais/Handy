@@ -7,7 +7,10 @@
     "model": "モデル",
     "quit": "終了",
     "cancel": "キャンセル",
-    "secureInputWarning": "⚠ Secure Input でショートカットがブロック中"
+    "secureInputWarning": "⚠ Secure Input でショートカットがブロック中",
+    "language": "言語",
+    "autoLanguage": "自動",
+    "otherLanguages": "その他の言語"
   },
   "sidebar": {
     "general": "一般",
