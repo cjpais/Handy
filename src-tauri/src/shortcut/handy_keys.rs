@@ -41,7 +41,6 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::settings::{self, get_settings, ShortcutBinding};
 
 use super::handler::handle_shortcut_event;
-use super::manager_thread::spawn_manager_thread;
 
 /// Commands that can be sent to the hotkey manager thread
 enum ManagerCommand {
@@ -93,13 +92,14 @@ impl HandyKeysState {
 
         // Start the manager thread
         let app_clone = app.clone();
-        let thread_handle = spawn_manager_thread(
-            || {
-                HotkeyManager::new_with_blocking()
-                    .map_err(|error| format!("Failed to create HotkeyManager: {error}"))
-            },
-            move |manager| Self::manager_thread(cmd_rx, app_clone, manager),
-        )?;
+        // Create the manager here rather than inside the thread so a startup
+        // failure (e.g. missing Accessibility permission) reaches the caller,
+        // which can then fall back to the Tauri implementation.
+        let manager = HotkeyManager::new_with_blocking()
+            .map_err(|e| format!("Failed to create HotkeyManager: {e}"))?;
+        let thread_handle = thread::spawn(move || {
+            Self::manager_thread(cmd_rx, app_clone, manager);
+        });
 
         Ok(Self {
             command_sender: Mutex::new(cmd_tx),

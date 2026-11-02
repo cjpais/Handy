@@ -11,7 +11,6 @@
 
 mod handler;
 pub mod handy_keys;
-mod manager_thread;
 pub mod tauri_impl;
 
 use log::{debug, error, info, warn};
