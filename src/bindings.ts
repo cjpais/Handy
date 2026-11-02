@@ -1028,14 +1028,11 @@ async isLaptop() : Promise<Result<boolean, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-/**
- * The active notices, newest first, for a window that has just opened.
- */
 async getActiveNotices() : Promise<Notice[]> {
     return await TAURI_INVOKE("get_active_notices");
 },
 /**
- * A click on the overlay notice. The notice stays active everywhere else.
+ * Hides the overlay notice; it stays active in the tray and footer.
  */
 async dismissOverlayNotice() : Promise<void> {
     await TAURI_INVOKE("dismiss_overlay_notice");
@@ -1308,12 +1305,11 @@ sha256: string | null } } |
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
 export type Notice = { code: NoticeCode; level: NoticeLevel; source: NoticeSource; 
 /**
- * A model name or a raw error, shown alongside the translated text.
+ * What only Rust knows, such as a model name or a raw error.
  */
 detail: string | null }
 /**
- * Every error Handy reports. The frontend maps each one to its text in
- * `src/lib/notices.ts`.
+ * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
 export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
 export type NoticeLevel = 
@@ -1326,21 +1322,17 @@ export type NoticeLevel =
  */
 "warning"
 /**
- * What a notice belongs to: each source has one slot in the store, and only
- * dictation notices use the overlay. File jobs finish while the user is doing
- * something else, so a pill appearing then would have no context.
+ * Each source has one slot in the store. Only dictation notices use the
+ * overlay: a file job finishes while the user is doing something else.
  */
 export type NoticeSource = "dictation" | "file"
-/**
- * Emitted whenever the active notices change.
- */
 export type NoticesChanged = { 
 /**
  * Every active notice, newest first.
  */
 notices: Notice[]; 
 /**
- * The notice that caused this change. `None` when one was cleared.
+ * `None` when a notice was cleared.
  */
 raised: Notice | null }
 export type OverlayPosition = "top" | "bottom"
