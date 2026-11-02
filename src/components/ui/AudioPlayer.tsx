@@ -8,6 +8,11 @@ import React, {
   useState,
 } from "react";
 import { Play, Pause } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+const revokeBlobSource = (src: string | null) => {
+  if (src?.startsWith("blob:")) URL.revokeObjectURL(src);
+};
 
 interface AudioPlayerProps {
   /** Audio source URL. If not provided, onLoadRequest must be provided. */
@@ -56,6 +61,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   className = "",
   autoPlay = false,
 }) => {
+  const { t } = useTranslation();
   const group = useContext(AudioPlayerGroupContext);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -65,6 +71,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Own a resolved source immediately, before its state/effect can commit.
+  const pendingSrcRef = useRef<string | null>(null);
   const src = loadedSrc;
   const animationRef = useRef<number>();
   const dragTimeRef = useRef<number>(0);
@@ -203,12 +211,18 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
+    if (pendingSrcRef.current === loadedSrc) pendingSrcRef.current = null;
     return () => {
-      if (loadedSrc?.startsWith("blob:")) {
-        URL.revokeObjectURL(loadedSrc);
-      }
+      revokeBlobSource(loadedSrc);
     };
   }, [loadedSrc]);
+
+  useEffect(() => {
+    return () => {
+      revokeBlobSource(pendingSrcRef.current);
+      pendingSrcRef.current = null;
+    };
+  }, []);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
@@ -222,11 +236,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         // If no src loaded yet, request it
         if (!src && onLoadRequest) {
           setIsLoading(true);
-          const newSrc = await onLoadRequest();
-          setIsLoading(false);
-          if (newSrc) {
-            setLoadedSrc(newSrc);
-            // Playback will be triggered by the useEffect watching loadedSrc
+          try {
+            const newSrc = await onLoadRequest();
+            if (audioRef.current !== audio) {
+              revokeBlobSource(newSrc);
+              return;
+            }
+            if (newSrc) {
+              pendingSrcRef.current = newSrc;
+              setLoadedSrc(newSrc);
+              // Playback will be triggered by the useEffect watching loadedSrc
+            }
+          } finally {
+            if (audioRef.current === audio) setIsLoading(false);
           }
         } else if (src) {
           await audio.play();
@@ -248,10 +270,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
 
   const handleSliderMouseDown = () => {
+    dragTimeRef.current = currentTime;
     setIsDragging(true);
   };
 
   const handleSliderTouchStart = () => {
+    dragTimeRef.current = currentTime;
     setIsDragging(true);
   };
 
@@ -294,12 +318,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       </button>
 
       <div className="flex-1 flex items-center gap-2">
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+        <span className="text-xs text-ink-2 min-w-[30px] tabular-nums">
           {formatTime(currentTime)}
         </span>
 
         <input
           type="range"
+          aria-label={t("common.playbackPosition")}
           min="0"
           max={duration || 0}
           step="0.01"
@@ -309,11 +334,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           onTouchStart={handleSliderTouchStart}
           className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
           style={{
-            background: `linear-gradient(to right, #FAA2CA 0%, #FAA2CA ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
+            background: `linear-gradient(to right, var(--color-logo-primary) 0%, var(--color-logo-primary) ${progressPercent}%, var(--color-line) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,
           }}
         />
 
-        <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
+        <span className="text-xs text-ink-2 min-w-[30px] tabular-nums">
           {formatTime(duration)}
         </span>
       </div>

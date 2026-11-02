@@ -96,8 +96,14 @@ impl HandyKeysState {
 
         // Start the manager thread
         let app_clone = app.clone();
+        // Create the manager here rather than inside the thread so a startup
+        // failure (e.g. missing Accessibility permission) reaches the caller,
+        // which can then fall back to the Tauri implementation.
+        let passthrough = get_settings(&app).shortcut_passthrough;
+        let manager = create_hotkey_manager(passthrough)
+            .map_err(|e| format!("Failed to create HotkeyManager: {e}"))?;
         let thread_handle = thread::spawn(move || {
-            Self::manager_thread(cmd_rx, app_clone);
+            Self::manager_thread(cmd_rx, app_clone, manager, passthrough);
         });
 
         Ok(Self {
@@ -111,17 +117,13 @@ impl HandyKeysState {
     }
 
     /// The main manager thread - owns the HotkeyManager and processes commands
-    fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
+    fn manager_thread(
+        cmd_rx: Receiver<ManagerCommand>,
+        app: AppHandle,
+        mut manager: HotkeyManager,
+        mut passthrough: bool,
+    ) {
         info!("handy-keys manager thread started");
-
-        let mut passthrough = get_settings(&app).shortcut_passthrough;
-        let mut manager = match create_hotkey_manager(passthrough) {
-            Ok(m) => m,
-            Err(e) => {
-                error!("Failed to create HotkeyManager: {}", e);
-                return;
-            }
-        };
 
         // Maps binding IDs to HotkeyIds and hotkey strings
         let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();

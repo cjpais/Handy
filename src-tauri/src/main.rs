@@ -9,7 +9,10 @@ fn main() {
     {
         // DMABUF renderer causes crashes on various GPU/display server configurations
         // See: https://github.com/tauri-apps/tauri/issues/9394
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        // Preserve explicit overrides so affected users can opt out with =0 (#2166).
+        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
     }
 
     #[cfg(target_os = "windows")]
