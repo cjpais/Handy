@@ -233,6 +233,9 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    /// No built-in global shortcuts; trigger Handy via CLI flags or signals
+    /// (e.g. from a Wayland compositor keybinding).
+    None,
 }
 
 impl Default for KeyboardImplementation {
