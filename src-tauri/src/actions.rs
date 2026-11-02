@@ -145,6 +145,17 @@ fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
 }
 
+fn non_blank_post_processed_text(text: String) -> Option<String> {
+    if is_blank_transcription(&text) {
+        warn!(
+            "Post-processing returned an empty response. Falling back to original transcription."
+        );
+        None
+    } else {
+        Some(text)
+    }
+}
+
 async fn complete_unless_cancelled<F, C>(operation: F, is_cancelled: C) -> Option<F::Output>
 where
     F: Future,
@@ -429,7 +440,13 @@ pub(crate) async fn process_transcription_output(
     let mut post_process_failed = false;
 
     if post_process {
-        match post_process_transcription(&settings, &final_text).await {
+        // A reply that's blank once cleaned is no better than none.
+        let outcome = match post_process_transcription(&settings, &final_text).await {
+            PostProcessOutcome::Done(text) => non_blank_post_processed_text(text)
+                .map_or(PostProcessOutcome::Failed, PostProcessOutcome::Done),
+            outcome => outcome,
+        };
+        match outcome {
             PostProcessOutcome::Skipped => {}
             PostProcessOutcome::Failed => post_process_failed = true,
             PostProcessOutcome::Done(processed_text) => {
@@ -1040,8 +1057,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, post_process_transcription,
-        should_use_streaming_overlay, strip_think_block, PostProcessOutcome,
+        complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
+        post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
+        strip_think_block, PostProcessOutcome,
     };
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
@@ -1138,6 +1156,35 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
+    }
+
+    #[test]
+    fn blank_post_processed_text_is_rejected() {
+        for text in ["", "   ", "\t\n\r\n", "\u{00A0}\u{2003}"] {
+            assert_eq!(non_blank_post_processed_text(text.to_string()), None);
+        }
+    }
+
+    #[test]
+    fn cleaned_empty_post_processed_text_is_rejected() {
+        for text in [
+            "\u{200B}\u{200C}\u{200D}\u{FEFF}",
+            "<think>reasoning only</think>",
+            "<think>reasoning only</think>\n\u{200B} ",
+        ] {
+            let text = strip_invisible_chars(strip_think_block(text));
+            assert_eq!(non_blank_post_processed_text(text), None);
+        }
+    }
+
+    #[test]
+    fn non_blank_post_processed_text_is_preserved() {
+        for text in ["Cleaned text.", "  정리된 문장입니다.\n", "0"] {
+            assert_eq!(
+                non_blank_post_processed_text(text.to_string()),
+                Some(text.to_string())
+            );
+        }
     }
 
     #[test]
