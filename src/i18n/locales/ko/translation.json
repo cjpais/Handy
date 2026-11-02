@@ -941,6 +941,7 @@
     "postProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 붙여넣었습니다.",
     "filePostProcessFailedTitle": "후처리 없이 받아씀",
     "filePostProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 저장했습니다.",
+    "fileTranscriptionFailedTitle": "파일 음성 인식 실패",
     "transcriptionFailedTitle": "음성 인식 실패"
   },
   "notices": {

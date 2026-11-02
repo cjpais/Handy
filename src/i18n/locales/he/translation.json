@@ -941,6 +941,7 @@
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
     "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
     "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
+    "fileTranscriptionFailedTitle": "תמלול הקובץ נכשל",
     "transcriptionFailedTitle": "התמלול נכשל"
   },
   "notices": {

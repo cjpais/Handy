@@ -941,6 +941,7 @@
     "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
     "filePostProcessFailedTitle": "後処理なしで文字起こししました",
     "filePostProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま保存しました。",
+    "fileTranscriptionFailedTitle": "ファイルの文字起こしに失敗しました",
     "transcriptionFailedTitle": "文字起こしに失敗しました"
   },
   "notices": {

@@ -624,7 +624,8 @@ impl TranscriptionManager {
                 device,
             })
             .map_err(|e| {
-                let error_msg = format!("Failed to load model {}: {}", model_id, e);
+                // The worker's error already says it failed to load.
+                let error_msg = e.to_string();
                 emit_loading_failed(&error_msg);
                 anyhow::anyhow!(error_msg)
             })?;
@@ -677,7 +678,7 @@ impl TranscriptionManager {
         );
         // Only this code: the source's other notices aren't about the model.
         for source in [NoticeSource::Dictation, NoticeSource::Model] {
-            notices::dismiss_notice(self.app_handle.clone(), source, NoticeCode::ModelLoadFailed);
+            notices::clear_matching(&self.app_handle, source, Some(NoticeCode::ModelLoadFailed));
         }
 
         let load_duration = load_start.elapsed();
@@ -713,7 +714,7 @@ impl TranscriptionManager {
             }
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
-                error!("Failed to load model: {}", e);
+                error!("Failed to load model {}: {}", settings.selected_model, e);
                 if raise_notice {
                     self_clone.raise_model_load_failed(&settings.selected_model, &e);
                 }

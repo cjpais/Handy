@@ -941,6 +941,7 @@
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
     "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",
     "filePostProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert gespeichert.",
+    "fileTranscriptionFailedTitle": "Dateitranskription fehlgeschlagen",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "notices": {

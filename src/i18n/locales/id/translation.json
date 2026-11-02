@@ -941,6 +941,7 @@
     "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
     "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
     "filePostProcessFailed": "Pascaproses tidak selesai, jadi transkrip disimpan apa adanya.",
+    "fileTranscriptionFailedTitle": "Transkripsi File Gagal",
     "transcriptionFailedTitle": "Transkripsi Gagal"
   },
   "notices": {

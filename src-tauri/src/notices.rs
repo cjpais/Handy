@@ -74,7 +74,7 @@ impl NoticeCode {
             Self::RecordingFailed => &strings.recording_failed_title,
             Self::ModelLoadFailed => &strings.model_load_failed_title,
             Self::PostProcessFailed => &strings.post_process_failed_title,
-            Self::FileTranscriptionFailed => &strings.transcribe_failed,
+            Self::FileTranscriptionFailed => &strings.file_transcription_failed_title,
             Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
         }
     }
@@ -181,7 +181,8 @@ pub fn clear(app: &AppHandle, source: NoticeSource) {
     clear_matching(app, source, None);
 }
 
-fn clear_matching(app: &AppHandle, source: NoticeSource, code: Option<NoticeCode>) {
+/// Clears the source's notice, but only if it has `code` when one is given.
+pub fn clear_matching(app: &AppHandle, source: NoticeSource, code: Option<NoticeCode>) {
     let cleared = {
         let store = app.state::<NoticeStore>();
         let mut active = store.lock();

@@ -941,6 +941,7 @@
     "postProcessFailed": "Post Process didn't finish, so the transcript was pasted as is.",
     "filePostProcessFailedTitle": "Transcribed Without Post-Processing",
     "filePostProcessFailed": "Post Process didn't finish, so the transcript was saved as is.",
+    "fileTranscriptionFailedTitle": "File Transcription Failed",
     "transcriptionFailedTitle": "Transcription Failed"
   },
   "notices": {

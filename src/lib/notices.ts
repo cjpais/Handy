@@ -40,7 +40,7 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     explanation: (t) => t("errors.postProcessFailed"),
   },
   FileTranscriptionFailed: {
-    title: "settings.history.transcribeFailed",
+    title: "errors.fileTranscriptionFailedTitle",
   },
   FilePostProcessFailed: {
     title: "errors.filePostProcessFailedTitle",

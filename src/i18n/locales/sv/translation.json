@@ -941,6 +941,7 @@
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",
     "filePostProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen sparades som den är.",
+    "fileTranscriptionFailedTitle": "Transkriptionen av filen misslyckades",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
   },
   "notices": {

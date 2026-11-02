@@ -941,6 +941,7 @@
     "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
     "filePostProcessFailedTitle": "Transcrit sense postprocessament",
     "filePostProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha desat tal qual.",
+    "fileTranscriptionFailedTitle": "La transcripció del fitxer ha fallat",
     "transcriptionFailedTitle": "La transcripció ha fallat"
   },
   "notices": {

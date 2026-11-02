@@ -941,6 +941,7 @@
     "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
     "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
     "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
+    "fileTranscriptionFailedTitle": "Transkrypcja pliku nie powiodła się",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },
   "notices": {

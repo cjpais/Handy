@@ -941,6 +941,7 @@
     "postProcessFailed": "Постобработката не завърши, затова транскрипцията беше поставена без промени.",
     "filePostProcessFailedTitle": "Транскрибирано без постобработка",
     "filePostProcessFailed": "Постобработката не завърши, затова транскрипцията беше запазена без промени.",
+    "fileTranscriptionFailedTitle": "Неуспешна транскрипция на файла",
     "transcriptionFailedTitle": "Неуспешна транскрипция"
   },
   "notices": {

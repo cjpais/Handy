@@ -941,6 +941,7 @@
     "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
     "filePostProcessFailedTitle": "Transcrito sin post proceso",
     "filePostProcessFailed": "El post proceso no terminó, así que la transcripción se guardó tal cual.",
+    "fileTranscriptionFailedTitle": "Error al transcribir el archivo",
     "transcriptionFailedTitle": "Error de transcripción"
   },
   "notices": {

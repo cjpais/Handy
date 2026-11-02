@@ -941,6 +941,7 @@
     "postProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही पेस्ट किया गया।",
     "filePostProcessFailedTitle": "पोस्ट प्रोसेस के बिना ट्रांसक्राइब किया गया",
     "filePostProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही सहेजा गया।",
+    "fileTranscriptionFailedTitle": "फ़ाइल का ट्रांसक्रिप्शन नहीं हो सका",
     "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
   },
   "notices": {

@@ -941,6 +941,7 @@
     "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
     "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",
     "filePostProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis uložen beze změn.",
+    "fileTranscriptionFailedTitle": "Přepis souboru selhal",
     "transcriptionFailedTitle": "Přepis selhal"
   },
   "notices": {

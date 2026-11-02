@@ -267,7 +267,7 @@ fn split_versioned_so(name: &str) -> Option<(&str, usize)> {
 ///
 /// Source of truth: src/i18n/locales/*/translation.json
 /// The English "tray" section defines the struct fields, plus every
-/// `errors.*Title` and `settings.history.transcribeFailed` for notice titles.
+/// `errors.*Title` for notice titles.
 fn generate_tray_translations() {
     use std::collections::BTreeMap;
     use std::fs;
@@ -304,9 +304,6 @@ fn generate_tray_translations() {
                 .filter(|(key, _)| key.ends_with("Title"));
             for (key, title) in titles {
                 tray[key] = title.clone();
-            }
-            if let Some(title) = parsed.pointer("/settings/history/transcribeFailed") {
-                tray["transcribeFailed"] = title.clone();
             }
             translations.insert(lang, tray);
         }

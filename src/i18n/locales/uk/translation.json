@@ -941,6 +941,7 @@
     "postProcessFailed": "Постобробка не завершилася, тому розшифровку вставлено як є.",
     "filePostProcessFailedTitle": "Розшифровано без постобробки",
     "filePostProcessFailed": "Постобробка не завершилася, тому розшифровку збережено як є.",
+    "fileTranscriptionFailedTitle": "Помилка транскрипції файлу",
     "transcriptionFailedTitle": "Помилка транскрипції"
   },
   "notices": {

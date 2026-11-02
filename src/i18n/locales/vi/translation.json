@@ -941,6 +941,7 @@
     "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
     "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
     "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
+    "fileTranscriptionFailedTitle": "Phiên âm tệp thất bại",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },
   "notices": {

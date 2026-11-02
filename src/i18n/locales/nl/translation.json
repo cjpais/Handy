@@ -941,6 +941,7 @@
     "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
     "filePostProcessFailedTitle": "Getranscribeerd zonder naverwerking",
     "filePostProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd opgeslagen.",
+    "fileTranscriptionFailedTitle": "Transcriptie van bestand mislukt",
     "transcriptionFailedTitle": "Transcriptie mislukt"
   },
   "notices": {

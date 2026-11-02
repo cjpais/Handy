@@ -941,6 +941,7 @@
     "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
     "filePostProcessFailedTitle": "Transcrito sem pós-processamento",
     "filePostProcessFailed": "O pós-processamento não terminou, então a transcrição foi salva como está.",
+    "fileTranscriptionFailedTitle": "Falha na transcrição do arquivo",
     "transcriptionFailedTitle": "Falha na transcrição"
   },
   "notices": {

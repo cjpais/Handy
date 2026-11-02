@@ -941,6 +941,7 @@
     "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
     "filePostProcessFailedTitle": "Transcrit sans post-traitement",
     "filePostProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été enregistrée telle quelle.",
+    "fileTranscriptionFailedTitle": "Échec de la transcription du fichier",
     "transcriptionFailedTitle": "Échec de la transcription"
   },
   "notices": {

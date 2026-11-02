@@ -941,6 +941,7 @@
     "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
     "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
     "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
+    "fileTranscriptionFailedTitle": "Trascrizione del file non riuscita",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },
   "notices": {

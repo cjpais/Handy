@@ -941,6 +941,7 @@
     "postProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev indsat, som den er.",
     "filePostProcessFailedTitle": "Transskriberet uden efterbehandling",
     "filePostProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev gemt, som den er.",
+    "fileTranscriptionFailedTitle": "Transskription af fil mislykkedes",
     "transcriptionFailedTitle": "Transskription mislykkedes"
   },
   "notices": {

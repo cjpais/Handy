@@ -941,6 +941,7 @@
     "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
     "filePostProcessFailedTitle": "已轉錄，未經後處理",
     "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
+    "fileTranscriptionFailedTitle": "檔案轉錄失敗",
     "transcriptionFailedTitle": "轉錄失敗"
   },
   "notices": {

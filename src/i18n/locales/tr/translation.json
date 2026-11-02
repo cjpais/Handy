@@ -941,6 +941,7 @@
     "postProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi yapıştırıldı.",
     "filePostProcessFailedTitle": "Son işlem olmadan yazıya döküldü",
     "filePostProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi kaydedildi.",
+    "fileTranscriptionFailedTitle": "Dosya transkripsiyonu başarısız oldu",
     "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
   },
   "notices": {

@@ -941,6 +941,7 @@
     "postProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا لُصق النص المنسوخ كما هو.",
     "filePostProcessFailedTitle": "نُسخ بدون معالجة لاحقة",
     "filePostProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا حُفظ النص المنسوخ كما هو.",
+    "fileTranscriptionFailedTitle": "فشل التفريغ النصي للملف",
     "transcriptionFailedTitle": "فشل التفريغ النصي"
   },
   "notices": {
