@@ -30,6 +30,22 @@ The process is entirely local:
   - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
 - Works on Windows, macOS, and Linux
 
+## Diff Overlay
+
+After a transcription or an AI rewrite, Handy shows what changed in the same place as the recording overlay. Unchanged text stays as it is, insertions are green, and deletions are red. Only lines that actually changed are shown. The overlay hides itself after a few seconds.
+
+Before the comparison, runs of spaces are collapsed into a single space. A line that was fully replaced is highlighted as one block, not word by word. Highlights cover whole words.
+
+If the recording overlay is turned off, this diff is not shown. On Linux that is the default; see [Linux Notes](#linux-notes).
+
+## Supported Operating Systems
+
+Handy is built with Tauri for **Windows**, **macOS**, and **Linux**. A production build makes an `.msi` on Windows, a `.dmg` on macOS, and `.deb`, `.rpm`, and AppImage packages on Linux. Platform setup is in [BUILD.md](BUILD.md).
+
+- **Permissions:** On first launch, grant the system permissions Handy asks for (microphone and accessibility).
+- **Overlay:** The recording overlay is drawn on the active screen. On Linux it is off by default (`Overlay Position: None`), because some compositors treat it as the focused window and the paste can miss the app you were typing in. See [Linux Notes](#linux-notes).
+- **Linux text input:** X11 uses `xdotool`. Wayland support is limited and needs `wtype` or `dotool` (Ubuntu 26.04 needs `ydotool`). Install commands are in [Linux Notes](#linux-notes).
+
 ## Quick Start
 
 ### Installation
@@ -47,6 +63,10 @@ The process is entirely local:
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
 5. Start transcribing!
+
+### Releases
+
+Published installers and packages are attached to a [GitHub Release](https://github.com/cjpais/Handy/releases). Each release is tied to a version tag: `v` plus the `version` in [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json) (version 0.9.8 is the tag `v0.9.8`). How to check those files is in [Verify Release Signatures](#verify-release-signatures).
 
 ### Development Setup
 
