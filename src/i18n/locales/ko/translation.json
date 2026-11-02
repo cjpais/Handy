@@ -423,7 +423,6 @@
         "title": "이전 모델은 더 이상 Handy에서 작동하지 않습니다",
         "description": "컴퓨터에서 {{size}}을(를) 차지하고 있습니다.",
         "delete": "모델 삭제",
-        "deleted": "이전 모델을 삭제했습니다",
         "deleteFailed": "일부 이전 모델을 삭제할 수 없습니다. 자세한 내용은 로그를 확인하세요."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "파일 받아쓰기",
       "mediaFiles": "오디오 및 비디오",
       "fileUnsupported": "{{name}}에서 오디오를 읽을 수 없습니다.",
-      "readingFile": "{{name}} 읽는 중...",
       "transcribeFailed": "받아쓰기에 실패했습니다. 다시 시도해 주세요.",
       "waiting": "받아쓰기 대기 중",
       "transcribingPercent": "받아쓰는 중, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "새 소식 미리보기",
         "description": "최신 내장 릴리스 노트를 본 것으로 표시하지 않고 엽니다",
-        "button": "미리보기",
-        "noNotes": "내장 릴리스 노트를 찾을 수 없습니다",
-        "error": "릴리스 노트를 미리 볼 수 없습니다"
+        "button": "미리보기"
       },
       "onboardingPreview": {
         "title": "온보딩 미리보기",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "모델 마이그레이션",
         "description": "이전 형식 모델 업데이트 화면을 실제로 엽니다. 대체 모델을 다운로드하고, 모델을 전환하고, 이전 파일을 삭제합니다",
-        "button": "열기",
-        "noRetired": "디스크에 이전 형식 모델이 없습니다"
+        "button": "열기"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "마이크를 찾을 수 없음",
     "noInputDevice": "오디오 입력 장치가 감지되지 않았습니다. 마이크 또는 헤드셋을 연결한 후 다시 시도해 주세요.",
-    "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
-    "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
-    "modelLoadFailedUnknown": "알 수 없는 모델",
+    "recordingFailedTitle": "녹음을 시작하지 못했습니다",
+    "modelLoadFailed": "이 모델을 불러오지 못했습니다. 다시 시도하거나 다른 모델을 선택하세요.",
+    "modelLoadFailedTitle": "모델을 불러오지 못했습니다",
+    "modelDownloadFailed": "다운로드 실패",
     "pasteFailedTitle": "텍스트 붙여넣기 실패",
     "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
+    "postProcessFailedTitle": "후처리 없이 붙여넣음",
+    "postProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 붙여넣었습니다.",
+    "filePostProcessFailedTitle": "후처리 없이 받아씀",
+    "filePostProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 저장했습니다.",
+    "fileTranscriptionFailedTitle": "파일 음성 인식 실패",
     "transcriptionFailedTitle": "음성 인식 실패"
+  },
+  "notices": {
+    "errorOne": "오류 {{n}}개",
+    "errorMany": "오류 {{n}}개",
+    "warningOne": "경고 {{n}}개",
+    "warningMany": "경고 {{n}}개",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "애플리케이션 언어",

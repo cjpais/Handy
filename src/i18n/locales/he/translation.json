@@ -423,7 +423,6 @@
         "title": "מודלים ישנים כבר לא עובדים עם Handy",
         "description": "הם תופסים {{size}} במחשב שלך.",
         "delete": "מחיקת מודלים",
-        "deleted": "המודלים הישנים נמחקו",
         "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "תמלול קובץ",
       "mediaFiles": "שמע ווידאו",
       "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
-      "readingFile": "קורא את {{name}}...",
       "transcribeFailed": "התמלול נכשל. נסו שוב.",
       "waiting": "ממתין לתמלול",
       "transcribingPercent": "מתמלל, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "תצוגה מקדימה של מה חדש",
         "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
-        "button": "תצוגה מקדימה",
-        "noNotes": "לא נמצאו הערות גרסה מצורפות",
-        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+        "button": "תצוגה מקדימה"
       },
       "onboardingPreview": {
         "title": "תצוגה מקדימה של ההגדרה הראשונית",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "העברת מודלים",
         "description": "פתח באמת את מסך עדכון המודלים בפורמט הישן: הוא מוריד תחליפים, מחליף מודלים ומוחק קבצים ישנים",
-        "button": "פתח",
-        "noRetired": "אין מודלים בפורמט ישן בדיסק"
+        "button": "פתח"
       },
       "soundTheme": {
         "label": "ערכת צלילים",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "לא נמצא מיקרופון",
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
-    "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
-    "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
-    "modelLoadFailedUnknown": "מודל לא ידוע",
+    "recordingFailedTitle": "הפעלת ההקלטה נכשלה",
+    "modelLoadFailed": "Handy לא הצליח לטעון את המודל הזה. נסו שוב או בחרו מודל אחר.",
+    "modelLoadFailedTitle": "טעינת המודל נכשלה",
+    "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
+    "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
+    "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
+    "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
+    "fileTranscriptionFailedTitle": "תמלול הקובץ נכשל",
     "transcriptionFailedTitle": "התמלול נכשל"
+  },
+  "notices": {
+    "errorOne": "{{n}} שגיאה",
+    "errorMany": "{{n}} שגיאות",
+    "warningOne": "{{n}} אזהרה",
+    "warningMany": "{{n}} אזהרות",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "שפת האפליקציה",

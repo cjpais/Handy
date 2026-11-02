@@ -423,7 +423,6 @@
         "title": "Stare modele nie działają już z Handy",
         "description": "Zajmują {{size}} na Twoim komputerze.",
         "delete": "Usuń modele",
-        "deleted": "Usunięto stare modele",
         "deleteFailed": "Nie udało się usunąć niektórych starych modeli. Szczegóły znajdziesz w dzienniku."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transkrybuj plik",
       "mediaFiles": "Audio i wideo",
       "fileUnsupported": "Nie udało się odczytać dźwięku z {{name}}.",
-      "readingFile": "Wczytywanie {{name}}...",
       "transcribeFailed": "Transkrypcja nie powiodła się. Spróbuj ponownie.",
       "waiting": "Oczekuje na transkrypcję",
       "transcribingPercent": "Transkrypcja, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Podgląd nowości",
         "description": "Otwórz najnowsze dołączone informacje o wydaniu bez oznaczania ich jako wyświetlone",
-        "button": "Podgląd",
-        "noNotes": "Nie znaleziono dołączonych informacji o wydaniu",
-        "error": "Nie udało się wyświetlić podglądu informacji o wydaniu"
+        "button": "Podgląd"
       },
       "onboardingPreview": {
         "title": "Podgląd konfiguracji początkowej",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Migracja modeli",
         "description": "Otwórz naprawdę ekran aktualizacji modeli w starym formacie: pobierze zamienniki, przełączy modele i usunie stare pliki",
-        "button": "Otwórz",
-        "noRetired": "Brak modeli w starym formacie na dysku"
+        "button": "Otwórz"
       },
       "soundTheme": {
         "label": "Motyw dźwiękowy",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Nie znaleziono mikrofonu",
     "noInputDevice": "Nie wykryto żadnego urządzenia wejściowego audio. Podłącz mikrofon lub słuchawki i spróbuj ponownie.",
-    "recordingFailed": "Nie udało się rozpocząć nagrywania: {{error}}",
-    "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
-    "modelLoadFailedUnknown": "nieznany model",
+    "recordingFailedTitle": "Nie udało się rozpocząć nagrywania",
+    "modelLoadFailed": "Handy nie mógł załadować tego modelu. Spróbuj ponownie lub wybierz inny.",
+    "modelLoadFailedTitle": "Nie udało się załadować modelu",
+    "modelDownloadFailed": "Pobieranie nie powiodło się",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
+    "postProcessFailedTitle": "Wklejono bez postprocesu",
+    "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
+    "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
+    "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
+    "fileTranscriptionFailedTitle": "Transkrypcja pliku nie powiodła się",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
+  },
+  "notices": {
+    "errorOne": "{{n}} błąd",
+    "errorMany": "{{n}} błędy",
+    "warningOne": "{{n}} ostrzeżenie",
+    "warningMany": "{{n}} ostrzeżenia",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Język aplikacji",

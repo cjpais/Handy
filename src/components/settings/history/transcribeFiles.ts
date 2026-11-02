@@ -1,5 +1,5 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import i18n from "@/i18n";
 import { commands } from "@/bindings";
 
@@ -27,22 +27,18 @@ export const transcribeFiles = async (paths: string[]): Promise<number> => {
   let added = 0;
   for (const path of paths) {
     // Its audio is read in full before it appears in History.
-    const reading = toast.loading(
-      i18n.t("settings.history.readingFile", { name: fileName(path) }),
-    );
-    let result;
-    try {
-      result = await commands.transcribeFile(path);
-    } finally {
-      toast.dismiss(reading);
-    }
+    const result = await commands.transcribeFile(path);
     if (result.status === "ok") {
       added += 1;
     } else {
       console.error(`Failed to transcribe ${path}:`, result.error);
-      toast.error(
-        i18n.t("settings.history.fileUnsupported", { name: fileName(path) }),
-      );
+      // Keyed by file, so each bad file keeps its own row.
+      notify({
+        title: i18n.t("settings.history.fileUnsupported", {
+          name: fileName(path),
+        }),
+        key: `file:${path}`,
+      });
     }
   }
   return added;

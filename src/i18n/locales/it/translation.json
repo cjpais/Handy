@@ -423,7 +423,6 @@
         "title": "I modelli precedenti non funzionano più con Handy",
         "description": "Occupano {{size}} sul tuo computer.",
         "delete": "Elimina modelli",
-        "deleted": "Modelli precedenti eliminati",
         "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Trascrivi file",
       "mediaFiles": "Audio e video",
       "fileUnsupported": "Impossibile leggere l'audio da {{name}}.",
-      "readingFile": "Lettura di {{name}}...",
       "transcribeFailed": "Trascrizione non riuscita. Riprova.",
       "waiting": "In attesa di trascrizione",
       "transcribingPercent": "Trascrizione, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Anteprima delle novità",
         "description": "Apri le note di rilascio incluse più recenti senza segnarle come viste",
-        "button": "Anteprima",
-        "noNotes": "Nessuna nota di rilascio inclusa trovata",
-        "error": "Impossibile mostrare l'anteprima delle note di rilascio"
+        "button": "Anteprima"
       },
       "onboardingPreview": {
         "title": "Anteprima della configurazione iniziale",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Migrazione dei modelli",
         "description": "Apri davvero la schermata di aggiornamento dei modelli in formato precedente: scarica le sostituzioni, cambia modello ed elimina i vecchi file",
-        "button": "Apri",
-        "noRetired": "Nessun modello in formato precedente su disco"
+        "button": "Apri"
       },
       "soundTheme": {
         "label": "Tema Sonoro",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Nessun microfono trovato",
     "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
-    "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
-    "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
-    "modelLoadFailedUnknown": "modello sconosciuto",
+    "recordingFailedTitle": "Impossibile avviare la registrazione",
+    "modelLoadFailed": "Handy non è riuscito a caricare questo modello. Riprova o scegline un altro.",
+    "modelLoadFailedTitle": "Impossibile caricare il modello",
+    "modelDownloadFailed": "Download non riuscito",
     "pasteFailedTitle": "Impossibile incollare il testo",
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
+    "postProcessFailedTitle": "Incollato senza post-elaborazione",
+    "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
+    "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
+    "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
+    "fileTranscriptionFailedTitle": "Trascrizione del file non riuscita",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
+  },
+  "notices": {
+    "errorOne": "{{n}} errore",
+    "errorMany": "{{n}} errori",
+    "warningOne": "{{n}} avviso",
+    "warningMany": "{{n}} avvisi",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Lingua Applicazione",

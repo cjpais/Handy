@@ -423,7 +423,6 @@
         "title": "Old models no longer work with Handy",
         "description": "They're taking up {{size}} on your computer.",
         "delete": "Delete models",
-        "deleted": "Deleted old models",
         "deleteFailed": "Some old models couldn't be deleted. Check the log for details."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transcribe File",
       "mediaFiles": "Audio and video",
       "fileUnsupported": "Couldn't read audio from {{name}}.",
-      "readingFile": "Reading {{name}}...",
       "transcribeFailed": "Transcription failed. Please try again.",
       "waiting": "Waiting to transcribe",
       "transcribingPercent": "Transcribing, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Preview What's New",
         "description": "Open the latest bundled release note without marking it as seen",
-        "button": "Preview",
-        "noNotes": "No bundled release notes found",
-        "error": "Failed to preview release notes"
+        "button": "Preview"
       },
       "onboardingPreview": {
         "title": "Preview Onboarding",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Model Migration",
         "description": "Open the old-format model update screen for real: it downloads replacements, switches models and deletes old files",
-        "button": "Open",
-        "noRetired": "No old-format models on disk"
+        "button": "Open"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "No Microphone Found",
     "noInputDevice": "No audio input device was detected. Please connect a microphone or headset and try again.",
-    "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "Failed to load model: {{model}}",
-    "modelLoadFailedUnknown": "unknown model",
+    "recordingFailedTitle": "Failed to Start Recording",
+    "modelLoadFailed": "Handy couldn't load this model. Try again or choose a different one.",
+    "modelLoadFailedTitle": "Failed to Load Model",
+    "modelDownloadFailed": "Download failed",
     "pasteFailedTitle": "Failed to Paste Text",
     "pasteFailed": "Text could not be pasted into the active application.",
+    "postProcessFailedTitle": "Pasted Without Post-Processing",
+    "postProcessFailed": "Post Process didn't finish, so the transcript was pasted as is.",
+    "filePostProcessFailedTitle": "Transcribed Without Post-Processing",
+    "filePostProcessFailed": "Post Process didn't finish, so the transcript was saved as is.",
+    "fileTranscriptionFailedTitle": "File Transcription Failed",
     "transcriptionFailedTitle": "Transcription Failed"
+  },
+  "notices": {
+    "errorOne": "{{n}} error",
+    "errorMany": "{{n}} errors",
+    "warningOne": "{{n}} warning",
+    "warningMany": "{{n}} warnings",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Application Language",

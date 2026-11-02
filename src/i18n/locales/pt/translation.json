@@ -423,7 +423,6 @@
         "title": "Os modelos antigos não funcionam mais com o Handy",
         "description": "Eles estão ocupando {{size}} no seu computador.",
         "delete": "Excluir modelos",
-        "deleted": "Modelos antigos excluídos",
         "deleteFailed": "Não foi possível excluir alguns modelos antigos. Verifique o log para mais detalhes."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transcrever arquivo",
       "mediaFiles": "Áudio e vídeo",
       "fileUnsupported": "Não foi possível ler o áudio de {{name}}.",
-      "readingFile": "Lendo {{name}}...",
       "transcribeFailed": "A transcrição falhou. Tente novamente.",
       "waiting": "Aguardando transcrição",
       "transcribingPercent": "Transcrevendo, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Pré-visualizar novidades",
         "description": "Abrir a nota de versão incorporada mais recente sem marcá-la como vista",
-        "button": "Pré-visualizar",
-        "noNotes": "Nenhuma nota de versão incorporada encontrada",
-        "error": "Falha ao pré-visualizar as notas de versão"
+        "button": "Pré-visualizar"
       },
       "onboardingPreview": {
         "title": "Pré-visualizar configuração inicial",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Migração de modelos",
         "description": "Abre de verdade a tela de atualização de modelos do formato antigo: baixa os substitutos, troca de modelo e exclui os arquivos antigos",
-        "button": "Abrir",
-        "noRetired": "Nenhum modelo do formato antigo no disco"
+        "button": "Abrir"
       },
       "soundTheme": {
         "label": "Tema de Som",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Nenhum microfone encontrado",
     "noInputDevice": "Nenhum dispositivo de entrada de áudio foi detectado. Conecte um microfone ou fone de ouvido e tente novamente.",
-    "recordingFailed": "Falha ao iniciar a gravação: {{error}}",
-    "modelLoadFailed": "Falha ao carregar o modelo: {{model}}",
-    "modelLoadFailedUnknown": "modelo desconhecido",
+    "recordingFailedTitle": "Falha ao iniciar a gravação",
+    "modelLoadFailed": "O Handy não conseguiu carregar este modelo. Tente novamente ou escolha outro.",
+    "modelLoadFailedTitle": "Falha ao carregar o modelo",
+    "modelDownloadFailed": "Falha no download",
     "pasteFailedTitle": "Falha ao colar o texto",
     "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
+    "postProcessFailedTitle": "Colado sem pós-processamento",
+    "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
+    "filePostProcessFailedTitle": "Transcrito sem pós-processamento",
+    "filePostProcessFailed": "O pós-processamento não terminou, então a transcrição foi salva como está.",
+    "fileTranscriptionFailedTitle": "Falha na transcrição do arquivo",
     "transcriptionFailedTitle": "Falha na transcrição"
+  },
+  "notices": {
+    "errorOne": "{{n}} erro",
+    "errorMany": "{{n}} erros",
+    "warningOne": "{{n}} aviso",
+    "warningMany": "{{n}} avisos",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",

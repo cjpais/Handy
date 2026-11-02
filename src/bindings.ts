@@ -1027,6 +1027,22 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getActiveNotices() : Promise<Notice[]> {
+    return await TAURI_INVOKE("get_active_notices");
+},
+/**
+ * The user is done with a notice. Matching the code leaves alone a newer
+ * notice that replaced it after the user's view was drawn.
+ */
+async dismissNotice(source: NoticeSource, code: NoticeCode) : Promise<void> {
+    await TAURI_INVOKE("dismiss_notice", { source, code });
+},
+/**
+ * Hides the overlay notice; it stays active in the tray and footer.
+ */
+async dismissOverlayNotice() : Promise<void> {
+    await TAURI_INVOKE("dismiss_overlay_notice");
 }
 }
 
@@ -1035,6 +1051,7 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 export const events = __makeEvents__<{
 historyUpdatePayload: HistoryUpdatePayload,
+noticesChanged: NoticesChanged,
 recordingStateEvent: RecordingStateEvent,
 streamPhaseEvent: StreamPhaseEvent,
 streamTextEvent: StreamTextEvent,
@@ -1042,6 +1059,7 @@ transcriptionCompleteEvent: TranscriptionCompleteEvent,
 transcriptionJob: TranscriptionJob
 }>({
 historyUpdatePayload: "history-update-payload",
+noticesChanged: "notices-changed",
 recordingStateEvent: "recording-state-event",
 streamPhaseEvent: "stream-phase-event",
 streamTextEvent: "stream-text-event",
@@ -1292,6 +1310,39 @@ sha256: string | null } } |
  */
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type Notice = { code: NoticeCode; level: NoticeLevel; source: NoticeSource; 
+/**
+ * What only Rust knows, such as a model name or a raw error.
+ */
+detail: string | null }
+/**
+ * The frontend maps each code to its text in `src/lib/notices.ts`.
+ */
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
+export type NoticeLevel = 
+/**
+ * Nothing came out, or Handy can't do its job.
+ */
+"error" | 
+/**
+ * The user got a result, but not the one they set up.
+ */
+"warning"
+/**
+ * Each source has one slot in the store. Only dictation notices use the
+ * overlay: a file job finishes while the user is doing something else, and
+ * `Model` is a switch the user made in Settings or the tray.
+ */
+export type NoticeSource = "dictation" | "file" | "model"
+export type NoticesChanged = { 
+/**
+ * Every active notice, newest first.
+ */
+notices: Notice[]; 
+/**
+ * `None` when a notice was cleared.
+ */
+raised: Notice | null }
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base

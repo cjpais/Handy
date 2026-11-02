@@ -423,7 +423,6 @@
         "title": "舊模型已無法在 Handy 中使用",
         "description": "它們佔用了您電腦上 {{size}} 的空間。",
         "delete": "刪除模型",
-        "deleted": "已刪除舊模型",
         "deleteFailed": "部分舊模型無法刪除。請查看記錄檔以了解詳情。"
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "轉錄檔案",
       "mediaFiles": "音訊和影片",
       "fileUnsupported": "無法讀取 {{name}} 中的音訊。",
-      "readingFile": "正在讀取 {{name}}...",
       "transcribeFailed": "轉錄失敗，請重試。",
       "waiting": "等待轉錄",
       "transcribingPercent": "正在轉錄，{{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "預覽新功能",
         "description": "開啟最新內建版本資訊，且不標記為已看過",
-        "button": "預覽",
-        "noNotes": "找不到內建版本資訊",
-        "error": "無法預覽版本資訊"
+        "button": "預覽"
       },
       "onboardingPreview": {
         "title": "預覽新手引導",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "模型遷移",
         "description": "實際開啟舊格式模型更新畫面：會下載替代模型、切換模型並刪除舊檔案",
-        "button": "開啟",
-        "noRetired": "磁碟上沒有舊格式模型"
+        "button": "開啟"
       },
       "soundTheme": {
         "label": "聲音主題",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "找不到麥克風",
     "noInputDevice": "未偵測到音訊輸入裝置。請連接麥克風或耳機後重試。",
-    "recordingFailed": "錄音啟動失敗: {{error}}",
-    "modelLoadFailed": "載入模型失敗: {{model}}",
-    "modelLoadFailedUnknown": "未知模型",
+    "recordingFailedTitle": "錄音啟動失敗",
+    "modelLoadFailed": "Handy 無法載入此模型。請再試一次或選擇其他模型。",
+    "modelLoadFailedTitle": "載入模型失敗",
+    "modelDownloadFailed": "下載失敗",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
+    "postProcessFailedTitle": "已貼上，未經後處理",
+    "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
+    "filePostProcessFailedTitle": "已轉錄，未經後處理",
+    "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
+    "fileTranscriptionFailedTitle": "檔案轉錄失敗",
     "transcriptionFailedTitle": "轉錄失敗"
+  },
+  "notices": {
+    "errorOne": "{{n}} 個錯誤",
+    "errorMany": "{{n}} 個錯誤",
+    "warningOne": "{{n}} 個警告",
+    "warningMany": "{{n}} 個警告",
+    "errorsAndWarnings": "{{errors}}，{{warnings}}"
   },
   "appLanguage": {
     "title": "應用程式語言",

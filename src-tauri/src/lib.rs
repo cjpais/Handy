@@ -16,6 +16,7 @@ mod language_detection;
 mod llm_client;
 mod managers;
 mod memory;
+mod notices;
 mod overlay;
 mod paste_tx;
 pub mod portable;
@@ -289,6 +290,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             "secure_input_warning" => {
                 // Full explanation lives in the settings-window banner
+                show_main_window(app);
+            }
+            "notice" => {
                 show_main_window(app);
             }
             "check_updates" => {
@@ -785,6 +789,9 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            notices::get_active_notices,
+            notices::dismiss_notice,
+            notices::dismiss_overlay_notice,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
@@ -793,6 +800,7 @@ pub fn run(cli_args: CliArgs) {
             managers::transcription::StreamPhaseEvent,
             transcription_coordinator::RecordingStateEvent,
             actions::TranscriptionCompleteEvent,
+            notices::NoticesChanged,
         ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -911,6 +919,7 @@ pub fn run(cli_args: CliArgs) {
             Some(vec![]),
         ))
         .manage(cli_args.clone())
+        .manage(notices::NoticeStore::default())
         .setup(move |app| {
             #[cfg(target_os = "windows")]
             log::info!(

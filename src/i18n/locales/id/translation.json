@@ -423,7 +423,6 @@
         "title": "Model lama tidak lagi berfungsi dengan Handy",
         "description": "Model tersebut memakan {{size}} di komputer Anda.",
         "delete": "Hapus model",
-        "deleted": "Model lama telah dihapus",
         "deleteFailed": "Beberapa model lama tidak dapat dihapus. Periksa log untuk detailnya."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transkripsikan File",
       "mediaFiles": "Audio dan video",
       "fileUnsupported": "Tidak dapat membaca audio dari {{name}}.",
-      "readingFile": "Membaca {{name}}...",
       "transcribeFailed": "Transkripsi gagal. Silakan coba lagi.",
       "waiting": "Menunggu untuk ditranskripsi",
       "transcribingPercent": "Mentranskripsi, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Pratinjau Yang Baru",
         "description": "Buka catatan rilis terbaru yang disertakan tanpa menandainya sebagai telah dilihat",
-        "button": "Pratinjau",
-        "noNotes": "Tidak ada catatan rilis yang disertakan",
-        "error": "Gagal menampilkan pratinjau catatan rilis"
+        "button": "Pratinjau"
       },
       "onboardingPreview": {
         "title": "Pratinjau Penyiapan Awal",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Migrasi Model",
         "description": "Buka layar pembaruan model format lama secara sungguhan: mengunduh pengganti, beralih model, dan menghapus file lama",
-        "button": "Buka",
-        "noRetired": "Tidak ada model format lama di disk"
+        "button": "Buka"
       },
       "soundTheme": {
         "label": "Tema Suara",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Mikrofon Tidak Ditemukan",
     "noInputDevice": "Tidak ada perangkat masukan audio yang terdeteksi. Hubungkan mikrofon atau headset lalu coba lagi.",
-    "recordingFailed": "Gagal memulai perekaman: {{error}}",
-    "modelLoadFailed": "Gagal memuat model: {{model}}",
-    "modelLoadFailedUnknown": "model tidak dikenal",
+    "recordingFailedTitle": "Gagal Memulai Perekaman",
+    "modelLoadFailed": "Handy tidak dapat memuat model ini. Coba lagi atau pilih model lain.",
+    "modelLoadFailedTitle": "Gagal Memuat Model",
+    "modelDownloadFailed": "Unduhan gagal",
     "pasteFailedTitle": "Gagal Menempelkan Teks",
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
+    "postProcessFailedTitle": "Ditempel Tanpa Pascaproses",
+    "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
+    "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
+    "filePostProcessFailed": "Pascaproses tidak selesai, jadi transkrip disimpan apa adanya.",
+    "fileTranscriptionFailedTitle": "Transkripsi File Gagal",
     "transcriptionFailedTitle": "Transkripsi Gagal"
+  },
+  "notices": {
+    "errorOne": "{{n}} kesalahan",
+    "errorMany": "{{n}} kesalahan",
+    "warningOne": "{{n}} peringatan",
+    "warningMany": "{{n}} peringatan",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Bahasa Aplikasi",

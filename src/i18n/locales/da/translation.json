@@ -423,7 +423,6 @@
         "title": "Gamle modeller virker ikke længere med Handy",
         "description": "De fylder {{size}} på din computer.",
         "delete": "Slet modeller",
-        "deleted": "Gamle modeller er slettet",
         "deleteFailed": "Nogle gamle modeller kunne ikke slettes. Se loggen for detaljer."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Transskriber fil",
       "mediaFiles": "Lyd og video",
       "fileUnsupported": "Kunne ikke læse lyd fra {{name}}.",
-      "readingFile": "Læser {{name}}...",
       "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
       "waiting": "Venter på transskription",
       "transcribingPercent": "Transskriberer, {{percent}} %",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Forhåndsvisning af nyheder",
         "description": "Åbn de seneste medfølgende udgivelsesnoter uden at markere dem som set",
-        "button": "Forhåndsvisning",
-        "noNotes": "Ingen medfølgende udgivelsesnoter fundet",
-        "error": "Kunne ikke forhåndsvise udgivelsesnoter"
+        "button": "Forhåndsvisning"
       },
       "onboardingPreview": {
         "title": "Forhåndsvis introduktion",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Modelmigrering",
         "description": "Åbn opdateringsskærmen for modeller i det gamle format for alvor: den downloader erstatninger, skifter model og sletter gamle filer",
-        "button": "Åbn",
-        "noRetired": "Ingen modeller i det gamle format på disken"
+        "button": "Åbn"
       },
       "soundTheme": {
         "label": "Lydtema",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Ingen mikrofon fundet",
     "noInputDevice": "Ingen lydinputenhed blev registreret. Tilslut en mikrofon eller et headset, og prøv igen.",
-    "recordingFailed": "Kunne ikke starte optagelse: {{error}}",
-    "modelLoadFailed": "Kunne ikke indlæse model: {{model}}",
-    "modelLoadFailedUnknown": "ukendt model",
+    "recordingFailedTitle": "Kunne ikke starte optagelse",
+    "modelLoadFailed": "Handy kunne ikke indlæse denne model. Prøv igen, eller vælg en anden.",
+    "modelLoadFailedTitle": "Kunne ikke indlæse model",
+    "modelDownloadFailed": "Download mislykkedes",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
+    "postProcessFailedTitle": "Indsat uden efterbehandling",
+    "postProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev indsat, som den er.",
+    "filePostProcessFailedTitle": "Transskriberet uden efterbehandling",
+    "filePostProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev gemt, som den er.",
+    "fileTranscriptionFailedTitle": "Transskription af fil mislykkedes",
     "transcriptionFailedTitle": "Transskription mislykkedes"
+  },
+  "notices": {
+    "errorOne": "{{n}} fejl",
+    "errorMany": "{{n}} fejl",
+    "warningOne": "{{n}} advarsel",
+    "warningMany": "{{n}} advarsler",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Applikationssprog",

@@ -423,7 +423,6 @@
         "title": "Eski modeller artık Handy ile çalışmıyor",
         "description": "Bilgisayarınızda {{size}} yer kaplıyorlar.",
         "delete": "Modelleri sil",
-        "deleted": "Eski modeller silindi",
         "deleteFailed": "Bazı eski modeller silinemedi. Ayrıntılar için günlüğe bakın."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Dosyayı Yazıya Dök",
       "mediaFiles": "Ses ve video",
       "fileUnsupported": "{{name}} dosyasından ses okunamadı.",
-      "readingFile": "{{name}} okunuyor...",
       "transcribeFailed": "Yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
       "waiting": "Yazıya dökülmeyi bekliyor",
       "transcribingPercent": "Yazıya dökülüyor, %{{percent}}",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Yenilikleri Önizle",
         "description": "En son paketlenmiş sürüm notunu görüldü olarak işaretlemeden aç",
-        "button": "Önizle",
-        "noNotes": "Paketlenmiş sürüm notu bulunamadı",
-        "error": "Sürüm notları önizlenemedi"
+        "button": "Önizle"
       },
       "onboardingPreview": {
         "title": "İlk kurulum önizlemesi",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Model Geçişi",
         "description": "Eski biçimli model güncelleme ekranını gerçekten açın: yedekleri indirir, modelleri değiştirir ve eski dosyaları siler",
-        "button": "Aç",
-        "noRetired": "Diskte eski biçimli model yok"
+        "button": "Aç"
       },
       "soundTheme": {
         "label": "Ses Teması",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Mikrofon bulunamadı",
     "noInputDevice": "Ses giriş aygıtı algılanamadı. Lütfen bir mikrofon veya kulaklık bağlayın ve tekrar deneyin.",
-    "recordingFailed": "Kayıt başlatılamadı: {{error}}",
-    "modelLoadFailed": "Model yüklenemedi: {{model}}",
-    "modelLoadFailedUnknown": "bilinmeyen model",
+    "recordingFailedTitle": "Kayıt başlatılamadı",
+    "modelLoadFailed": "Handy bu modeli yükleyemedi. Yeniden deneyin veya başka bir model seçin.",
+    "modelLoadFailedTitle": "Model yüklenemedi",
+    "modelDownloadFailed": "İndirme başarısız oldu",
     "pasteFailedTitle": "Metin yapıştırılamadı",
     "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı.",
+    "postProcessFailedTitle": "Son işlem olmadan yapıştırıldı",
+    "postProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi yapıştırıldı.",
+    "filePostProcessFailedTitle": "Son işlem olmadan yazıya döküldü",
+    "filePostProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi kaydedildi.",
+    "fileTranscriptionFailedTitle": "Dosya transkripsiyonu başarısız oldu",
     "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
+  },
+  "notices": {
+    "errorOne": "{{n}} hata",
+    "errorMany": "{{n}} hata",
+    "warningOne": "{{n}} uyarı",
+    "warningMany": "{{n}} uyarı",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Uygulama Dili",

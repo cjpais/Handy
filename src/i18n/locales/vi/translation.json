@@ -423,7 +423,6 @@
         "title": "Các mô hình cũ không còn hoạt động với Handy",
         "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
         "delete": "Xóa mô hình",
-        "deleted": "Đã xóa các mô hình cũ",
         "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Chép lời tệp",
       "mediaFiles": "Âm thanh và video",
       "fileUnsupported": "Không thể đọc âm thanh từ {{name}}.",
-      "readingFile": "Đang đọc {{name}}...",
       "transcribeFailed": "Chép lời thất bại. Vui lòng thử lại.",
       "waiting": "Đang chờ chép lời",
       "transcribingPercent": "Đang chép lời, {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Xem trước điểm mới",
         "description": "Mở ghi chú phát hành mới nhất được đóng gói mà không đánh dấu là đã xem",
-        "button": "Xem trước",
-        "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
-        "error": "Không thể xem trước ghi chú phát hành"
+        "button": "Xem trước"
       },
       "onboardingPreview": {
         "title": "Xem trước thiết lập ban đầu",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Chuyển đổi mô hình",
         "description": "Mở thật màn hình cập nhật mô hình định dạng cũ: nó sẽ tải xuống bản thay thế, chuyển mô hình và xóa các tệp cũ",
-        "button": "Mở",
-        "noRetired": "Không có mô hình định dạng cũ trên ổ đĩa"
+        "button": "Mở"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Không tìm thấy micrô",
     "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
-    "recordingFailed": "Không thể bắt đầu ghi âm: {{error}}",
-    "modelLoadFailed": "Không thể tải mô hình: {{model}}",
-    "modelLoadFailedUnknown": "mô hình không xác định",
+    "recordingFailedTitle": "Không thể bắt đầu ghi âm",
+    "modelLoadFailed": "Handy không thể tải mô hình này. Hãy thử lại hoặc chọn mô hình khác.",
+    "modelLoadFailedTitle": "Không thể tải mô hình",
+    "modelDownloadFailed": "Tải xuống thất bại",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
+    "postProcessFailedTitle": "Đã dán không qua xử lý sau",
+    "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
+    "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
+    "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
+    "fileTranscriptionFailedTitle": "Phiên âm tệp thất bại",
     "transcriptionFailedTitle": "Phiên âm thất bại"
+  },
+  "notices": {
+    "errorOne": "{{n}} lỗi",
+    "errorMany": "{{n}} lỗi",
+    "warningOne": "{{n}} cảnh báo",
+    "warningMany": "{{n}} cảnh báo",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

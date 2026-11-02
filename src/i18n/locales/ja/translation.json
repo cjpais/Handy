@@ -423,7 +423,6 @@
         "title": "古いモデルは Handy で使用できなくなりました",
         "description": "コンピューター上で {{size}} を使用しています。",
         "delete": "モデルを削除",
-        "deleted": "古いモデルを削除しました",
         "deleteFailed": "一部の古いモデルを削除できませんでした。詳細はログを確認してください。"
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "ファイルを文字起こし",
       "mediaFiles": "音声と動画",
       "fileUnsupported": "{{name}} から音声を読み込めませんでした。",
-      "readingFile": "{{name}} を読み込み中...",
       "transcribeFailed": "文字起こしに失敗しました。もう一度お試しください。",
       "waiting": "文字起こし待ち",
       "transcribingPercent": "文字起こし中… {{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "新機能をプレビュー",
         "description": "最新の同梱リリースノートを既読にせずに開く",
-        "button": "プレビュー",
-        "noNotes": "同梱リリースノートが見つかりません",
-        "error": "リリースノートのプレビューに失敗しました"
+        "button": "プレビュー"
       },
       "onboardingPreview": {
         "title": "オンボーディングをプレビュー",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "モデル移行",
         "description": "旧形式モデルの更新画面を実際に開きます。置き換えモデルのダウンロード、モデルの切り替え、古いファイルの削除が行われます",
-        "button": "開く",
-        "noRetired": "ディスク上に旧形式のモデルはありません"
+        "button": "開く"
       },
       "soundTheme": {
         "label": "サウンドテーマ",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "マイクが見つかりません",
     "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
-    "recordingFailed": "録音の開始に失敗しました: {{error}}",
-    "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
-    "modelLoadFailedUnknown": "不明なモデル",
+    "recordingFailedTitle": "録音の開始に失敗しました",
+    "modelLoadFailed": "このモデルを読み込めませんでした。もう一度試すか、別のモデルを選択してください。",
+    "modelLoadFailedTitle": "モデルの読み込みに失敗しました",
+    "modelDownloadFailed": "ダウンロードに失敗しました",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
+    "postProcessFailedTitle": "後処理なしで貼り付けました",
+    "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
+    "filePostProcessFailedTitle": "後処理なしで文字起こししました",
+    "filePostProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま保存しました。",
+    "fileTranscriptionFailedTitle": "ファイルの文字起こしに失敗しました",
     "transcriptionFailedTitle": "文字起こしに失敗しました"
+  },
+  "notices": {
+    "errorOne": "エラー {{n}} 件",
+    "errorMany": "エラー {{n}} 件",
+    "warningOne": "警告 {{n}} 件",
+    "warningMany": "警告 {{n}} 件",
+    "errorsAndWarnings": "{{errors}}、{{warnings}}"
   },
   "appLanguage": {
     "title": "アプリの言語",

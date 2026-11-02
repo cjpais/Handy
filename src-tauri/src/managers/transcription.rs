@@ -14,6 +14,8 @@ use crate::language_detection::{
 };
 use crate::managers::audio::{create_smoothed_detector, AudioRecordingManager};
 use crate::managers::model::ModelManager;
+use crate::notices::{self, Notice, NoticeCode, NoticeSource};
+use crate::overlay;
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
 };
@@ -622,7 +624,8 @@ impl TranscriptionManager {
                 device,
             })
             .map_err(|e| {
-                let error_msg = format!("Failed to load model {}: {}", model_id, e);
+                // The worker's error already says it failed to load.
+                let error_msg = e.to_string();
                 emit_loading_failed(&error_msg);
                 anyhow::anyhow!(error_msg)
             })?;
@@ -673,6 +676,10 @@ impl TranscriptionManager {
                 error: None,
             },
         );
+        // Only this code: the source's other notices aren't about the model.
+        for source in [NoticeSource::Dictation, NoticeSource::Model] {
+            notices::clear_matching(&self.app_handle, source, Some(NoticeCode::ModelLoadFailed));
+        }
 
         let load_duration = load_start.elapsed();
         debug!(
@@ -683,16 +690,18 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already loaded
-    pub fn initiate_model_load(&self) {
+    /// Starts loading the model in the background unless it's loaded or
+    /// loading, and returns whether it did. Only a dictation sets
+    /// `raise_notice`: file jobs and Settings report their own failures.
+    pub fn initiate_model_load(&self, raise_notice: bool) -> bool {
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading {
-            return;
+            return false;
         }
 
         let reload_pending = self.reload_model_on_next_use.load(Ordering::Acquire);
         if !reload_pending && self.is_model_loaded() {
-            return;
+            return false;
         }
 
         *is_loading = true;
@@ -705,12 +714,41 @@ impl TranscriptionManager {
             }
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
-                error!("Failed to load model: {}", e);
+                error!("Failed to load model {}: {}", settings.selected_model, e);
+                if raise_notice {
+                    self_clone.raise_model_load_failed(&settings.selected_model, &e);
+                }
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
         });
+        true
+    }
+
+    /// Ends when a model next loads.
+    pub fn model_load_notice(
+        &self,
+        model_id: &str,
+        error: &anyhow::Error,
+        source: NoticeSource,
+    ) -> Notice {
+        let detail = match self.model_manager.get_model_info(model_id) {
+            Some(model) => format!("{}: {error}", model.name),
+            None => error.to_string(),
+        };
+        Notice::new(NoticeCode::ModelLoadFailed, source).with_detail(detail)
+    }
+
+    pub fn raise_model_load_failed(&self, model_id: &str, error: &anyhow::Error) {
+        let notice = self.model_load_notice(model_id, error, NoticeSource::Dictation);
+        // A recording in progress keeps the overlay; its transcription fails
+        // next and reports that itself.
+        if overlay::is_session_showing() {
+            notices::raise_without_overlay(&self.app_handle, notice);
+        } else {
+            notices::raise(&self.app_handle, notice);
+        }
     }
 
     pub fn get_current_model(&self) -> Option<String> {

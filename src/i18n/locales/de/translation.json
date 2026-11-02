@@ -423,7 +423,6 @@
         "title": "Alte Modelle funktionieren nicht mehr mit Handy",
         "description": "Sie belegen {{size}} auf deinem Computer.",
         "delete": "Modelle löschen",
-        "deleted": "Alte Modelle gelöscht",
         "deleteFailed": "Einige alte Modelle konnten nicht gelöscht werden. Details findest du im Protokoll."
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "Datei transkribieren",
       "mediaFiles": "Audio und Video",
       "fileUnsupported": "Audio aus {{name}} konnte nicht gelesen werden.",
-      "readingFile": "{{name}} wird gelesen...",
       "transcribeFailed": "Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "waiting": "Wartet auf Transkription",
       "transcribingPercent": "Transkribiere, {{percent}} %",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "Vorschau der Neuerungen",
         "description": "Die neuesten gebündelten Versionshinweise öffnen, ohne sie als gesehen zu markieren",
-        "button": "Vorschau",
-        "noNotes": "Keine gebündelten Versionshinweise gefunden",
-        "error": "Versionshinweise konnten nicht angezeigt werden"
+        "button": "Vorschau"
       },
       "onboardingPreview": {
         "title": "Ersteinrichtung ansehen",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "Modellmigration",
         "description": "Den Update-Bildschirm für Modelle im alten Format echt öffnen: Er lädt Ersatzmodelle herunter, wechselt Modelle und löscht alte Dateien",
-        "button": "Öffnen",
-        "noRetired": "Keine Modelle im alten Format auf dem Datenträger"
+        "button": "Öffnen"
       },
       "soundTheme": {
         "label": "Sound-Thema",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "Kein Mikrofon gefunden",
     "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließe ein Mikrofon oder Headset an und versuche es erneut.",
-    "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
-    "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
-    "modelLoadFailedUnknown": "unbekanntes Modell",
+    "recordingFailedTitle": "Aufnahmestart fehlgeschlagen",
+    "modelLoadFailed": "Handy konnte dieses Modell nicht laden. Versuche es erneut oder wähle ein anderes.",
+    "modelLoadFailedTitle": "Modell konnte nicht geladen werden",
+    "modelDownloadFailed": "Download fehlgeschlagen",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
+    "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
+    "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",
+    "filePostProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert gespeichert.",
+    "fileTranscriptionFailedTitle": "Dateitranskription fehlgeschlagen",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
+  },
+  "notices": {
+    "errorOne": "{{n}} Fehler",
+    "errorMany": "{{n}} Fehler",
+    "warningOne": "{{n}} Warnung",
+    "warningMany": "{{n}} Warnungen",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Anwendungssprache",

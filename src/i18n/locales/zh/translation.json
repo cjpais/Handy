@@ -423,7 +423,6 @@
         "title": "旧模型已无法在 Handy 中使用",
         "description": "它们占用了您电脑上 {{size}} 的空间。",
         "delete": "删除模型",
-        "deleted": "已删除旧模型",
         "deleteFailed": "部分旧模型无法删除。请查看日志了解详情。"
       },
       "rescan": {
@@ -703,7 +702,6 @@
       "transcribeFile": "转录文件",
       "mediaFiles": "音频和视频",
       "fileUnsupported": "无法读取 {{name}} 中的音频。",
-      "readingFile": "正在读取 {{name}}...",
       "transcribeFailed": "转录失败，请重试。",
       "waiting": "等待转录",
       "transcribingPercent": "正在转录，{{percent}}%",
@@ -741,9 +739,7 @@
       "whatsNewPreview": {
         "title": "预览新功能",
         "description": "打开最新内置发行说明，且不标记为已查看",
-        "button": "预览",
-        "noNotes": "未找到内置发行说明",
-        "error": "无法预览发行说明"
+        "button": "预览"
       },
       "onboardingPreview": {
         "title": "预览新手引导",
@@ -767,8 +763,7 @@
       "modelMigration": {
         "title": "模型迁移",
         "description": "真实打开旧格式模型更新界面：会下载替代模型、切换模型并删除旧文件",
-        "button": "打开",
-        "noRetired": "磁盘上没有旧格式模型"
+        "button": "打开"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -936,12 +931,25 @@
     },
     "noInputDeviceTitle": "未找到麦克风",
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
-    "recordingFailed": "录音启动失败: {{error}}",
-    "modelLoadFailed": "加载模型失败: {{model}}",
-    "modelLoadFailedUnknown": "未知模型",
+    "recordingFailedTitle": "录音启动失败",
+    "modelLoadFailed": "Handy 无法加载此模型。请重试或选择其他模型。",
+    "modelLoadFailedTitle": "加载模型失败",
+    "modelDownloadFailed": "下载失败",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "postProcessFailedTitle": "已粘贴，未经后处理",
+    "postProcessFailed": "后处理未完成，因此按原样粘贴转录内容。",
+    "filePostProcessFailedTitle": "已转录，未经后处理",
+    "filePostProcessFailed": "后处理未完成，因此按原样保存转录内容。",
+    "fileTranscriptionFailedTitle": "文件转录失败",
     "transcriptionFailedTitle": "转录失败"
+  },
+  "notices": {
+    "errorOne": "{{n}} 个错误",
+    "errorMany": "{{n}} 个错误",
+    "warningOne": "{{n}} 个警告",
+    "warningMany": "{{n}} 个警告",
+    "errorsAndWarnings": "{{errors}}，{{warnings}}"
   },
   "appLanguage": {
     "title": "应用语言",

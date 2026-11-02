@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import {
   commands,
   events,
@@ -249,7 +249,7 @@ export const HistorySettings: React.FC = () => {
       await pickAndTranscribeFiles();
     } catch (error) {
       console.error("Failed to pick a file to transcribe:", error);
-      toast.error(t("settings.history.transcribeFailed"));
+      notify({ title: t("settings.history.transcribeFailed") });
     }
   };
 
@@ -394,7 +394,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
     const copied = await onCopyText();
     if (!copied) {
-      toast.error(t("settings.history.copyError"));
+      notify({ title: t("settings.history.copyError") });
       return;
     }
 
@@ -407,7 +407,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      toast.error(t("settings.history.deleteError"));
+      notify({ title: t("settings.history.deleteError") });
     }
   };
 
