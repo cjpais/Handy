@@ -709,6 +709,7 @@
       "transcribeFailed": "Transkription fehlgeschlagen. Bitte versuche es erneut.",
       "waiting": "Wartet auf Transkription",
       "transcribingPercent": "Transkribiere, {{percent}} %",
+      "readingFile": "Datei wird gelesen...",
       "showMore": "Mehr anzeigen",
       "showLess": "Weniger anzeigen",
       "dropTitle": "Zum Transkribieren ablegen",

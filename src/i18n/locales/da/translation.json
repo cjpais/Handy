@@ -709,6 +709,7 @@
       "transcribeFailed": "Transskriptionen mislykkedes. Prøv igen.",
       "waiting": "Venter på transskription",
       "transcribingPercent": "Transskriberer, {{percent}} %",
+      "readingFile": "Læser fil...",
       "showMore": "Vis mere",
       "showLess": "Vis mindre",
       "dropTitle": "Slip for at transskribere",

@@ -709,6 +709,7 @@
       "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
       "waiting": "Čeká na přepis",
       "transcribingPercent": "Přepisuji, {{percent}} %",
+      "readingFile": "Načítám soubor...",
       "showMore": "Zobrazit více",
       "showLess": "Zobrazit méně",
       "dropTitle": "Pusťte pro přepis",

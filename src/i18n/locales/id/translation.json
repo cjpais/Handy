@@ -709,6 +709,7 @@
       "transcribeFailed": "Transkripsi gagal. Silakan coba lagi.",
       "waiting": "Menunggu untuk ditranskripsi",
       "transcribingPercent": "Mentranskripsi, {{percent}}%",
+      "readingFile": "Membaca file...",
       "showMore": "Tampilkan lebih banyak",
       "showLess": "Tampilkan lebih sedikit",
       "dropTitle": "Lepaskan untuk mentranskripsi",

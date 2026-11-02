@@ -709,6 +709,7 @@
       "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
       "waiting": "Esperant per transcriure",
       "transcribingPercent": "Transcrivint, {{percent}}%",
+      "readingFile": "S'està llegint el fitxer...",
       "showMore": "Mostra'n més",
       "showLess": "Mostra'n menys",
       "dropTitle": "Deixa anar per transcriure",

@@ -709,6 +709,7 @@
       "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
       "waiting": "Wacht op transcriptie",
       "transcribingPercent": "Transcriberen, {{percent}}%",
+      "readingFile": "Bestand lezen...",
       "showMore": "Meer tonen",
       "showLess": "Minder tonen",
       "dropTitle": "Loslaten om te transcriberen",

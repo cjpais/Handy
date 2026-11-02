@@ -709,6 +709,7 @@
       "transcribeFailed": "Trascrizione non riuscita. Riprova.",
       "waiting": "In attesa di trascrizione",
       "transcribingPercent": "Trascrizione, {{percent}}%",
+      "readingFile": "Lettura del file in corso...",
       "showMore": "Mostra di più",
       "showLess": "Mostra di meno",
       "dropTitle": "Rilascia per trascrivere",

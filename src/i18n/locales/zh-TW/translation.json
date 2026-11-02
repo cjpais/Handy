@@ -709,6 +709,7 @@
       "transcribeFailed": "轉錄失敗，請重試。",
       "waiting": "等待轉錄",
       "transcribingPercent": "正在轉錄，{{percent}}%",
+      "readingFile": "正在讀取檔案...",
       "showMore": "顯示更多",
       "showLess": "收合",
       "dropTitle": "拖放到此處進行轉錄",

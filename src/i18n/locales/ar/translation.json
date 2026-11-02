@@ -709,6 +709,7 @@
       "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
       "waiting": "في انتظار النسخ",
       "transcribingPercent": "جارٍ النسخ، {{percent}}%",
+      "readingFile": "جارٍ قراءة الملف...",
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "dropTitle": "أفلت الملف لنسخه",

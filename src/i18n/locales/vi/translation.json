@@ -709,6 +709,7 @@
       "transcribeFailed": "Chép lời thất bại. Vui lòng thử lại.",
       "waiting": "Đang chờ chép lời",
       "transcribingPercent": "Đang chép lời, {{percent}}%",
+      "readingFile": "Đang đọc tệp...",
       "showMore": "Xem thêm",
       "showLess": "Thu gọn",
       "dropTitle": "Thả để chép lời",

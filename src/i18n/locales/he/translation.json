@@ -709,6 +709,7 @@
       "transcribeFailed": "התמלול נכשל. נסו שוב.",
       "waiting": "ממתין לתמלול",
       "transcribingPercent": "מתמלל, {{percent}}%",
+      "readingFile": "קורא קובץ...",
       "showMore": "הצג עוד",
       "showLess": "הצג פחות",
       "dropTitle": "שחררו כדי לתמלל",

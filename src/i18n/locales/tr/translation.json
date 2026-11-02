@@ -709,6 +709,7 @@
       "transcribeFailed": "Yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
       "waiting": "Yazıya dökülmeyi bekliyor",
       "transcribingPercent": "Yazıya dökülüyor, %{{percent}}",
+      "readingFile": "Dosya okunuyor...",
       "showMore": "Daha fazla göster",
       "showLess": "Daha az göster",
       "dropTitle": "Yazıya dökmek için bırakın",

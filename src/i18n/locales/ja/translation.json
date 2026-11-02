@@ -709,6 +709,7 @@
       "transcribeFailed": "文字起こしに失敗しました。もう一度お試しください。",
       "waiting": "文字起こし待ち",
       "transcribingPercent": "文字起こし中… {{percent}}%",
+      "readingFile": "ファイルを読み込み中…",
       "showMore": "もっと見る",
       "showLess": "閉じる",
       "dropTitle": "ドロップして文字起こし",
