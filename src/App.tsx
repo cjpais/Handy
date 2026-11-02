@@ -206,6 +206,19 @@ function App() {
     };
   }, [t]);
 
+  useEffect(() => {
+    const unlisten = listen<string>("post-processing-error", (event) => {
+      toast.error(t("errors.postProcessingFailedTitle"), {
+        description: t("errors.postProcessingFailedDescription", {
+          error: event.payload,
+        }),
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for model loading failures and show a toast
   useEffect(() => {
     const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {

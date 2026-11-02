@@ -175,7 +175,7 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+async fn post_process_transcription(app: &AppHandle, settings: &AppSettings, transcription: &str) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return None;
@@ -396,6 +396,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 provider.id,
                 e
             );
+            let _ = app.emit("post-processing-error", e.to_string());
             None
         }
     }
@@ -418,7 +419,7 @@ pub(crate) async fn process_transcription_output(
     let mut post_process_prompt: Option<String> = None;
 
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
+        if let Some(processed_text) = post_process_transcription(app, &settings, &final_text).await {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
 
