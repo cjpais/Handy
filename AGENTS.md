@@ -137,7 +137,7 @@ The app enforces single instance behavior — launching when already running bri
 
 **Adding a new error:**
 
-1. Add a `NoticeCode` in `src-tauri/src/notices.rs` and give it a level in `NoticeCode::level`. **Error** means nothing came out, or Handy can't do its job. **Warning** means the user got a result, but not the one they set up.
+1. Add a `NoticeCode` in `src-tauri/src/notices.rs`, with its level in `NoticeCode::level` and its title in `NoticeCode::tray_title`. **Error** means nothing came out, or Handy can't do its job. **Warning** means the user got a result, but not the one they set up.
 2. Add the title under `errors.*` in `src/i18n/locales/en/translation.json`, in Title Case and using the app's terms, then add the key to the other locales (`bun run check:translations` fails otherwise).
 3. Map the code to its title, optional explanation and page in `NOTICE_DISPLAY` in `src/lib/notices.ts`. TypeScript won't compile until you do.
 4. Call `notices::raise` where the failure happens, and regenerate `bindings.ts` by running the app in debug:

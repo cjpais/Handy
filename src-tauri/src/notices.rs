@@ -10,7 +10,8 @@
 //!
 //! # Adding a new error
 //!
-//! 1. Add a [`NoticeCode`] and give it a level in [`NoticeCode::level`].
+//! 1. Add a [`NoticeCode`], with its level in [`NoticeCode::level`] and its
+//!    title in [`NoticeCode::tray_title`].
 //! 2. Add its title under `errors.*` in `src/i18n/locales/en/translation.json`,
 //!    and the same key in every other locale.
 //! 3. Map the code to its title, explanation and page in `src/lib/notices.ts`.
@@ -34,6 +35,8 @@
 //! Nothing persists across restarts.
 
 use crate::overlay;
+use crate::tray;
+use crate::tray_i18n::TrayStrings;
 use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -79,6 +82,19 @@ impl NoticeCode {
             | Self::MicPermissionDenied
             | Self::RecordingFailed
             | Self::ModelLoadFailed => NoticeLevel::Error,
+        }
+    }
+
+    /// The title in the tray menu, from the same `errors.*Title` string the
+    /// frontend shows (see `build.rs`).
+    pub fn tray_title(self, strings: &TrayStrings) -> &str {
+        match self {
+            Self::TranscriptionFailed => &strings.transcription_failed_title,
+            Self::PasteFailed => &strings.paste_failed_title,
+            Self::NoMicrophone => &strings.no_input_device_title,
+            Self::MicPermissionDenied => &strings.mic_permission_denied_title,
+            Self::RecordingFailed => &strings.recording_failed_title,
+            Self::ModelLoadFailed => &strings.model_load_failed_title,
         }
     }
 }
@@ -139,6 +155,14 @@ fn remove(active: &mut Vec<Notice>, source: NoticeSource) -> bool {
     active.len() != before
 }
 
+/// The notice the tray shows: the newest at the highest level.
+fn headline(active: &[Notice]) -> Option<&Notice> {
+    active
+        .iter()
+        .find(|notice| notice.level == NoticeLevel::Error)
+        .or(active.first())
+}
+
 /// Sent under the store's lock, so the last event always matches the store.
 fn publish(app: &AppHandle, active: &[Notice], raised: Option<Notice>) {
     let event = NoticesChanged {
@@ -163,19 +187,36 @@ pub fn raise(app: &AppHandle, notice: Notice) {
 /// [`raise`] for a failure that isn't the session on the overlay, such as a
 /// late paste from an earlier one.
 pub fn raise_without_overlay(app: &AppHandle, notice: Notice) {
-    let store = app.state::<NoticeStore>();
-    let mut active = store.lock();
-    insert(&mut active, notice.clone());
-    publish(app, &active, Some(notice));
+    {
+        let store = app.state::<NoticeStore>();
+        let mut active = store.lock();
+        insert(&mut active, notice.clone());
+        publish(app, &active, Some(notice));
+    }
+    tray::refresh_tray_icon(app);
 }
 
 /// Drop `source`'s notice because it has just succeeded.
 pub fn clear(app: &AppHandle, source: NoticeSource) {
-    let store = app.state::<NoticeStore>();
-    let mut active = store.lock();
-    if remove(&mut active, source) {
-        publish(app, &active, None);
+    let cleared = {
+        let store = app.state::<NoticeStore>();
+        let mut active = store.lock();
+        let cleared = remove(&mut active, source);
+        if cleared {
+            publish(app, &active, None);
+        }
+        cleared
+    };
+    if cleared {
+        tray::refresh_tray_icon(app);
     }
+}
+
+/// The notice the tray should show, if any.
+pub fn tray_headline(app: &AppHandle) -> Option<Notice> {
+    let store = app.state::<NoticeStore>();
+    let active = store.lock();
+    headline(&active).cloned()
 }
 
 /// The active notices, newest first, for a window that has just opened.
@@ -271,6 +312,16 @@ mod tests {
 
         assert!(!remove(&mut active, NoticeSource::Dictation));
         assert_eq!(active, vec![file(NoticeCode::TranscriptionFailed)]);
+    }
+
+    #[test]
+    fn headline_is_the_newest_notice() {
+        let mut active = Vec::new();
+        assert_eq!(headline(&active), None);
+
+        insert(&mut active, file(NoticeCode::TranscriptionFailed));
+        insert(&mut active, dictation(NoticeCode::PasteFailed));
+        assert_eq!(headline(&active), active.first());
     }
 
     #[test]
