@@ -181,8 +181,8 @@ const settingUpdaters: {
     const result = await commands.changeAirpodsModeSetting(value as boolean);
     if (result.status === "error") {
       // Rejected changes (e.g. mid-recording) roll the toggle back via the
-      // throw below; the toast tells the user why.
-      toast.error(result.error);
+      // throw below; the notice tells the user why.
+      notify({ title: result.error });
       throw new Error(result.error);
     }
   },
