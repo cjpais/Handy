@@ -118,6 +118,9 @@ struct TranscribeAction {
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
 
+/// Placeholder users put in a prompt to mark where the transcription goes.
+const OUTPUT_PLACEHOLDER: &str = "${output}";
+
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
@@ -139,7 +142,26 @@ fn strip_think_block(s: &str) -> &str {
 /// Build a system prompt from the user's prompt template.
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+    prompt_template
+        .replace(OUTPUT_PLACEHOLDER, "")
+        .trim()
+        .to_string()
+}
+
+/// Render a prompt template for providers that receive the whole prompt as one
+/// user message (no separate user turn for the transcription).
+///
+/// A template that references `${output}` gets the transcription substituted in
+/// place. A template without the placeholder used to be sent unchanged, which
+/// dropped the transcription entirely and made the model answer "please provide
+/// the transcription" — the prompt itself gave no hint that anything was
+/// missing. Append the text instead, so no prompt can silently lose its input.
+fn render_legacy_prompt(prompt_template: &str, transcription: &str) -> String {
+    if prompt_template.contains(OUTPUT_PLACEHOLDER) {
+        prompt_template.replace(OUTPUT_PLACEHOLDER, transcription)
+    } else {
+        format!("{}\n\n{}", prompt_template.trim_end(), transcription)
+    }
 }
 
 /// Returns `true` when a transcription has no meaningful content to
@@ -364,8 +386,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Legacy mode: the transcription has to be embedded in the prompt itself
+    let processed_prompt = render_legacy_prompt(&prompt, transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -988,8 +1010,8 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        complete_unless_cancelled, is_blank_transcription, render_legacy_prompt,
+        should_use_streaming_overlay, strip_think_block,
     };
     use crate::settings::OverlayStyle;
     use std::future;
@@ -1071,5 +1093,31 @@ mod tests {
         assert!(!should_use_streaming_overlay(OverlayStyle::Live, false));
         assert!(!should_use_streaming_overlay(OverlayStyle::Minimal, true));
         assert!(!should_use_streaming_overlay(OverlayStyle::None, true));
+    }
+
+    #[test]
+    fn legacy_prompt_substitutes_the_output_placeholder() {
+        assert_eq!(
+            render_legacy_prompt("Clean this up:\n${output}", "raw words"),
+            "Clean this up:\nraw words"
+        );
+        // Every occurrence is replaced, not just the first one
+        assert_eq!(
+            render_legacy_prompt("${output} -> ${output}", "raw"),
+            "raw -> raw"
+        );
+    }
+
+    #[test]
+    fn legacy_prompt_without_placeholder_still_gets_the_transcription() {
+        assert_eq!(
+            render_legacy_prompt("Clean this up.", "raw words"),
+            "Clean this up.\n\nraw words"
+        );
+        // Trailing whitespace on the template does not stretch the gap
+        assert_eq!(
+            render_legacy_prompt("Clean this up.\n\n   ", "raw words"),
+            "Clean this up.\n\nraw words"
+        );
     }
 }

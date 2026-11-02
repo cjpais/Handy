@@ -676,6 +676,7 @@
         "promptInstructions": "הוראות לפרומפט",
         "promptInstructionsPlaceholder": "כתוב את ההוראות שירוצו אחרי התמלול. לדוגמה: שפר דקדוק ובהירות עבור הטקסט הבא: ${output}",
         "promptTip": "טיפ: השתמש ב-<code>${output}</code> כדי להכניס את הטקסט המתומלל לפרומפט שלך.",
+        "missingOutputPlaceholder": "הפרומפט הזה לא כולל ${output}, ולכן התמלול יתווסף אוטומטית בסופו. הוסיפו ${output} במקום שבו הטקסט אמור להופיע.",
         "updatePrompt": "עדכן פרומפט",
         "deletePrompt": "מחק פרומפט",
         "createPrompt": "צור פרומפט",

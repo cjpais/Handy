@@ -676,6 +676,7 @@
         "promptInstructions": "Instructions du prompt",
         "promptInstructionsPlaceholder": "Écrivez les instructions à exécuter après la transcription. Exemple : Améliorer la grammaire et la clarté du texte suivant : ${output}",
         "promptTip": "Astuce : Utilisez <code>${output}</code> pour insérer le texte transcrit dans votre prompt.",
+        "missingOutputPlaceholder": "Ce prompt ne contient pas ${output}, la transcription est donc ajoutée automatiquement à la fin. Ajoutez ${output} à l'endroit où le texte doit apparaître.",
         "updatePrompt": "Mettre à jour le prompt",
         "deletePrompt": "Supprimer le prompt",
         "createPrompt": "Créer le prompt",

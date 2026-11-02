@@ -676,6 +676,7 @@
         "promptInstructions": "提示詞指令",
         "promptInstructionsPlaceholder": "撰寫轉錄後要執行的指令。範例：改善以下文字的語法和清晰度: ${output}",
         "promptTip": "提示：使用 <code>${output}</code> 將轉錄文字插入到您的提示詞中",
+        "missingOutputPlaceholder": "此提示詞中沒有 ${output}，轉錄文字會自動附加到結尾。請在需要出現文字的位置加入 ${output}。",
         "updatePrompt": "更新提示詞",
         "deletePrompt": "刪除提示詞",
         "createPrompt": "建立提示詞",

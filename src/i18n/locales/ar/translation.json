@@ -676,6 +676,7 @@
         "promptInstructions": "تعليمات المطالبة",
         "promptInstructionsPlaceholder": ".اكتب التعليمات المراد تشغيلها بعد التفريغ الصوتي. مثال: قم بتحسين القواعد والوضوح للنص التالي: ${output}",
         "promptTip": "تلميح: استخدم <code>${output}</code> لإدراج النص المفرغ في مطالبتك.",
+        "missingOutputPlaceholder": "لا يحتوي هذا التوجيه على ${output}، لذا ستُضاف النصوص المنسوخة في نهايته تلقائيًا. أضف ${output} في الموضع الذي تريد أن يظهر فيه النص.",
         "updatePrompt": "تحديث المطالبة",
         "deletePrompt": "حذف المطالبة",
         "createPrompt": "إنشاء مطالبة",

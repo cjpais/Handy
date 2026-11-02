@@ -676,6 +676,7 @@
         "promptInstructions": "Instruccions de la indicació",
         "promptInstructionsPlaceholder": "Escriviu les instruccions que s'executaran després de la transcripció. Exemple: Millora la gramàtica i la claredat del text següol: ${output}",
         "promptTip": "Consell: utilitzeu <code>${output}</code> per inserir el text transcrit a la indicació.",
+        "missingOutputPlaceholder": "Aquest prompt no conté ${output}, així que la transcripció s'afegeix automàticament al final. Afegeix ${output} on vulguis que aparegui el text.",
         "updatePrompt": "Actualitzeu la indicació",
         "deletePrompt": "Suprimiu la indicació",
         "createPrompt": "Creeu la indicació",

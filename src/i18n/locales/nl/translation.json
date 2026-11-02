@@ -676,6 +676,7 @@
         "promptInstructions": "Prompt-instructies",
         "promptInstructionsPlaceholder": "Schrijf de instructies die na de transcriptie moeten worden uitgevoerd. Voorbeeld: Verbeter de grammatica en helderheid van de volgende tekst: ${output}",
         "promptTip": "Tip: Gebruik <code>${output}</code> om de getranscribeerde tekst in je prompt in te voegen.",
+        "missingOutputPlaceholder": "Deze prompt bevat geen ${output}, dus de transcriptie wordt automatisch aan het einde toegevoegd. Voeg ${output} toe op de plek waar de tekst moet komen.",
         "updatePrompt": "Prompt bijwerken",
         "deletePrompt": "Prompt verwijderen",
         "createPrompt": "Prompt maken",
