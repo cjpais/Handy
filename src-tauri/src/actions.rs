@@ -194,13 +194,31 @@ fn expand_prompt_template(template: &str, output: &str, selection: &str) -> Stri
     expanded
 }
 
-/// Build a system prompt from the user's prompt template.
-/// Removes `${output}` because the transcription is sent as the user message,
-/// and inserts `${selection}` for context scribe.
+/// Post-processing only: replace `${output}` and leave every other token,
+/// including `${selection}`, as the user wrote it.
+fn expand_output_placeholder(template: &str, output: &str) -> String {
+    template.replace(OUTPUT_PLACEHOLDER, output)
+}
+
+/// System prompt for regular post-processing. `${output}` is removed because
+/// the transcript is the user message. `${selection}` is not filled.
+fn build_post_process_system_prompt(prompt_template: &str) -> String {
+    expand_output_placeholder(prompt_template, "")
+        .trim()
+        .to_string()
+}
+
+/// System prompt for context scribe. `${output}` is removed because the
+/// transcript is the user message, and `${selection}` is the captured text.
 fn build_system_prompt(prompt_template: &str, selection: &str) -> String {
     expand_prompt_template(prompt_template, "", selection)
         .trim()
         .to_string()
+}
+
+/// `limit_chars` counts Unicode scalar values. Equal to the limit is allowed.
+fn selection_is_too_long(selection: &str, limit_chars: u32) -> bool {
+    selection.chars().count() > usize::try_from(limit_chars).unwrap_or(usize::MAX)
 }
 
 /// What to type after transcription, and whether that typing must replace a
@@ -217,7 +235,16 @@ fn resolve_transcription_paste(
     post_process: bool,
     llm_output: Option<String>,
     selection: Option<&str>,
+    selection_too_long: bool,
 ) -> TranscriptionPaste {
+    // An over-long selection is refused whole. Do not paste the dictation over it.
+    if selection_too_long {
+        return TranscriptionPaste {
+            text: String::new(),
+            replace_selection: false,
+        };
+    }
+
     let replacing = selection.is_some_and(|text| !text.is_empty());
     if !post_process {
         return TranscriptionPaste {
@@ -288,6 +315,7 @@ async fn post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
     selection: &str,
+    context_scribe: bool,
 ) -> Option<String> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
@@ -316,7 +344,19 @@ async fn post_process_transcription(
         return None;
     }
 
-    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+    let (prompts, selected_prompt_id) = if context_scribe {
+        (
+            &settings.context_scribe_prompts,
+            &settings.context_scribe_selected_prompt_id,
+        )
+    } else {
+        (
+            &settings.post_process_prompts,
+            &settings.post_process_selected_prompt_id,
+        )
+    };
+
+    let selected_prompt_id = match selected_prompt_id {
         Some(id) => id.clone(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
@@ -324,8 +364,7 @@ async fn post_process_transcription(
         }
     };
 
-    let prompt = match settings
-        .post_process_prompts
+    let prompt = match prompts
         .iter()
         .find(|prompt| prompt.id == selected_prompt_id)
     {
@@ -363,7 +402,11 @@ async fn post_process_transcription(
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        let system_prompt = build_system_prompt(&prompt, selection);
+        let system_prompt = if context_scribe {
+            build_system_prompt(&prompt, selection)
+        } else {
+            build_post_process_system_prompt(&prompt)
+        };
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -477,8 +520,14 @@ async fn post_process_transcription(
         }
     }
 
-    // Legacy mode: the whole template is the user message, with both placeholders filled.
-    let processed_prompt = expand_prompt_template(&prompt, transcription, selection);
+    // Legacy mode: the whole template is the user message.
+    // Context scribe fills `${output}` and `${selection}`. Regular post-processing
+    // fills only `${output}`.
+    let processed_prompt = if context_scribe {
+        expand_prompt_template(&prompt, transcription, selection)
+    } else {
+        expand_output_placeholder(&prompt, transcription)
+    };
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     match crate::llm_client::send_chat_completion(
@@ -520,6 +569,8 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
     /// Paste with Ctrl/Cmd+V and without a trailing space or auto-submit.
     pub replace_selection: bool,
+    /// The captured selection was over the limit, so the model was not called.
+    pub selection_too_long: bool,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -527,26 +578,53 @@ pub(crate) async fn process_transcription_output(
     transcription: &str,
     post_process: bool,
     selection: Option<String>,
+    context_scribe: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
+    let selection_text = selection.as_deref().unwrap_or("");
+    let selection_too_long = context_scribe
+        && selection_is_too_long(selection_text, settings.context_scribe_max_selection_chars);
+
+    if selection_too_long {
+        debug!(
+            "Context scribe refused a selection of {} characters (limit {})",
+            selection_text.chars().count(),
+            settings.context_scribe_max_selection_chars
+        );
+        return ProcessedTranscription {
+            final_text: String::new(),
+            post_processed_text: None,
+            post_process_prompt: None,
+            replace_selection: false,
+            selection_too_long: true,
+        };
+    }
+
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
     let mut llm_output: Option<String> = None;
 
     if post_process {
         if let Some(processed_text) =
-            post_process_transcription(&settings, transcription, selection.as_deref().unwrap_or(""))
+            post_process_transcription(&settings, transcription, selection_text, context_scribe)
                 .await
         {
             post_processed_text = Some(processed_text.clone());
             llm_output = Some(processed_text);
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
+            let (prompts, selected_id) = if context_scribe {
+                (
+                    &settings.context_scribe_prompts,
+                    &settings.context_scribe_selected_prompt_id,
+                )
+            } else {
+                (
+                    &settings.post_process_prompts,
+                    &settings.post_process_selected_prompt_id,
+                )
+            };
+            if let Some(prompt_id) = selected_id {
+                if let Some(prompt) = prompts.iter().find(|prompt| &prompt.id == prompt_id) {
                     post_process_prompt = Some(prompt.prompt.clone());
                 }
             }
@@ -558,6 +636,7 @@ pub(crate) async fn process_transcription_output(
         post_process,
         llm_output,
         selection.as_deref(),
+        false,
     );
 
     ProcessedTranscription {
@@ -565,6 +644,26 @@ pub(crate) async fn process_transcription_output(
         post_processed_text,
         post_process_prompt,
         replace_selection: resolved.replace_selection,
+        selection_too_long: false,
+    }
+}
+
+/// Tell the user a context-scribe selection was over the limit, and leave it in place.
+fn present_selection_too_long(app: &AppHandle, length: usize, limit: u32) {
+    warn!(
+        "Context scribe selection is {length} characters, over the limit of {limit}. The model was not called and the dictation was not pasted."
+    );
+    let _ = app.emit(
+        "context-scribe-selection-too-long",
+        serde_json::json!({ "length": length, "limit": limit }),
+    );
+    if get_settings(app).overlay_style == OverlayStyle::None {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.show();
+        }
+    } else {
+        crate::overlay::show_notice_overlay(app);
     }
 }
 
@@ -813,6 +912,11 @@ impl ShortcutAction for TranscribeAction {
             } else {
                 None
             };
+            let limit_settings = get_settings(&ah);
+            let selection_limit = limit_settings.context_scribe_max_selection_chars;
+            let selection_chars = selection.as_deref().unwrap_or("").chars().count();
+            let selection_too_long = context_scribe
+                && selection_is_too_long(selection.as_deref().unwrap_or(""), selection_limit);
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
@@ -842,7 +946,11 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
+                    if selection_too_long {
+                        present_selection_too_long(&ah, selection_chars, selection_limit);
+                    } else {
+                        utils::hide_recording_overlay(&ah);
+                    }
                     set_tray_state(&ah, TrayIconState::Idle);
                     emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
                 } else {
@@ -905,7 +1013,7 @@ impl ShortcutAction for TranscribeAction {
                                 utils::redact_text(&transcription)
                             );
 
-                            if post_process {
+                            if post_process && !selection_too_long {
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
                                 } else {
@@ -918,6 +1026,7 @@ impl ShortcutAction for TranscribeAction {
                                     &transcription,
                                     post_process,
                                     selection,
+                                    context_scribe,
                                 ),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
@@ -951,7 +1060,15 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             if processed.final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
+                                if processed.selection_too_long {
+                                    present_selection_too_long(
+                                        &ah,
+                                        selection_chars,
+                                        selection_limit,
+                                    );
+                                } else {
+                                    utils::hide_recording_overlay(&ah);
+                                }
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
                                     &ah,
@@ -1057,7 +1174,11 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
-                            utils::hide_recording_overlay(&ah);
+                            if selection_too_long {
+                                present_selection_too_long(&ah, selection_chars, selection_limit);
+                            } else {
+                                utils::hide_recording_overlay(&ah);
+                            }
                             set_tray_state(&ah, TrayIconState::Idle);
                             emit_transcription_complete(
                                 &ah,
@@ -1072,7 +1193,11 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 // Tear down any streaming worker so its channel doesn't leak.
                 tm.cancel_stream();
-                utils::hide_recording_overlay(&ah);
+                if selection_too_long && !rm.was_cancelled_since(cancel_generation) {
+                    present_selection_too_long(&ah, selection_chars, selection_limit);
+                } else {
+                    utils::hide_recording_overlay(&ah);
+                }
                 set_tray_state(&ah, TrayIconState::Idle);
                 if !rm.was_cancelled_since(cancel_generation) {
                     emit_transcription_complete(&ah, TranscriptionOutcome::Empty, 0, stop_time);
@@ -1161,8 +1286,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        build_system_prompt, complete_unless_cancelled, expand_prompt_template,
-        is_blank_transcription, resolve_transcription_paste, should_use_streaming_overlay,
+        build_post_process_system_prompt, build_system_prompt, complete_unless_cancelled,
+        expand_output_placeholder, expand_prompt_template, is_blank_transcription,
+        resolve_transcription_paste, selection_is_too_long, should_use_streaming_overlay,
         strip_think_block, TranscriptionPaste,
     };
     use crate::settings::OverlayStyle;
@@ -1283,6 +1409,7 @@ mod tests {
             true,
             None,
             Some("the selected paragraph"),
+            false,
         );
         assert_eq!(
             paste,
@@ -1300,6 +1427,7 @@ mod tests {
             true,
             Some("  \n".to_string()),
             Some("the selected paragraph"),
+            false,
         );
         assert_eq!(paste.text, "");
         assert!(!paste.replace_selection);
@@ -1312,6 +1440,7 @@ mod tests {
             true,
             Some("shorter paragraph".to_string()),
             Some("the selected paragraph"),
+            false,
         );
         assert_eq!(
             paste,
@@ -1324,12 +1453,48 @@ mod tests {
 
     #[test]
     fn llm_none_without_selection_pastes_the_dictation() {
-        let paste = resolve_transcription_paste("make it shorter", true, None, Some(""));
+        let paste = resolve_transcription_paste("make it shorter", true, None, Some(""), false);
         assert_eq!(paste.text, "make it shorter");
         assert!(!paste.replace_selection);
 
-        let missing = resolve_transcription_paste("make it shorter", true, None, None);
+        let missing = resolve_transcription_paste("make it shorter", true, None, None, false);
         assert_eq!(missing.text, "make it shorter");
         assert!(!missing.replace_selection);
+    }
+
+    #[test]
+    fn post_process_expansion_fills_only_the_transcript() {
+        let template = "Clean ${output}. Keep ${selection} literal.";
+        assert_eq!(
+            expand_output_placeholder(template, "hello"),
+            "Clean hello. Keep ${selection} literal."
+        );
+        let system = build_post_process_system_prompt(template);
+        assert!(system.contains("${selection}"));
+        assert!(!system.contains("${output}"));
+    }
+
+    #[test]
+    fn overlong_selection_does_not_paste_raw_dictation() {
+        assert!(!selection_is_too_long(&"a".repeat(2000), 2000));
+        assert!(selection_is_too_long(&"a".repeat(2001), 2000));
+        // One Unicode scalar, even though it is two UTF-8 bytes.
+        assert!(!selection_is_too_long("é", 1));
+        assert!(selection_is_too_long("éé", 1));
+
+        let paste = resolve_transcription_paste(
+            "make it shorter",
+            true,
+            Some("should not be used".to_string()),
+            Some(&"a".repeat(2001)),
+            true,
+        );
+        assert_eq!(
+            paste,
+            TranscriptionPaste {
+                text: String::new(),
+                replace_selection: false,
+            }
+        );
     }
 }

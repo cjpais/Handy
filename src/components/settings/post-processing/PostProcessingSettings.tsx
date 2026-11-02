@@ -182,16 +182,25 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
   );
 };
 
-const PostProcessingSettingsPromptsComponent: React.FC = () => {
+const PromptLibraryEditor: React.FC<{ kind: "postProcess" | "contextScribe" }> = ({
+  kind,
+}) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating, refreshSettings } =
     useSettings();
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftText, setDraftText] = useState("");
+  const scribe = kind === "contextScribe";
+  const promptsKey = scribe
+    ? "context_scribe_prompts"
+    : "post_process_prompts";
+  const selectedKey = scribe
+    ? "context_scribe_selected_prompt_id"
+    : "post_process_selected_prompt_id";
 
-  const prompts = getSetting("post_process_prompts") || [];
-  const selectedPromptId = getSetting("post_process_selected_prompt_id") || "";
+  const prompts = getSetting(promptsKey) || [];
+  const selectedPromptId = getSetting(selectedKey) || "";
   const selectedPrompt =
     prompts.find((prompt) => prompt.id === selectedPromptId) || null;
 
@@ -214,7 +223,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
 
   const handlePromptSelect = (promptId: string | null) => {
     if (!promptId) return;
-    updateSetting("post_process_selected_prompt_id", promptId);
+    updateSetting(selectedKey, promptId);
     setIsCreating(false);
   };
 
@@ -222,13 +231,12 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!draftName.trim() || !draftText.trim()) return;
 
     try {
-      const result = await commands.addPostProcessPrompt(
-        draftName.trim(),
-        draftText.trim(),
-      );
+      const result = scribe
+        ? await commands.addContextScribePrompt(draftName.trim(), draftText.trim())
+        : await commands.addPostProcessPrompt(draftName.trim(), draftText.trim());
       if (result.status === "ok") {
         await refreshSettings();
-        updateSetting("post_process_selected_prompt_id", result.data.id);
+        updateSetting(selectedKey, result.data.id);
         setIsCreating(false);
       }
     } catch (error) {
@@ -240,11 +248,19 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!selectedPromptId || !draftName.trim() || !draftText.trim()) return;
 
     try {
-      await commands.updatePostProcessPrompt(
-        selectedPromptId,
-        draftName.trim(),
-        draftText.trim(),
-      );
+      if (scribe) {
+        await commands.updateContextScribePrompt(
+          selectedPromptId,
+          draftName.trim(),
+          draftText.trim(),
+        );
+      } else {
+        await commands.updatePostProcessPrompt(
+          selectedPromptId,
+          draftName.trim(),
+          draftText.trim(),
+        );
+      }
       await refreshSettings();
     } catch (error) {
       console.error("Failed to update prompt:", error);
@@ -255,7 +271,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!promptId) return;
 
     try {
-      await commands.deletePostProcessPrompt(promptId);
+      if (scribe) {
+        await commands.deleteContextScribePrompt(promptId);
+      } else {
+        await commands.deletePostProcessPrompt(promptId);
+      }
       await refreshSettings();
       setIsCreating(false);
     } catch (error) {
@@ -288,9 +308,15 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
 
   return (
     <SettingContainer
-      title={t("settings.postProcessing.prompts.selectedPrompt.title")}
+      title={t(
+        scribe
+          ? "settings.contextScribe.prompts.selectedPrompt.title"
+          : "settings.postProcessing.prompts.selectedPrompt.title",
+      )}
       description={t(
-        "settings.postProcessing.prompts.selectedPrompt.description",
+        scribe
+          ? "settings.contextScribe.prompts.selectedPrompt.description"
+          : "settings.postProcessing.prompts.selectedPrompt.description",
       )}
       descriptionMode="tooltip"
       layout="stacked"
@@ -311,7 +337,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 : t("settings.postProcessing.prompts.selectPrompt")
             }
             disabled={
-              isUpdating("post_process_selected_prompt_id") || isCreating
+              isUpdating(selectedKey) || isCreating
             }
             className="flex-1 min-w-0"
           />
@@ -355,13 +381,20 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 )}
               />
               <p className="text-xs text-ink-3">
-                <Trans
-                  i18nKey="settings.postProcessing.prompts.promptTip"
-                  components={{
-                    output: <code />,
-                    selection: <code />,
-                  }}
-                />
+                {scribe ? (
+                  <Trans
+                    i18nKey="settings.contextScribe.prompts.promptTip"
+                    components={{
+                      output: <code />,
+                      selection: <code />,
+                    }}
+                  />
+                ) : (
+                  <Trans
+                    i18nKey="settings.postProcessing.prompts.promptTip"
+                    components={{ code: <code /> }}
+                  />
+                )}
               </p>
             </div>
 
@@ -391,7 +424,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
             <p className="text-sm text-ink-3">
               {hasPrompts
                 ? t("settings.postProcessing.prompts.selectToEdit")
-                : t("settings.postProcessing.prompts.createFirst")}
+                : t(
+                    scribe
+                      ? "settings.contextScribe.prompts.createFirst"
+                      : "settings.postProcessing.prompts.createFirst",
+                  )}
             </p>
           </div>
         )}
@@ -425,13 +462,20 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 )}
               />
               <p className="text-xs text-ink-3">
-                <Trans
-                  i18nKey="settings.postProcessing.prompts.promptTip"
-                  components={{
-                    output: <code />,
-                    selection: <code />,
-                  }}
-                />
+                {scribe ? (
+                  <Trans
+                    i18nKey="settings.contextScribe.prompts.promptTip"
+                    components={{
+                      output: <code />,
+                      selection: <code />,
+                    }}
+                  />
+                ) : (
+                  <Trans
+                    i18nKey="settings.postProcessing.prompts.promptTip"
+                    components={{ code: <code /> }}
+                  />
+                )}
               </p>
             </div>
 
@@ -464,10 +508,51 @@ export const PostProcessingSettingsApi = React.memo(
 );
 PostProcessingSettingsApi.displayName = "PostProcessingSettingsApi";
 
+const PostProcessingSettingsPromptsComponent: React.FC = () => (
+  <PromptLibraryEditor kind="postProcess" />
+);
+
 export const PostProcessingSettingsPrompts = React.memo(
   PostProcessingSettingsPromptsComponent,
 );
 PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
+
+const ContextScribeMaxSelection: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting, isUpdating } = useSettings();
+  const limit = getSetting("context_scribe_max_selection_chars") ?? 2000;
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(event.target.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      updateSetting("context_scribe_max_selection_chars", value);
+    }
+  };
+
+  return (
+    <SettingContainer
+      title={t("settings.contextScribe.maxSelection.title")}
+      description={t("settings.contextScribe.maxSelection.description")}
+      descriptionMode="tooltip"
+      grouped={true}
+      layout="horizontal"
+    >
+      <div className="flex items-center space-x-2">
+        <Input
+          type="number"
+          min="0"
+          value={limit}
+          onChange={handleChange}
+          disabled={isUpdating("context_scribe_max_selection_chars")}
+          className="w-24"
+        />
+        <span className="text-sm text-text">
+          {t("settings.contextScribe.maxSelection.characters")}
+        </span>
+      </div>
+    </SettingContainer>
+  );
+};
 
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -494,6 +579,11 @@ export const PostProcessingSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.contextScribe.title")}>
+        <ContextScribeMaxSelection />
+        <PromptLibraryEditor kind="contextScribe" />
       </SettingsGroup>
     </div>
   );

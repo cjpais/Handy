@@ -193,6 +193,24 @@ function App() {
     };
   }, [t]);
 
+  // Context scribe refused an over-long selection. The dictation is not pasted.
+  useEffect(() => {
+    const unlisten = listen<{ length: number; limit: number }>(
+      "context-scribe-selection-too-long",
+      (event) => {
+        toast.error(t("errors.selectionTooLongTitle"), {
+          description: t("errors.selectionTooLong", {
+            length: event.payload.length,
+            limit: event.payload.limit,
+          }),
+        });
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for transcription failures and show a toast.
   // The payload is the backend error message (also logged to handy.log).
   useEffect(() => {

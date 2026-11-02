@@ -348,7 +348,7 @@
           },
           "transcribe_with_context_scribe": {
             "name": "Context Scribe Hotkey",
-            "description": "Records speech, reads the text selected in the focused app, and sends both to the post-processing model. The selection is sent to your external provider. The reply replaces the selection. Windows and macOS only; Linux does not read a selection."
+            "description": "Records speech, reads the text selected in the focused app, and sends both through the Context Scribe prompt. The selection is sent to your external provider. The reply replaces the selection. Windows and macOS only; Linux does not read a selection."
           }
         },
         "errors": {
@@ -670,7 +670,7 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Selected Prompt",
-          "description": "Select a template for refining transcriptions or create a new one. Use ${output} for the captured transcript and ${selection} for the text selected in the focused app. ${selection} is sent to your external provider."
+          "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
         },
         "noPrompts": "No prompts available",
         "selectPrompt": "Select a prompt",
@@ -679,13 +679,29 @@
         "promptLabelPlaceholder": "Enter prompt name",
         "promptInstructions": "Prompt Instructions",
         "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
-        "promptTip": "Tip: Use <output>${output}</output> for the transcribed speech and <selection>${selection}</selection> for the text selected in the focused app. The selection is sent to your external provider.",
+        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
         "updatePrompt": "Update Prompt",
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",
         "cancel": "Cancel",
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
+      }
+    },
+    "contextScribe": {
+      "title": "Context Scribe",
+      "maxSelection": {
+        "title": "Maximum selection length",
+        "description": "Characters of selected text Context Scribe may send. A longer selection is refused and is not shortened. Your dictation is not pasted over it.",
+        "characters": "characters"
+      },
+      "prompts": {
+        "selectedPrompt": {
+          "title": "Context Scribe Prompt",
+          "description": "Used only by the Context Scribe hotkey, separate from post-processing. Use ${output} for the spoken instruction and ${selection} for the selected text. ${selection} is sent to your external provider."
+        },
+        "promptTip": "Tip: Use <output>${output}</output> for the spoken instruction and <selection>${selection}</selection> for the selected text. The selection is sent to your external provider.",
+        "createFirst": "Click 'Create New Prompt' above to create your first Context Scribe prompt."
       }
     },
     "history": {
@@ -948,7 +964,9 @@
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
     "pasteFailed": "Text could not be pasted into the active application.",
-    "transcriptionFailedTitle": "Transcription Failed"
+    "transcriptionFailedTitle": "Transcription Failed",
+    "selectionTooLongTitle": "Selection is too long",
+    "selectionTooLong": "The selected text is {{length}} characters, over the limit of {{limit}}. It was not sent to the provider, and the dictation was not pasted over it."
   },
   "appLanguage": {
     "title": "Application Language",
@@ -966,7 +984,9 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing...",
-    "loadingModel": "Loading model..."
+    "loadingModel": "Loading model...",
+    "selectionTooLong": "Selection is too long ({{length}}/{{limit}})",
+    "selectionTooLongShort": "Selection is too long"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} may be blocking 1 shortcut",

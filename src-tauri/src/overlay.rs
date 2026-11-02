@@ -590,6 +590,23 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
         }
 
         let _ = overlay_window.emit("show-overlay", state);
+
+        if state == "notice" {
+            let scheduled_at = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+            let window = overlay_window.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(4));
+                if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
+                    return;
+                }
+                let _ = window.emit("hide-overlay", ());
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
+                    return;
+                }
+                let _ = window.hide();
+            });
+        }
     }
 }
 
@@ -628,6 +645,12 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
 /// Shows the processing overlay window
 pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
+}
+
+/// Shows a short overlay notice. The window hides itself after a few seconds
+/// unless a newer recording shows the overlay again.
+pub fn show_notice_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "notice");
 }
 
 /// Updates the overlay window position based on current settings
