@@ -911,6 +911,7 @@
     "title": "Nyt i Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Afspilningsposition",
     "resetSetting": "Nulstil {{setting}} til standardværdien",
     "loading": "Indlæser...",
     "delete": "Slet",

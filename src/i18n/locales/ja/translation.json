@@ -911,6 +911,7 @@
     "title": "Handy v{{version}} の新機能"
   },
   "common": {
+    "playbackPosition": "再生位置",
     "resetSetting": "{{setting}}を既定値に戻す",
     "loading": "読み込み中…",
     "delete": "削除",

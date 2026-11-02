@@ -911,6 +911,7 @@
     "title": "Novinky v Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Pozice přehrávání",
     "resetSetting": "Obnovit výchozí hodnotu: {{setting}}",
     "loading": "Načítání...",
     "delete": "Smazat",

@@ -911,6 +911,7 @@
     "title": "Neu in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Wiedergabeposition",
     "resetSetting": "{{setting}} auf den Standardwert zurücksetzen",
     "loading": "Wird geladen...",
     "delete": "Löschen",

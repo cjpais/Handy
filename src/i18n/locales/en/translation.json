@@ -911,6 +911,7 @@
     "title": "New in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Playback position",
     "resetSetting": "Reset {{setting}} to default",
     "loading": "Loading...",
     "delete": "Delete",

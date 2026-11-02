@@ -911,6 +911,7 @@
     "title": "Nieuw in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Afspeelpositie",
     "resetSetting": "{{setting}} terugzetten naar de standaardwaarde",
     "loading": "Laden...",
     "delete": "Verwijderen",
