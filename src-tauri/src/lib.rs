@@ -1090,11 +1090,10 @@ pub fn run(cli_args: CliArgs) {
             let should_hide = settings.start_hidden || cli_args.start_hidden;
             let should_force_show = should_force_show_permissions_window(&app_handle);
 
-            // If start_hidden but tray is disabled, we must show the window
-            // anyway. Without a tray icon, the dock is the only way back in.
-            // Keep in sync with `apply_startup_activation_policy` (macOS).
-            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
-            if should_force_show || !should_hide || !tray_available {
+            // An explicit hidden start is intentional even without a tray icon.
+            // macOS retains its Dock icon in this case, and CLI shortcuts can
+            // restore the app on Linux. Onboarding still overrides hidden mode.
+            if should_force_show || !should_hide {
                 show_main_window(&app_handle);
             }
 
