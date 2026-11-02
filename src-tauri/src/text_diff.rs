@@ -1,8 +1,10 @@
 //! Inline diff shown after a transcription result.
 //!
-//! Only lines that changed are returned. Within a changed line, shared words
-//! stay plain, deletions are marked, and insertions are marked. Identical
-//! text, an empty side, or a paste with no "before" text produces nothing.
+//! Only lines that changed are returned. Whitespace runs are collapsed to a
+//! single space before comparing, and highlights cover whole words. Shared
+//! words stay plain. A line whose words all changed is one deletion segment
+//! and one insertion segment, not a highlight per word. Identical text, an
+//! empty side, or a paste with no "before" text produces nothing.
 
 use serde::Serialize;
 
@@ -75,8 +77,8 @@ pub fn inline_diff(before: &str, after: &str) -> Option<DiffOverlay> {
 }
 
 fn changed_lines(before: &str, after: &str) -> Vec<DiffLine> {
-    let old_lines = split_lines(before);
-    let new_lines = split_lines(after);
+    let old_lines = normalized_lines(before);
+    let new_lines = normalized_lines(after);
     let ops = edits(&old_lines, &new_lines);
 
     let mut lines = Vec::new();
@@ -96,11 +98,11 @@ fn changed_lines(before: &str, after: &str) -> Vec<DiffLine> {
         while op_index < ops.len() && ops[op_index] != Edit::Keep {
             match ops[op_index] {
                 Edit::Delete => {
-                    deleted.push(old_lines[old_index]);
+                    deleted.push(old_lines[old_index].as_str());
                     old_index += 1;
                 }
                 Edit::Insert => {
-                    inserted.push(new_lines[new_index]);
+                    inserted.push(new_lines[new_index].as_str());
                     new_index += 1;
                 }
                 Edit::Keep => break,
@@ -110,7 +112,7 @@ fn changed_lines(before: &str, after: &str) -> Vec<DiffLine> {
 
         let paired = deleted.len().min(inserted.len());
         for pair in 0..paired {
-            let spans = word_diff(deleted[pair], inserted[pair]);
+            let spans = word_diff(&deleted[pair], &inserted[pair]);
             if spans.iter().any(|span| span.kind != DiffSpanKind::Same) {
                 lines.push(DiffLine { spans });
             }
@@ -142,28 +144,64 @@ fn visible_line(text: &str) -> String {
     }
 }
 
+/// Word diff of one already-normalized line.
+///
+/// Tokens are whitespace-separated words, so a one-character edit highlights
+/// the whole word. Spaces are separators, not tokens that can match: when no
+/// word is shared, the line is a single delete span plus a single insert span.
 fn word_diff(before: &str, after: &str) -> Vec<DiffSpan> {
-    let old_tokens = tokens(before);
-    let new_tokens = tokens(after);
-    let ops = edits(&old_tokens, &new_tokens);
+    let old_words: Vec<&str> = before.split_whitespace().collect();
+    let new_words: Vec<&str> = after.split_whitespace().collect();
+    let ops = edits(&old_words, &new_words);
+
     let mut spans = Vec::new();
     let mut old_index = 0;
     let mut new_index = 0;
-    for op in ops {
-        match op {
-            Edit::Keep => {
-                push_span(&mut spans, DiffSpanKind::Same, old_tokens[old_index]);
+    let mut op_index = 0;
+    while op_index < ops.len() {
+        if ops[op_index] == Edit::Keep {
+            let mut words = Vec::new();
+            while op_index < ops.len() && ops[op_index] == Edit::Keep {
+                words.push(old_words[old_index]);
                 old_index += 1;
                 new_index += 1;
+                op_index += 1;
             }
-            Edit::Delete => {
-                push_span(&mut spans, DiffSpanKind::Delete, old_tokens[old_index]);
-                old_index += 1;
+            let mut text = words.join(" ");
+            // A separator before this shared run belongs to the plain text,
+            // including when the run follows an insertion that consumed no
+            // old words.
+            if !spans.is_empty() {
+                text.insert(0, ' ');
             }
-            Edit::Insert => {
-                push_span(&mut spans, DiffSpanKind::Insert, new_tokens[new_index]);
-                new_index += 1;
+            if op_index < ops.len() {
+                text.push(' ');
             }
+            push_span(&mut spans, DiffSpanKind::Same, &text);
+            continue;
+        }
+
+        let mut deleted = Vec::new();
+        let mut inserted = Vec::new();
+        while op_index < ops.len() && ops[op_index] != Edit::Keep {
+            match ops[op_index] {
+                Edit::Delete => {
+                    deleted.push(old_words[old_index]);
+                    old_index += 1;
+                }
+                Edit::Insert => {
+                    inserted.push(new_words[new_index]);
+                    new_index += 1;
+                }
+                Edit::Keep => break,
+            }
+            op_index += 1;
+        }
+        if !deleted.is_empty() {
+            push_span(&mut spans, DiffSpanKind::Delete, &deleted.join(" "));
+        }
+        if !inserted.is_empty() {
+            push_span(&mut spans, DiffSpanKind::Insert, &inserted.join(" "));
         }
     }
     spans
@@ -185,31 +223,14 @@ fn push_span(spans: &mut Vec<DiffSpan>, kind: DiffSpanKind, text: &str) {
     });
 }
 
-fn split_lines(text: &str) -> Vec<&str> {
+/// Split on newlines and collapse each line's whitespace to single spaces.
+fn normalized_lines(text: &str) -> Vec<String> {
     text.split('\n')
-        .map(|line| line.strip_suffix('\r').unwrap_or(line))
+        .map(|line| {
+            let line = line.strip_suffix('\r').unwrap_or(line);
+            line.split_whitespace().collect::<Vec<_>>().join(" ")
+        })
         .collect()
-}
-
-fn tokens(text: &str) -> Vec<&str> {
-    let mut tokens = Vec::new();
-    let mut start = 0;
-    let mut chars = text.char_indices().peekable();
-    let mut in_space = None;
-    while let Some((index, ch)) = chars.next() {
-        let space = ch.is_whitespace();
-        if in_space != Some(space) {
-            if index > start {
-                tokens.push(&text[start..index]);
-            }
-            start = index;
-            in_space = Some(space);
-        }
-    }
-    if start < text.len() {
-        tokens.push(&text[start..]);
-    }
-    tokens
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -355,7 +376,69 @@ mod tests {
         let diff = result_overlay(false, "ignored selection", "hello um", Some("hello")).unwrap();
         assert_eq!(
             kinds(&diff.lines[0]),
-            vec![("same", "hello"), ("delete", " um")]
+            vec![("same", "hello "), ("delete", "um")]
+        );
+    }
+
+    #[test]
+    fn whole_line_replacement_is_one_segment() {
+        let diff = inline_diff("alpha beta gamma", "one two three").unwrap();
+        assert_eq!(diff.lines.len(), 1);
+        assert_eq!(
+            kinds(&diff.lines[0]),
+            vec![("delete", "alpha beta gamma"), ("insert", "one two three"),]
+        );
+    }
+
+    #[test]
+    fn whitespace_runs_collapse_before_compare() {
+        assert!(inline_diff("foo  bar", "foo bar").is_none());
+        assert!(inline_diff("foo\tbar", "foo bar").is_none());
+
+        let diff = inline_diff("The  quick   brown fox", "The slow brown fox").unwrap();
+        assert_eq!(
+            kinds(&diff.lines[0]),
+            vec![
+                ("same", "The "),
+                ("delete", "quick"),
+                ("insert", "slow"),
+                ("same", " brown fox"),
+            ]
+        );
+    }
+
+    #[test]
+    fn shared_words_keep_a_separator_around_the_change() {
+        let inserted = inline_diff("fox", "the fox").unwrap();
+        assert_eq!(
+            kinds(&inserted.lines[0]),
+            vec![("insert", "the"), ("same", " fox")]
+        );
+
+        let removed = inline_diff("the fox", "fox").unwrap();
+        assert_eq!(
+            kinds(&removed.lines[0]),
+            vec![("delete", "the"), ("same", " fox")]
+        );
+
+        let middle = inline_diff("alpha beta gamma delta", "alpha one two delta").unwrap();
+        assert_eq!(
+            kinds(&middle.lines[0]),
+            vec![
+                ("same", "alpha "),
+                ("delete", "beta gamma"),
+                ("insert", "one two"),
+                ("same", " delta"),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_change_inside_a_word_highlights_the_whole_word() {
+        let diff = inline_diff("change me", "changed me").unwrap();
+        assert_eq!(
+            kinds(&diff.lines[0]),
+            vec![("delete", "change"), ("insert", "changed"), ("same", " me"),]
         );
     }
 
