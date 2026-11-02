@@ -364,16 +364,22 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
         .map(|m| (m.id, m.name))
         .collect();
     downloaded_models.sort_by(|a, b| a.1.cmp(&b.1));
+    // The busy menu has no language submenu, so skip the detector lookup (a
+    // disk probe) on the dictation path. Going idle rebuilds it fresh.
     let model_manager = app.state::<Arc<ModelManager>>();
-    let language = model_manager
-        .get_model_info(&settings.selected_model)
-        .and_then(|model| {
-            language_menu(
-                &settings,
-                &model,
-                model_manager.language_detector_path().is_some(),
-            )
-        });
+    let language = if icon_state.is_busy() {
+        None
+    } else {
+        model_manager
+            .get_model_info(&settings.selected_model)
+            .and_then(|model| {
+                language_menu(
+                    &settings,
+                    &model,
+                    model_manager.language_detector_path().is_some(),
+                )
+            })
+    };
 
     TrayDesired {
         icon_path: get_icon_path(theme, icon_state, badge),
