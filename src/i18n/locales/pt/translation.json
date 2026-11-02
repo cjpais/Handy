@@ -916,6 +916,7 @@
     "title": "Novidades no Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Redefinir {{setting}} para o padrão",
     "loading": "Carregando...",
     "delete": "Excluir",
     "close": "Fechar",

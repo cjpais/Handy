@@ -916,6 +916,7 @@
     "title": "Новое в Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Сбросить «{{setting}}» к значению по умолчанию",
     "loading": "Загрузка...",
     "delete": "Удалить",
     "close": "Закрывать",

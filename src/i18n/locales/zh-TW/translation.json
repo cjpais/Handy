@@ -916,6 +916,7 @@
     "title": "Handy v{{version}} 新功能"
   },
   "common": {
+    "resetSetting": "將{{setting}}重設為預設值",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",

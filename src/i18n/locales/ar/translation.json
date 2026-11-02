@@ -916,6 +916,7 @@
     "title": "الجديد في Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "إعادة تعيين {{setting}} إلى القيمة الافتراضية",
     "loading": "جاري التحميل...",
     "delete": "حذف",
     "close": "إغلاق",

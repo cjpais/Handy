@@ -916,6 +916,7 @@
     "title": "Điểm mới trong Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "Đặt lại {{setting}} về mặc định",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "close": "Đóng",

@@ -916,6 +916,7 @@
     "title": "Neu in Handy v{{version}}"
   },
   "common": {
+    "resetSetting": "{{setting}} auf den Standardwert zurücksetzen",
     "loading": "Wird geladen...",
     "delete": "Löschen",
     "close": "Schließen",
