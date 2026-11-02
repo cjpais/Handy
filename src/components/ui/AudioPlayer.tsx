@@ -10,6 +10,10 @@ import React, {
 import { Play, Pause } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+const revokeBlobSource = (src: string | null) => {
+  if (src?.startsWith("blob:")) URL.revokeObjectURL(src);
+};
+
 interface AudioPlayerProps {
   /** Audio source URL. If not provided, onLoadRequest must be provided. */
   src?: string;
@@ -67,6 +71,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Own a resolved source immediately, before its state/effect can commit.
+  const pendingSrcRef = useRef<string | null>(null);
   const src = loadedSrc;
   const animationRef = useRef<number>();
   const dragTimeRef = useRef<number>(0);
@@ -205,12 +211,18 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
+    if (pendingSrcRef.current === loadedSrc) pendingSrcRef.current = null;
     return () => {
-      if (loadedSrc?.startsWith("blob:")) {
-        URL.revokeObjectURL(loadedSrc);
-      }
+      revokeBlobSource(loadedSrc);
     };
   }, [loadedSrc]);
+
+  useEffect(() => {
+    return () => {
+      revokeBlobSource(pendingSrcRef.current);
+      pendingSrcRef.current = null;
+    };
+  }, []);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
@@ -224,11 +236,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         // If no src loaded yet, request it
         if (!src && onLoadRequest) {
           setIsLoading(true);
-          const newSrc = await onLoadRequest();
-          setIsLoading(false);
-          if (newSrc) {
-            setLoadedSrc(newSrc);
-            // Playback will be triggered by the useEffect watching loadedSrc
+          try {
+            const newSrc = await onLoadRequest();
+            if (audioRef.current !== audio) {
+              revokeBlobSource(newSrc);
+              return;
+            }
+            if (newSrc) {
+              pendingSrcRef.current = newSrc;
+              setLoadedSrc(newSrc);
+              // Playback will be triggered by the useEffect watching loadedSrc
+            }
+          } finally {
+            if (audioRef.current === audio) setIsLoading(false);
           }
         } else if (src) {
           await audio.play();
