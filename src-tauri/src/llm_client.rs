@@ -1,5 +1,5 @@
 use crate::settings::{PostProcessApiFormat, PostProcessProvider};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -90,6 +90,19 @@ fn reasoning_disable_params(provider: &PostProcessProvider) -> ReasoningParams {
 fn reasoning_rejections() -> &'static Mutex<HashSet<String>> {
     static REJECTED: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
     REJECTED.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn reasoning_off_accepted() -> &'static Mutex<HashSet<String>> {
+    static ACCEPTED: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    ACCEPTED.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn supports_reasoning_off(key: &str) -> bool {
+    reasoning_off_accepted().lock().map(|set| set.contains(key)).unwrap_or(false)
+}
+
+fn remember_reasoning_off(key: String) {
+    if let Ok(mut set) = reasoning_off_accepted().lock() { set.insert(key); }
 }
 
 fn endpoint_key(provider: &PostProcessProvider, model: &str) -> String {
@@ -421,7 +434,11 @@ pub async fn send_chat_completion_with_schema(
 
     let key = endpoint_key(provider, model);
     let reasoning = if disable_reasoning && !is_known_rejected(&key) {
-        reasoning_disable_params(provider)
+        if supports_reasoning_off(&key) {
+            ReasoningParams { reasoning_effort: Some("off".to_string()), ..Default::default() }
+        } else {
+            reasoning_disable_params(provider)
+        }
     } else {
         ReasoningParams::default()
     };
@@ -448,41 +465,42 @@ pub async fn send_chat_completion_with_schema(
         sanitized_url(response.url())
     );
 
-    // A 400/422 on a request carrying reasoning-disable fields is almost always
-    // the endpoint rejecting those fields — retry once without them.
+    // Some gateways accept "off" but reject "none". Omitting the field
+    // may silently re-enable thinking, so retry the explicit alternative.
     if !status.is_success()
         && matches!(status.as_u16(), 400 | 422)
         && !request_body.reasoning.is_empty()
     {
-        let error_text = response.text().await.unwrap_or_else(|e| {
-            report_reqwest_error("Failed to read reasoning rejection response", &e)
-        });
-        info!(
-            "Endpoint rejected request with reasoning disabled (status {}): {}. Retrying without reasoning fields",
-            status, error_text
-        );
+        if request_body.reasoning.reasoning_effort.as_deref() == Some("none") {
+            request_body.reasoning.reasoning_effort = Some("off".to_string());
+            response = client
+                .post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| report_reqwest_error("Reasoning-off retry failed", &e))?;
+            status = response.status();
+            if status.is_success() {
+                remember_reasoning_off(key.clone());
+            }
+        }
 
-        request_body.reasoning = ReasoningParams::default();
-        response = client
-            .post(&url)
-            .json(&request_body)
-            .send()
-            .await
-            .map_err(|e| report_reqwest_error("HTTP retry failed", &e))?;
-        status = response.status();
-        debug!(
-            "Chat completion retry response received with status {} over {:?} from {}",
-            status,
-            response.version(),
-            sanitized_url(response.url())
-        );
-
-        if status.is_success() {
-            info!(
-                "Retry without reasoning fields succeeded; '{}' (model '{}') will skip them from now on",
-                sanitized_url_for_log(base_url), model
+        if !status.is_success() && matches!(status.as_u16(), 400 | 422) {
+            warn!(
+                "Endpoint rejected reasoning-disable parameters for model '{}'; plain retry may enable thinking",
+                model
             );
-            remember_rejection(key);
+            request_body.reasoning = ReasoningParams::default();
+            response = client
+                .post(&url)
+                .json(&request_body)
+                .send()
+                .await
+                .map_err(|e| report_reqwest_error("HTTP fallback retry failed", &e))?;
+            status = response.status();
+            if status.is_success() {
+                remember_rejection(key);
+            }
         }
     }
 
@@ -850,6 +868,16 @@ mod tests {
             ..Default::default()
         }
         .is_empty());
+    }
+
+    #[test]
+    fn working_off_variant_is_cached_per_endpoint_and_model() {
+        let p = provider("custom", "https://gateway.example/v1");
+        let key = endpoint_key(&p, "model-off");
+        assert!(!supports_reasoning_off(&key));
+        remember_reasoning_off(key.clone());
+        assert!(supports_reasoning_off(&key));
+        assert!(!supports_reasoning_off(&endpoint_key(&p, "other-model")));
     }
 
     #[test]
