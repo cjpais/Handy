@@ -39,14 +39,12 @@ type NonCreatableProps = {
 
 export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 
-const baseBackground =
-  "color-mix(in srgb, var(--color-mid-gray) 10%, transparent)";
+const baseBackground = "var(--color-wash)";
 const hoverBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 12%, transparent)";
+  "color-mix(in srgb, var(--color-logo-primary) 10%, transparent)";
 const focusBackground =
   "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
-const neutralBorder =
-  "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
+const neutralBorder = "var(--color-line-strong)";
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
@@ -79,16 +77,14 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   dropdownIndicator: (base, state) => ({
     ...base,
-    color: state.isFocused
-      ? "var(--color-logo-primary)"
-      : "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: state.isFocused ? "var(--color-logo-primary)" : "var(--color-ink-3)",
     ":hover": {
       color: "var(--color-logo-primary)",
     },
   }),
   clearIndicator: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: "var(--color-ink-3)",
     ":hover": {
       color: "var(--color-logo-primary)",
     },
@@ -98,8 +94,7 @@ const selectStyles: StylesConfig<SelectOption, false> = {
     zIndex: 30,
     backgroundColor: "var(--color-background)",
     color: "var(--color-text)",
-    border:
-      "1px solid color-mix(in srgb, var(--color-mid-gray) 30%, transparent)",
+    border: "1px solid var(--color-line)",
     boxShadow: "0 10px 30px rgba(15, 15, 15, 0.2)",
   }),
   option: (base, state) => ({
@@ -115,7 +110,7 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   placeholder: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 65%, transparent)",
+    color: "var(--color-ink-3)",
   }),
 };
 

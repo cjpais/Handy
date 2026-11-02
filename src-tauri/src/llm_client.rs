@@ -7,6 +7,7 @@ use std::collections::HashSet;
 use std::error::Error as StdError;
 use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
+use std::time::Duration;
 
 /// Environment variables consulted (in order) for an additional PEM bundle to
 /// trust when calling out to a custom OpenAI-compatible endpoint. The first
@@ -294,12 +295,48 @@ fn apply_custom_ca_certs(mut builder: reqwest::ClientBuilder) -> reqwest::Client
     builder
 }
 
+/// HTTP client with provider-specific headers. The headers are set per
+/// request, so every instance can share one connection pool and consecutive
+/// requests reuse an open connection instead of a new TCP + TLS handshake.
+struct ProviderClient {
+    client: &'static reqwest::Client,
+    headers: HeaderMap,
+}
+
+impl ProviderClient {
+    fn post(&self, url: &str) -> reqwest::RequestBuilder {
+        self.client.post(url).headers(self.headers.clone())
+    }
+
+    fn get(&self, url: &str) -> reqwest::RequestBuilder {
+        self.client.get(url).headers(self.headers.clone())
+    }
+}
+
+/// Process-wide client. A short idle timeout and TCP keepalive keep the pool
+/// from handing out connections that died during sleep or a network change.
+fn shared_client() -> Result<&'static reqwest::Client, String> {
+    static SHARED: OnceLock<reqwest::Client> = OnceLock::new();
+    if let Some(client) = SHARED.get() {
+        return Ok(client);
+    }
+    let client = apply_custom_ca_certs(
+        reqwest::Client::builder()
+            .pool_idle_timeout(Duration::from_secs(30))
+            .tcp_keepalive(Duration::from_secs(15))
+            .connect_timeout(Duration::from_secs(10)),
+    )
+    .build()
+    .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))?;
+    Ok(SHARED.get_or_init(|| client))
+}
+
 /// Create an HTTP client with provider-specific headers
-fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
-    let headers = build_headers(provider, api_key)?;
-    apply_custom_ca_certs(reqwest::Client::builder().default_headers(headers))
-        .build()
-        .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))
+fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<ProviderClient, String> {
+    Ok(ProviderClient {
+        client: shared_client()?,
+        headers: build_headers(provider, api_key)?,
+    })
 }
 
 /// Format a bounded error source chain.

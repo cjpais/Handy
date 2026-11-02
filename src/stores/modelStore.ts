@@ -3,20 +3,18 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
-import { toast } from "sonner";
+import i18n from "@/i18n";
+import { notify, useNoticeStore } from "@/stores/noticeStore";
 
-interface DownloadProgress {
+const downloadNoticeKey = (modelId: string) => `model-download:${modelId}`;
+
+export interface DownloadProgress {
   model_id: string;
   downloaded: number;
   total: number;
   percentage: number;
-}
-
-interface DownloadStats {
-  startTime: number;
-  lastUpdate: number;
-  totalDownloaded: number;
-  speed: number; // MB/s
+  /** Measured by the backend over this transfer only; null until known. */
+  bytes_per_sec: number | null;
 }
 
 // Using Record instead of Set/Map for Immer compatibility
@@ -25,9 +23,7 @@ interface ModelsStore {
   currentModel: string;
   downloadingModels: Record<string, true>;
   verifyingModels: Record<string, true>;
-  extractingModels: Record<string, true>;
   downloadProgress: Record<string, DownloadProgress>;
-  downloadStats: Record<string, DownloadStats>;
   loading: boolean;
   error: string | null;
   initialized: boolean;
@@ -45,7 +41,6 @@ interface ModelsStore {
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
   isModelVerifying: (modelId: string) => boolean;
-  isModelExtracting: (modelId: string) => boolean;
   getDownloadProgress: (modelId: string) => DownloadProgress | undefined;
 
   // Internal setters
@@ -61,9 +56,7 @@ export const useModelStore = create<ModelsStore>()(
     currentModel: "",
     downloadingModels: {},
     verifyingModels: {},
-    extractingModels: {},
     downloadProgress: {},
-    downloadStats: {},
     loading: true,
     error: null,
     initialized: false,
@@ -161,6 +154,7 @@ export const useModelStore = create<ModelsStore>()(
 
     downloadModel: async (modelId: string) => {
       try {
+        useNoticeStore.getState().clearLocal(downloadNoticeKey(modelId));
         set({ error: null });
         set(
           produce((state) => {
@@ -182,7 +176,6 @@ export const useModelStore = create<ModelsStore>()(
             produce((state) => {
               delete state.downloadingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
             }),
           );
         }
@@ -194,7 +187,6 @@ export const useModelStore = create<ModelsStore>()(
           produce((state) => {
             delete state.downloadingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
         return false;
@@ -210,7 +202,6 @@ export const useModelStore = create<ModelsStore>()(
             produce((state) => {
               delete state.downloadingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
             }),
           );
 
@@ -257,10 +248,6 @@ export const useModelStore = create<ModelsStore>()(
       return modelId in get().verifyingModels;
     },
 
-    isModelExtracting: (modelId: string) => {
-      return modelId in get().extractingModels;
-    },
-
     getDownloadProgress: (modelId: string) => {
       return get().downloadProgress[modelId];
     },
@@ -281,42 +268,6 @@ export const useModelStore = create<ModelsStore>()(
             state.downloadProgress[progress.model_id] = progress;
           }),
         );
-
-        // Update download stats for speed calculation
-        const now = Date.now();
-        set(
-          produce((state) => {
-            const current = state.downloadStats[progress.model_id];
-
-            if (!current) {
-              state.downloadStats[progress.model_id] = {
-                startTime: now,
-                lastUpdate: now,
-                totalDownloaded: progress.downloaded,
-                speed: 0,
-              };
-            } else {
-              const timeDiff = (now - current.lastUpdate) / 1000;
-              const bytesDiff = progress.downloaded - current.totalDownloaded;
-
-              if (timeDiff > 0.5) {
-                const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
-                const validCurrentSpeed = Math.max(0, currentSpeed);
-                const smoothedSpeed =
-                  current.speed > 0
-                    ? current.speed * 0.8 + validCurrentSpeed * 0.2
-                    : validCurrentSpeed;
-
-                state.downloadStats[progress.model_id] = {
-                  startTime: current.startTime,
-                  lastUpdate: now,
-                  totalDownloaded: progress.downloaded,
-                  speed: Math.max(0, smoothedSpeed),
-                };
-              }
-            }
-          }),
-        );
       });
 
       listen<string>("model-download-complete", (event) => {
@@ -326,7 +277,6 @@ export const useModelStore = create<ModelsStore>()(
             delete state.downloadingModels[modelId];
             delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
         get().loadModels();
@@ -341,11 +291,14 @@ export const useModelStore = create<ModelsStore>()(
               delete state.downloadingModels[modelId];
               delete state.verifyingModels[modelId];
               delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
               state.error = error;
             }),
           );
-          toast.error(error);
+          notify({
+            title: i18n.t("errors.modelDownloadFailed"),
+            detail: error,
+            key: downloadNoticeKey(modelId),
+          });
         },
       );
 
@@ -367,38 +320,6 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-extraction-started", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            state.extractingModels[modelId] = true;
-          }),
-        );
-      });
-
-      listen<string>("model-extraction-completed", (event) => {
-        const modelId = event.payload;
-        set(
-          produce((state) => {
-            delete state.extractingModels[modelId];
-          }),
-        );
-        get().loadModels();
-      });
-
-      listen<{ model_id: string; error: string }>(
-        "model-extraction-failed",
-        (event) => {
-          const modelId = event.payload.model_id;
-          set(
-            produce((state) => {
-              delete state.extractingModels[modelId];
-              state.error = `Failed to extract model: ${event.payload.error}`;
-            }),
-          );
-        },
-      );
-
       listen<string>("model-download-cancelled", (event) => {
         const modelId = event.payload;
         set(
@@ -406,7 +327,6 @@ export const useModelStore = create<ModelsStore>()(
             delete state.downloadingModels[modelId];
             delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
-            delete state.downloadStats[modelId];
           }),
         );
       });

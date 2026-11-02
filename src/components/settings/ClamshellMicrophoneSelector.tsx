@@ -92,6 +92,9 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
             onOpen={refreshAudioDevices}
           />
           <ResetButton
+            ariaLabel={t("common.resetSetting", {
+              setting: t("settings.debug.clamshellMicrophone.title"),
+            })}
             onClick={handleReset}
             disabled={isUpdating("clamshell_microphone") || isLoading}
           />

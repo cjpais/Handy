@@ -153,6 +153,10 @@ pub struct LoadedInfo {
     pub on_gpu: bool,
     pub capabilities: Capabilities,
     pub supports_initial_prompt: bool,
+    /// Whether the model handles audio longer than its native window in one
+    /// run (whisper today); other models' long audio is chunked by Handy.
+    pub supports_long_form: bool,
+    pub supports_vocabulary: bool,
 }
 
 /// Encode one frame. Refuses a section the reader would refuse, so an
