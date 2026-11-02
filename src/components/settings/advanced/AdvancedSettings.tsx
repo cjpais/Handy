@@ -72,7 +72,7 @@ export const AdvancedSettings: React.FC = () => {
             descriptionMode="tooltip"
             grouped={true}
           />
-          <ShortcutPassthrough descriptionMode="inline" grouped={true} />
+          <ShortcutPassthrough descriptionMode="tooltip" grouped={true} />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
           <LazyStreamClose descriptionMode="tooltip" grouped={true} />
           <VadBackendSelector descriptionMode="tooltip" grouped={true} />
