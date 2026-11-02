@@ -972,6 +972,13 @@ pub fn run(cli_args: CliArgs) {
                 return Ok(());
             }
 
+            let mut settings = get_settings(app.handle());
+            let should_hide = settings.start_hidden || cli_args.start_hidden;
+            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+            // With no tray, the window must remain accessible even when start-hidden
+            // was requested. Keep in sync with apply_startup_activation_policy (macOS).
+            let start_to_tray = should_hide && tray_available;
+
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
@@ -983,17 +990,31 @@ pub fn run(cli_args: CliArgs) {
                     .maximizable(true)
                     .visible(false);
 
+            // The first WebView2 controller needs a visible host window on some
+            // Windows systems. Avoid taking focus until the final show decision.
+            #[cfg(target_os = "windows")]
+            {
+                win_builder = win_builder.visible(true).focused(false);
+            }
+
             if let Some(data_dir) = portable::data_dir() {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            // Only used on macOS (to size it) and Windows (to disable WebView2
-            // browser accelerators).
+            // Only used on macOS (to size it) and Windows (to hide it after
+            // controller creation and disable WebView2 browser accelerators).
             #[cfg_attr(
                 not(any(target_os = "macos", target_os = "windows")),
                 allow(unused_variables)
             )]
             let main_window = win_builder.build()?;
+
+            #[cfg(target_os = "windows")]
+            if start_to_tray {
+                if let Err(error) = main_window.hide() {
+                    log::error!("Failed to hide main window at startup: {error}");
+                }
+            }
 
             // macOS draws the title bar inside the inner size; grow the window to fit it.
             #[cfg(target_os = "macos")]
@@ -1032,12 +1053,9 @@ pub fn run(cli_args: CliArgs) {
                 });
             }
 
-            let mut settings = get_settings(app.handle());
-
-            // Apply the persisted appearance theme to the native title bar before
-            // the window is shown, so it matches the in-app palette without a flash
-            // of the wrong theme. See `apply_window_theme` for what this does per
-            // platform.
+            // Apply the persisted appearance theme before the final show decision.
+            // Windows may briefly show the default theme during controller creation.
+            // See `apply_window_theme` for what this does per platform.
             #[cfg(any(target_os = "windows", target_os = "macos"))]
             shortcut::apply_window_theme(app.handle(), settings.theme);
 
@@ -1097,14 +1115,9 @@ pub fn run(cli_args: CliArgs) {
             // Show main window only if not starting hidden.
             // CLI --start-hidden flag overrides the setting.
             // But if permission onboarding is required, always show the window.
-            let should_hide = settings.start_hidden || cli_args.start_hidden;
             let should_force_show = should_force_show_permissions_window(&app_handle);
 
-            // If start_hidden but tray is disabled, we must show the window
-            // anyway. Without a tray icon, the dock is the only way back in.
-            // Keep in sync with `apply_startup_activation_policy` (macOS).
-            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
-            if should_force_show || !should_hide || !tray_available {
+            if should_force_show || !start_to_tray {
                 show_main_window(&app_handle);
             }
 
