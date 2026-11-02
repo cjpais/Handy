@@ -76,6 +76,39 @@ pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
     Ok(())
 }
 
+/// Use the Linux desktop file handler for local directory paths. Tauri
+/// opener may otherwise delegate file URLs to the default web browser.
+#[cfg(target_os = "linux")]
+fn linux_directory_command(path: &std::path::Path) -> std::process::Command {
+    let mut command = std::process::Command::new("gio");
+    command.arg("open").arg(path);
+    command
+}
+
+fn open_directory(app: &AppHandle, path: &str) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        match linux_directory_command(std::path::Path::new(path)).status() {
+            Ok(status) if status.success() => return Ok(()),
+            Ok(status) => return Err(format!("gio open exited with {status}")),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.to_string()),
+        }
+    }
+    app.opener().open_path(path, None::<String>).map_err(|error| error.to_string())
+}
+
+#[cfg(all(test, target_os = "linux"))]
+#[test]
+fn linux_directory_command_preserves_spaces_without_a_shell() {
+    let command = linux_directory_command(std::path::Path::new("/tmp/a directory"));
+    assert_eq!(command.get_program(), std::ffi::OsStr::new("gio"));
+    assert_eq!(
+        command.get_args().collect::<Vec<_>>(),
+        vec![std::ffi::OsStr::new("open"), std::ffi::OsStr::new("/tmp/a directory")]
+    );
+}
+
 #[specta::specta]
 #[tauri::command]
 pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
@@ -85,8 +118,7 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
     let recordings_dir = app_data_dir.join("recordings");
 
     let path = recordings_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
+    open_directory(&app, &path)
         .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
 
     Ok(())
@@ -99,8 +131,7 @@ pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
     let path = log_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
+    open_directory(&app, &path)
         .map_err(|e| format!("Failed to open log directory: {}", e))?;
 
     Ok(())
@@ -113,8 +144,7 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
 
     let path = app_data_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
+    open_directory(&app, &path)
         .map_err(|e| format!("Failed to open app data directory: {}", e))?;
 
     Ok(())
