@@ -9,7 +9,8 @@
     "cancel": "Cancel",
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input",
     "language": "Language",
-    "autoLanguage": "Auto"
+    "autoLanguage": "Auto",
+    "otherLanguages": "Other Languages"
   },
   "sidebar": {
     "general": "General",

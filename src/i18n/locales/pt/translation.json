@@ -9,7 +9,8 @@
     "cancel": "Cancelar",
     "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input",
     "language": "Idioma",
-    "autoLanguage": "Automático"
+    "autoLanguage": "Automático",
+    "otherLanguages": "Outros idiomas"
   },
   "sidebar": {
     "general": "Geral",

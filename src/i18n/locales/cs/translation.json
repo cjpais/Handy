@@ -9,7 +9,8 @@
     "cancel": "Zrušit",
     "secureInputWarning": "⚠ Zkratky blokuje Secure Input",
     "language": "Jazyk",
-    "autoLanguage": "Automaticky"
+    "autoLanguage": "Automaticky",
+    "otherLanguages": "Další jazyky"
   },
   "sidebar": {
     "general": "Obecné",

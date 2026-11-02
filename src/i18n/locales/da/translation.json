@@ -9,7 +9,8 @@
     "cancel": "Annuller",
     "secureInputWarning": "⚠ Genveje blokeret af Secure Input",
     "language": "Sprog",
-    "autoLanguage": "Automatisk"
+    "autoLanguage": "Automatisk",
+    "otherLanguages": "Andre sprog"
   },
   "sidebar": {
     "general": "Generelt",

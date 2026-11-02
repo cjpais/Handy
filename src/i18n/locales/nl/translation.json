@@ -9,7 +9,8 @@
     "cancel": "Annuleren",
     "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input",
     "language": "Taal",
-    "autoLanguage": "Automatisch"
+    "autoLanguage": "Automatisch",
+    "otherLanguages": "Andere talen"
   },
   "sidebar": {
     "general": "Algemeen",

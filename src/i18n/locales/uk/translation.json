@@ -9,7 +9,8 @@
     "cancel": "Скасувати",
     "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input",
     "language": "Мова",
-    "autoLanguage": "Авто"
+    "autoLanguage": "Авто",
+    "otherLanguages": "Інші мови"
   },
   "sidebar": {
     "general": "Загальні",

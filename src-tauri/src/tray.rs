@@ -21,7 +21,7 @@
 //! icon/menu/tooltip, so those must only ever be set through the applier.
 
 use crate::managers::history::{HistoryEntry, HistoryManager};
-use crate::managers::model::ModelManager;
+use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::notices::{self, NoticeCode};
 use crate::settings;
@@ -74,17 +74,19 @@ struct MenuInputs {
     language: Option<LanguageMenu>,
 }
 
-/// What the language submenu shows. Codes are language identities, the
-/// spelling `selected_language` is saved in.
+/// What the language submenu shows: `(code, name)` entries, with codes as
+/// language identities, the spelling `selected_language` is saved in.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct LanguageMenu {
     /// The checked entry: `auto` or a code.
     active: String,
-    /// Auto can't work for this model and these languages.
-    auto_unavailable: bool,
-    /// The person's spoken languages the model hears, in their order.
-    spoken: Vec<(String, String)>,
-    /// The model's other languages, by name.
+    /// Auto works for this model and these languages. When it doesn't, or
+    /// needs the detector download, it's shown greyed out, as in settings.
+    auto_enabled: bool,
+    /// The person's spoken languages the model hears, in their order, plus
+    /// the active language when it isn't one of them.
+    main: Vec<(String, String)>,
+    /// The model's other languages, by name, in an "Other Languages" submenu.
     others: Vec<(String, String)>,
 }
 
@@ -260,6 +262,12 @@ pub fn update_tray_menu(app: &AppHandle) {
     sync_tray(app);
 }
 
+/// Rebuild the menu even if nothing it shows changed: clicking a check item
+/// toggles it natively, so re-picking the active one would leave it unchecked.
+pub fn rebuild_tray_menu(app: &AppHandle) {
+    sync_tray_with(app, |inner| inner.applied_menu = None);
+}
+
 /// Records the current desired tray state and schedules one apply on the main
 /// thread (or lets an already-pending apply pick it up). Never blocks on the
 /// main thread.
@@ -356,7 +364,16 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
         .map(|m| (m.id, m.name))
         .collect();
     downloaded_models.sort_by(|a, b| a.1.cmp(&b.1));
-    let language = language_menu(&settings, &app.state::<Arc<ModelManager>>());
+    let model_manager = app.state::<Arc<ModelManager>>();
+    let language = model_manager
+        .get_model_info(&settings.selected_model)
+        .and_then(|model| {
+            language_menu(
+                &settings,
+                &model,
+                model_manager.language_detector_path().is_some(),
+            )
+        });
 
     TrayDesired {
         icon_path: get_icon_path(theme, icon_state, badge),
@@ -375,19 +392,30 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
     }
 }
 
-/// The language submenu for the selected model, mirroring the settings
-/// window's picker: what's checked is what transcription will use.
+/// The language submenu for `model`, mirroring the settings window's picker:
+/// what's checked is what transcription will use. `None` when there's
+/// nothing to choose between.
 fn language_menu(
     settings: &settings::AppSettings,
-    model_manager: &ModelManager,
+    model: &ModelInfo,
+    detector_ready: bool,
 ) -> Option<LanguageMenu> {
     use crate::catalog::language_identity;
     use crate::language_detection::LanguageStatus;
 
-    let model = model_manager.get_model_info(&settings.selected_model)?;
     if !model.supports_language_selection {
         return None;
     }
+
+    let (active, auto_enabled) =
+        match crate::language_detection::status_for(settings, Some(model), detector_ready) {
+            LanguageStatus::Auto => ("auto".to_string(), true),
+            LanguageStatus::Selected { language } => (language_identity(&language), true),
+            LanguageStatus::DetectorMissing { fallback: language }
+            | LanguageStatus::AutoUnavailable { language, .. } => {
+                (language_identity(&language), false)
+            }
+        };
 
     let mut codes: Vec<String> = Vec::new();
     for code in model
@@ -399,43 +427,33 @@ fn language_menu(
             codes.push(code);
         }
     }
-    let named = |code: &String| (code.clone(), crate::languages::language_name(code));
 
-    let spoken_identities: Vec<String> = settings
+    let mut main: Vec<String> = Vec::new();
+    let spoken = settings
         .spoken_languages
         .iter()
-        .map(|c| language_identity(c))
-        .collect();
-    let mut spoken: Vec<(String, String)> = Vec::new();
-    for code in &spoken_identities {
-        if codes.contains(code) && !spoken.iter().any(|(c, _)| c == code) {
-            spoken.push(named(code));
+        .map(|c| language_identity(c));
+    for code in spoken.chain((active != "auto").then(|| active.clone())) {
+        if codes.contains(&code) && !main.contains(&code) {
+            main.push(code);
         }
     }
+
+    let named = |code: &String| (code.clone(), crate::languages::language_name(code));
     let mut others: Vec<(String, String)> = codes
         .iter()
-        .filter(|code| !spoken_identities.contains(code))
+        .filter(|code| !main.contains(code))
         .map(named)
         .collect();
     others.sort_by(|a, b| a.1.cmp(&b.1));
 
-    let status = crate::language_detection::status_for(
-        settings,
-        Some(&model),
-        model_manager.language_detector_path().is_some(),
-    );
-    let (active, auto_unavailable) = match status {
-        LanguageStatus::Selected { language } => (language_identity(&language), false),
-        LanguageStatus::Auto | LanguageStatus::DetectorMissing { .. } => {
-            ("auto".to_string(), false)
-        }
-        LanguageStatus::AutoUnavailable { language, .. } => (language_identity(&language), true),
-    };
-
+    if usize::from(auto_enabled) + main.len() + others.len() < 2 {
+        return None;
+    }
     Some(LanguageMenu {
         active,
-        auto_unavailable,
-        spoken,
+        auto_enabled,
+        main: main.iter().map(named).collect(),
         others,
     })
 }
@@ -445,13 +463,8 @@ fn language_submenu(
     strings: &crate::tray_i18n::TrayStrings,
     menu: &LanguageMenu,
 ) -> tauri::Result<Submenu<tauri::Wry>> {
-    let auto_label = if strings.auto_language.is_empty() {
-        get_tray_translations(Some("en".to_string())).auto_language
-    } else {
-        strings.auto_language.clone()
-    };
     let active_label = if menu.active == "auto" {
-        auto_label.clone()
+        strings.auto_language.clone()
     } else {
         crate::languages::language_name(&menu.active)
     };
@@ -472,15 +485,20 @@ fn language_submenu(
         )
     };
 
-    submenu.append(&item("auto", &auto_label, !menu.auto_unavailable)?)?;
-    for group in [&menu.spoken, &menu.others] {
-        if group.is_empty() {
-            continue;
-        }
+    submenu.append(&item("auto", &strings.auto_language, menu.auto_enabled)?)?;
+    if !menu.main.is_empty() {
         submenu.append(&PredefinedMenuItem::separator(app)?)?;
-        for (code, name) in group {
+        for (code, name) in &menu.main {
             submenu.append(&item(code, name, true)?)?;
         }
+    }
+    if !menu.others.is_empty() {
+        submenu.append(&PredefinedMenuItem::separator(app)?)?;
+        let others = Submenu::with_id(app, "language_others", &strings.other_languages, true)?;
+        for (code, name) in &menu.others {
+            others.append(&item(code, name, true)?)?;
+        }
+        submenu.append(&others)?;
     }
     Ok(submenu)
 }
@@ -839,10 +857,102 @@ pub fn copy_last_transcript(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        get_icon_path, last_transcript_text, load_tray_icon, AppTheme, MenuInputs, TrayDesired,
-        TrayIconState,
+        get_icon_path, language_menu, last_transcript_text, load_tray_icon, AppTheme, MenuInputs,
+        TrayDesired, TrayIconState,
     };
     use crate::managers::history::HistoryEntry;
+    use crate::managers::model::{ModelInfo, ModelSource};
+    use crate::settings::{get_default_settings, AppSettings};
+
+    fn codes(list: &str) -> Vec<String> {
+        list.split_whitespace().map(String::from).collect()
+    }
+
+    fn model(languages: &str, detects: bool) -> ModelInfo {
+        let supported_languages = codes(languages);
+        ModelInfo {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            description: String::new(),
+            filename: String::new(),
+            source: ModelSource::Url {
+                url: String::new(),
+                sha256: None,
+            },
+            size_mb: 0,
+            is_downloaded: true,
+            is_downloading: false,
+            partial_size: 0,
+            accuracy_score: 0.0,
+            speed_score: 0.0,
+            supports_translation: false,
+            is_recommended: false,
+            supports_language_selection: supported_languages.len() > 1,
+            supported_languages,
+            is_custom: false,
+            supports_streaming: false,
+            supports_language_detection: detects,
+        }
+    }
+
+    fn settings(intent: &str, spoken: &str) -> AppSettings {
+        let mut settings = get_default_settings();
+        settings.selected_language = intent.to_string();
+        settings.spoken_languages = codes(spoken);
+        settings
+    }
+
+    fn entries(list: &[(String, String)]) -> Vec<&str> {
+        list.iter().map(|(code, _)| code.as_str()).collect()
+    }
+
+    #[test]
+    fn language_menu_leads_with_spoken_languages() {
+        let menu = language_menu(
+            &settings("auto", "fr en"),
+            &model("en de fr ja", true),
+            true,
+        )
+        .expect("menu");
+        assert_eq!(menu.active, "auto");
+        assert!(menu.auto_enabled);
+        assert_eq!(entries(&menu.main), ["fr", "en"]);
+        // Others by English name: German, Japanese.
+        assert_eq!(entries(&menu.others), ["de", "ja"]);
+    }
+
+    #[test]
+    fn language_menu_shows_the_active_language_outside_spoken_ones() {
+        let menu =
+            language_menu(&settings("ja", "en"), &model("en de ja", true), true).expect("menu");
+        assert_eq!(menu.active, "ja");
+        assert_eq!(entries(&menu.main), ["en", "ja"]);
+        assert_eq!(entries(&menu.others), ["de"]);
+    }
+
+    #[test]
+    fn language_menu_collapses_spellings() {
+        let menu = language_menu(&settings("auto", "no"), &model("en-US nb no", true), true)
+            .expect("menu");
+        assert_eq!(entries(&menu.main), ["nb"]);
+        assert_eq!(entries(&menu.others), ["en"]);
+    }
+
+    #[test]
+    fn language_menu_checks_the_fallback_without_the_detector() {
+        let menu = language_menu(&settings("auto", "en fr"), &model("en fr de", false), false)
+            .expect("menu");
+        assert_eq!(menu.active, "en");
+        assert!(!menu.auto_enabled);
+    }
+
+    #[test]
+    fn language_menu_hidden_without_a_choice() {
+        assert_eq!(
+            language_menu(&settings("auto", "en"), &model("en", false), true),
+            None
+        );
+    }
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
         HistoryEntry {

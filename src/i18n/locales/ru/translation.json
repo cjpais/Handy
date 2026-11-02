@@ -9,7 +9,8 @@
     "cancel": "Отмена",
     "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input",
     "language": "Язык",
-    "autoLanguage": "Авто"
+    "autoLanguage": "Авто",
+    "otherLanguages": "Другие языки"
   },
   "sidebar": {
     "general": "Общие",

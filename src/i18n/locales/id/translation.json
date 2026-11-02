@@ -9,7 +9,8 @@
     "cancel": "Batal",
     "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input",
     "language": "Bahasa",
-    "autoLanguage": "Otomatis"
+    "autoLanguage": "Otomatis",
+    "otherLanguages": "Bahasa Lain"
   },
   "sidebar": {
     "general": "Umum",

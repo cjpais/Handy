@@ -9,7 +9,8 @@
     "cancel": "取消",
     "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止",
     "language": "语言",
-    "autoLanguage": "自动"
+    "autoLanguage": "自动",
+    "otherLanguages": "其他语言"
   },
   "sidebar": {
     "general": "通用",

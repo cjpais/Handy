@@ -9,7 +9,8 @@
     "cancel": "Отказ",
     "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input",
     "language": "Език",
-    "autoLanguage": "Автоматично"
+    "autoLanguage": "Автоматично",
+    "otherLanguages": "Други езици"
   },
   "sidebar": {
     "general": "Общи",

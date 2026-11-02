@@ -9,7 +9,8 @@
     "cancel": "Annulla",
     "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
     "language": "Lingua",
-    "autoLanguage": "Automatico"
+    "autoLanguage": "Automatico",
+    "otherLanguages": "Altre lingue"
   },
   "sidebar": {
     "general": "Generale",

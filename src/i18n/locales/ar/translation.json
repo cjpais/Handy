@@ -9,7 +9,8 @@
     "cancel": "إلغاء",
     "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
     "language": "اللغة",
-    "autoLanguage": "تلقائي"
+    "autoLanguage": "تلقائي",
+    "otherLanguages": "لغات أخرى"
   },
   "sidebar": {
     "general": "عام",

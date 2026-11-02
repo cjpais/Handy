@@ -9,7 +9,8 @@
     "cancel": "Avbryt",
     "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input",
     "language": "Språk",
-    "autoLanguage": "Automatiskt"
+    "autoLanguage": "Automatiskt",
+    "otherLanguages": "Andra språk"
   },
   "sidebar": {
     "general": "Allmänt",

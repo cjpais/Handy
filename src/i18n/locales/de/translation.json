@@ -9,7 +9,8 @@
     "cancel": "Abbrechen",
     "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert",
     "language": "Sprache",
-    "autoLanguage": "Automatisch"
+    "autoLanguage": "Automatisch",
+    "otherLanguages": "Weitere Sprachen"
   },
   "sidebar": {
     "general": "Allgemein",

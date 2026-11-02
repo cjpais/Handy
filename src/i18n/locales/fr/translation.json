@@ -9,7 +9,8 @@
     "cancel": "Annuler",
     "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input",
     "language": "Langue",
-    "autoLanguage": "Automatique"
+    "autoLanguage": "Automatique",
+    "otherLanguages": "Autres langues"
   },
   "sidebar": {
     "general": "Général",

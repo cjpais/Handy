@@ -9,7 +9,8 @@
     "cancel": "Cancel·la",
     "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura",
     "language": "Llengua",
-    "autoLanguage": "Automàtica"
+    "autoLanguage": "Automàtica",
+    "otherLanguages": "Altres llengües"
   },
   "sidebar": {
     "general": "General",

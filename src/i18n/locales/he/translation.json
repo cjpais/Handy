@@ -9,7 +9,8 @@
     "cancel": "ביטול",
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input",
     "language": "שפה",
-    "autoLanguage": "אוטומטי"
+    "autoLanguage": "אוטומטי",
+    "otherLanguages": "שפות אחרות"
   },
   "sidebar": {
     "general": "כללי",

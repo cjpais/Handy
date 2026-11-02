@@ -9,7 +9,8 @@
     "cancel": "İptal",
     "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor",
     "language": "Dil",
-    "autoLanguage": "Otomatik"
+    "autoLanguage": "Otomatik",
+    "otherLanguages": "Diğer Diller"
   },
   "sidebar": {
     "general": "Genel",
