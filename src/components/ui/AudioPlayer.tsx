@@ -250,10 +250,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
 
   const handleSliderMouseDown = () => {
+    dragTimeRef.current = currentTime;
     setIsDragging(true);
   };
 
   const handleSliderTouchStart = () => {
+    dragTimeRef.current = currentTime;
     setIsDragging(true);
   };
 
