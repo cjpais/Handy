@@ -725,6 +725,7 @@ pub fn run(cli_args: CliArgs) {
             secure_input::run_keyboard_diagnostic,
             trigger_update_check,
             show_main_window_command,
+            actions::show_post_process_warning,
             commands::cancel_operation,
             commands::is_portable,
             commands::is_update_checks_locked,

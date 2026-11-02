@@ -567,6 +567,12 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Show a warning independently of the settings window, which is usually hidden.
+ */
+async showPostProcessWarning(title: string, message: string) : Promise<void> {
+    await TAURI_INVOKE("show_post_process_warning", { title, message });
+},
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },

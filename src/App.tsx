@@ -96,6 +96,7 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const postProcessWarningOpen = useRef(false);
   const settingsScrollRef = useRef<HTMLDivElement>(null);
   // Reset the scroll position whenever the active section changes.
   useLayoutEffect(() => {
@@ -187,6 +188,29 @@ function App() {
       toast.error(t("errors.pasteFailedTitle"), {
         description: t("errors.pasteFailed"),
       });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // Unlike a toast, a native warning is visible when dictating with settings
+  // hidden. The backend emits this after paste, so opening the dialog does
+  // not redirect that completed paste to the warning itself.
+  useEffect(() => {
+    const unlisten = listen("post-process-error", async () => {
+      if (postProcessWarningOpen.current) return;
+      postProcessWarningOpen.current = true;
+      try {
+        await commands.showPostProcessWarning(
+          t("errors.postProcessFailedTitle"),
+          t("errors.postProcessFailed"),
+        );
+      } catch (error) {
+        console.error("Failed to show post-processing warning", error);
+      } finally {
+        postProcessWarningOpen.current = false;
+      }
     });
     return () => {
       unlisten.then((fn) => fn());

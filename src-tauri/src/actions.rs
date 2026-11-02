@@ -26,7 +26,19 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use tauri_specta::Event;
+
+/// Show a warning independently of the settings window, which is usually hidden.
+#[tauri::command]
+#[specta::specta]
+pub async fn show_post_process_warning(app: AppHandle, title: String, message: String) {
+    app.dialog()
+        .message(message)
+        .title(title)
+        .kind(MessageDialogKind::Warning)
+        .blocking_show();
+}
 
 /// How a dictation ended.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -175,17 +187,22 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
     style == OverlayStyle::Live && is_streaming
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+// Keep skipped/empty responses separate from failed requests. Errors are logged
+// here; callers only need the failure flag, not a provider response to display.
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Result<Option<String>, ()> {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
-        return None;
+        return Ok(None);
     }
 
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
             debug!("Post-processing enabled but no provider is selected");
-            return None;
+            return Ok(None);
         }
     };
 
@@ -200,14 +217,14 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             "Post-processing skipped because provider '{}' has no model configured",
             provider.id
         );
-        return None;
+        return Ok(None);
     }
 
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
-            return None;
+            return Ok(None);
         }
     };
 
@@ -222,13 +239,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 "Post-processing skipped because prompt '{}' was not found",
                 selected_prompt_id
             );
-            return None;
+            return Ok(None);
         }
     };
 
     if prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
-        return None;
+        return Ok(None);
     }
 
     debug!(
@@ -261,7 +278,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                     debug!(
                         "Apple Intelligence selected but not currently available on this device"
                     );
-                    return None;
+                    return Ok(None);
                 }
 
                 let token_limit = model.trim().parse::<i32>().unwrap_or(0);
@@ -273,19 +290,19 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                     Ok(result) => {
                         if result.trim().is_empty() {
                             debug!("Apple Intelligence returned an empty response");
-                            None
+                            Ok(None)
                         } else {
                             let result = strip_invisible_chars(&result);
                             debug!(
                                 "Apple Intelligence post-processing succeeded. Output length: {} chars",
                                 result.len()
                             );
-                            Some(result)
+                            Ok(Some(result))
                         }
                     }
                     Err(err) => {
                         error!("Apple Intelligence post-processing failed: {}", err);
-                        None
+                        Err(())
                     }
                 };
             }
@@ -293,7 +310,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
             {
                 debug!("Apple Intelligence provider selected on unsupported platform");
-                return None;
+                return Ok(None);
             }
         }
 
@@ -335,10 +352,10 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                                 provider.id,
                                 result.len()
                             );
-                            return Some(result);
+                            return Ok(Some(result));
                         } else {
                             error!("Structured output response missing 'transcription' field");
-                            return Some(strip_invisible_chars(content));
+                            return Ok(Some(strip_invisible_chars(content)));
                         }
                     }
                     Err(e) => {
@@ -346,13 +363,13 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                             "Failed to parse structured output JSON: {}. Returning raw content.",
                             e
                         );
-                        return Some(strip_invisible_chars(content));
+                        return Ok(Some(strip_invisible_chars(content)));
                     }
                 }
             }
             Ok(None) => {
                 error!("LLM API response has no content");
-                return None;
+                return Ok(None);
             }
             Err(e) => {
                 warn!(
@@ -384,11 +401,11 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 provider.id,
                 content.len()
             );
-            Some(content)
+            Ok(Some(content))
         }
         Ok(None) => {
             error!("LLM API response has no content");
-            None
+            Ok(None)
         }
         Err(e) => {
             error!(
@@ -396,7 +413,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 provider.id,
                 e
             );
-            None
+            Err(())
         }
     }
 }
@@ -405,6 +422,7 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub post_process_failed: bool,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -417,20 +435,25 @@ pub(crate) async fn process_transcription_output(
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
+    let mut post_process_failed = false;
     if post_process {
-        if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
-            post_processed_text = Some(processed_text.clone());
-            final_text = processed_text;
+        match post_process_transcription(&settings, &final_text).await {
+            Ok(Some(processed_text)) => {
+                post_processed_text = Some(processed_text.clone());
+                final_text = processed_text;
 
-            if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                if let Some(prompt) = settings
-                    .post_process_prompts
-                    .iter()
-                    .find(|prompt| &prompt.id == prompt_id)
-                {
-                    post_process_prompt = Some(prompt.prompt.clone());
+                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                    if let Some(prompt) = settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|prompt| &prompt.id == prompt_id)
+                    {
+                        post_process_prompt = Some(prompt.prompt.clone());
+                    }
                 }
             }
+            Ok(None) => {}
+            Err(()) => post_process_failed = true,
         }
     }
 
@@ -438,6 +461,7 @@ pub(crate) async fn process_transcription_output(
         final_text,
         post_processed_text,
         post_process_prompt,
+        post_process_failed,
     }
 }
 
@@ -808,6 +832,7 @@ impl ShortcutAction for TranscribeAction {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
+                                let post_process_failed = processed.post_process_failed;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -846,6 +871,13 @@ impl ShortcutAction for TranscribeAction {
                                         if RECORDING_SESSION.load(Ordering::SeqCst) == session {
                                             utils::hide_recording_overlay(&ah_clone);
                                             set_tray_state(&ah_clone, TrayIconState::Idle);
+                                            // Warn only after paste has returned, so a native
+                                            // dialog cannot take focus from the paste target.
+                                            // The UI belongs to a newer recording if the
+                                            // session changed while paste was running.
+                                            if post_process_failed {
+                                                let _ = ah_clone.emit("post-process-error", ());
+                                            }
                                         }
                                         emit_transcription_complete(
                                             &ah_clone,
@@ -988,15 +1020,124 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, should_use_streaming_overlay,
-        strip_think_block,
+        complete_unless_cancelled, is_blank_transcription, post_process_transcription,
+        should_use_streaming_overlay, strip_think_block,
     };
-    use crate::settings::OverlayStyle;
+    use crate::settings::{AppSettings, OverlayStyle};
     use std::future;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::thread;
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn skipped_post_processing_is_not_a_failure() {
+        let settings = AppSettings {
+            post_process_provider_id: "missing-provider".into(),
+            ..AppSettings::default()
+        };
+        let result = tauri::async_runtime::block_on(post_process_transcription(&settings, "Hello"));
+        assert_eq!(result, Ok(None));
+    }
+
+    fn post_process_with_http_responses(responses: &[(u16, &str)]) -> Result<Option<String>, ()> {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
+        let responses: Vec<_> = responses
+            .iter()
+            .map(|(status, body)| (*status, body.to_string()))
+            .collect();
+        let server = thread::spawn(move || {
+            for (status, body) in responses {
+                let deadline = Instant::now() + Duration::from_secs(10);
+                let mut stream = loop {
+                    match listener.accept() {
+                        Ok((stream, _)) => break stream,
+                        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                            assert!(Instant::now() < deadline, "Missing post-processing request");
+                            thread::sleep(Duration::from_millis(5));
+                        }
+                        Err(error) => panic!("Failed to accept test request: {error}"),
+                    }
+                };
+                stream.set_nonblocking(false).unwrap();
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(10)))
+                    .unwrap();
+                let mut request = Vec::new();
+                loop {
+                    let mut buffer = [0; 4096];
+                    let count = stream.read(&mut buffer).unwrap();
+                    assert!(count > 0, "Incomplete post-processing request");
+                    request.extend_from_slice(&buffer[..count]);
+                    if let Some(header_end) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+                        let headers = String::from_utf8_lossy(&request[..header_end]);
+                        let content_length = headers
+                            .lines()
+                            .find_map(|line| {
+                                let (name, value) = line.split_once(':')?;
+                                name.eq_ignore_ascii_case("content-length")
+                                    .then(|| value.trim().parse::<usize>().unwrap())
+                            })
+                            .unwrap_or(0);
+                        if request.len() >= header_end + 4 + content_length {
+                            break;
+                        }
+                    }
+                }
+                write!(stream,
+                    "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                ).unwrap();
+            }
+        });
+        let mut settings = AppSettings {
+            post_process_provider_id: "openai".into(),
+            ..AppSettings::default()
+        };
+        let provider = settings.post_process_provider_mut("openai").unwrap();
+        provider.base_url = base_url;
+        provider.supports_structured_output = true;
+        settings
+            .post_process_models
+            .insert("openai".into(), "test".into());
+        settings.post_process_selected_prompt_id =
+            Some(settings.post_process_prompts[0].id.clone());
+        let result = tauri::async_runtime::block_on(post_process_transcription(&settings, "Hello"));
+        server.join().unwrap();
+        result
+    }
+
+    #[test]
+    fn http_failure_after_legacy_fallback_is_reported() {
+        assert_eq!(
+            post_process_with_http_responses(&[
+                (404, r#"{"error":{"message":"Model not found"}}"#),
+                (404, r#"{"error":{"message":"Model not found"}}"#),
+            ]),
+            Err(())
+        );
+    }
+
+    #[test]
+    fn successful_legacy_retry_is_not_a_failure() {
+        assert_eq!(
+            post_process_with_http_responses(&[
+                (
+                    404,
+                    r#"{"error":{"message":"Structured output unsupported"}}"#
+                ),
+                (
+                    200,
+                    r#"{"choices":[{"message":{"content":"Hello."},"finish_reason":"stop"}]}"#
+                ),
+            ]),
+            Ok(Some("Hello.".into()))
+        );
+    }
 
     #[test]
     fn blank_transcription_is_detected() {

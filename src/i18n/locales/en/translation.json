@@ -939,6 +939,8 @@
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
+    "postProcessFailedTitle": "Post-processing Failed",
+    "postProcessFailed": "Handy used the original transcription because post-processing failed. Check your post-processing provider and model settings, then try again.",
     "pasteFailed": "Text could not be pasted into the active application.",
     "transcriptionFailedTitle": "Transcription Failed"
   },
