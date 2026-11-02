@@ -14,7 +14,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
+import { ModelStateEvent } from "./lib/types/events";
 import "./App.css";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
@@ -35,8 +35,9 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
+import { showNoticeToast } from "@/lib/notices";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
@@ -151,55 +152,12 @@ function App() {
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // Listen for recording errors from the backend and show a toast
+  // Toast each notice as it's raised. Clearing one also sends this event.
   useEffect(() => {
-    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
-      const { error_type, detail } = event.payload;
-
-      if (error_type === "microphone_permission_denied") {
-        const currentPlatform = platform();
-        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
-        const description = t(platformKey, {
-          defaultValue: t("errors.micPermissionDenied.generic"),
-        });
-        toast.error(t("errors.micPermissionDeniedTitle"), { description });
-      } else if (error_type === "no_input_device") {
-        toast.error(t("errors.noInputDeviceTitle"), {
-          description: t("errors.noInputDevice"),
-        });
-      } else {
-        toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
-        );
+    const unlisten = events.noticesChanged.listen(({ payload }) => {
+      if (payload.raised) {
+        showNoticeToast(t, payload.raised);
       }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for paste failures and show a toast.
-  // The technical error detail is logged to handy.log on the Rust side
-  // (see actions.rs `error!("Failed to paste transcription: ...")`),
-  // so we show a localized, user-friendly message here instead of the raw error.
-  useEffect(() => {
-    const unlisten = listen("paste-error", () => {
-      toast.error(t("errors.pasteFailedTitle"), {
-        description: t("errors.pasteFailed"),
-      });
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for transcription failures and show a toast.
-  // The payload is the backend error message (also logged to handy.log).
-  useEffect(() => {
-    const unlisten = listen<string>("transcription-error", (event) => {
-      toast.error(t("errors.transcriptionFailedTitle"), {
-        description: event.payload,
-      });
     });
     return () => {
       unlisten.then((fn) => fn());

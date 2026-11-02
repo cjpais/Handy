@@ -2,12 +2,13 @@
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::VadPolicy;
-use crate::managers::audio::{recording_error_type, AudioRecordingManager};
+use crate::managers::audio::{recording_notice_code, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::policy::{live_decode, LiveDecode, ModelTraits};
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::{Transcription, TranscriptionManager};
+use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{set_tray_state, TrayIconState};
@@ -24,8 +25,7 @@ use std::future::Future;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::Manager;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 /// How a dictation ended.
@@ -81,12 +81,6 @@ const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 /// Bumped per recording session, so a late paste from an earlier session
 /// doesn't reset the tray or hide the overlay of a newer one.
 static RECORDING_SESSION: AtomicU64 = AtomicU64::new(0);
-
-#[derive(Clone, serde::Serialize)]
-struct RecordingErrorEvent {
-    error_type: String,
-    detail: Option<String>,
-}
 
 /// Drop guard that finishes the transcription pipeline, including immediate
 /// model unloading on early exits.
@@ -452,7 +446,7 @@ impl ShortcutAction for TranscribeAction {
 
         // Load ASR model and VAD model in parallel
         let kickoff_started = Instant::now();
-        tm.initiate_model_load();
+        let load_started = tm.initiate_model_load(true);
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
@@ -461,8 +455,9 @@ impl ShortcutAction for TranscribeAction {
         });
         let kickoff_elapsed = kickoff_started.elapsed();
 
-        // Don't open the mic if nothing can transcribe the recording; the load
-        // kicked off above fails and reports why.
+        // Don't open the mic if nothing can transcribe the recording. A load
+        // kicked off above fails and reports why; one already running won't
+        // report it to this dictation.
         if !tm.is_model_loaded() {
             let selected_model = get_settings(app).selected_model;
             if let Err(e) = app
@@ -470,6 +465,9 @@ impl ShortcutAction for TranscribeAction {
                 .get_model_path(&selected_model)
             {
                 warn!("Not starting recording: no model can transcribe it ({})", e);
+                if !load_started {
+                    tm.raise_model_load_failed(&selected_model);
+                }
                 return;
             }
         }
@@ -603,12 +601,10 @@ impl ShortcutAction for TranscribeAction {
             utils::hide_recording_overlay(app);
             set_tray_state(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
-                let _ = app.emit(
-                    "recording-error",
-                    RecordingErrorEvent {
-                        error_type: recording_error_type(&err).to_string(),
-                        detail: Some(format!("{err:#}")),
-                    },
+                notices::raise(
+                    app,
+                    Notice::new(recording_notice_code(&err), NoticeSource::Dictation)
+                        .with_detail(format!("{err:#}")),
                 );
             }
         }
@@ -833,11 +829,28 @@ impl ShortcutAction for TranscribeAction {
                                                         "Text pasted successfully in {:?}",
                                                         paste_time.elapsed()
                                                     );
+                                                    // Clear before raising anything
+                                                    // about this session, and leave a
+                                                    // newer session's notice alone.
+                                                    if RECORDING_SESSION.load(Ordering::SeqCst)
+                                                        == session
+                                                    {
+                                                        notices::clear(
+                                                            &ah_clone,
+                                                            NoticeSource::Dictation,
+                                                        );
+                                                    }
                                                     TranscriptionOutcome::Typed
                                                 }
                                                 Err(e) => {
                                                     error!("Failed to paste transcription: {}", e);
-                                                    let _ = ah_clone.emit("paste-error", ());
+                                                    notices::raise(
+                                                        &ah_clone,
+                                                        Notice::new(
+                                                            NoticeCode::PasteFailed,
+                                                            NoticeSource::Dictation,
+                                                        ),
+                                                    );
                                                     TranscriptionOutcome::Failed
                                                 }
                                             };
@@ -879,9 +892,16 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             error!("Transcription failed: {}", err);
-                            // Surface the failure to the UI (toast). The full
-                            // message is also in handy.log via the line above.
-                            let _ = ah.emit("transcription-error", err.to_string());
+                            // The full message is also in handy.log via the
+                            // line above.
+                            notices::raise(
+                                &ah,
+                                Notice::new(
+                                    NoticeCode::TranscriptionFailed,
+                                    NoticeSource::Dictation,
+                                )
+                                .with_detail(err.to_string()),
+                            );
                             // Save entry with empty text so user can retry
                             if wav_saved {
                                 if let Err(save_err) = hm.save_entry(

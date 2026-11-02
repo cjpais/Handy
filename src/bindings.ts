@@ -1027,6 +1027,12 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * The active notices, newest first, for a window that has just opened.
+ */
+async getActiveNotices() : Promise<Notice[]> {
+    return await TAURI_INVOKE("get_active_notices");
 }
 }
 
@@ -1035,6 +1041,7 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 export const events = __makeEvents__<{
 historyUpdatePayload: HistoryUpdatePayload,
+noticesChanged: NoticesChanged,
 recordingStateEvent: RecordingStateEvent,
 streamPhaseEvent: StreamPhaseEvent,
 streamTextEvent: StreamTextEvent,
@@ -1042,6 +1049,7 @@ transcriptionCompleteEvent: TranscriptionCompleteEvent,
 transcriptionJob: TranscriptionJob
 }>({
 historyUpdatePayload: "history-update-payload",
+noticesChanged: "notices-changed",
 recordingStateEvent: "recording-state-event",
 streamPhaseEvent: "stream-phase-event",
 streamTextEvent: "stream-text-event",
@@ -1292,6 +1300,41 @@ sha256: string | null } } |
  */
 "Local"
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type Notice = { code: NoticeCode; level: NoticeLevel; source: NoticeSource; 
+/**
+ * A model name or a raw error, shown alongside the translated text.
+ */
+detail: string | null }
+/**
+ * Every error Handy reports. The frontend maps each one to its text in
+ * `src/lib/notices.ts`.
+ */
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed"
+export type NoticeLevel = 
+/**
+ * Nothing came out, or Handy can't do its job.
+ */
+"error" | 
+/**
+ * The user got a result, but not the one they set up.
+ */
+"warning"
+/**
+ * What a notice belongs to: each source has one slot in the store.
+ */
+export type NoticeSource = "dictation" | "file"
+/**
+ * Emitted whenever the active notices change.
+ */
+export type NoticesChanged = { 
+/**
+ * Every active notice, newest first.
+ */
+notices: Notice[]; 
+/**
+ * The notice that caused this change. `None` when one was cleared.
+ */
+raised: Notice | null }
 export type OverlayPosition = "top" | "bottom"
 /**
  * Which recording overlay to display. `Minimal` and `Live` share one base

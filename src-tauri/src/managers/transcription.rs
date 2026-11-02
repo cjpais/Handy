@@ -14,6 +14,7 @@ use crate::language_detection::{
 };
 use crate::managers::audio::{create_smoothed_detector, AudioRecordingManager};
 use crate::managers::model::ModelManager;
+use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{
     get_settings, AppSettings, ChineseScript, ModelUnloadTimeout, TranscribeAcceleratorSetting,
 };
@@ -683,16 +684,19 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already loaded
-    pub fn initiate_model_load(&self) {
+    /// Kicks off the model loading in a background thread if it's not already
+    /// loaded, and returns whether it did. `raise_notice` reports a failed load
+    /// as a dictation notice, so only a dictation passes it: a file job fails
+    /// on its own, and Settings loads report through `loading_failed`.
+    pub fn initiate_model_load(&self, raise_notice: bool) -> bool {
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading {
-            return;
+            return false;
         }
 
         let reload_pending = self.reload_model_on_next_use.load(Ordering::Acquire);
         if !reload_pending && self.is_model_loaded() {
-            return;
+            return false;
         }
 
         *is_loading = true;
@@ -706,11 +710,25 @@ impl TranscriptionManager {
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
+                if raise_notice {
+                    self_clone.raise_model_load_failed(&settings.selected_model);
+                }
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
             self_clone.loading_condvar.notify_all();
         });
+        true
+    }
+
+    /// Tells the user that the model a dictation needs couldn't load.
+    pub fn raise_model_load_failed(&self, model_id: &str) {
+        let model_name = self.model_manager.get_model_info(model_id).map(|m| m.name);
+        notices::raise(
+            &self.app_handle,
+            Notice::new(NoticeCode::ModelLoadFailed, NoticeSource::Dictation)
+                .with_detail(model_name),
+        );
     }
 
     pub fn get_current_model(&self) -> Option<String> {

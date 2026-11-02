@@ -68,6 +68,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `cli.rs` - CLI argument definitions (clap derive)
 - `shortcut.rs` - Global keyboard shortcut handling
 - `settings.rs` - Application settings management
+- `notices.rs` - Reports background errors to the user (see [Error notices](#error-notices))
 - `overlay.rs` - Recording overlay window (platform-specific)
 - `signal_handle.rs` - `send_transcription_input()` reusable function
 - `utils.rs` - Platform detection helpers
@@ -86,6 +87,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `stores/settingsStore.ts` - Zustand store for settings
 - `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta)
 - `overlay/` - Recording overlay window entry point
+- `lib/notices.ts` - Maps each notice code to its text and page
 - `lib/types.ts` - Shared TypeScript type definitions
 
 ### Key Architecture Patterns
@@ -128,6 +130,30 @@ Settings are stored using Tauri's store plugin with reactive updates:
 ### Single Instance Architecture
 
 The app enforces single instance behavior — launching when already running brings the settings window to front rather than creating a new process. Remote control flags (`--toggle-transcription`, etc.) work by launching a second instance that sends args to the running instance via `tauri_plugin_single_instance`, then exits.
+
+## Error notices
+
+`notices::raise` is the one way to report a failure that happens while the user isn't looking at the settings window. Don't add a new event, toast or overlay state for one. A new error should take a few lines and need no new UI.
+
+**Adding a new error:**
+
+1. Add a `NoticeCode` in `src-tauri/src/notices.rs` and give it a level in `NoticeCode::level`. **Error** means nothing came out, or Handy can't do its job. **Warning** means the user got a result, but not the one they set up.
+2. Add the title under `errors.*` in `src/i18n/locales/en/translation.json`, in Title Case and using the app's terms, then add the key to the other locales (`bun run check:translations` fails otherwise).
+3. Map the code to its title, optional explanation and page in `NOTICE_DISPLAY` in `src/lib/notices.ts`. TypeScript won't compile until you do.
+4. Call `notices::raise` where the failure happens, and regenerate `bindings.ts` by running the app in debug:
+
+```rust
+notices::raise(
+    app,
+    Notice::new(NoticeCode::PasteFailed, NoticeSource::Dictation),
+);
+```
+
+**Rules:**
+
+- Rust sends codes, never display strings. Use `with_detail` for what only Rust knows, such as a model name or a raw error.
+- Handy keeps one notice per `NoticeSource`, and a newer one replaces it. When a source next succeeds, call `notices::clear` before raising anything about that session, or the clear wipes the session's own notice.
+- Things the user did in the settings window keep their toast or inline state.
 
 ## Internationalization (i18n)
 

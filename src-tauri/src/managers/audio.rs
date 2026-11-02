@@ -8,6 +8,7 @@ use crate::audio_toolkit::{
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
+use crate::notices::NoticeCode;
 use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
 use crate::utils;
 use handy_recorder::{Channels, EndReason, ErrorKind, Recorder, RecorderConfig, StartError};
@@ -304,18 +305,17 @@ impl OpenMicrophone {
     }
 }
 
-/// The `recording-error` event's `error_type` for a recording that couldn't
-/// start.
-pub fn recording_error_type(error: &anyhow::Error) -> &'static str {
+/// The notice for a recording that couldn't start.
+pub fn recording_notice_code(error: &anyhow::Error) -> NoticeCode {
     match error
         .downcast_ref::<handy_recorder::Error>()
         .map(handy_recorder::Error::kind)
     {
-        Some(ErrorKind::PermissionDenied) => "microphone_permission_denied",
+        Some(ErrorKind::PermissionDenied) => NoticeCode::MicPermissionDenied,
         // A missing selected microphone falls back to the default, so this
         // means there is no input device at all.
-        Some(ErrorKind::DeviceUnavailable) => "no_input_device",
-        _ => "unknown",
+        Some(ErrorKind::DeviceUnavailable) => NoticeCode::NoMicrophone,
+        _ => NoticeCode::RecordingFailed,
     }
 }
 
@@ -1337,14 +1337,14 @@ mod tests {
                 .map(handy_recorder::Error::kind),
             Some(ErrorKind::UnsupportedFormat)
         );
-        assert_eq!(recording_error_type(&wrapped), "unknown");
+        assert_eq!(recording_notice_code(&wrapped), NoticeCode::RecordingFailed);
     }
 
     #[test]
     fn errors_from_outside_the_recorder_are_unknown() {
         assert_eq!(
-            recording_error_type(&anyhow::anyhow!("Already recording")),
-            "unknown"
+            recording_notice_code(&anyhow::anyhow!("Already recording")),
+            NoticeCode::RecordingFailed
         );
     }
 
