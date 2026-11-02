@@ -911,6 +911,7 @@
     "title": "Handy v{{version}}의 새 소식"
   },
   "common": {
+    "playbackPosition": "재생 위치",
     "resetSetting": "{{setting}} 기본값으로 초기화",
     "loading": "로딩 중...",
     "delete": "삭제",

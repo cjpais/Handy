@@ -911,6 +911,7 @@
     "title": "Nowości w Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Pozycja odtwarzania",
     "resetSetting": "Przywróć wartość domyślną: {{setting}}",
     "loading": "Wczytywanie...",
     "delete": "Usuń",
