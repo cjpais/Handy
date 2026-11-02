@@ -66,6 +66,16 @@ fn is_live_state(state: &str) -> bool {
     state == "streaming" || state == LIVE_NOTICE_STATE
 }
 
+/// The notice form that matches the session it replaces, so the window never
+/// changes size for one. A notice with no session gets the compact form.
+fn notice_state(session_is_live: bool) -> &'static str {
+    if session_is_live {
+        LIVE_NOTICE_STATE
+    } else {
+        NOTICE_STATE
+    }
+}
+
 /// Overlay window size (logical) for a given UI state.
 fn overlay_dimensions(state: &str) -> (f64, f64) {
     if is_live_state(state) {
@@ -507,6 +517,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         return;
     }
     OVERLAY_SESSION_SHOWING.store(true, Ordering::SeqCst);
+    OVERLAY_SESSION_LIVE.store(is_live_state(state), Ordering::SeqCst);
 
     // The rest queries monitors and the cursor and mutates window geometry. On
     // Linux the monitor/cursor lookups hit GDK/Xlib on the process's shared X11
@@ -655,11 +666,7 @@ pub fn show_overlay_notice(app_handle: &AppHandle, notice: &Notice) {
     }
     OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
 
-    let state = if settings::get_settings(app_handle).overlay_style == OverlayStyle::Live {
-        LIVE_NOTICE_STATE
-    } else {
-        NOTICE_STATE
-    };
+    let state = notice_state(OVERLAY_SESSION_LIVE.load(Ordering::SeqCst));
     let handle = app_handle.clone();
     let notice = notice.clone();
     // On the main thread for the same reason as show_overlay_state.
@@ -755,9 +762,14 @@ static OVERLAY_NOTICE_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
 /// Set while the overlay shows a recording or transcribing session.
 static OVERLAY_SESSION_SHOWING: AtomicBool = AtomicBool::new(false);
 
+/// Whether the overlay's current session uses the Live window. The style alone
+/// can't say: a model that doesn't stream gets the compact pill under Live too.
+static OVERLAY_SESSION_LIVE: AtomicBool = AtomicBool::new(false);
+
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
+    OVERLAY_SESSION_LIVE.store(false, Ordering::SeqCst);
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -840,6 +852,17 @@ pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_notice_keeps_the_size_of_its_session() {
+        for (session, live) in [("streaming", true), ("recording", false)] {
+            assert_eq!(
+                overlay_dimensions(notice_state(is_live_state(session))),
+                overlay_dimensions(session)
+            );
+            assert_eq!(is_live_state(session), live);
+        }
+    }
 
     #[test]
     fn a_live_notice_uses_the_live_window() {
