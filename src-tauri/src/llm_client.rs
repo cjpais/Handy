@@ -98,11 +98,16 @@ fn reasoning_off_accepted() -> &'static Mutex<HashSet<String>> {
 }
 
 fn supports_reasoning_off(key: &str) -> bool {
-    reasoning_off_accepted().lock().map(|set| set.contains(key)).unwrap_or(false)
+    reasoning_off_accepted()
+        .lock()
+        .map(|set| set.contains(key))
+        .unwrap_or(false)
 }
 
 fn remember_reasoning_off(key: String) {
-    if let Ok(mut set) = reasoning_off_accepted().lock() { set.insert(key); }
+    if let Ok(mut set) = reasoning_off_accepted().lock() {
+        set.insert(key);
+    }
 }
 
 fn endpoint_key(provider: &PostProcessProvider, model: &str) -> String {
@@ -435,7 +440,10 @@ pub async fn send_chat_completion_with_schema(
     let key = endpoint_key(provider, model);
     let reasoning = if disable_reasoning && !is_known_rejected(&key) {
         if supports_reasoning_off(&key) {
-            ReasoningParams { reasoning_effort: Some("off".to_string()), ..Default::default() }
+            ReasoningParams {
+                reasoning_effort: Some("off".to_string()),
+                ..Default::default()
+            }
         } else {
             reasoning_disable_params(provider)
         }
