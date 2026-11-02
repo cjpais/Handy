@@ -4,7 +4,7 @@ Tested on Ubuntu 26.04.1 LTS, GNOME Wayland, Handy 0.9.8.
 
 The fix is to use `ydotool` for typing and `handy_keys` for shortcuts.
 
-*Note: Run commands one by one in terminal*
+_Note: Run commands one by one in terminal_
 
 ## 1. Check Wayland and uinput
 
@@ -23,7 +23,17 @@ If you are not in `input`:
 sudo usermod -aG input "$USER"
 ```
 
-Log out and back in after adding the group.
+Log out, back in — **and check the user manager**, because with autologin it survives logout and spawns every new session with the old group list, so logging out and back in is not enough:
+
+```bash
+# was the manager started before the group change?
+ps -o pid,lstart -p "$(systemctl show --property=MainPID --value user@$(id -u))"
+
+# if it predates the change (or the group is still missing after re-login):
+sudo systemctl restart user@$(id -u)
+```
+
+A reboot also works. Restart Handy afterwards.
 
 ## 2. Install and test ydotool
 

@@ -1,4 +1,6 @@
-@import "tailwindcss";
+/* Scope class detection to src/: scanning the project root walks Rust build
+   output and made the first dev CSS compile take ~16s. */
+@import "tailwindcss" source(".");
 @import "./styles/theme.css";
 
 /* Register the shared color tokens (src/styles/theme.css) as Tailwind
@@ -8,11 +10,167 @@
   --color-background: var(--color-background);
   --color-background-ui: var(--color-background-ui);
   --color-logo-primary: var(--color-logo-primary);
-  --color-logo-stroke: var(--color-logo-stroke);
-  --color-text-stroke: var(--color-text-stroke);
-  --color-mid-gray: var(--color-mid-gray);
   --color-warning: var(--color-warning);
   --color-error: var(--color-error);
+  --color-moss: var(--color-moss);
+  --color-plum: var(--color-plum);
+  --color-plum-pick: var(--color-plum-pick);
+  --color-demo-window: var(--color-demo-window);
+  --color-mascot-line: var(--color-mascot-line);
+  --color-wash: var(--color-wash);
+  --color-moss-wash: var(--color-moss-wash);
+  --color-warning-wash: var(--color-warning-wash);
+  --color-error-wash: var(--color-error-wash);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-3: var(--color-ink-3);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
+}
+
+/* Noto Sans CJK subset (see src/lib/utils/cjkFont.ts): Windows' CJK fonts
+   have no semibold to match Segoe UI. */
+@font-face {
+  font-family: "Handy CJK Subset";
+  src: url("./assets/fonts/cjk-subset.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+
+/* Onboarding's scale in px (rem steps land on fractions at a 15px root).
+   Names avoid Tailwind's defaults, which Settings still uses. */
+@theme {
+  --font-display:
+    ui-rounded, "SF Pro Rounded", system-ui, -apple-system,
+    "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --font-ui:
+    system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+    "Noto Sans", sans-serif;
+  --font-cjk-subset:
+    "Handy CJK Subset", -apple-system, "Segoe UI Variable Text", "Segoe UI",
+    system-ui, sans-serif;
+
+  --text-title: 26px; /* screen titles */
+  --text-name: 15px; /* the model name on Model's Full card */
+  --text-row: 17px; /* row titles */
+  --text-body: 15px; /* body, subtitles */
+  --text-small: 13px; /* buttons, secondary text, hints */
+  --text-label: 12px; /* labels */
+  --text-tag: 11px; /* tags, column codes, small grade chips */
+
+  --radius-panel: 16px; /* panels, the selected card */
+  --radius-card: 12px;
+  --radius-control: 10px; /* buttons, fields, table rows */
+  --radius-chip: 6px; /* grade chips */
+
+  /* Onboarding's side gutter. */
+  --spacing-gutter: 64px;
+  /* Gap under a screen's title; grows to the max when there's room. */
+  --spacing-lead: 20px;
+  --spacing-lead-max: 32px;
+
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* The mascot waves once on arrival (it rests tilted -8deg) */
+  --animate-wave: wave 1100ms var(--ease-glide) 250ms both;
+  /* A high five: lunge, squash, settle; the burst over it */
+  --animate-slap: slap 420ms var(--ease-glide);
+  --animate-burst: burst 420ms var(--ease-glide);
+  /* Something new rises into place */
+  --animate-rise: rise 260ms var(--ease-glide);
+  /* A menu drops open from its button */
+  --animate-drop: drop 160ms var(--ease-glide);
+  /* A word swapped in place (the Models page's pinned section name) */
+  --animate-fade: fade 180ms ease-out;
+  /* A shortcut being captured: the empty slot's dashed edge breathes */
+  --animate-key-slot: key-slot 1.2s ease-in-out infinite;
+
+  @keyframes wave {
+    0% {
+      rotate: -8deg;
+    }
+    20% {
+      rotate: 10deg;
+    }
+    40% {
+      rotate: -14deg;
+    }
+    60% {
+      rotate: 8deg;
+    }
+    80% {
+      rotate: -10deg;
+    }
+    100% {
+      rotate: -8deg;
+    }
+  }
+  @keyframes slap {
+    0% {
+      rotate: -8deg;
+      scale: 1;
+    }
+    30% {
+      rotate: 4deg;
+      scale: 1.16 1.08;
+    }
+    45% {
+      rotate: 2deg;
+      scale: 0.94 1.02;
+    }
+    100% {
+      rotate: -8deg;
+      scale: 1;
+    }
+  }
+  @keyframes burst {
+    0% {
+      opacity: 0;
+      scale: 0.6;
+    }
+    25% {
+      opacity: 1;
+      scale: 1.1;
+    }
+    100% {
+      opacity: 0;
+      scale: 1.3;
+      translate: 0 -6px;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      translate: 0 -4px;
+      scale: 0.97;
+    }
+  }
+  /* Via a variable: Tailwind can't polyfill color-mix inside a keyframe. */
+  @keyframes key-slot {
+    50% {
+      border-color: var(--color-plum-faint);
+    }
+  }
+}
+
+/* Onboarding honours reduced motion everywhere inside it. */
+@media (prefers-reduced-motion: reduce) {
+  [data-onboarding] *,
+  [data-onboarding] *::before,
+  [data-onboarding] *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 :root {
@@ -43,6 +201,17 @@
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
+
+  /* Without this, Windows draws a <select> popup white under light text. */
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 .container {
@@ -61,10 +230,9 @@
   }
 }
 
-/* Keep onboarding centered when classic scrollbars consume layout space.
-   Overlay scrollbars do not reserve a gutter, so this has no effect on them. */
-:root[data-onboarding-active] {
-  scrollbar-gutter: stable both-edges;
+/* macOS's own CJK fonts already share their weights. */
+:root[data-platform="macos"] {
+  --font-cjk-subset: var(--font-ui);
 }
 
 /* macOS - tint native overlay scrollbar thumb */
@@ -93,18 +261,12 @@
   background-color: var(--scrollbar-thumb-hover);
 }
 
-@layer utilities {
-  .text-stroke {
-    -webkit-text-stroke: 2px var(--color-text-stroke);
-  }
-}
-
 .logo-primary {
-  fill: var(--color-logo-primary);
+  fill: var(--color-wordmark);
 }
 
 .logo-stroke {
-  fill: var(--color-logo-stroke);
-  stroke: var(--color-logo-stroke);
+  fill: var(--color-wordmark-stroke);
+  stroke: var(--color-wordmark-stroke);
   stroke-width: 1;
 }
