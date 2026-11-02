@@ -936,7 +936,7 @@
     "noInputDeviceTitle": "Ingen mikrofon hittades",
     "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
     "recordingFailed": "Misslyckades med att starta inspelning: {{error}}",
-    "recordingFailedTitle": "Misslyckades med att starta inspelning",
+    "recordingFailedTitle": "Inspelningen kunde inte starta",
     "modelLoadFailed": "Misslyckades med att ladda modell: {{model}}",
     "modelLoadFailedTitle": "Misslyckades med att ladda modell",
     "modelLoadFailedUnknown": "okänd modell",

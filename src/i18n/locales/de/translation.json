@@ -936,7 +936,7 @@
     "noInputDeviceTitle": "Kein Mikrofon gefunden",
     "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließe ein Mikrofon oder Headset an und versuche es erneut.",
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
-    "recordingFailedTitle": "Aufnahme konnte nicht gestartet werden",
+    "recordingFailedTitle": "Aufnahmestart fehlgeschlagen",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
     "modelLoadFailedTitle": "Modell konnte nicht geladen werden",
     "modelLoadFailedUnknown": "unbekanntes Modell",

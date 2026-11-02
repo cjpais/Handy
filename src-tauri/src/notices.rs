@@ -12,8 +12,9 @@
 //!
 //! 1. Add a [`NoticeCode`], with its level in [`NoticeCode::level`] and its
 //!    title in [`NoticeCode::tray_title`].
-//! 2. Add its title under `errors.*` in `src/i18n/locales/en/translation.json`,
-//!    and the same key in every other locale.
+//! 2. Add its title as `errors.<name>Title` in
+//!    `src/i18n/locales/en/translation.json`, and the same key in every other
+//!    locale. `build.rs` gives the tray that title as `strings.<name>_title`.
 //! 3. Map the code to its title, explanation and page in `src/lib/notices.ts`.
 //! 4. Call [`raise`] where the failure happens:
 //!
