@@ -1,4 +1,4 @@
-use super::{AudioFrameCallback, CaptureSink, CaptureVad, LevelCallback, VadPolicy};
+use super::{AudioFrameCallback, CaptureSink, CaptureVad, LevelCallback, ReadySignal, VadPolicy};
 use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
 use handy_recorder::{AudioChunk, Sink};
 use std::sync::{mpsc, Arc, Mutex};
@@ -38,7 +38,7 @@ const FRAME: usize = 4;
 
 struct Harness {
     sink: CaptureSink,
-    ready: mpsc::Receiver<()>,
+    ready: mpsc::Receiver<ReadySignal>,
     fed: Arc<Mutex<Vec<f32>>>,
     hangover: Arc<Mutex<Option<usize>>>,
     resets: Arc<Mutex<usize>>,
@@ -84,15 +84,29 @@ fn chunk(samples: &[f32], valid_frames: usize) -> AudioChunk<'_> {
 }
 
 #[test]
-fn readiness_fires_once_on_the_first_chunk() {
+fn readiness_fires_once_on_the_first_sound() {
     let mut h = harness(VadPolicy::Disabled);
     assert!(h.ready.try_recv().is_err());
 
-    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
-    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    h.sink.process_chunk(chunk(&[0.0, 0.01, 0.0, 0.0], FRAME));
+    h.sink.process_chunk(chunk(&[0.0, 0.02, 0.0, 0.0], FRAME));
 
-    assert!(h.ready.try_recv().is_ok());
-    // The sender is gone after the first chunk, so a second signal can't come.
+    assert_eq!(h.ready.try_recv(), Ok(ReadySignal::Sound));
+    // The sender is gone after the first sound, so a second signal can't come.
+    assert_eq!(h.ready.try_recv(), Err(mpsc::TryRecvError::Disconnected));
+}
+
+#[test]
+fn silent_first_chunks_report_audio_once_then_sound() {
+    // A Bluetooth headset switching profiles sends zeros before real input.
+    let mut h = harness(VadPolicy::Disabled);
+    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    assert_eq!(h.ready.try_recv(), Ok(ReadySignal::Audio));
+    assert_eq!(h.ready.try_recv(), Err(mpsc::TryRecvError::Empty));
+
+    h.sink.process_chunk(chunk(&[0.0, 0.01, 0.0, 0.0], FRAME));
+    assert_eq!(h.ready.try_recv(), Ok(ReadySignal::Sound));
     assert_eq!(h.ready.try_recv(), Err(mpsc::TryRecvError::Disconnected));
 }
 
