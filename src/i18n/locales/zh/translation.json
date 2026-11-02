@@ -625,6 +625,10 @@
           "traditionalTw": "繁体（台湾）",
           "traditionalHk": "繁体（香港）"
         }
+      },
+      "hideDockIcon": {
+        "label": "隐藏程序坞图标",
+        "description": "在 macOS 程序坞和应用切换器 (Cmd+Tab) 中隐藏 Handy。"
       }
     },
     "postProcessing": {

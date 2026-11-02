@@ -625,6 +625,10 @@
           "traditionalTw": "Traditionelle (Taiwan)",
           "traditionalHk": "Traditionelle (Hongkong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Skjul Dock-ikon",
+        "description": "Skjul Handy fra macOS Dock og programskifteren (Cmd+Tab)."
       }
     },
     "postProcessing": {

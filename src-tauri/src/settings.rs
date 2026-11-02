@@ -515,6 +515,8 @@ pub struct AppSettings {
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
+    #[serde(default = "default_hide_dock_icon")]
+    pub hide_dock_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
     #[serde(default = "default_paste_delay_after_ms")]
@@ -713,6 +715,10 @@ fn default_app_language() -> String {
 
 fn default_show_tray_icon() -> bool {
     true
+}
+
+fn default_hide_dock_icon() -> bool {
+    false
 }
 
 fn default_post_process_provider_id() -> String {
@@ -1050,6 +1056,7 @@ pub fn get_default_settings() -> AppSettings {
         airpods_mode: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
+        hide_dock_icon: default_hide_dock_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
         reliable_paste: false,
@@ -1593,6 +1600,10 @@ mod tests {
             settings.long_form_chunking,
             "chunking is on for settings saved before it existed"
         );
+        assert!(
+            !settings.hide_dock_icon,
+            "hide_dock_icon defaults to false when omitted"
+        );
 
         // The 0.1 integer device index is cleared once for transcribe.cpp 0.2.
         // Without an exact device, the retired generic GPU choice becomes Auto.
@@ -2054,5 +2065,16 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn hide_dock_icon_setting_round_trips() {
+        let mut settings = get_default_settings();
+        assert!(!settings.hide_dock_icon);
+
+        settings.hide_dock_icon = true;
+        let json = serde_json::to_string(&settings).expect("serializes");
+        let parsed: AppSettings = serde_json::from_str(&json).expect("deserializes");
+        assert!(parsed.hide_dock_icon);
     }
 }

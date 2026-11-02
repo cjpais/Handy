@@ -625,6 +625,10 @@
           "traditionalTw": "Tradizionale (Taiwan)",
           "traditionalHk": "Tradizionale (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Nascondi icona nel Dock",
+        "description": "Nascondi Handy dal Dock di macOS e dal selettore applicazioni (Cmd+Tab)."
       }
     },
     "postProcessing": {

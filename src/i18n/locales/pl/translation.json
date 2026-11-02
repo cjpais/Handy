@@ -625,6 +625,10 @@
           "traditionalTw": "Tradycyjne (Tajwan)",
           "traditionalHk": "Tradycyjne (Hongkong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Ukryj ikonę w Docku",
+        "description": "Ukrywaj Handy w Docku macOS i przełączniku aplikacji (Cmd+Tab)."
       }
     },
     "postProcessing": {

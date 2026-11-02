@@ -625,6 +625,10 @@
           "traditionalTw": "번체 (대만)",
           "traditionalHk": "번체 (홍콩)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Dock 아이콘 숨기기",
+        "description": "macOS Dock 및 앱 전환기(Cmd+Tab)에서 Handy를 숨깁니다."
       }
     },
     "postProcessing": {

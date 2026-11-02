@@ -625,6 +625,10 @@
           "traditionalTw": "Traditioneel (Taiwan)",
           "traditionalHk": "Traditioneel (Hongkong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Dock-pictogram verbergen",
+        "description": "Verberg Handy in het macOS-Dock en de app-kiezer (Cmd+Tab)."
       }
     },
     "postProcessing": {

@@ -107,8 +107,11 @@ fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         #[cfg(target_os = "macos")]
         {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                log::error!("Failed to set activation policy to Regular: {}", e);
+            let settings = settings::get_settings(app);
+            if !settings.hide_dock_icon {
+                if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+                    log::error!("Failed to set activation policy to Regular: {}", e);
+                }
             }
         }
         if let Err(e) = main_window.unminimize() {
@@ -160,8 +163,8 @@ fn apply_startup_activation_policy(app: &mut tauri::App, headless_mode: bool) {
     let should_hide = settings.start_hidden || cli_args.start_hidden;
     let tray_available = settings.show_tray_icon && !cli_args.no_tray;
 
-    if should_hide && tray_available {
-        log::info!("Starting hidden with tray available: launching as Accessory (no Dock icon)");
+    if settings.hide_dock_icon || (should_hide && tray_available) {
+        log::info!("Launching as Accessory (no Dock icon)");
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
 }
@@ -742,6 +745,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
+            shortcut::change_hide_dock_icon_setting,
             shortcut::change_transcribe_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,
@@ -1142,11 +1146,11 @@ pub fn run(cli_args: CliArgs) {
                     let settings = get_settings(window.app_handle());
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
-                    if tray_visible {
+                    if settings.hide_dock_icon || tray_visible {
                         // Deactivate the application so macOS cleanly transfers focus
                         // to the previously active app and drops the Dock tile (#2132).
                         let _ = window.app_handle().hide();
-                        // Tray is available: hide the dock icon, app lives in the tray
+                        // Hide the dock icon, app lives in background / tray
                         let res = window
                             .app_handle()
                             .set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -1154,7 +1158,7 @@ pub fn run(cli_args: CliArgs) {
                             log::error!("Failed to set activation policy: {}", e);
                         }
                     }
-                    // No tray: keep the dock icon visible so the user can reopen
+                    // No tray and not hide_dock_icon: keep the dock icon visible so the user can reopen
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {

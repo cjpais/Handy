@@ -625,6 +625,10 @@
           "traditionalTw": "पारंपरिक (ताइवान)",
           "traditionalHk": "पारंपरिक (हांगकांग)"
         }
+      },
+      "hideDockIcon": {
+        "label": "डॉक आइकन छिपाएं",
+        "description": "macOS डॉक और ऐप स्विचर (Cmd+Tab) से Handy को छिपाएं."
       }
     },
     "postProcessing": {

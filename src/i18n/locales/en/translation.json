@@ -625,6 +625,10 @@
           "traditionalTw": "Traditional (Taiwan)",
           "traditionalHk": "Traditional (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Hide Dock Icon",
+        "description": "Hide Handy from the macOS Dock and App Switcher (Cmd+Tab)."
       }
     },
     "postProcessing": {

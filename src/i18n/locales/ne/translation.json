@@ -625,6 +625,10 @@
           "traditionalTw": "परम्परागत (ताइवान)",
           "traditionalHk": "परम्परागत (हङकङ)"
         }
+      },
+      "hideDockIcon": {
+        "label": "डक आइकन लुकाउनुहोस्",
+        "description": "macOS डक र एप स्विचर (Cmd+Tab) बाट Handy लुकाउनुहोस्।"
       }
     },
     "postProcessing": {

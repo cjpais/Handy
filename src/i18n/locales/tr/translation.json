@@ -625,6 +625,10 @@
           "traditionalTw": "Geleneksel (Tayvan)",
           "traditionalHk": "Geleneksel (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Dock Simgesini Gizle",
+        "description": "Handy'yi macOS Dock'tan ve uygulama değiştiriciden (Cmd+Tab) gizle."
       }
     },
     "postProcessing": {

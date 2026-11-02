@@ -625,6 +625,10 @@
           "traditionalTw": "Традиційні (Тайвань)",
           "traditionalHk": "Традиційні (Гонконг)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Приховати значок у Dock",
+        "description": "Приховувати Handy у панелі Dock та перемикачі програм (Cmd+Tab) macOS."
       }
     },
     "postProcessing": {

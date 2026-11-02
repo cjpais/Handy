@@ -625,6 +625,10 @@
           "traditionalTw": "Traditionnel (Taïwan)",
           "traditionalHk": "Traditionnel (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Masquer l'icône du Dock",
+        "description": "Masquer Handy du Dock macOS et du sélecteur d'applications (Cmd+Tab)."
       }
     },
     "postProcessing": {

@@ -625,6 +625,10 @@
           "traditionalTw": "Tradiční (Tchaj-wan)",
           "traditionalHk": "Tradiční (Hongkong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Skrýt ikonu v Docku",
+        "description": "Skrýt Handy z macOS Docku a přepínače aplikací (Cmd+Tab)."
       }
     },
     "postProcessing": {

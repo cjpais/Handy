@@ -625,6 +625,10 @@
           "traditionalTw": "Tradisional (Taiwan)",
           "traditionalHk": "Tradisional (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Sembunyikan Ikon Dock",
+        "description": "Sembunyikan Handy dari macOS Dock dan pengalih aplikasi (Cmd+Tab)."
       }
     },
     "postProcessing": {

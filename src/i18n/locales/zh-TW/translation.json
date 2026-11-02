@@ -625,6 +625,10 @@
           "traditionalTw": "繁體（臺灣）",
           "traditionalHk": "繁體（香港）"
         }
+      },
+      "hideDockIcon": {
+        "label": "隱藏 Dock 圖示",
+        "description": "在 macOS Dock 與應用程式切換器 (Cmd+Tab) 中隱藏 Handy。"
       }
     },
     "postProcessing": {

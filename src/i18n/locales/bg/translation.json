@@ -625,6 +625,10 @@
           "traditionalTw": "Традиционни (Тайван)",
           "traditionalHk": "Традиционни (Хонконг)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Скриване на иконата в Dock",
+        "description": "Скриване на Handy от macOS Dock и превключвателя на приложения (Cmd+Tab)."
       }
     },
     "postProcessing": {

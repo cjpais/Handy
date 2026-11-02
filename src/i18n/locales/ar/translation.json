@@ -625,6 +625,10 @@
           "traditionalTw": "تقليدية (تايوان)",
           "traditionalHk": "تقليدية (هونغ كونغ)"
         }
+      },
+      "hideDockIcon": {
+        "label": "إخفاء أيقونة Dock",
+        "description": "إخفاء Handy من شريط Dock ومبدل التطبيقات (Cmd+Tab) في macOS."
       }
     },
     "postProcessing": {

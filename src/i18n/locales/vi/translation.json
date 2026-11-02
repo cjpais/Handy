@@ -625,6 +625,10 @@
           "traditionalTw": "Phồn thể (Đài Loan)",
           "traditionalHk": "Phồn thể (Hồng Kông)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Ẩn biểu tượng Dock",
+        "description": "Ẩn Handy khỏi macOS Dock và trình chuyển đổi ứng dụng (Cmd+Tab)."
       }
     },
     "postProcessing": {

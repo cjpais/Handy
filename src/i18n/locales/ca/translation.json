@@ -625,6 +625,10 @@
           "traditionalTw": "Tradicional (Taiwan)",
           "traditionalHk": "Tradicional (Hong Kong)"
         }
+      },
+      "hideDockIcon": {
+        "label": "Amaga la icona del Dock",
+        "description": "Amaga Handy del Dock de macOS i del commutador d'aplicacions (Cmd+Tab)."
       }
     },
     "postProcessing": {

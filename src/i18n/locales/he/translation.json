@@ -625,6 +625,10 @@
           "traditionalTw": "מסורתית (טייוואן)",
           "traditionalHk": "מסורתית (הונג קונג)"
         }
+      },
+      "hideDockIcon": {
+        "label": "הסתר אייקון ב-Dock",
+        "description": "הסתר את Handy מה-Dock של macOS וממחליף הייशומים (Cmd+Tab)."
       }
     },
     "postProcessing": {
