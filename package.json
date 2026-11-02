@@ -55,7 +55,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.0",
+    "@playwright/test": "^1.64.1",
     "@tauri-apps/cli": "^2.11.0",
     "@types/node": "^24.9.1",
     "@types/react": "^18.3.26",
