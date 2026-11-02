@@ -154,6 +154,10 @@ impl fmt::Display for EngineError {
 
 impl std::error::Error for EngineError {}
 
+/// See [`EngineSupervisor::cancel_mark`].
+#[derive(Debug, Clone, Copy)]
+pub struct CancelMark(u64);
+
 /// The result of one stream feed, handed to the stream's callback.
 pub struct StreamProgress {
     pub update: StreamUpdate,
@@ -401,7 +405,24 @@ impl EngineSupervisor {
     /// Transcribe 16 kHz mono PCM with the loaded model. A worker crash or
     /// hang is retried once in a fresh worker (on CPU if it was on the GPU).
     pub fn transcribe(&self, pcm: Vec<f32>, run: RunOptions) -> Result<Transcript, EngineError> {
-        let epoch = self.shared.epoch();
+        self.transcribe_since(self.cancel_mark(), pcm, run)
+    }
+
+    /// A point to cancel from: every run given it is cancelled by any
+    /// [`cancel`](Self::cancel) after it was taken, so the runs that make up
+    /// one transcription (its chunks) stop together, even between runs.
+    pub fn cancel_mark(&self) -> CancelMark {
+        CancelMark(self.shared.epoch())
+    }
+
+    /// [`transcribe`](Self::transcribe), cancelled by any cancel since `mark`.
+    pub fn transcribe_since(
+        &self,
+        mark: CancelMark,
+        pcm: Vec<f32>,
+        run: RunOptions,
+    ) -> Result<Transcript, EngineError> {
+        let epoch = mark.0;
         self.ask(|reply| Command::Transcribe {
             pcm,
             run,
@@ -1583,6 +1604,28 @@ mod tests {
         // A device probe with nothing loaded leaves no worker behind.
         assert!(engine.devices().is_some());
         assert_eq!(worker_count(), 0);
+    }
+
+    /// A cancel between two runs from one mark (two chunks of one
+    /// transcription) stops the second; a fresh mark runs again.
+    #[test]
+    #[ignore]
+    fn cancel_between_runs_stops_the_rest_of_the_mark() {
+        set_fault(None, false);
+        let engine = EngineSupervisor::new(true);
+        engine.load(spec()).unwrap();
+        let mark = engine.cancel_mark();
+        engine
+            .transcribe_since(mark, test_pcm(), RunOptions::default())
+            .unwrap();
+        engine.cancel();
+        assert!(matches!(
+            engine.transcribe_since(mark, test_pcm(), RunOptions::default()),
+            Err(EngineError::Cancelled)
+        ));
+        engine
+            .transcribe(test_pcm(), RunOptions::default())
+            .unwrap();
     }
 
     /// A worker crash mid-stream loses the stream; the batch fallback then
