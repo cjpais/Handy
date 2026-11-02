@@ -1032,6 +1032,13 @@ async getActiveNotices() : Promise<Notice[]> {
     return await TAURI_INVOKE("get_active_notices");
 },
 /**
+ * The user is done with a notice. Matching the code leaves alone a newer
+ * notice that replaced it after the user's view was drawn.
+ */
+async dismissNotice(source: NoticeSource, code: NoticeCode) : Promise<void> {
+    await TAURI_INVOKE("dismiss_notice", { source, code });
+},
+/**
  * Hides the overlay notice; it stays active in the tray and footer.
  */
 async dismissOverlayNotice() : Promise<void> {

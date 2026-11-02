@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { Notice } from "@/bindings";
+import { X } from "lucide-react";
+import { commands, type Notice } from "@/bindings";
 import { NoticeBadgeIcon } from "@/components/icons/NoticeBadgeIcon";
 import type { SidebarSection } from "@/components/Sidebar";
 import { noticeDisplay } from "@/lib/notices";
@@ -100,10 +101,21 @@ const NoticeChip: React.FC<NoticeChipProps> = ({ onShowSection }) => {
                   onClick={() => {
                     setIsOpen(false);
                     onShowSection(page);
+                    commands.dismissNotice(notice.source, notice.code);
                   }}
                   className="shrink-0 cursor-pointer rounded-md bg-wash px-2 py-1 text-text transition-colors hover:bg-line focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
                 >
                   {t("notices.show")}
+                </button>
+                <button
+                  type="button"
+                  aria-label={t("common.close")}
+                  onClick={() =>
+                    commands.dismissNotice(notice.source, notice.code)
+                  }
+                  className="shrink-0 cursor-pointer self-center rounded-md p-1 text-ink-3 transition-colors hover:text-text focus:outline-none focus-visible:ring-1 focus-visible:ring-logo-primary"
+                >
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             );

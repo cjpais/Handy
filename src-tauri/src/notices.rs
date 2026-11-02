@@ -122,14 +122,15 @@ impl NoticeStore {
 }
 
 fn insert(active: &mut Vec<Notice>, notice: Notice) {
-    remove(active, notice.source);
+    remove(active, notice.source, None);
     active.insert(0, notice);
 }
 
-/// Returns whether there was one.
-fn remove(active: &mut Vec<Notice>, source: NoticeSource) -> bool {
+/// Removes the source's notice, if it has `code` when one is given. Returns
+/// whether one was removed.
+fn remove(active: &mut Vec<Notice>, source: NoticeSource, code: Option<NoticeCode>) -> bool {
     let before = active.len();
-    active.retain(|notice| notice.source != source);
+    active.retain(|notice| notice.source != source || code.is_some_and(|code| notice.code != code));
     active.len() != before
 }
 
@@ -175,10 +176,14 @@ pub fn raise_without_overlay(app: &AppHandle, notice: Notice) {
 
 /// Call when `source` next succeeds, before raising anything about that run.
 pub fn clear(app: &AppHandle, source: NoticeSource) {
+    clear_matching(app, source, None);
+}
+
+fn clear_matching(app: &AppHandle, source: NoticeSource, code: Option<NoticeCode>) {
     let cleared = {
         let store = app.state::<NoticeStore>();
         let mut active = store.lock();
-        let cleared = remove(&mut active, source);
+        let cleared = remove(&mut active, source, code);
         if cleared {
             publish(app, &active, None);
         }
@@ -199,6 +204,14 @@ pub fn tray_headline(app: &AppHandle) -> Option<Notice> {
 #[specta::specta]
 pub fn get_active_notices(store: State<'_, NoticeStore>) -> Vec<Notice> {
     store.lock().clone()
+}
+
+/// The user is done with a notice. Matching the code leaves alone a newer
+/// notice that replaced it after the user's view was drawn.
+#[tauri::command]
+#[specta::specta]
+pub fn dismiss_notice(app: AppHandle, source: NoticeSource, code: NoticeCode) {
+    clear_matching(&app, source, Some(code));
 }
 
 /// Hides the overlay notice; it stays active in the tray and footer.
@@ -240,8 +253,21 @@ mod tests {
     fn clearing_removes_only_that_source() {
         let mut active = vec![file(NoticeCode::FileTranscriptionFailed)];
 
-        assert!(!remove(&mut active, NoticeSource::Dictation));
-        assert!(remove(&mut active, NoticeSource::File));
+        assert!(!remove(&mut active, NoticeSource::Dictation, None));
+        assert!(remove(&mut active, NoticeSource::File, None));
+        assert!(active.is_empty());
+    }
+
+    #[test]
+    fn dismissing_spares_a_newer_notice_from_the_same_source() {
+        let mut active = vec![dictation(NoticeCode::PasteFailed)];
+
+        let stale = Some(NoticeCode::PostProcessFailed);
+        assert!(!remove(&mut active, NoticeSource::Dictation, stale));
+        assert_eq!(active, vec![dictation(NoticeCode::PasteFailed)]);
+
+        let shown = Some(NoticeCode::PasteFailed);
+        assert!(remove(&mut active, NoticeSource::Dictation, shown));
         assert!(active.is_empty());
     }
 
