@@ -349,7 +349,7 @@ impl TranscriptionJobManager {
     }
 }
 
-/// How a job that didn't fail ended. A cancelled job changes no notices.
+/// A cancelled job changes no notices.
 enum JobEnd {
     Finished { post_process_failed: bool },
     Cancelled,

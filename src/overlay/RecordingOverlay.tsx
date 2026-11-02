@@ -40,8 +40,7 @@ const SLOW_MODEL_LOAD_MS = 2000;
 // Matches the delay in `hide_recording_overlay`, so a notice can fade out.
 const OVERLAY_FADE_MS = 300;
 
-// What a notice pill adds to its title: 13px padding on each side, the 16px
-// badge and its 7px gap. The 1px border sits outside the card's width.
+// 13px padding on each side, the 16px badge and its 7px gap.
 const NOTICE_PILL_CHROME = 49;
 
 const RecordingOverlay: React.FC = () => {
@@ -338,7 +337,6 @@ const RecordingOverlay: React.FC = () => {
     </div>
   );
 
-  // badge | title, centered. A click dismisses the notice.
   const noticeRow = (
     <div className="sbase snotice">
       <NoticeBadgeIcon className="nglyph" />

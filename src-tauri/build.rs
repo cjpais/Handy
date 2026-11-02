@@ -266,9 +266,8 @@ fn split_versioned_so(name: &str) -> Option<(&str, usize)> {
 /// Generate tray menu translations from frontend locale files.
 ///
 /// Source of truth: src/i18n/locales/*/translation.json
-/// The English "tray" section defines the struct fields, along with every
-/// `errors.*Title` and `settings.history.transcribeFailed`, so the tray shows a
-/// notice's title without its own copy.
+/// The English "tray" section defines the struct fields, plus every
+/// `errors.*Title` and `settings.history.transcribeFailed` for notice titles.
 fn generate_tray_translations() {
     use std::collections::BTreeMap;
     use std::fs;

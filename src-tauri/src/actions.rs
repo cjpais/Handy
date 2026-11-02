@@ -172,10 +172,11 @@ fn should_use_streaming_overlay(style: OverlayStyle, is_streaming: bool) -> bool
 /// What became of a transcription's post-processing.
 #[derive(Debug, PartialEq, Eq)]
 enum PostProcessOutcome {
-    /// It wasn't set up to run. Not a problem to report.
+    /// There was no speech to process.
     Skipped,
     Done(String),
-    /// It ran and produced nothing, so the transcript goes out as it is.
+    /// The user asked for it, but it couldn't run or produced nothing, so the
+    /// transcript goes out as it is.
     Failed,
 }
 
@@ -192,7 +193,7 @@ async fn post_process_transcription(
         Some(provider) => provider,
         None => {
             debug!("Post-processing enabled but no provider is selected");
-            return PostProcessOutcome::Skipped;
+            return PostProcessOutcome::Failed;
         }
     };
 
@@ -207,14 +208,14 @@ async fn post_process_transcription(
             "Post-processing skipped because provider '{}' has no model configured",
             provider.id
         );
-        return PostProcessOutcome::Skipped;
+        return PostProcessOutcome::Failed;
     }
 
     let selected_prompt_id = match &settings.post_process_selected_prompt_id {
         Some(id) => id.clone(),
         None => {
             debug!("Post-processing skipped because no prompt is selected");
-            return PostProcessOutcome::Skipped;
+            return PostProcessOutcome::Failed;
         }
     };
 
@@ -229,13 +230,13 @@ async fn post_process_transcription(
                 "Post-processing skipped because prompt '{}' was not found",
                 selected_prompt_id
             );
-            return PostProcessOutcome::Skipped;
+            return PostProcessOutcome::Failed;
         }
     };
 
     if prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
-        return PostProcessOutcome::Skipped;
+        return PostProcessOutcome::Failed;
     }
 
     debug!(
@@ -268,7 +269,7 @@ async fn post_process_transcription(
                     debug!(
                         "Apple Intelligence selected but not currently available on this device"
                     );
-                    return PostProcessOutcome::Skipped;
+                    return PostProcessOutcome::Failed;
                 }
 
                 let token_limit = model.trim().parse::<i32>().unwrap_or(0);
@@ -300,7 +301,7 @@ async fn post_process_transcription(
             #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
             {
                 debug!("Apple Intelligence provider selected on unsupported platform");
-                return PostProcessOutcome::Skipped;
+                return PostProcessOutcome::Failed;
             }
         }
 
@@ -412,7 +413,7 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
-    /// Post-processing ran and failed, so `final_text` is the bare transcript.
+    /// `final_text` is the bare transcript because post-processing failed.
     pub post_process_failed: bool,
 }
 
@@ -477,8 +478,7 @@ impl ShortcutAction for TranscribeAction {
         let kickoff_elapsed = kickoff_started.elapsed();
 
         // Don't open the mic if nothing can transcribe the recording. A load
-        // kicked off above fails and reports why; one already running won't
-        // report it to this dictation.
+        // started above reports its own failure; one already running doesn't.
         if !tm.is_model_loaded() {
             let selected_model = get_settings(app).selected_model;
             if let Err(e) = app
@@ -843,8 +843,8 @@ impl ShortcutAction for TranscribeAction {
                                             return;
                                         }
 
-                                        // A new session may have started while
-                                        // this paste ran; the UI is now its.
+                                        // A new session may have taken over the
+                                        // UI while this paste ran.
                                         let owns_ui =
                                             || RECORDING_SESSION.load(Ordering::SeqCst) == session;
                                         let (outcome, notice) =
@@ -854,9 +854,7 @@ impl ShortcutAction for TranscribeAction {
                                                         "Text pasted successfully in {:?}",
                                                         paste_time.elapsed()
                                                     );
-                                                    // Clear before raising anything
-                                                    // about this session, and leave a
-                                                    // newer session's notice alone.
+                                                    // Leave a newer session's notice alone.
                                                     if owns_ui() {
                                                         notices::clear(
                                                             &ah_clone,
@@ -929,8 +927,6 @@ impl ShortcutAction for TranscribeAction {
                             }
 
                             error!("Transcription failed: {}", err);
-                            // The full message is also in handy.log via the
-                            // line above.
                             notices::raise(
                                 &ah,
                                 Notice::new(
@@ -1056,8 +1052,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
 
-    /// Settings that run post-processing against `base_url`, without the
-    /// structured output path.
+    /// Settings that run unstructured post-processing against `base_url`.
     fn post_process_settings(base_url: &str) -> AppSettings {
         let mut settings = get_default_settings();
         let provider = settings
@@ -1099,17 +1094,18 @@ mod tests {
     }
 
     #[test]
-    fn post_processing_that_cannot_run_is_skipped() {
-        let settings = get_default_settings();
-        assert_eq!(
-            run_post_process(&settings, "hello"),
-            PostProcessOutcome::Skipped
-        );
-
+    fn blank_speech_is_skipped_but_missing_setup_failed() {
         let settings = post_process_settings("http://127.0.0.1:1");
         assert_eq!(
             run_post_process(&settings, "  "),
             PostProcessOutcome::Skipped
+        );
+
+        let mut settings = post_process_settings("http://127.0.0.1:1");
+        settings.post_process_models.clear();
+        assert_eq!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::Failed
         );
     }
 
@@ -1127,15 +1123,6 @@ mod tests {
         let url = serve_once(r#"{"choices":[]}"#);
         assert_eq!(
             run_post_process(&post_process_settings(&url), "hello"),
-            PostProcessOutcome::Failed
-        );
-    }
-
-    #[test]
-    fn an_unreachable_provider_failed() {
-        let settings = post_process_settings("http://127.0.0.1:1");
-        assert_eq!(
-            run_post_process(&settings, "hello"),
             PostProcessOutcome::Failed
         );
     }

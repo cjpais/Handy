@@ -155,7 +155,8 @@ notices::raise(
 - Rust sends codes, never display strings. Use `with_detail` for what only Rust knows, such as a model name or a raw error.
 - Handy keeps one notice per `NoticeSource`, and a newer one replaces it. When a source next succeeds, call `notices::clear` before raising anything about that session, or the clear wipes the session's own notice.
 - Things the user did in the settings window keep their toast or inline state.
-- Every notice shows in the tray and footer, and dictation notices show on the overlay too, because they happen while the user is watching. File job notices never do. During onboarding, which has no footer, a toast replaces the footer.
+- A dictation notice replaces the overlay, so call `raise` instead of hiding the overlay. If a newer session owns the overlay by then, call `raise_without_overlay`.
+- Every notice shows in the tray and footer (a toast during onboarding). Only dictation notices show on the overlay.
 
 ## Internationalization (i18n)
 

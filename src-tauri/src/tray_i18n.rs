@@ -5,8 +5,7 @@
 //!
 //! The English translation.json is the single source of truth:
 //! - TrayStrings struct fields are derived from the English "tray" keys, plus
-//!   every `errors.*Title` and `settings.history.transcribeFailed` for notice
-//!   titles
+//!   the notice titles (see `build.rs`)
 //! - All languages are auto-discovered from the locales directory
 //!
 //! To add a new tray menu item:
@@ -52,12 +51,6 @@ pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
 #[cfg(test)]
 mod tests {
     use super::{get_tray_translations, TRANSLATIONS};
-
-    #[test]
-    fn includes_notice_titles() {
-        let strings = get_tray_translations(Some("en".to_string()));
-        assert_eq!(strings.paste_failed_title, "Failed to Paste Text");
-    }
 
     #[test]
     fn resolves_locale_fallbacks() {

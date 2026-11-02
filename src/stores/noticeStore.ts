@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { commands, events, type Notice } from "@/bindings";
 
-// The active notices, newest first. The backend owns them; this follows along.
+// Mirrors the backend's active notices, newest first.
 interface NoticeStore {
   notices: Notice[];
   initialized: boolean;

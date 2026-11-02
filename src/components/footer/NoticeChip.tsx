@@ -15,7 +15,6 @@ interface NoticeChipProps {
   onShowSection: (section: SidebarSection) => void;
 }
 
-/** The active notices: a count by level that opens the list of them. */
 const NoticeChip: React.FC<NoticeChipProps> = ({ onShowSection }) => {
   const { t } = useTranslation();
   const notices = useNoticeStore((s) => s.notices);

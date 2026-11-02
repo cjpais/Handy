@@ -1,6 +1,6 @@
 import React from "react";
 
-/** The badge for a notice: colored by `currentColor`, the same on every surface. */
+/** Colored by `currentColor`. */
 export const NoticeBadgeIcon: React.FC<{ className?: string }> = ({
   className,
 }) => (

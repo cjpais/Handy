@@ -160,7 +160,7 @@
   width: var(--ov-work-w);
 }
 
-/* Notice: badge and title, centered. Same row in the pill and the Live panel. */
+/* Notice: badge and title, in the pill and the Live panel. */
 .scard.cnotice {
   cursor: pointer;
 }

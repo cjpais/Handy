@@ -23,7 +23,7 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::notices::{self, NoticeCode, NoticeLevel};
+use crate::notices::{self, NoticeCode};
 use crate::settings;
 use crate::tray_i18n::get_tray_translations;
 use log::{debug, error, info, trace, warn};
@@ -190,34 +190,18 @@ fn windows_taskbar_theme() -> Option<AppTheme> {
     })
 }
 
-/// The idle icon with a badge. macOS draws tray icons as templates, so color
-/// can't show there and both levels use the one badge; the menu line tells them
-/// apart. `AppTheme::Colored` is Linux's, so it's never monochrome.
-fn badged_icon_path(theme: AppTheme, level: NoticeLevel, monochrome: bool) -> &'static str {
-    match (theme, level) {
-        (AppTheme::Dark, _) if monochrome => "resources/tray_idle_warning.png",
-        (AppTheme::Light, _) if monochrome => "resources/tray_idle_warning_dark.png",
-        (AppTheme::Dark, NoticeLevel::Error) => "resources/tray_badge_error.png",
-        (AppTheme::Dark, NoticeLevel::Warning) => "resources/tray_badge_warning.png",
-        (AppTheme::Light, NoticeLevel::Error) => "resources/tray_badge_error_dark.png",
-        (AppTheme::Light, NoticeLevel::Warning) => "resources/tray_badge_warning_dark.png",
-        (AppTheme::Colored, NoticeLevel::Error) => "resources/handy_badge_error.png",
-        (AppTheme::Colored, NoticeLevel::Warning) => "resources/handy_badge_warning.png",
-    }
-}
-
 /// Gets the appropriate icon path for the given theme and state.
 ///
-/// `badge` marks the idle icon while something needs attention: a notice, or
-/// macOS Secure Input blocking keyboard shortcuts. Recording/transcribing states
-/// keep their normal icons so in-flight activity stays recognizable.
-pub fn get_icon_path(
-    theme: AppTheme,
-    state: TrayIconState,
-    badge: Option<NoticeLevel>,
-) -> &'static str {
-    if let (TrayIconState::Idle, Some(level)) = (state, badge) {
-        return badged_icon_path(theme, level, cfg!(target_os = "macos"));
+/// `badge` marks the idle icon while something needs attention (a notice, or
+/// macOS Secure Input). Busy states keep their normal icons. The menu line says
+/// what's wrong, so the badge doesn't vary by level.
+pub fn get_icon_path(theme: AppTheme, state: TrayIconState, badge: bool) -> &'static str {
+    if badge && state == TrayIconState::Idle {
+        return match theme {
+            AppTheme::Dark => "resources/tray_idle_warning.png",
+            AppTheme::Light => "resources/tray_idle_warning_dark.png",
+            AppTheme::Colored => "resources/handy_warning.png",
+        };
     }
     match (theme, state) {
         // Dark theme uses light icons
@@ -343,12 +327,7 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
     let theme = get_current_theme(app);
     let secure_input = crate::secure_input::tray_warning_active(app);
     let notice = notices::tray_headline(app);
-    // Secure Input isn't a notice, but on the badge it counts as an error.
-    let badge = if secure_input {
-        Some(NoticeLevel::Error)
-    } else {
-        notice.as_ref().map(|notice| notice.level)
-    };
+    let badge = secure_input || notice.is_some();
     let tm = app.state::<Arc<TranscriptionManager>>();
     let model_loaded = tm.is_model_loaded();
     let models_locked = tm.job_active();
@@ -519,7 +498,7 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         None
     };
 
-    // The notice line: clicking opens the window, where the footer has the rest.
+    // Clicking opens the window, where the footer has the details.
     let notice_line = inputs
         .notice
         .map(|code| {
@@ -727,11 +706,10 @@ pub fn copy_last_transcript(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::{
-        badged_icon_path, get_icon_path, last_transcript_text, load_tray_icon, AppTheme,
-        MenuInputs, TrayDesired, TrayIconState,
+        get_icon_path, last_transcript_text, load_tray_icon, AppTheme, MenuInputs, TrayDesired,
+        TrayIconState,
     };
     use crate::managers::history::HistoryEntry;
-    use crate::notices::NoticeLevel;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
         HistoryEntry {
@@ -805,86 +783,20 @@ mod tests {
     }
 
     #[test]
-    fn color_badges_follow_the_level_and_theme() {
-        for (theme, level, icon) in [
-            (
-                AppTheme::Dark,
-                NoticeLevel::Error,
-                "resources/tray_badge_error.png",
-            ),
-            (
-                AppTheme::Dark,
-                NoticeLevel::Warning,
-                "resources/tray_badge_warning.png",
-            ),
-            (
-                AppTheme::Light,
-                NoticeLevel::Error,
-                "resources/tray_badge_error_dark.png",
-            ),
-            (
-                AppTheme::Light,
-                NoticeLevel::Warning,
-                "resources/tray_badge_warning_dark.png",
-            ),
-            (
-                AppTheme::Colored,
-                NoticeLevel::Error,
-                "resources/handy_badge_error.png",
-            ),
-            (
-                AppTheme::Colored,
-                NoticeLevel::Warning,
-                "resources/handy_badge_warning.png",
-            ),
-        ] {
-            assert_eq!(badged_icon_path(theme, level, false), icon);
-        }
-    }
-
-    #[test]
-    fn macos_uses_the_one_badge_for_both_levels() {
-        for level in [NoticeLevel::Error, NoticeLevel::Warning] {
-            assert_eq!(
-                badged_icon_path(AppTheme::Dark, level, true),
-                "resources/tray_idle_warning.png"
-            );
-            assert_eq!(
-                badged_icon_path(AppTheme::Light, level, true),
-                "resources/tray_idle_warning_dark.png"
-            );
-        }
-    }
-
-    #[test]
-    fn every_badge_icon_exists() {
+    fn the_badge_shows_at_idle_only_and_exists() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         for theme in [AppTheme::Dark, AppTheme::Light, AppTheme::Colored] {
-            for level in [NoticeLevel::Error, NoticeLevel::Warning] {
-                for monochrome in [false, true] {
-                    let icon = badged_icon_path(theme.clone(), level, monochrome);
-                    assert!(root.join(icon).is_file(), "{icon} is missing");
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn the_badge_shows_at_idle_only() {
-        for state in [TrayIconState::Recording, TrayIconState::Transcribing] {
+            let badged = get_icon_path(theme.clone(), TrayIconState::Idle, true);
+            assert_ne!(
+                badged,
+                get_icon_path(theme.clone(), TrayIconState::Idle, false)
+            );
+            assert!(root.join(badged).is_file(), "{badged} is missing");
             assert_eq!(
-                get_icon_path(AppTheme::Dark, state, Some(NoticeLevel::Error)),
-                get_icon_path(AppTheme::Dark, state, None)
+                get_icon_path(theme.clone(), TrayIconState::Recording, true),
+                get_icon_path(theme, TrayIconState::Recording, false)
             );
         }
-        assert_ne!(
-            get_icon_path(
-                AppTheme::Dark,
-                TrayIconState::Idle,
-                Some(NoticeLevel::Error)
-            ),
-            get_icon_path(AppTheme::Dark, TrayIconState::Idle, None)
-        );
     }
 
     #[test]

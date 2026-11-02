@@ -154,8 +154,7 @@ function App() {
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // The footer lists notices. Without it (onboarding), toast each one as it's
-  // raised. Clearing a notice also sends this event.
+  // The footer lists notices; during onboarding there's no footer, so toast.
   useEffect(() => {
     const unlisten = events.noticesChanged.listen(({ payload }) => {
       if (payload.raised && !footerShownRef.current) {

@@ -685,10 +685,9 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Kicks off the model loading in a background thread if it's not already
-    /// loaded, and returns whether it did. `raise_notice` reports a failed load
-    /// as a dictation notice, so only a dictation passes it: a file job fails
-    /// on its own, and Settings loads report through `loading_failed`.
+    /// Starts loading the model in the background unless it's loaded or
+    /// loading, and returns whether it did. Only a dictation sets
+    /// `raise_notice`: file jobs and Settings report their own failures.
     pub fn initiate_model_load(&self, raise_notice: bool) -> bool {
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading {
@@ -722,13 +721,12 @@ impl TranscriptionManager {
         true
     }
 
-    /// Tells the user that the model a dictation needs couldn't load.
     pub fn raise_model_load_failed(&self, model_id: &str) {
         let model_name = self.model_manager.get_model_info(model_id).map(|m| m.name);
         let notice = Notice::new(NoticeCode::ModelLoadFailed, NoticeSource::Dictation)
             .with_detail(model_name);
-        // The load runs alongside the recording, and that recording's overlay
-        // stays: its transcription fails next, and reports itself.
+        // A recording in progress keeps the overlay; its transcription fails
+        // next and reports that itself.
         if overlay::is_session_showing() {
             notices::raise_without_overlay(&self.app_handle, notice);
         } else {

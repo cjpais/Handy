@@ -5,14 +5,12 @@ import type { SidebarSection } from "@/components/Sidebar";
 
 interface NoticeDisplay {
   title: string;
-  // The longer text. Without one, the notice's detail stands in for it.
+  // Without one, the notice's detail is shown instead.
   explanation?: (t: TFunction) => string;
-  // The page that helps with this notice.
   page: SidebarSection;
 }
 
-// Every NoticeCode must have an entry, so a new code can't ship without text.
-// See `notices.rs` for how to add one.
+// See "Error notices" in AGENTS.md for how to add a code.
 const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
   TranscriptionFailed: {
     title: "errors.transcriptionFailedTitle",

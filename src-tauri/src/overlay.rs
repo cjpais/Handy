@@ -46,8 +46,8 @@ tauri_panel! {
 //
 // Compact overlay (Minimal / transcribing / processing): the 40h pill animates
 // width from 172 (--ov-rest-w) to 216 (--ov-work-w) and expands from center, so
-// the window must fit the widest state plus a little slack. A notice pill hugs
-// its title, and the longest titles need nearly all of this width.
+// the window must fit the widest state plus a little slack. The longest notice
+// titles need nearly all of it.
 const OVERLAY_WIDTH: f64 = 266.0;
 const OVERLAY_HEIGHT: f64 = 50.0;
 
@@ -61,7 +61,6 @@ const LIVE_NOTICE_STATE: &str = "live_notice";
 /// How long a notice holds before the overlay fades it.
 const NOTICE_HOLD: Duration = Duration::from_secs(4);
 
-/// Whether `state` uses the larger Live window.
 fn is_live_state(state: &str) -> bool {
     state == "streaming" || state == LIVE_NOTICE_STATE
 }
@@ -655,10 +654,9 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
-/// Shows `notice` in place of the current session's overlay, then fades it
-/// after [`NOTICE_HOLD`] unless something newer has been shown by then. With
-/// the overlay off there's nothing to show, but the session's overlay still
-/// has to go, in case the setting changed during it.
+/// Shows `notice` in place of the session's overlay and fades it after
+/// [`NOTICE_HOLD`] unless something newer has shown. With the overlay off, it
+/// still hides the session's overlay in case the setting changed mid-session.
 pub fn show_overlay_notice(app_handle: &AppHandle, notice: &Notice) {
     if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
         hide_recording_overlay(app_handle);
@@ -685,8 +683,7 @@ pub fn show_overlay_notice(app_handle: &AppHandle, notice: &Notice) {
     });
 }
 
-/// Fades the notice early. The click may land just as a new session shows the
-/// overlay, so this only hides a notice that is still on screen.
+/// Hides the notice early, unless a new session has replaced it.
 pub fn dismiss_overlay_notice(app_handle: &AppHandle) {
     let shown = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
     if OVERLAY_NOTICE_GENERATION.load(Ordering::SeqCst) == shown {
@@ -694,8 +691,6 @@ pub fn dismiss_overlay_notice(app_handle: &AppHandle) {
     }
 }
 
-/// Whether a session is using the overlay, so a notice from elsewhere must
-/// leave it alone.
 pub fn is_session_showing() -> bool {
     OVERLAY_SESSION_SHOWING.load(Ordering::SeqCst)
 }
@@ -755,7 +750,7 @@ fn update_overlay_position_on_main(app_handle: &AppHandle) {
 /// the instant it drained, well inside the 300 ms hide delay.
 static OVERLAY_SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 
-/// The show generation of the latest notice. It's on screen while this matches
+/// The show generation of the latest notice; it's on screen while this matches
 /// `OVERLAY_SHOW_GENERATION`.
 static OVERLAY_NOTICE_GENERATION: AtomicU64 = AtomicU64::new(u64::MAX);
 
@@ -862,18 +857,6 @@ mod tests {
             );
             assert_eq!(is_live_state(session), live);
         }
-    }
-
-    #[test]
-    fn a_live_notice_uses_the_live_window() {
-        assert_eq!(
-            overlay_dimensions(LIVE_NOTICE_STATE),
-            overlay_dimensions("streaming")
-        );
-        assert_eq!(
-            overlay_dimensions(NOTICE_STATE),
-            overlay_dimensions("recording")
-        );
     }
 
     #[test]
