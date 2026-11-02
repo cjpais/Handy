@@ -944,6 +944,14 @@
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
     "transcriptionFailedTitle": "התמלול נכשל"
   },
+  "notices": {
+    "errorOne": "{{n}} שגיאה",
+    "errorMany": "{{n}} שגיאות",
+    "warningOne": "{{n}} אזהרה",
+    "warningMany": "{{n}} אזהרות",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "הצג"
+  },
   "appLanguage": {
     "title": "שפת האפליקציה",
     "description": "שנה את שפת הממשק של Handy"

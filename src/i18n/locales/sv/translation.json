@@ -944,6 +944,14 @@
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
   },
+  "notices": {
+    "errorOne": "{{n}} fel",
+    "errorMany": "{{n}} fel",
+    "warningOne": "{{n}} varning",
+    "warningMany": "{{n}} varningar",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Visa"
+  },
   "appLanguage": {
     "title": "Applikationsspråk",
     "description": "Ändra språket i Handy-gränssnittet"

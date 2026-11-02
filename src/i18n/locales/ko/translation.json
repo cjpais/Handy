@@ -944,6 +944,14 @@
     "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
     "transcriptionFailedTitle": "음성 인식 실패"
   },
+  "notices": {
+    "errorOne": "오류 {{n}}개",
+    "errorMany": "오류 {{n}}개",
+    "warningOne": "경고 {{n}}개",
+    "warningMany": "경고 {{n}}개",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "보기"
+  },
   "appLanguage": {
     "title": "애플리케이션 언어",
     "description": "Handy 인터페이스의 언어를 변경하세요"

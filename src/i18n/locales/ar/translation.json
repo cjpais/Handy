@@ -944,6 +944,14 @@
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
     "transcriptionFailedTitle": "فشل التفريغ النصي"
   },
+  "notices": {
+    "errorOne": "{{n}} خطأ",
+    "errorMany": "{{n}} أخطاء",
+    "warningOne": "{{n}} تحذير",
+    "warningMany": "{{n}} تحذيرات",
+    "errorsAndWarnings": "{{errors}}، {{warnings}}",
+    "show": "عرض"
+  },
   "appLanguage": {
     "title": "لغة التطبيق",
     "description": "تغيير لغة واجهة Handy"

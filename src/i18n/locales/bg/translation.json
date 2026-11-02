@@ -944,6 +944,14 @@
     "pasteFailed": "Текстът не можа да бъде поставен в активното приложение.",
     "transcriptionFailedTitle": "Неуспешна транскрипция"
   },
+  "notices": {
+    "errorOne": "{{n}} грешка",
+    "errorMany": "{{n}} грешки",
+    "warningOne": "{{n}} предупреждение",
+    "warningMany": "{{n}} предупреждения",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Покажи"
+  },
   "appLanguage": {
     "title": "Език на приложението",
     "description": "Промяна на езика на интерфейса на Handy"

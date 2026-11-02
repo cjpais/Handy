@@ -944,6 +944,14 @@
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },
+  "notices": {
+    "errorOne": "{{n}} lỗi",
+    "errorMany": "{{n}} lỗi",
+    "warningOne": "{{n}} cảnh báo",
+    "warningMany": "{{n}} cảnh báo",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Hiển thị"
+  },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",
     "description": "Thay đổi ngôn ngữ giao diện của Handy"

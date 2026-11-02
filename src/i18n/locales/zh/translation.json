@@ -944,6 +944,14 @@
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
     "transcriptionFailedTitle": "转录失败"
   },
+  "notices": {
+    "errorOne": "{{n}} 个错误",
+    "errorMany": "{{n}} 个错误",
+    "warningOne": "{{n}} 个警告",
+    "warningMany": "{{n}} 个警告",
+    "errorsAndWarnings": "{{errors}}，{{warnings}}",
+    "show": "显示"
+  },
   "appLanguage": {
     "title": "应用语言",
     "description": "更改 Handy 界面的语言"

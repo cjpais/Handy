@@ -944,6 +944,14 @@
     "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",
     "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
   },
+  "notices": {
+    "errorOne": "{{n}} त्रुटि",
+    "errorMany": "{{n}} त्रुटियां",
+    "warningOne": "{{n}} चेतावनी",
+    "warningMany": "{{n}} चेतावनियां",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "दिखाएं"
+  },
   "appLanguage": {
     "title": "ऐप्लिकेशन की भाषा",
     "description": "Handy इंटरफ़ेस की भाषा बदलें"

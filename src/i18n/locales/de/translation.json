@@ -944,6 +944,14 @@
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
+  "notices": {
+    "errorOne": "{{n}} Fehler",
+    "errorMany": "{{n}} Fehler",
+    "warningOne": "{{n}} Warnung",
+    "warningMany": "{{n}} Warnungen",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Anzeigen"
+  },
   "appLanguage": {
     "title": "Anwendungssprache",
     "description": "Sprache der Handy-Oberfläche ändern"

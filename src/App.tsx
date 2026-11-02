@@ -88,6 +88,8 @@ function App() {
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const showHistory = useCallback(() => setCurrentSection("history"), []);
+  const footerShownRef = useRef(false);
+  footerShownRef.current = onboardingStep === "done" && !onboardingPreview;
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -152,10 +154,11 @@ function App() {
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // Toast each notice as it's raised. Clearing one also sends this event.
+  // The footer lists notices. Without it (onboarding), toast each one as it's
+  // raised. Clearing a notice also sends this event.
   useEffect(() => {
     const unlisten = events.noticesChanged.listen(({ payload }) => {
-      if (payload.raised) {
+      if (payload.raised && !footerShownRef.current) {
         showNoticeToast(t, payload.raised);
       }
     });
@@ -408,7 +411,7 @@ function App() {
           </div>
         </div>
         {/* Fixed footer at bottom */}
-        <Footer onShowHistory={showHistory} />
+        <Footer onShowHistory={showHistory} onShowSection={setCurrentSection} />
         <FileDropOverlay onDropped={showHistory} />
       </div>
     );

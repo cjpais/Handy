@@ -944,6 +944,14 @@
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
     "transcriptionFailedTitle": "轉錄失敗"
   },
+  "notices": {
+    "errorOne": "{{n}} 個錯誤",
+    "errorMany": "{{n}} 個錯誤",
+    "warningOne": "{{n}} 個警告",
+    "warningMany": "{{n}} 個警告",
+    "errorsAndWarnings": "{{errors}}，{{warnings}}",
+    "show": "顯示"
+  },
   "appLanguage": {
     "title": "應用程式語言",
     "description": "變更 Handy 介面的語言"

@@ -944,6 +944,14 @@
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
     "transcriptionFailedTitle": "Transkripsi Gagal"
   },
+  "notices": {
+    "errorOne": "{{n}} kesalahan",
+    "errorMany": "{{n}} kesalahan",
+    "warningOne": "{{n}} peringatan",
+    "warningMany": "{{n}} peringatan",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Tampilkan"
+  },
   "appLanguage": {
     "title": "Bahasa Aplikasi",
     "description": "Ubah bahasa antarmuka Handy"

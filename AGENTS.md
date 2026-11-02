@@ -88,6 +88,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `bindings.ts` - Auto-generated Tauri type bindings (via tauri-specta)
 - `overlay/` - Recording overlay window entry point
 - `lib/notices.ts` - Maps each notice code to its text and page
+- `stores/noticeStore.ts` - The active notices, for the footer chip
 - `lib/types.ts` - Shared TypeScript type definitions
 
 ### Key Architecture Patterns
@@ -154,6 +155,7 @@ notices::raise(
 - Rust sends codes, never display strings. Use `with_detail` for what only Rust knows, such as a model name or a raw error.
 - Handy keeps one notice per `NoticeSource`, and a newer one replaces it. When a source next succeeds, call `notices::clear` before raising anything about that session, or the clear wipes the session's own notice.
 - Things the user did in the settings window keep their toast or inline state.
+- Every notice shows in the tray and footer, and dictation notices show on the overlay too. During onboarding, which has no footer, a toast replaces the footer.
 
 ## Internationalization (i18n)
 

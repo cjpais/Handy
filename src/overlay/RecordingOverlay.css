@@ -184,12 +184,7 @@
   width: 16px;
   height: 16px;
   flex: none;
-}
-.nglyph circle {
-  fill: var(--notice);
-}
-.nglyph path {
-  stroke: var(--color-background);
+  color: var(--notice);
 }
 .nlabel {
   font-size: 12px;

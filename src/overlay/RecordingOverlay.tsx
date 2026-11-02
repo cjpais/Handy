@@ -10,6 +10,7 @@ import type {
   StreamTextEvent,
   StreamWorkKind,
 } from "@/bindings";
+import { NoticeBadgeIcon } from "@/components/icons/NoticeBadgeIcon";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { noticeDisplay } from "@/lib/notices";
 import type { ModelStateEvent } from "@/lib/types/events";
@@ -340,11 +341,7 @@ const RecordingOverlay: React.FC = () => {
   // badge | title, centered. A click dismisses the notice.
   const noticeRow = (
     <div className="sbase snotice">
-      <svg className="nglyph" viewBox="0 0 16 16" aria-hidden="true">
-        <circle cx="8" cy="8" r="8" />
-        <path d="M8 4v4.6" strokeWidth="2" strokeLinecap="round" />
-        <path d="M8 11.8v.01" strokeWidth="2.2" strokeLinecap="round" />
-      </svg>
+      <NoticeBadgeIcon className="nglyph" />
       <span className="nlabel">{noticeTitle}</span>
     </div>
   );

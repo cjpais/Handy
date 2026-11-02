@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 
 import ModelSelector from "../model-selector";
+import type { SidebarSection } from "../Sidebar";
 import UpdateChecker from "../update-checker";
+import NoticeChip from "./NoticeChip";
 import TranscriptionStatus from "./TranscriptionStatus";
 
 interface FooterProps {
   onShowHistory: () => void;
+  onShowSection: (section: SidebarSection) => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
+const Footer: React.FC<FooterProps> = ({ onShowHistory, onShowSection }) => {
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -32,6 +35,7 @@ const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
         <div className="flex items-center gap-4">
           <ModelSelector />
           <TranscriptionStatus onShowHistory={onShowHistory} />
+          <NoticeChip onShowSection={onShowSection} />
         </div>
 
         {/* Update Status */}

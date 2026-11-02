@@ -944,6 +944,14 @@
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },
+  "notices": {
+    "errorOne": "{{n}} errore",
+    "errorMany": "{{n}} errori",
+    "warningOne": "{{n}} avviso",
+    "warningMany": "{{n}} avvisi",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Mostra"
+  },
   "appLanguage": {
     "title": "Lingua Applicazione",
     "description": "Cambia la lingua dell'interfaccia di Handy"

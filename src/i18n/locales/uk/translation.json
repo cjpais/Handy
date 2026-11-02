@@ -944,6 +944,14 @@
     "pasteFailed": "Не вдалося вставити текст до активної програми.",
     "transcriptionFailedTitle": "Помилка транскрипції"
   },
+  "notices": {
+    "errorOne": "{{n}} помилка",
+    "errorMany": "{{n}} помилки",
+    "warningOne": "{{n}} попередження",
+    "warningMany": "{{n}} попередження",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Показати"
+  },
   "appLanguage": {
     "title": "Мова інтерфейсу",
     "description": "Змінити мову інтерфейсу Handy"

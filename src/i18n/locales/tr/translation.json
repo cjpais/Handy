@@ -944,6 +944,14 @@
     "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı.",
     "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
   },
+  "notices": {
+    "errorOne": "{{n}} hata",
+    "errorMany": "{{n}} hata",
+    "warningOne": "{{n}} uyarı",
+    "warningMany": "{{n}} uyarı",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Göster"
+  },
   "appLanguage": {
     "title": "Uygulama Dili",
     "description": "Handy arayüzünün dilini değiştirin"

@@ -944,6 +944,14 @@
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
     "transcriptionFailedTitle": "Transskription mislykkedes"
   },
+  "notices": {
+    "errorOne": "{{n}} fejl",
+    "errorMany": "{{n}} fejl",
+    "warningOne": "{{n}} advarsel",
+    "warningMany": "{{n}} advarsler",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Vis"
+  },
   "appLanguage": {
     "title": "Applikationssprog",
     "description": "Skift sproget for Handy-grænsefladen"

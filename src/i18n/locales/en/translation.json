@@ -944,6 +944,14 @@
     "pasteFailed": "Text could not be pasted into the active application.",
     "transcriptionFailedTitle": "Transcription Failed"
   },
+  "notices": {
+    "errorOne": "{{n}} error",
+    "errorMany": "{{n}} errors",
+    "warningOne": "{{n}} warning",
+    "warningMany": "{{n}} warnings",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Show"
+  },
   "appLanguage": {
     "title": "Application Language",
     "description": "Change the language of the Handy interface"

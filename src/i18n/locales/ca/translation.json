@@ -944,6 +944,14 @@
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
     "transcriptionFailedTitle": "La transcripció ha fallat"
   },
+  "notices": {
+    "errorOne": "{{n}} error",
+    "errorMany": "{{n}} errors",
+    "warningOne": "{{n}} avís",
+    "warningMany": "{{n}} avisos",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Mostra"
+  },
   "appLanguage": {
     "title": "Llengua de l'aplicació",
     "description": "Canvia la llengua de la interfície del Handy"

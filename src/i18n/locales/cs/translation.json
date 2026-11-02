@@ -944,6 +944,14 @@
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
     "transcriptionFailedTitle": "Přepis selhal"
   },
+  "notices": {
+    "errorOne": "{{n}} chyba",
+    "errorMany": "{{n}} chyby",
+    "warningOne": "{{n}} upozornění",
+    "warningMany": "{{n}} upozornění",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}",
+    "show": "Zobrazit"
+  },
   "appLanguage": {
     "title": "Jazyk aplikace",
     "description": "Změňte jazyk rozhraní Handy"
