@@ -191,10 +191,41 @@ enum PostProcessOutcome {
     Failed,
 }
 
+/// Upper bound on the whole post-processing step. reqwest has no default
+/// timeout, so an endpoint that accepts the request and never answers (a
+/// stalled network, a local server still loading its model) would otherwise
+/// leave the dictation on "Processing" until the user cancels it. The bound
+/// covers every request the step makes, including the retry without
+/// reasoning fields and the legacy fallback after a failed structured
+/// request, so a silent endpoint costs one timeout rather than one per
+/// attempt. On expiry the original transcription is used.
+const POST_PROCESS_TIMEOUT: Duration = Duration::from_secs(60);
+
 async fn post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
 ) -> PostProcessOutcome {
+    post_process_transcription_within(settings, transcription, POST_PROCESS_TIMEOUT).await
+}
+
+async fn post_process_transcription_within(
+    settings: &AppSettings,
+    transcription: &str,
+    limit: Duration,
+) -> PostProcessOutcome {
+    match tokio::time::timeout(limit, run_post_process(settings, transcription)).await {
+        Ok(outcome) => outcome,
+        Err(_) => {
+            warn!(
+                "Post-processing did not finish within {:?}. Falling back to original transcription.",
+                limit
+            );
+            PostProcessOutcome::Failed
+        }
+    }
+}
+
+async fn run_post_process(settings: &AppSettings, transcription: &str) -> PostProcessOutcome {
     if is_blank_transcription(transcription) {
         debug!("Post-processing skipped because the transcription is empty");
         return PostProcessOutcome::Skipped;
@@ -1071,8 +1102,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 mod tests {
     use super::{
         complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
-        post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
-        strip_think_block, PostProcessOutcome,
+        post_process_transcription, post_process_transcription_within,
+        should_use_streaming_overlay, strip_invisible_chars, strip_think_block, PostProcessOutcome,
+        POST_PROCESS_TIMEOUT,
     };
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
@@ -1226,6 +1258,82 @@ mod tests {
 
         cancel_thread.join().unwrap();
         assert_eq!(result, None);
+    }
+
+    /// Starts a server that accepts every connection, reads the request and
+    /// never answers, and returns settings that post-process through it.
+    async fn settings_for_silent_endpoint(structured_output: bool) -> AppSettings {
+        use tokio::io::AsyncReadExt;
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            loop {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                tokio::spawn(async move {
+                    let mut request = [0_u8; 4096];
+                    let _ = stream.read(&mut request).await;
+                    // Keep the connection open and never write a response.
+                    future::pending::<()>().await;
+                });
+            }
+        });
+
+        let mut settings = get_default_settings();
+        let provider = settings
+            .post_process_providers
+            .iter_mut()
+            .find(|provider| provider.id == "custom")
+            .expect("default settings include the custom provider");
+        provider.base_url = format!("http://{address}");
+        provider.supports_structured_output = structured_output;
+        settings.post_process_provider_id = "custom".to_string();
+        settings
+            .post_process_models
+            .insert("custom".to_string(), "model".to_string());
+        settings.post_process_selected_prompt_id = settings
+            .post_process_prompts
+            .first()
+            .map(|prompt| prompt.id.clone());
+        settings
+    }
+
+    /// A post-processing endpoint that never answers must give up after one
+    /// timeout and fall back to the original transcription, even when a failed
+    /// structured request would otherwise be retried in legacy mode. The clock
+    /// is paused, so tokio jumps to each deadline instead of sleeping through
+    /// it; without the step timeout the only deadline left is the outer guard.
+    async fn assert_silent_endpoint_times_out_once(structured_output: bool) {
+        let settings = settings_for_silent_endpoint(structured_output).await;
+        let started = tokio::time::Instant::now();
+
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(600),
+            post_process_transcription_within(&settings, "hello", POST_PROCESS_TIMEOUT),
+        )
+        .await
+        .expect("post-processing a silent endpoint never gave up");
+
+        assert_eq!(outcome, PostProcessOutcome::Failed);
+        let elapsed = started.elapsed();
+        assert!(
+            elapsed >= POST_PROCESS_TIMEOUT,
+            "gave up early: {elapsed:?}"
+        );
+        assert!(
+            elapsed < POST_PROCESS_TIMEOUT * 2,
+            "waited more than one timeout: {elapsed:?}"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn post_processing_a_silent_endpoint_times_out() {
+        assert_silent_endpoint_times_out_once(false).await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn structured_post_processing_a_silent_endpoint_times_out_once() {
+        assert_silent_endpoint_times_out_once(true).await;
     }
 
     #[test]
