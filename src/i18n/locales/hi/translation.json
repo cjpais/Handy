@@ -7,7 +7,10 @@
     "model": "मॉडल",
     "quit": "बाहर निकलें",
     "cancel": "रद्द करें",
-    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं"
+    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं",
+    "language": "भाषा",
+    "autoLanguage": "ऑटो",
+    "otherLanguages": "अन्य भाषाएँ"
   },
   "sidebar": {
     "general": "सामान्य",
@@ -709,6 +712,7 @@
       "transcribeFailed": "ट्रांसक्रिप्शन विफल रहा। कृपया फिर से प्रयास करें।",
       "waiting": "ट्रांसक्राइब होने की प्रतीक्षा में",
       "transcribingPercent": "ट्रांसक्राइब हो रहा है, {{percent}}%",
+      "readingFile": "फ़ाइल पढ़ी जा रही है...",
       "showMore": "और दिखाएँ",
       "showLess": "कम दिखाएँ",
       "dropTitle": "ट्रांसक्राइब करने के लिए छोड़ें",

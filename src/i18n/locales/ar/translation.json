@@ -7,7 +7,10 @@
     "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء",
-    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input"
+    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
+    "language": "اللغة",
+    "autoLanguage": "تلقائي",
+    "otherLanguages": "لغات أخرى"
   },
   "sidebar": {
     "general": "عام",
@@ -709,6 +712,7 @@
       "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
       "waiting": "في انتظار النسخ",
       "transcribingPercent": "جارٍ النسخ، {{percent}}%",
+      "readingFile": "جارٍ قراءة الملف...",
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "dropTitle": "أفلت الملف لنسخه",

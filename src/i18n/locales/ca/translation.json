@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Surt",
     "cancel": "Cancel·la",
-    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura"
+    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura",
+    "language": "Llengua",
+    "autoLanguage": "Automàtica",
+    "otherLanguages": "Altres llengües"
   },
   "sidebar": {
     "general": "General",
@@ -709,6 +712,7 @@
       "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
       "waiting": "Esperant per transcriure",
       "transcribingPercent": "Transcrivint, {{percent}}%",
+      "readingFile": "S'està llegint el fitxer...",
       "showMore": "Mostra'n més",
       "showLess": "Mostra'n menys",
       "dropTitle": "Deixa anar per transcriure",

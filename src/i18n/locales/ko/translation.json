@@ -7,7 +7,10 @@
     "model": "모델",
     "quit": "종료",
     "cancel": "취소",
-    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨"
+    "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨",
+    "language": "언어",
+    "autoLanguage": "자동",
+    "otherLanguages": "기타 언어"
   },
   "sidebar": {
     "general": "일반",
@@ -709,6 +712,7 @@
       "transcribeFailed": "받아쓰기에 실패했습니다. 다시 시도해 주세요.",
       "waiting": "받아쓰기 대기 중",
       "transcribingPercent": "받아쓰는 중, {{percent}}%",
+      "readingFile": "파일 읽는 중...",
       "showMore": "더 보기",
       "showLess": "간략히 보기",
       "dropTitle": "놓아서 받아쓰기",

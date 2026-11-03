@@ -7,7 +7,10 @@
     "model": "Modello",
     "quit": "Esci",
     "cancel": "Annulla",
-    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
+    "language": "Lingua",
+    "autoLanguage": "Automatico",
+    "otherLanguages": "Altre lingue"
   },
   "sidebar": {
     "general": "Generale",
@@ -709,6 +712,7 @@
       "transcribeFailed": "Trascrizione non riuscita. Riprova.",
       "waiting": "In attesa di trascrizione",
       "transcribingPercent": "Trascrizione, {{percent}}%",
+      "readingFile": "Lettura del file in corso...",
       "showMore": "Mostra di più",
       "showLess": "Mostra di meno",
       "dropTitle": "Rilascia per trascrivere",

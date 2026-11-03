@@ -2460,7 +2460,7 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.9.8"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2522,6 +2522,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-cpp",
+ "webkit2gtk-sys",
  "webview2-com",
  "whatlang",
  "windows 0.61.3",

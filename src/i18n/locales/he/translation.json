@@ -7,7 +7,10 @@
     "model": "מודל",
     "quit": "יציאה",
     "cancel": "ביטול",
-    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
+    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input",
+    "language": "שפה",
+    "autoLanguage": "אוטומטי",
+    "otherLanguages": "שפות אחרות"
   },
   "sidebar": {
     "general": "כללי",
@@ -709,6 +712,7 @@
       "transcribeFailed": "התמלול נכשל. נסו שוב.",
       "waiting": "ממתין לתמלול",
       "transcribingPercent": "מתמלל, {{percent}}%",
+      "readingFile": "קורא קובץ...",
       "showMore": "הצג עוד",
       "showLess": "הצג פחות",
       "dropTitle": "שחררו כדי לתמלל",

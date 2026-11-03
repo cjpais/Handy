@@ -7,7 +7,10 @@
     "model": "Модель",
     "quit": "Выход",
     "cancel": "Отмена",
-    "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input"
+    "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input",
+    "language": "Язык",
+    "autoLanguage": "Авто",
+    "otherLanguages": "Другие языки"
   },
   "sidebar": {
     "general": "Общие",
@@ -709,6 +712,7 @@
       "transcribeFailed": "Не удалось выполнить расшифровку. Попробуйте ещё раз.",
       "waiting": "Ожидает расшифровки",
       "transcribingPercent": "Расшифровка, {{percent}}%",
+      "readingFile": "Чтение файла...",
       "showMore": "Показать больше",
       "showLess": "Показать меньше",
       "dropTitle": "Отпустите, чтобы расшифровать",

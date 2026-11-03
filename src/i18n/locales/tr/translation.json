@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Çıkış",
     "cancel": "İptal",
-    "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor"
+    "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor",
+    "language": "Dil",
+    "autoLanguage": "Otomatik",
+    "otherLanguages": "Diğer Diller"
   },
   "sidebar": {
     "general": "Genel",
@@ -709,6 +712,7 @@
       "transcribeFailed": "Yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
       "waiting": "Yazıya dökülmeyi bekliyor",
       "transcribingPercent": "Yazıya dökülüyor, %{{percent}}",
+      "readingFile": "Dosya okunuyor...",
       "showMore": "Daha fazla göster",
       "showLess": "Daha az göster",
       "dropTitle": "Yazıya dökmek için bırakın",

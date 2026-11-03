@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Quit",
     "cancel": "Cancel",
-    "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
+    "secureInputWarning": "⚠ Shortcuts blocked by Secure Input",
+    "language": "Language",
+    "autoLanguage": "Auto",
+    "otherLanguages": "Other Languages"
   },
   "sidebar": {
     "general": "General",
@@ -709,6 +712,7 @@
       "transcribeFailed": "Transcription failed. Please try again.",
       "waiting": "Waiting to transcribe",
       "transcribingPercent": "Transcribing, {{percent}}%",
+      "readingFile": "Reading file...",
       "showMore": "Show more",
       "showLess": "Show less",
       "dropTitle": "Drop to transcribe",

@@ -5,7 +5,7 @@ import HandyHand from "./icons/HandyHand";
 import { transcribeFiles } from "./settings/history/transcribeFiles";
 
 interface FileDropOverlayProps {
-  // Called once the dropped files are added, to show them in History.
+  // Called as files are dropped, to show them in History.
   onDropped: () => void;
 }
 
@@ -26,7 +26,9 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
       } else if (payload.type === "drop") {
         setDragging(false);
         if (payload.paths.length === 0) return;
-        if ((await transcribeFiles(payload.paths)) > 0) onDropped();
+        // History shows each file while it's read.
+        onDropped();
+        await transcribeFiles(payload.paths);
       }
     });
     return () => {
