@@ -604,30 +604,37 @@ struct OpenSpan {
 
 impl Writer {
     fn run(mut self) {
+        if let Err(error) = self.write_trace() {
+            log::warn!("diagnostics writer: trace write failed: {error}");
+            drop(self.out);
+            let _ = fs::remove_file(&self.partial);
+            return;
+        }
+
+        let mut done_path = self.final_path.clone();
+        if let Err(e) = fs::rename(&self.partial, &self.final_path) {
+            log::warn!(
+                "diagnostics writer: rename to {} failed: {e}",
+                self.final_path.display()
+            );
+            done_path = self.partial.clone();
+        }
+        let _ = self.done_tx.send(done_path);
+    }
+
+    fn write_trace(&mut self) -> std::io::Result<()> {
         let mut bytes = TRACE_HEADER.len() as u64;
-        let mut reserved_bytes = match minimum_trace_bytes(&self.config, self.byte_cap) {
-            Ok(minimum) => minimum - bytes,
-            Err(error) => {
-                log::warn!("diagnostics writer: capture metadata exceeds byte cap: {error}");
-                drop(self.out);
-                drop(self.done_tx);
-                let _ = fs::remove_file(&self.partial);
-                return;
-            }
-        };
+        let mut reserved_bytes = minimum_trace_bytes(&self.config, self.byte_cap)? - bytes;
         let mut truncated: u64 = 0;
-        // Cleared on any write error. A file that failed mid-stream cannot
-        // be trusted to parse, so it must not reach the caller as success.
-        let mut io_ok = true;
         // Open async spans keyed by (run, name), holding the thread the span
         // began on so the incomplete end lands on an honest track.
         let mut open: BTreeMap<(RunId, Name), OpenSpan> = BTreeMap::new();
         let mut threads: BTreeMap<u64, Option<&'static str>> = BTreeMap::new();
         let mut record_buffer = Vec::with_capacity(128);
 
-        io_ok &= self.out.write_all(TRACE_HEADER).is_ok();
+        self.out.write_all(TRACE_HEADER)?;
         let mut first = true;
-        for ev in self.rx {
+        for ev in &self.rx {
             let thread_bytes = if threads.contains_key(&ev.thread.tid) {
                 0
             } else {
@@ -635,14 +642,7 @@ impl Writer {
                     .thread
                     .name
                     .map_or_else(|| format!("thread-{}", ev.thread.tid), str::to_string);
-                match metadata_line(Some(ev.thread.tid), &label, &mut record_buffer) {
-                    Ok(line) => line.len() as u64 + 2,
-                    Err(error) => {
-                        io_ok = false;
-                        log::warn!("diagnostics writer: metadata serialization failed: {error}");
-                        break;
-                    }
-                }
+                metadata_line(Some(ev.thread.tid), &label, &mut record_buffer)?.len() as u64 + 2
             };
             let old_end_bytes = match ev.phase {
                 Phase::Begin | Phase::End => ev
@@ -657,28 +657,13 @@ impl Writer {
                     args: Args::default(),
                     ..ev
                 };
-                match event_line_at_timestamp(&end, u64::MAX, true, &mut record_buffer) {
-                    Ok(line) => line.len() as u64 + 2,
-                    Err(error) => {
-                        io_ok = false;
-                        log::warn!("diagnostics writer: event serialization failed: {error}");
-                        break;
-                    }
-                }
+                event_line_at_timestamp(&end, u64::MAX, true, &mut record_buffer)?.len() as u64 + 2
             } else {
                 0
             };
-            let line = match event_line(&ev, self.epoch, false, &mut record_buffer) {
-                Ok(Some(line)) => line,
-                Ok(None) => {
-                    truncated = truncated.saturating_add(1);
-                    continue;
-                }
-                Err(error) => {
-                    io_ok = false;
-                    log::warn!("diagnostics writer: event serialization failed: {error}");
-                    break;
-                }
+            let Some(line) = event_line(&ev, self.epoch, false, &mut record_buffer)? else {
+                truncated = truncated.saturating_add(1);
+                continue;
             };
             let sep_len = u64::from(!first);
             let next_reserved =
@@ -689,15 +674,7 @@ impl Writer {
                 truncated = truncated.saturating_add(1);
                 continue;
             }
-            let ok = (first || self.out.write_all(b",").is_ok())
-                && self.out.write_all(line).is_ok()
-                && self.out.write_all(b"\n").is_ok();
-            if !ok {
-                io_ok = false;
-                log::warn!("diagnostics writer: file write failed; stopping capture early");
-                break;
-            }
-            first = false;
+            write_record(&mut self.out, &mut first, line)?;
             bytes = next_bytes as u64;
             reserved_bytes = next_reserved as u64;
             threads.entry(ev.thread.tid).or_insert(ev.thread.name);
@@ -739,87 +716,41 @@ impl Writer {
                 },
                 args: Args::default(),
             };
-            match event_line(&ev, self.epoch, true, &mut record_buffer) {
-                Ok(Some(line)) => {
-                    io_ok &= (first || self.out.write_all(b",").is_ok())
-                        && self.out.write_all(line).is_ok()
-                        && self.out.write_all(b"\n").is_ok();
-                    first = false;
-                    incomplete = incomplete.saturating_add(1);
-                }
-                Ok(None) => {}
-                Err(error) => {
-                    io_ok = false;
-                    log::warn!("diagnostics writer: event serialization failed: {error}");
-                    break;
-                }
+            if let Some(line) = event_line(&ev, self.epoch, true, &mut record_buffer)? {
+                write_record(&mut self.out, &mut first, line)?;
+                incomplete = incomplete.saturating_add(1);
             }
         }
 
         // Metadata: process and thread names.
-        match metadata_line(None, "Handy", &mut record_buffer) {
-            Ok(line) => {
-                io_ok &= (first || self.out.write_all(b",").is_ok())
-                    && self.out.write_all(line).is_ok()
-                    && self.out.write_all(b"\n").is_ok();
-            }
-            Err(error) => {
-                io_ok = false;
-                log::warn!("diagnostics writer: metadata serialization failed: {error}");
-            }
-        }
+        let line = metadata_line(None, "Handy", &mut record_buffer)?;
+        write_record(&mut self.out, &mut first, line)?;
         for (tid, name) in &threads {
             let label = name.map_or_else(|| format!("thread-{tid}"), str::to_string);
-            match metadata_line(Some(*tid), &label, &mut record_buffer) {
-                Ok(line) => {
-                    io_ok &= self.out.write_all(b",").is_ok()
-                        && self.out.write_all(line).is_ok()
-                        && self.out.write_all(b"\n").is_ok();
-                }
-                Err(error) => {
-                    io_ok = false;
-                    log::warn!("diagnostics writer: metadata serialization failed: {error}");
-                    break;
-                }
-            }
+            let line = metadata_line(Some(*tid), &label, &mut record_buffer)?;
+            write_record(&mut self.out, &mut first, line)?;
         }
 
-        io_ok &= write_footer(
+        write_footer(
             &mut self.out,
             &self.config,
             self.dropped.load(Ordering::Relaxed),
             truncated,
             incomplete,
-        )
-        .is_ok();
-        if let Err(e) = self.out.flush() {
-            io_ok = false;
-            log::warn!("diagnostics writer: flush failed: {e}");
-        }
-        if let Err(e) = self.out.get_ref().sync_all() {
-            io_ok = false;
-            log::warn!("diagnostics writer: fsync failed: {e}");
-        }
-
-        if !io_ok {
-            // Half-written JSON must not reach the caller as a success.
-            // Dropping done_tx without sending makes stop report
-            // WriterFailed; the partial file is not worth keeping.
-            drop(self.done_tx);
-            let _ = fs::remove_file(&self.partial);
-            return;
-        }
-
-        let mut done_path = self.final_path.clone();
-        if let Err(e) = fs::rename(&self.partial, &self.final_path) {
-            log::warn!(
-                "diagnostics writer: rename to {} failed: {e}",
-                self.final_path.display()
-            );
-            done_path = self.partial.clone();
-        }
-        let _ = self.done_tx.send(done_path);
+        )?;
+        self.out.flush()?;
+        self.out.get_ref().sync_all()
     }
+}
+
+fn write_record(out: &mut impl Write, first: &mut bool, line: &[u8]) -> std::io::Result<()> {
+    if !*first {
+        out.write_all(b",")?;
+    }
+    out.write_all(line)?;
+    out.write_all(b"\n")?;
+    *first = false;
+    Ok(())
 }
 
 fn write_footer(
@@ -829,41 +760,23 @@ fn write_footer(
     truncated_events: u64,
     incomplete_spans: u64,
 ) -> std::io::Result<()> {
-    #[derive(Serialize)]
-    struct OtherData<'a> {
-        app_version: &'static str,
-        arch: &'static str,
-        capture_coverage: &'static str,
-        config: &'a ConfigSnapshot,
-        dropped_events: u64,
-        first_audio_semantics: &'static str,
-        incomplete_spans: u64,
-        os: &'static str,
-        output_semantics: &'static str,
-        schema: &'static str,
-        truncated_events: u64,
-    }
+    use serde::ser::{SerializeMap, Serializer};
 
-    let other = OtherData {
-        app_version: env!("CARGO_PKG_VERSION"),
-        arch: std::env::consts::ARCH,
-        capture_coverage: "unknown",
-        config,
-        dropped_events,
-        first_audio_semantics: "delivery_latency",
-        incomplete_spans,
-        os: std::env::consts::OS,
-        output_semantics: "handy_call_returned",
-        schema: SCHEMA,
-        truncated_events,
-    };
     out.write_all(b"],\"otherData\":")?;
-    serde_json::to_writer(&mut *out, &other).map_err(|error| {
-        std::io::Error::new(
-            error.io_error_kind().unwrap_or(std::io::ErrorKind::Other),
-            error,
-        )
-    })?;
+    let mut serializer = serde_json::Serializer::new(&mut *out);
+    let mut fields = serializer.serialize_map(None)?;
+    fields.serialize_entry("app_version", env!("CARGO_PKG_VERSION"))?;
+    fields.serialize_entry("arch", std::env::consts::ARCH)?;
+    fields.serialize_entry("capture_coverage", "unknown")?;
+    fields.serialize_entry("config", config)?;
+    fields.serialize_entry("dropped_events", &dropped_events)?;
+    fields.serialize_entry("first_audio_semantics", "delivery_latency")?;
+    fields.serialize_entry("incomplete_spans", &incomplete_spans)?;
+    fields.serialize_entry("os", std::env::consts::OS)?;
+    fields.serialize_entry("output_semantics", "handy_call_returned")?;
+    fields.serialize_entry("schema", SCHEMA)?;
+    fields.serialize_entry("truncated_events", &truncated_events)?;
+    fields.end()?;
     out.write_all(b"}\n")
 }
 
@@ -897,7 +810,7 @@ fn minimum_trace_bytes(config: &ConfigSnapshot, byte_cap: u64) -> std::io::Resul
     };
     count.write_all(TRACE_HEADER)?;
     let mut buffer = Vec::with_capacity(128);
-    let process = metadata_line(None, "Handy", &mut buffer).map_err(std::io::Error::other)?;
+    let process = metadata_line(None, "Handy", &mut buffer)?;
     count.write_all(process)?;
     count.write_all(b",\n")?;
     write_footer(&mut count, config, u64::MAX, u64::MAX, u64::MAX)?;
