@@ -30,6 +30,7 @@ const BYTE_CAP: u64 = 32 * 1024 * 1024;
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
 /// Value stamped into `otherData.schema`.
 const SCHEMA: &str = "handy-diagnostics/1";
+const TRACE_HEADER: &[u8] = b"{\"traceEvents\":[\n";
 
 /// Identifies one dictation run across threads and capture start/stop.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -484,6 +485,7 @@ impl Recorder {
         if self.active.load(Ordering::Relaxed) {
             return Ok(self.status());
         }
+        minimum_trace_bytes(&config, byte_cap).map_err(DiagError::Io)?;
         fs::create_dir_all(dir).map_err(DiagError::Io)?;
         let stamp = chrono::Utc::now().format("%Y%m%dT%H%M%S%3fZ").to_string();
         let mut n: u32 = 0;
@@ -595,28 +597,81 @@ struct Writer {
     config: ConfigSnapshot,
 }
 
+struct OpenSpan {
+    tid: u64,
+    reserved_bytes: u64,
+}
+
 impl Writer {
     fn run(mut self) {
-        let header = b"{\"traceEvents\":[\n";
-        let mut bytes: u64 = header.len() as u64;
+        let mut bytes = TRACE_HEADER.len() as u64;
+        let mut reserved_bytes = match minimum_trace_bytes(&self.config, self.byte_cap) {
+            Ok(minimum) => minimum - bytes,
+            Err(error) => {
+                log::warn!("diagnostics writer: capture metadata exceeds byte cap: {error}");
+                drop(self.out);
+                drop(self.done_tx);
+                let _ = fs::remove_file(&self.partial);
+                return;
+            }
+        };
         let mut truncated: u64 = 0;
         // Cleared on any write error. A file that failed mid-stream cannot
         // be trusted to parse, so it must not reach the caller as success.
         let mut io_ok = true;
         // Open async spans keyed by (run, name), holding the thread the span
         // began on so the incomplete end lands on an honest track.
-        let mut open: BTreeMap<(RunId, Name), u64> = BTreeMap::new();
+        let mut open: BTreeMap<(RunId, Name), OpenSpan> = BTreeMap::new();
         let mut threads: BTreeMap<u64, Option<&'static str>> = BTreeMap::new();
         let mut record_buffer = Vec::with_capacity(128);
 
-        io_ok &= self.out.write_all(header).is_ok();
+        io_ok &= self.out.write_all(TRACE_HEADER).is_ok();
         let mut first = true;
         for ev in self.rx {
-            threads.entry(ev.thread.tid).or_insert(ev.thread.name);
+            let thread_bytes = if threads.contains_key(&ev.thread.tid) {
+                0
+            } else {
+                let label = ev
+                    .thread
+                    .name
+                    .map_or_else(|| format!("thread-{}", ev.thread.tid), str::to_string);
+                match metadata_line(Some(ev.thread.tid), &label, &mut record_buffer) {
+                    Ok(line) => line.len() as u64 + 2,
+                    Err(error) => {
+                        io_ok = false;
+                        log::warn!("diagnostics writer: metadata serialization failed: {error}");
+                        break;
+                    }
+                }
+            };
+            let old_end_bytes = match ev.phase {
+                Phase::Begin | Phase::End => ev
+                    .run
+                    .and_then(|run| open.get(&(run, ev.name)))
+                    .map_or(0, |span| span.reserved_bytes),
+                Phase::Instant => 0,
+            };
+            let new_end_bytes = if ev.phase == Phase::Begin && ev.run.is_some() {
+                let end = Event {
+                    phase: Phase::End,
+                    args: Args::default(),
+                    ..ev
+                };
+                match event_line_at_timestamp(&end, u64::MAX, true, &mut record_buffer) {
+                    Ok(line) => line.len() as u64 + 2,
+                    Err(error) => {
+                        io_ok = false;
+                        log::warn!("diagnostics writer: event serialization failed: {error}");
+                        break;
+                    }
+                }
+            } else {
+                0
+            };
             let line = match event_line(&ev, self.epoch, false, &mut record_buffer) {
                 Ok(Some(line)) => line,
                 Ok(None) => {
-                    truncated += 1;
+                    truncated = truncated.saturating_add(1);
                     continue;
                 }
                 Err(error) => {
@@ -626,8 +681,12 @@ impl Writer {
                 }
             };
             let sep_len = u64::from(!first);
-            if bytes + line.len() as u64 + sep_len + 1 > self.byte_cap {
-                truncated += 1;
+            let next_reserved =
+                reserved_bytes as u128 + thread_bytes as u128 + new_end_bytes as u128
+                    - old_end_bytes as u128;
+            let next_bytes = bytes as u128 + line.len() as u128 + sep_len as u128 + 1;
+            if next_bytes + next_reserved > self.byte_cap as u128 {
+                truncated = truncated.saturating_add(1);
                 continue;
             }
             let ok = (first || self.out.write_all(b",").is_ok())
@@ -639,11 +698,19 @@ impl Writer {
                 break;
             }
             first = false;
-            bytes += line.len() as u64 + sep_len + 1;
+            bytes = next_bytes as u64;
+            reserved_bytes = next_reserved as u64;
+            threads.entry(ev.thread.tid).or_insert(ev.thread.name);
             match ev.phase {
                 Phase::Begin => {
                     if let Some(run) = ev.run {
-                        open.insert((run, ev.name), ev.thread.tid);
+                        open.insert(
+                            (run, ev.name),
+                            OpenSpan {
+                                tid: ev.thread.tid,
+                                reserved_bytes: new_end_bytes,
+                            },
+                        );
                     }
                 }
                 Phase::End => {
@@ -659,7 +726,8 @@ impl Writer {
         // still-open spans at the drain moment rather than losing them.
         let stop_at = Instant::now();
         let mut incomplete: u64 = 0;
-        for ((run, name), tid) in open {
+        for ((run, name), span) in open {
+            let tid = span.tid;
             let ev = Event {
                 at: stop_at,
                 phase: Phase::End,
@@ -677,7 +745,7 @@ impl Writer {
                         && self.out.write_all(line).is_ok()
                         && self.out.write_all(b"\n").is_ok();
                     first = false;
-                    incomplete += 1;
+                    incomplete = incomplete.saturating_add(1);
                 }
                 Ok(None) => {}
                 Err(error) => {
@@ -716,23 +784,14 @@ impl Writer {
             }
         }
 
-        let other = serde_json::json!({
-            "schema": SCHEMA,
-            "app_version": env!("CARGO_PKG_VERSION"),
-            "os": std::env::consts::OS,
-            "arch": std::env::consts::ARCH,
-            "capture_coverage": "unknown",
-            "first_audio_semantics": "delivery_latency",
-            "output_semantics": "handy_call_returned",
-            "dropped_events": self.dropped.load(Ordering::Relaxed),
-            "truncated_events": truncated,
-            "incomplete_spans": incomplete,
-            "config": &self.config,
-        });
-        io_ok &= self
-            .out
-            .write_all(format!("],\"otherData\":{other}}}\n").as_bytes())
-            .is_ok();
+        io_ok &= write_footer(
+            &mut self.out,
+            &self.config,
+            self.dropped.load(Ordering::Relaxed),
+            truncated,
+            incomplete,
+        )
+        .is_ok();
         if let Err(e) = self.out.flush() {
             io_ok = false;
             log::warn!("diagnostics writer: flush failed: {e}");
@@ -761,6 +820,88 @@ impl Writer {
         }
         let _ = self.done_tx.send(done_path);
     }
+}
+
+fn write_footer(
+    out: &mut impl Write,
+    config: &ConfigSnapshot,
+    dropped_events: u64,
+    truncated_events: u64,
+    incomplete_spans: u64,
+) -> std::io::Result<()> {
+    #[derive(Serialize)]
+    struct OtherData<'a> {
+        app_version: &'static str,
+        arch: &'static str,
+        capture_coverage: &'static str,
+        config: &'a ConfigSnapshot,
+        dropped_events: u64,
+        first_audio_semantics: &'static str,
+        incomplete_spans: u64,
+        os: &'static str,
+        output_semantics: &'static str,
+        schema: &'static str,
+        truncated_events: u64,
+    }
+
+    let other = OtherData {
+        app_version: env!("CARGO_PKG_VERSION"),
+        arch: std::env::consts::ARCH,
+        capture_coverage: "unknown",
+        config,
+        dropped_events,
+        first_audio_semantics: "delivery_latency",
+        incomplete_spans,
+        os: std::env::consts::OS,
+        output_semantics: "handy_call_returned",
+        schema: SCHEMA,
+        truncated_events,
+    };
+    out.write_all(b"],\"otherData\":")?;
+    serde_json::to_writer(&mut *out, &other).map_err(|error| {
+        std::io::Error::new(
+            error.io_error_kind().unwrap_or(std::io::ErrorKind::Other),
+            error,
+        )
+    })?;
+    out.write_all(b"}\n")
+}
+
+fn minimum_trace_bytes(config: &ConfigSnapshot, byte_cap: u64) -> std::io::Result<u64> {
+    struct BoundedCount {
+        bytes: u64,
+        limit: u64,
+    }
+
+    impl Write for BoundedCount {
+        fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+            let next = self.bytes as u128 + buffer.len() as u128;
+            if next > self.limit as u128 {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "diagnostics byte cap cannot fit capture metadata",
+                ));
+            }
+            self.bytes = next as u64;
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut count = BoundedCount {
+        bytes: 0,
+        limit: byte_cap,
+    };
+    count.write_all(TRACE_HEADER)?;
+    let mut buffer = Vec::with_capacity(128);
+    let process = metadata_line(None, "Handy", &mut buffer).map_err(std::io::Error::other)?;
+    count.write_all(process)?;
+    count.write_all(b",\n")?;
+    write_footer(&mut count, config, u64::MAX, u64::MAX, u64::MAX)?;
+    Ok(count.bytes)
 }
 
 fn metadata_line<'a>(
@@ -805,6 +946,18 @@ fn event_line<'a>(
     incomplete: bool,
     buffer: &'a mut Vec<u8>,
 ) -> serde_json::Result<Option<&'a [u8]>> {
+    let Some(ts) = ev.at.checked_duration_since(epoch) else {
+        return Ok(None);
+    };
+    event_line_at_timestamp(ev, ts.as_micros() as u64, incomplete, buffer).map(Some)
+}
+
+fn event_line_at_timestamp<'a>(
+    ev: &Event,
+    timestamp: u64,
+    incomplete: bool,
+    buffer: &'a mut Vec<u8>,
+) -> serde_json::Result<&'a [u8]> {
     #[derive(Serialize)]
     struct EventRecord {
         ph: &'static str,
@@ -834,9 +987,6 @@ fn event_line<'a>(
         incomplete: Option<bool>,
     }
 
-    let Some(ts) = ev.at.checked_duration_since(epoch) else {
-        return Ok(None);
-    };
     let (ph, cat, scope) = match ev.phase {
         Phase::Begin => ("b", Some("run"), None),
         Phase::End => ("e", Some("run"), None),
@@ -856,14 +1006,14 @@ fn event_line<'a>(
         s: scope,
         name: ev.name.as_str(),
         id: ev.run.map(RunId::as_u64),
-        ts: ts.as_micros() as u64,
+        ts: timestamp,
         pid: 1,
         tid: ev.thread.tid,
         args,
     };
     buffer.clear();
     serde_json::to_writer(&mut *buffer, &record)?;
-    Ok(Some(buffer.as_slice()))
+    Ok(buffer.as_slice())
 }
 
 static RECORDER: LazyLock<Recorder> = LazyLock::new(Recorder::new);
@@ -1267,7 +1417,7 @@ mod tests {
     fn saturation_truncates_and_still_parses() {
         let rec = Recorder::new();
         let dir = tempfile::tempdir().unwrap();
-        rec.start_inner(dir.path(), cfg(), 1024, 300).unwrap();
+        rec.start_inner(dir.path(), cfg(), 1024, 2048).unwrap();
         for _ in 0..50 {
             rec.begin(rec.next_run(), Name::MicOpen);
         }
@@ -1285,7 +1435,7 @@ mod tests {
     fn counters_reset_between_captures() {
         let rec = Recorder::new();
         let dir = tempfile::tempdir().unwrap();
-        rec.start_inner(dir.path(), cfg(), 1024, 300).unwrap();
+        rec.start_inner(dir.path(), cfg(), 1024, 2048).unwrap();
         // One deterministic drop (pre-epoch) on top of byte-cap truncation,
         // so the reset assertions below exercise both counters.
         rec.instant_at(
