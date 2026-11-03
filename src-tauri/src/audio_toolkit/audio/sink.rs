@@ -7,6 +7,7 @@ use crate::audio_toolkit::{
     constants,
     vad::{VadFrame, VoiceActivityDetector},
 };
+use crate::diagnostics::{self, Args, Name, RunId};
 
 /// How 16 kHz mono frames should be filtered for one recording session.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -92,6 +93,11 @@ pub struct CaptureSink {
     ready: Option<mpsc::Sender<()>>,
     samples: Vec<f32>,
     heard_sound: bool,
+    /// Diagnostics run this sink belongs to, and first-event guards so the
+    /// per-chunk hot path only pays one branch once the event has fired.
+    run: RunId,
+    saw_vad: bool,
+    saw_speech: bool,
 }
 
 /// Spectrum window at 16 kHz: 32 ms, near the overlay's ~30 Hz refresh.
@@ -107,6 +113,7 @@ impl CaptureSink {
         on_levels: LevelCallback,
         on_audio: AudioFrameCallback,
         ready: mpsc::Sender<()>,
+        run: RunId,
     ) -> Self {
         if policy != VadPolicy::Disabled {
             let hangover = vad.hangover_for(policy);
@@ -128,6 +135,9 @@ impl CaptureSink {
             ready: Some(ready),
             samples: Vec::new(),
             heard_sound: false,
+            run,
+            saw_vad: false,
+            saw_speech: false,
         }
     }
 
@@ -173,6 +183,9 @@ impl Sink for CaptureSink {
     fn process_chunk(&mut self, chunk: AudioChunk<'_>) {
         if let Some(ready) = self.ready.take() {
             let _ = ready.send(());
+            // Delivery latency through handy-recorder: the recorder exposes
+            // no sample timestamps, so first delivery is the earliest marker.
+            diagnostics::instant(self.run, Name::FirstAudioDelivered, Args::default());
         }
         if !self.heard_sound && !chunk.is_digital_silence() {
             self.heard_sound = true;
@@ -191,13 +204,25 @@ impl Sink for CaptureSink {
 
         // The detector needs whole frames, so the final chunk goes in with its
         // zero padding; at most one frame of silence reaches the recording.
-        match self
+        // Stamp after the inference returns, so the cold first VAD pass is
+        // included in the gap from first_audio_delivered.
+        let vad_frame = self
             .vad
             .detector
             .push_frame(chunk.samples)
-            .unwrap_or(VadFrame::Speech(chunk.samples))
-        {
-            VadFrame::Speech(frame) => Self::emit(&mut self.samples, &self.on_audio, frame),
+            .unwrap_or(VadFrame::Speech(chunk.samples));
+        if !self.saw_vad {
+            self.saw_vad = true;
+            diagnostics::instant(self.run, Name::FirstVadFrame, Args::default());
+        }
+        match vad_frame {
+            VadFrame::Speech(frame) => {
+                if !self.saw_speech {
+                    self.saw_speech = true;
+                    diagnostics::instant(self.run, Name::FirstSpeech, Args::default());
+                }
+                Self::emit(&mut self.samples, &self.on_audio, frame);
+            }
             VadFrame::Noise => {}
         }
     }

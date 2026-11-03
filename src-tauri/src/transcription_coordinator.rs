@@ -1,4 +1,5 @@
 use crate::actions::ACTION_MAP;
+use crate::diagnostics::{self, Args, Code, Name};
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutActivation;
 use log::{debug, error, warn};
@@ -168,6 +169,10 @@ struct InputEvent {
     /// They fire on every edge by design and must never be debounced —
     /// dropping one desyncs toggle parity and wedges recording on.
     external: bool,
+    /// When the coordinator received the edge, taken on the sending
+    /// thread. The dequeue loop stamps its own time, so the gap between
+    /// the two exposes coordinator queue delay.
+    received_at: Instant,
 }
 
 impl InputEvent {
@@ -606,6 +611,15 @@ impl TranscriptionCoordinator {
                     let was_locked = state.is_recording_locked();
                     match cmd {
                         Command::Input(input) => {
+                            // Receipt time was stamped on the sending thread;
+                            // the gap to this dequeue instant is queue delay.
+                            diagnostics::instant_at(
+                                input.received_at,
+                                None,
+                                Name::InputReceived,
+                                Args::default(),
+                            );
+                            diagnostics::instant(None, Name::InputDequeued, Args::default());
                             if let Some(effect) = state.on_input(input, Instant::now()) {
                                 run_effect(&app, &mut state, effect);
                             }
@@ -692,6 +706,7 @@ impl TranscriptionCoordinator {
                 mode,
                 hold_threshold,
                 external,
+                received_at: Instant::now(),
             }))
             .is_err()
         {
@@ -724,6 +739,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             binding_id,
             hotkey_string,
         } => {
+            diagnostics::instant(None, Name::Effect, Args::code(Code::Start));
             let started = start(app, &binding_id, &hotkey_string);
             state.on_start_result(&binding_id, started);
             if started {
@@ -734,6 +750,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             binding_id,
             hotkey_string,
         } => {
+            diagnostics::instant(None, Name::Effect, Args::code(Code::Stop));
             stop(app, &binding_id, &hotkey_string);
             emit_recording_phase(app, RecordingPhase::Stopped);
         }
@@ -952,6 +969,7 @@ mod tests {
             mode: ShortcutActivation::PushToTalk,
             hold_threshold: Duration::ZERO,
             external: false,
+            received_at: Instant::now(),
         }
     }
 
@@ -1090,6 +1108,7 @@ mod tests {
                     mode: ShortcutActivation::Toggle,
                     hold_threshold: Duration::ZERO,
                     external: true,
+                    received_at: at,
                 },
                 at,
             )
@@ -1152,6 +1171,7 @@ mod tests {
             mode: ShortcutActivation::Toggle,
             hold_threshold: Duration::ZERO,
             external,
+            received_at: Instant::now(),
         }
     }
 
@@ -1277,6 +1297,7 @@ mod tests {
             mode,
             hold_threshold: HOLD_THRESHOLD,
             external: false,
+            received_at: Instant::now(),
         }
     }
 
