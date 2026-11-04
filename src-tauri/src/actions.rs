@@ -191,14 +191,15 @@ enum PostProcessOutcome {
     Failed,
 }
 
-/// Upper bound on the whole post-processing step. reqwest has no default
-/// timeout, so an endpoint that accepts the request and never answers (a
-/// stalled network, a local server still loading its model) would otherwise
+/// Upper bound on the post-processing network requests. reqwest has no
+/// default timeout, so an endpoint that accepts the request and never answers
+/// (a stalled network, a local server still loading its model) would otherwise
 /// leave the dictation on "Processing" until the user cancels it. The bound
 /// covers every request the step makes, including the retry without
 /// reasoning fields and the legacy fallback after a failed structured
 /// request, so a silent endpoint costs one timeout rather than one per
-/// attempt. On expiry the original transcription is used.
+/// attempt. On expiry the original transcription is used. Apple Intelligence
+/// runs as a blocking native call that never yields, so this cannot bound it.
 const POST_PROCESS_TIMEOUT: Duration = Duration::from_secs(60);
 
 async fn post_process_transcription(
