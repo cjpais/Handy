@@ -4,13 +4,42 @@
 use std::time::Instant;
 
 use log::info;
-use transcribe_cpp::{RunOptions, Transcript};
+use transcribe_cpp::Transcript;
 
-use super::TranscriptionManager;
+use super::{RunSetup, TranscriptionManager};
 use crate::audio_toolkit::chunking::Chunker;
-use crate::engine_supervisor::{CancelMark, EngineError};
+use crate::engine_supervisor::{CancelMark, EngineError, LoadedInfo};
+use crate::language_detection::Plan;
 use crate::managers::audio::create_detector;
-use crate::settings::VadBackend;
+use crate::settings::{AppSettings, VadBackend};
+
+/// How a chunked decode's runs are set up: known up front (a whole clip), or
+/// once the first chunk's audio can pick the language (a live recording).
+pub(super) enum ChunkSetup {
+    Ready(Box<RunSetup>),
+    Pending(Box<PendingSetup>),
+}
+
+/// What a chunked decode's setup is resolved from.
+pub(super) struct PendingSetup {
+    pub plan: Plan,
+    pub info: LoadedInfo,
+    pub settings: AppSettings,
+}
+
+impl ChunkSetup {
+    /// The setup, resolving a pending one with `audio`.
+    fn resolve(&mut self, tm: &TranscriptionManager, audio: &[f32]) -> &RunSetup {
+        if let Self::Pending(pending) = self {
+            let setup = tm.setup_for(&pending.info, &pending.settings, &pending.plan, audio);
+            *self = Self::Ready(Box::new(setup));
+        }
+        match self {
+            Self::Ready(setup) => setup,
+            Self::Pending(_) => unreachable!("resolved above"),
+        }
+    }
+}
 
 /// Cuts audio at pauses as it arrives and decodes each chunk once its cut is
 /// certain, so a recording has only its last chunk left when it stops.
@@ -18,7 +47,7 @@ pub(super) struct ChunkedDecode<'a> {
     tm: &'a TranscriptionManager,
     /// Every chunk's run stops with one cancel.
     mark: CancelMark,
-    run_options: RunOptions,
+    setup: ChunkSetup,
     model_id: String,
     chunker: Chunker,
     transcripts: Vec<Transcript>,
@@ -31,7 +60,7 @@ impl<'a> ChunkedDecode<'a> {
     pub(super) fn new(
         tm: &'a TranscriptionManager,
         mark: CancelMark,
-        run_options: RunOptions,
+        setup: ChunkSetup,
         model_id: &str,
         backend: VadBackend,
     ) -> Self {
@@ -40,7 +69,7 @@ impl<'a> ChunkedDecode<'a> {
         Self {
             tm,
             mark,
-            run_options,
+            setup,
             model_id: model_id.to_string(),
             chunker: Chunker::new(Box::new(move || create_detector(backend, &app_handle))),
             transcripts: Vec::new(),
@@ -48,16 +77,16 @@ impl<'a> ChunkedDecode<'a> {
         }
     }
 
-    /// A whole clip's chunks, decoded in order.
+    /// A whole clip's chunks, decoded in order, and the setup they ran with.
     pub(super) fn decode_clip(
         tm: &'a TranscriptionManager,
         mark: CancelMark,
-        run_options: RunOptions,
+        setup: ChunkSetup,
         audio: Vec<f32>,
         model_id: &str,
         backend: VadBackend,
-    ) -> Result<Vec<Transcript>, EngineError> {
-        let mut decode = Self::new(tm, mark, run_options, model_id, backend);
+    ) -> Result<(Vec<Transcript>, RunSetup), EngineError> {
+        let mut decode = Self::new(tm, mark, setup, model_id, backend);
         decode.push(audio);
         decode.finish()
     }
@@ -87,9 +116,9 @@ impl<'a> ChunkedDecode<'a> {
         self.decode(chunks);
     }
 
-    /// Decodes what is left. Every chunk's transcript in order, or the run
-    /// that failed or was cancelled.
-    pub(super) fn finish(mut self) -> Result<Vec<Transcript>, EngineError> {
+    /// Decodes what is left. Every chunk's transcript in order and the setup
+    /// they ran with, or the run that failed or was cancelled.
+    pub(super) fn finish(mut self) -> Result<(Vec<Transcript>, RunSetup), EngineError> {
         if self.failure.is_none() {
             let chunks = self.chunker.finish();
             self.decode(chunks);
@@ -104,7 +133,12 @@ impl<'a> ChunkedDecode<'a> {
                 self.transcripts.len()
             );
         }
-        Ok(self.transcripts)
+        // No chunk at all (no audio) still needs a setup to finish with.
+        self.setup.resolve(self.tm, &[]);
+        let ChunkSetup::Ready(setup) = self.setup else {
+            unreachable!("resolved above")
+        };
+        Ok((self.transcripts, *setup))
     }
 
     fn decode(&mut self, chunks: Vec<Vec<f32>>) {
@@ -112,11 +146,13 @@ impl<'a> ChunkedDecode<'a> {
             if self.failure.is_some() {
                 return;
             }
+            // The first chunk picks the language for every chunk.
+            let run_options = self.setup.resolve(self.tm, &chunk).run_options.clone();
             let audio_secs = chunk.len() as f64 / 16_000.0;
             let started = Instant::now();
             match self
                 .tm
-                .run_batch(self.mark, chunk, &self.run_options, &self.model_id)
+                .run_batch(self.mark, chunk, &run_options, &self.model_id)
             {
                 Ok(transcript) => {
                     self.transcripts.push(transcript);

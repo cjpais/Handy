@@ -8,6 +8,7 @@ import {
   type SupportedLanguageCode,
 } from "../../i18n";
 import { useSettings } from "@/hooks/useSettings";
+import { cjkSubsetFont } from "@/lib/utils/cjkFont";
 
 interface AppLanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -24,7 +25,14 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
 
     const languageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
       value: lang.code,
-      label: `${lang.nativeName} (${lang.name})`,
+      label: (
+        <>
+          <span lang={lang.code} className={cjkSubsetFont(lang.nativeName)}>
+            {lang.nativeName}
+          </span>{" "}
+          ({lang.name})
+        </>
+      ),
     }));
 
     const handleLanguageChange = (langCode: string) => {

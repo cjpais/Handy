@@ -7,24 +7,25 @@ use std::sync::{Arc, Mutex};
 use log::{debug, error, info};
 use transcribe_cpp::StreamOptions;
 
-use super::chunked::ChunkedDecode;
+use super::chunked::{ChunkSetup, ChunkedDecode, PendingSetup};
 use super::policy::LiveDecode;
 use super::{
-    effective_language_for_model, emit_stream_text, join_chunks, lock_perf, run_setup,
-    PreviewScript, RunOutcome, RunSetup, StreamFinalizeReply, StreamPerf, TranscriptionManager,
+    emit_stream_text, join_chunks, lock_perf, PreviewScript, RunOutcome, RunSetup,
+    StreamFinalizeReply, StreamPerf, TranscriptionManager,
 };
 use crate::audio_toolkit::OutputLanguageEvidence;
 use crate::engine_supervisor::{EngineError, LoadedInfo, StreamHandle, StreamProgress};
 use crate::settings::{get_settings, AppSettings};
 
-/// One recording's live decode, with the run setup its result finishes with.
+/// One recording's live decode.
 pub(super) struct LiveSession<'a> {
-    setup: RunSetup,
     decoder: LiveDecoder<'a>,
 }
 
 enum LiveDecoder<'a> {
-    Stream(StreamSession<'a>),
+    /// With the run setup its result finishes with.
+    Stream(StreamSession<'a>, Box<RunSetup>),
+    /// Its setup is resolved by its first chunk.
     Chunked(Box<ChunkedDecode<'a>>),
 }
 
@@ -47,31 +48,38 @@ impl<'a> LiveSession<'a> {
         // The same run setup as the batch path: task + language gated
         // against what the model actually advertises.
         let settings = get_settings(&tm.app_handle);
-        let effective_language =
-            effective_language_for_model(&settings, tm.model_manager.as_ref(), model_id);
-        let setup = run_setup(info, &settings, &effective_language);
+        let plan = tm.language_plan(&settings, model_id, info);
         let decoder = match mode {
             LiveDecode::None => unreachable!("returned above"),
             LiveDecode::Stream => {
-                LiveDecoder::Stream(StreamSession::begin(tm, info, &settings, &setup, model_id)?)
+                // A stream's language is fixed before any audio, so it can't
+                // be detected; a detect plan falls back.
+                let setup = tm.setup_for(info, &settings, &plan, &[]);
+                let stream = StreamSession::begin(tm, info, &settings, &setup, model_id)?;
+                LiveDecoder::Stream(stream, Box::new(setup))
             }
             LiveDecode::Chunked => {
                 info!("Live long-form chunking started (model '{}')", model_id);
+                let backend = settings.vad_backend;
                 LiveDecoder::Chunked(Box::new(ChunkedDecode::new(
                     tm,
                     tm.engine.cancel_mark(),
-                    setup.run_options.clone(),
+                    ChunkSetup::Pending(Box::new(PendingSetup {
+                        plan,
+                        info: info.clone(),
+                        settings,
+                    })),
                     model_id,
-                    settings.vad_backend,
+                    backend,
                 )))
             }
         };
-        Some(Self { setup, decoder })
+        Some(Self { decoder })
     }
 
     pub(super) fn feed(&mut self, pcm: Vec<f32>) {
         match &mut self.decoder {
-            LiveDecoder::Stream(stream) => stream.feed(pcm),
+            LiveDecoder::Stream(stream, _) => stream.feed(pcm),
             LiveDecoder::Chunked(chunks) => chunks.push(pcm),
         }
     }
@@ -79,22 +87,25 @@ impl<'a> LiveSession<'a> {
     /// The live result; `None` to transcribe the recording in batch instead.
     /// `recorded_samples` is the whole recording's length.
     pub(super) fn finish(self, recorded_samples: usize) -> StreamFinalizeReply {
-        let decoded = match self.decoder {
-            LiveDecoder::Stream(stream) => stream.finish()?,
-            LiveDecoder::Chunked(chunks) => finish_chunks(*chunks, recorded_samples)?,
-        };
-        Ok(decoded.map(|(text, model_detected_language)| RunOutcome {
-            setup: self.setup,
-            text,
-            model_detected_language,
-        }))
+        match self.decoder {
+            LiveDecoder::Stream(stream, setup) => {
+                Ok(stream
+                    .finish()?
+                    .map(|(text, model_detected_language)| RunOutcome {
+                        setup: *setup,
+                        text,
+                        model_detected_language,
+                    }))
+            }
+            LiveDecoder::Chunked(chunks) => finish_chunks(*chunks, recorded_samples),
+        }
     }
 }
 
 fn finish_chunks(
     chunks: ChunkedDecode<'_>,
     recorded_samples: usize,
-) -> Result<Option<Decoded>, EngineError> {
+) -> Result<Option<RunOutcome>, EngineError> {
     // A failure stops the decode short of the recording; report the failure.
     if chunks.samples() != recorded_samples && !chunks.failed() {
         debug!(
@@ -106,7 +117,7 @@ fn finish_chunks(
     }
     let while_recording = chunks.decoded();
     match chunks.finish() {
-        Ok(transcripts) => {
+        Ok((transcripts, setup)) => {
             if while_recording > 0 {
                 info!(
                     "{} of {} chunks were decoded while recording",
@@ -114,7 +125,12 @@ fn finish_chunks(
                     transcripts.len()
                 );
             }
-            Ok(Some(join_chunks(transcripts)))
+            let (text, model_detected_language) = join_chunks(transcripts);
+            Ok(Some(RunOutcome {
+                setup,
+                text,
+                model_detected_language,
+            }))
         }
         Err(EngineError::Cancelled) => Err(EngineError::Cancelled),
         Err(e) => {

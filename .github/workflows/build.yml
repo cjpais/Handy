@@ -583,6 +583,11 @@ jobs:
           if compgen -G "${BUNDLE_DIR}/deb/*.deb" > /dev/null; then
             for deb in "${BUNDLE_DIR}"/deb/*.deb; do
               echo "Auditing deb package: ${deb}"
+              depends="$(dpkg-deb -f "$deb" Depends)"
+              if ! printf '%s\n' "$depends" | grep -Eq '(^|,)[[:space:]]*libssl3t64[[:space:]]*\|[[:space:]]*libssl3[[:space:]]*(,|$)'; then
+                echo "ERROR: ${deb} must declare 'libssl3t64 | libssl3' in bundle.linux.deb.depends for OpenSSL 3 runtime libraries. Depends: ${depends}" >&2
+                exit 1
+              fi
               listing="$(mktemp)"
               dpkg-deb -c "$deb" > "$listing"
               require_pattern "$listing" 'usr/bin/handy$' "handy binary"

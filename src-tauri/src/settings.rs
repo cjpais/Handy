@@ -193,8 +193,8 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
-/// Script applied to Mandarin and Cantonese output. Other languages are never
-/// converted.
+/// Script applied to Mandarin and Cantonese output. Traditional carries its region
+/// (Taiwan vs Hong Kong forms, e.g. 裡/裏) rather than guessing it.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ChineseScript {
@@ -202,7 +202,11 @@ pub enum ChineseScript {
     #[default]
     AsTranscribed,
     Simplified,
-    Traditional,
+    /// Traditional, Taiwan forms. Also reads legacy `traditional` (migrated on load).
+    #[serde(alias = "traditional")]
+    TraditionalTw,
+    /// Traditional, in Hong Kong's standard forms.
+    TraditionalHk,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
@@ -229,6 +233,9 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    /// No built-in global shortcuts; trigger Handy via CLI flags or signals
+    /// (e.g. from a Wayland compositor keybinding).
+    None,
 }
 
 impl Default for KeyboardImplementation {
@@ -339,6 +346,18 @@ pub enum VadBackend {
     Earshot,
 }
 
+/// When Handy's spoken-language detector picks the language for Auto.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum LanguageDetectionMode {
+    /// Only for models that can't detect the language themselves.
+    #[default]
+    WhenNeeded,
+    /// For every model except streaming ones, restricted to the languages
+    /// the person speaks.
+    Always,
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -433,6 +452,10 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    /// Every language the person dictates in (codes, e.g. ["en", "zh"]),
+    /// picked during onboarding. Empty until then.
+    #[serde(default)]
+    pub spoken_languages: Vec<String>,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -483,6 +506,11 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub lazy_stream_close: bool,
+    /// Experimental, macOS only: move a Bluetooth headset (AirPods) to this
+    /// Mac while recording, so its microphone does not return silence while
+    /// another Apple device is playing through it.
+    #[serde(default)]
+    pub airpods_mode: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
@@ -530,6 +558,12 @@ pub struct AppSettings {
     /// decides whether silence is dropped from recordings.
     #[serde(default = "default_long_form_chunking")]
     pub long_form_chunking: bool,
+    #[serde(default)]
+    pub language_detection: LanguageDetectionMode,
+    /// Seconds of speech the language detector hears (debug). Read through
+    /// [`AppSettings::language_detection_window_samples`], which clamps it.
+    #[serde(default = "default_language_detection_window_secs")]
+    pub language_detection_window_secs: u32,
     /// Which recording overlay to show: None / Minimal / Live. Streaming mode is
     /// not gated on this — that follows model capability. Migrated from the old
     /// `overlay_position` (position `none` → style `None`).
@@ -606,14 +640,21 @@ fn default_long_form_chunking() -> bool {
     true
 }
 
+fn default_language_detection_window_secs() -> u32 {
+    5
+}
+
 fn default_filler_word_removal_enabled() -> bool {
     true
 }
 
 fn default_chinese_script() -> ChineseScript {
-    tauri_plugin_os::locale()
-        .and_then(|locale| crate::chinese_script::chinese_script_for_locale(&locale))
-        .unwrap_or_default()
+    crate::system_languages::suggested_chinese_script(
+        crate::system_languages::system_languages()
+            .iter()
+            .map(String::as_str),
+    )
+    .unwrap_or_default()
 }
 
 fn default_debug_mode() -> bool {
@@ -912,7 +953,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_shortcut = "option+space";
     #[cfg(target_os = "linux")]
-    let default_shortcut = "ctrl+space";
+    let default_shortcut = "ctrl+alt+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_shortcut = "alt+space";
 
@@ -932,7 +973,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_post_process_shortcut = "option+shift+space";
     #[cfg(target_os = "linux")]
-    let default_post_process_shortcut = "ctrl+shift+space";
+    let default_post_process_shortcut = "ctrl+alt+shift+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_post_process_shortcut = "alt+shift+space";
 
@@ -974,6 +1015,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         onboarding_completed: false,
         always_on_microphone: false,
+        spoken_languages: Vec::new(),
         selected_microphone: None,
         selected_channel: None,
         clamshell_microphone: None,
@@ -1005,6 +1047,7 @@ pub fn get_default_settings() -> AppSettings {
         theme: default_theme(),
         experimental_enabled: false,
         lazy_stream_close: false,
+        airpods_mode: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
@@ -1021,6 +1064,8 @@ pub fn get_default_settings() -> AppSettings {
         vad_enabled: default_vad_enabled(),
         vad_backend: VadBackend::default(),
         long_form_chunking: default_long_form_chunking(),
+        language_detection: LanguageDetectionMode::default(),
+        language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
     }
 }
@@ -1031,7 +1076,17 @@ impl Default for AppSettings {
     }
 }
 
+/// The language detector's window bounds: below 2 s it guesses, and it only
+/// scores the first 30 s of what it's given.
+pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
+
 impl AppSettings {
+    /// Samples (16 kHz) of speech the language detector hears.
+    pub fn language_detection_window_samples(&self) -> usize {
+        let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
+        self.language_detection_window_secs.clamp(min, max) as usize * 16_000
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()
@@ -1188,6 +1243,15 @@ fn apply_settings_migrations(
         }
     }
 
+    // One-time spoken languages backfill for users onboarded before it was asked.
+    // The guess always includes English, so it never decides a transcription
+    // (`effective_language` only uses a lone language). Must run before the
+    // Chinese script migrations: it reads `zh-Hans`/`zh-Hant`, and they read it.
+    if settings.onboarding_completed && settings.spoken_languages.is_empty() {
+        settings.spoken_languages = guessed_spoken_languages(settings, settings_value);
+        updated = true;
+    }
+
     // One-time Chinese script migration: the script used to be chosen through
     // `zh-Hans`/`zh-Hant` language intents. Split those into the recognition
     // language and the script setting; every other upgrading user keeps the
@@ -1195,12 +1259,39 @@ fn apply_settings_migrations(
     if settings_value.get("chinese_script").is_none() {
         settings.chinese_script = match settings.selected_language.as_str() {
             "zh-Hans" => ChineseScript::Simplified,
-            "zh-Hant" => ChineseScript::Traditional,
+            "zh-Hant" => ChineseScript::TraditionalTw,
             _ => ChineseScript::AsTranscribed,
         };
         if settings.chinese_script != ChineseScript::AsTranscribed {
             settings.selected_language = "zh".to_string();
         }
+        updated = true;
+    }
+
+    // One-time Traditional split: `traditional` took its regional forms from
+    // what was spoken (Hong Kong's for Cantonese, Taiwan's for Mandarin).
+    // Keep Hong Kong's for people who speak Cantonese or whose OS's first
+    // Traditional Chinese language is Hong Kong's or Macau's. People who
+    // dictated both now get one region's forms for both.
+    if settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        == Some("traditional")
+    {
+        let hong_kong = settings.spoken_languages.iter().any(|l| l == "yue")
+            || os_languages().iter().find_map(|tag| {
+                match crate::chinese_script::chinese_script_for_locale(tag) {
+                    Some(s @ (ChineseScript::TraditionalTw | ChineseScript::TraditionalHk)) => {
+                        Some(s)
+                    }
+                    _ => None,
+                }
+            }) == Some(ChineseScript::TraditionalHk);
+        settings.chinese_script = if hong_kong {
+            ChineseScript::TraditionalHk
+        } else {
+            ChineseScript::TraditionalTw
+        };
         updated = true;
     }
 
@@ -1255,6 +1346,39 @@ fn apply_settings_migrations(
     }
 
     updated
+}
+
+/// Likely spoken languages from existing settings and the OS; always includes English.
+fn guessed_spoken_languages(
+    settings: &AppSettings,
+    settings_value: &serde_json::Value,
+) -> Vec<String> {
+    // Read the stored value: a missing key may hold the locale default, not a choice.
+    let picked_script = settings_value
+        .get("chinese_script")
+        .and_then(|v| v.as_str())
+        .is_some_and(|script| script != "as_transcribed");
+    let intent = settings.selected_language.as_str();
+    // A script says Chinese, unless the language they picked already does.
+    let picked_chinese = crate::chinese_script::chinese_script_for_locale(intent).is_some();
+    let tags = [
+        (intent != "auto").then_some(intent),
+        (picked_script && !picked_chinese).then_some("zh"),
+        Some(settings.app_language.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .chain(os_languages().iter().map(String::as_str));
+    crate::system_languages::suggested_languages(tags)
+}
+
+/// The OS's languages; empty under test so migrations are deterministic.
+fn os_languages() -> &'static [String] {
+    if cfg!(test) {
+        &[]
+    } else {
+        crate::system_languages::system_languages()
+    }
 }
 
 /// Update checks are forced off (without touching the persisted setting) when
@@ -1528,6 +1652,20 @@ mod tests {
         assert_eq!(salvaged.custom_words, vec!["handy".to_string()]);
     }
 
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn default_shortcuts_do_not_conflict_with_ibus_input_method_switch() {
+        let defaults = get_default_settings();
+        assert_eq!(
+            defaults.bindings["transcribe"].current_binding,
+            "ctrl+alt+space"
+        );
+        assert_eq!(
+            defaults.bindings["transcribe_with_post_process"].current_binding,
+            "ctrl+alt+shift+space",
+        );
+    }
+
     #[test]
     fn salvage_of_poisoned_bindings_keeps_other_fields() {
         let mut stored = default_settings_json();
@@ -1645,18 +1783,94 @@ mod tests {
     fn chinese_script_migration_only_carries_over_legacy_intents() {
         for (intent, language, script) in [
             ("zh-Hans", "zh", ChineseScript::Simplified),
-            ("zh-Hant", "zh", ChineseScript::Traditional),
+            ("zh-Hant", "zh", ChineseScript::TraditionalTw),
             ("auto", "auto", ChineseScript::AsTranscribed),
         ] {
             let mut settings = get_default_settings();
             settings.selected_language = intent.to_string();
-            settings.chinese_script = ChineseScript::Traditional;
+            settings.chinese_script = ChineseScript::TraditionalTw;
             let raw = serde_json::json!({ "selected_language": intent });
 
             assert!(apply_settings_migrations(&mut settings, &raw));
             assert_eq!(settings.selected_language, language);
             assert_eq!(settings.chinese_script, script);
         }
+    }
+
+    /// Spoken languages backfilled for an onboarded upgrader with these stored
+    /// settings (merged over the defaults, as a stored file deserializes).
+    fn backfilled(stored: serde_json::Value) -> AppSettings {
+        let mut raw = serde_json::json!({
+            "onboarding_completed": true,
+            "selected_language": "auto",
+            "app_language": "en"
+        });
+        raw.as_object_mut()
+            .unwrap()
+            .extend(stored.as_object().unwrap().clone());
+        let mut settings: AppSettings = serde_json::from_value(raw.clone()).unwrap();
+        apply_settings_migrations(&mut settings, &raw);
+        settings
+    }
+
+    #[test]
+    fn spoken_languages_backfill_guesses_with_english_included() {
+        for (stored, spoken) in [
+            (
+                serde_json::json!({ "selected_language": "de" }),
+                vec!["de", "en"],
+            ),
+            (serde_json::json!({ "selected_language": "en" }), vec!["en"]),
+            (
+                serde_json::json!({ "selected_language": "zh-Hant" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "traditional" }),
+                vec!["zh", "en"],
+            ),
+            (
+                serde_json::json!({ "chinese_script": "as_transcribed" }),
+                vec!["en"],
+            ),
+            // A picked language leads, the app's follows.
+            (
+                serde_json::json!({ "selected_language": "fr", "app_language": "de" }),
+                vec!["fr", "de", "en"],
+            ),
+        ] {
+            assert_eq!(
+                backfilled(stored.clone()).spoken_languages,
+                spoken,
+                "{stored}"
+            );
+        }
+    }
+
+    #[test]
+    fn spoken_languages_backfill_keeps_cantonese_on_hong_kong_forms() {
+        let settings = backfilled(serde_json::json!({
+            "selected_language": "yue",
+            "chinese_script": "traditional"
+        }));
+
+        assert_eq!(settings.spoken_languages, vec!["yue", "en"]);
+        assert_eq!(settings.chinese_script, ChineseScript::TraditionalHk);
+    }
+
+    #[test]
+    fn spoken_languages_backfill_leaves_chosen_and_unasked_alone() {
+        let chosen = backfilled(serde_json::json!({
+            "selected_language": "de",
+            "spoken_languages": ["ja"]
+        }));
+        assert_eq!(chosen.spoken_languages, vec!["ja"]);
+
+        let unasked = backfilled(serde_json::json!({
+            "onboarding_completed": false,
+            "selected_language": "de"
+        }));
+        assert!(unasked.spoken_languages.is_empty());
     }
 
     #[test]

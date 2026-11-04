@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Tooltip } from "./Tooltip";
+import React from "react";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface SettingContainerProps {
   title: string;
@@ -10,6 +10,8 @@ interface SettingContainerProps {
   layout?: "horizontal" | "stacked";
   disabled?: boolean;
   tooltipPosition?: "top" | "bottom";
+  /** Horizontal only: the control takes the row's free width, for content that fits itself to it. */
+  grow?: boolean;
 }
 
 export const SettingContainer: React.FC<SettingContainerProps> = ({
@@ -21,35 +23,18 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   layout = "horizontal",
   disabled = false,
   tooltipPosition = "top",
+  grow = false,
 }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-
-  // Handle click outside to close tooltip
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        tooltipRef.current &&
-        !tooltipRef.current.contains(event.target as Node)
-      ) {
-        setShowTooltip(false);
-      }
-    };
-
-    if (showTooltip) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showTooltip]);
-
-  const toggleTooltip = () => {
-    setShowTooltip(!showTooltip);
-  };
+  const info = (
+    <InfoTooltip
+      text={description}
+      placement={tooltipPosition === "bottom" ? "below" : "above"}
+    />
+  );
 
   const containerClasses = grouped
     ? "px-4 p-2"
-    : "px-4 p-2 rounded-lg border border-mid-gray/20";
+    : "px-4 p-2 rounded-lg border border-line";
 
   if (layout === "stacked") {
     if (descriptionMode === "tooltip") {
@@ -61,43 +46,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             >
               {title}
             </h3>
-            <div
-              ref={tooltipRef}
-              className="relative"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={toggleTooltip}
-            >
-              <svg
-                className="w-4 h-4 text-mid-gray cursor-help hover:text-logo-primary transition-colors duration-200 select-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-label="More information"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTooltip();
-                  }
-                }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {showTooltip && (
-                <Tooltip targetRef={tooltipRef} position="top">
-                  <p className="text-sm text-center leading-relaxed">
-                    {description}
-                  </p>
-                </Tooltip>
-              )}
-            </div>
+            {info}
           </div>
           <div className="w-full">{children}</div>
         </div>
@@ -120,67 +69,37 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   }
 
   // Horizontal layout (default)
-  const horizontalContainerClasses = grouped
-    ? "flex items-center justify-between min-h-12 px-4 p-2"
-    : "flex items-center justify-between min-h-12 px-4 p-2 rounded-lg border border-mid-gray/20";
+  const horizontalContainerClasses = `${
+    grouped
+      ? "flex items-center justify-between min-h-12 px-4 p-2"
+      : "flex items-center justify-between min-h-12 px-4 p-2 rounded-lg border border-line"
+  }${grow ? " gap-4" : ""}`;
+  const titleClasses = grow ? "max-w-2/3 shrink-0" : "max-w-2/3";
+  const controlClasses = grow
+    ? "relative flex min-w-0 flex-1 justify-end"
+    : "relative";
 
   if (descriptionMode === "tooltip") {
     return (
       <div className={horizontalContainerClasses}>
-        <div className="max-w-2/3">
+        <div className={titleClasses}>
           <div className="flex items-center gap-2">
             <h3
               className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}
             >
               {title}
             </h3>
-            <div
-              ref={tooltipRef}
-              className="relative"
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={toggleTooltip}
-            >
-              <svg
-                className="w-4 h-4 text-mid-gray cursor-help hover:text-logo-primary transition-colors duration-200 select-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-label="More information"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleTooltip();
-                  }
-                }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {showTooltip && (
-                <Tooltip targetRef={tooltipRef} position={tooltipPosition}>
-                  <p className="text-sm text-center leading-relaxed">
-                    {description}
-                  </p>
-                </Tooltip>
-              )}
-            </div>
+            {info}
           </div>
         </div>
-        <div className="relative">{children}</div>
+        <div className={controlClasses}>{children}</div>
       </div>
     );
   }
 
   return (
     <div className={horizontalContainerClasses}>
-      <div className="max-w-2/3">
+      <div className={titleClasses}>
         <h3 className={`text-sm font-medium ${disabled ? "opacity-50" : ""}`}>
           {title}
         </h3>
@@ -188,7 +107,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
           {description}
         </p>
       </div>
-      <div className="relative">{children}</div>
+      <div className={controlClasses}>{children}</div>
     </div>
   );
 };

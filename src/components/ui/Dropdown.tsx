@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 export interface DropdownOption {
   value: string;
-  label: string;
+  label: React.ReactNode;
   description?: string;
   disabled?: boolean;
 }
@@ -17,6 +17,10 @@ interface DropdownProps {
   placeholder?: string;
   disabled?: boolean;
   onOpen?: () => void;
+  /** Where the menu opens: below the button (default), or above it. */
+  placement?: "below" | "above";
+  /** Highlight colour for hover and selection. */
+  tone?: "brand" | "neutral";
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -28,10 +32,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
   placeholder = "Select an option...",
   disabled = false,
   onOpen,
+  placement = "below",
+  tone = "brand",
 }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +52,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // The trigger's hover; in the menu, hover is grey so it never looks chosen.
+  const hover =
+    tone === "neutral" ? "hover:bg-wash" : "hover:bg-logo-primary/10";
+  const chosen = tone === "neutral" ? "bg-line" : "bg-logo-primary/15";
 
   const selectedOption = options.find(
     (option) => option.value === selectedValue,
@@ -61,17 +73,31 @@ export const Dropdown: React.FC<DropdownProps> = ({
     setIsOpen(!isOpen);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape" || !isOpen || disabled) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative ${className}`}
+      ref={dropdownRef}
+      onKeyDown={handleKeyDown}
+    >
       <button
         type="button"
-        className={`px-2 py-[5px] text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
+        ref={triggerRef}
+        className={`px-2 py-[5px] text-sm font-semibold bg-wash border border-line-strong rounded-md min-w-[200px] w-full text-start grid grid-cols-[1fr_auto] gap-2 items-center transition-all duration-150 ${
           disabled
             ? "opacity-50 cursor-not-allowed"
-            : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
+            : `${hover} cursor-pointer ${tone === "neutral" ? "hover:border-ink-3" : "hover:border-logo-primary"}`
         }`}
         onClick={handleToggle}
         disabled={disabled}
+        aria-expanded={isOpen}
       >
         <span className="truncate">{selectedOption?.label || placeholder}</span>
         <svg
@@ -90,43 +116,62 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </button>
       {isOpen && !disabled && (
         <div
-          className={`absolute top-full mt-1 bg-background border border-mid-gray/80 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto ${
+          className={`absolute ${placement === "above" ? "bottom-full mb-1" : "top-full mt-1"} bg-background border border-line rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto p-1 ${
             menuClassName ?? "left-0 right-0"
           }`}
         >
           {options.length === 0 ? (
-            <div className="px-2 py-1 text-sm text-mid-gray">
+            <div className="px-2 py-1.5 text-sm text-ink-3">
               {t("common.noOptionsFound")}
             </div>
           ) : (
-            options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`w-full text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
-                  option.description ? "px-3 py-2" : "px-2 py-1"
-                } ${
-                  selectedValue === option.value ? "bg-logo-primary/20" : ""
-                } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={() => handleSelect(option.value)}
-                disabled={option.disabled}
-              >
-                <span
-                  className={`block whitespace-normal break-words ${
-                    option.description || selectedValue === option.value
-                      ? "font-semibold"
-                      : ""
+            options.map((option) => {
+              const isChosen = selectedValue === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`flex w-full items-center gap-2 rounded-md px-2 text-sm text-start transition-colors duration-150 ${
+                    option.description ? "py-2" : "py-1.5"
+                  } ${isChosen ? chosen : "hover:bg-wash"} ${
+                    option.disabled ? "opacity-50 cursor-not-allowed" : ""
                   }`}
+                  onClick={() => handleSelect(option.value)}
+                  disabled={option.disabled}
                 >
-                  {option.label}
-                </span>
-                {option.description && (
-                  <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-mid-gray">
-                    {option.description}
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`block whitespace-normal break-words ${
+                        isChosen ? "font-semibold" : ""
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                    {option.description && (
+                      <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-ink-3">
+                        {option.description}
+                      </span>
+                    )}
                   </span>
-                )}
-              </button>
-            ))
+                  {isChosen && (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="shrink-0 text-ink-2"
+                    >
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
       )}

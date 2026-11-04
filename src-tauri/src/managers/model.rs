@@ -18,7 +18,9 @@ use tauri::{AppHandle, Emitter, Manager};
 
 mod download;
 
-use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT};
+use download::{
+    HttpDownloadOutcome, RateMeter, DOWNLOAD_STALL_TIMEOUT, PROGRESS_THROTTLE, PROGRESS_TICK,
+};
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
 /// for downloading and on-disk resolution.
@@ -76,14 +78,14 @@ fn base_language(language: &str) -> &str {
     language.split(&['-', '_'][..]).next().unwrap_or(language)
 }
 
-/// The stable user intent used to compare language codes across model
-/// families. Norwegian Bokmål (`nb`) maps to Norwegian (`no`), while Nynorsk
-/// (`nn`) remains distinct; Filipino (`fil`) maps to Tagalog (`tl`). This is
-/// only for matching: callers must return/pass the model's original code.
+/// The package's `languageIdentity` for a code (`no`→`nb`, `tl`→`fil`, `iw`→`he`,
+/// `jw`→`jv`). For matching only: pass on the model's own code.
 pub(crate) fn canonical_language_code(language: &str) -> &str {
     match base_language(language) {
-        "nb" => "no",
-        "fil" => "tl",
+        "no" => "nb",
+        "tl" => "fil",
+        "iw" => "he",
+        "jw" => "jv",
         base => base,
     }
 }
@@ -243,8 +245,12 @@ impl ModelDescriptor {
 /// *concrete* code, so a bare intent (`en`) resolves to the exact string the
 /// engine's prompt table expects (`en-US`) for models that advertise full
 /// BCP-47 locales.
+///
+/// `preferred_languages` (`spoken_languages`) only matters when the model can't
+/// detect and the intent isn't usable: a single spoken language beats English.
 pub fn effective_language(
     intent: &str,
+    preferred_languages: &[String],
     supported_languages: &[String],
     supports_language_detection: bool,
 ) -> String {
@@ -253,19 +259,7 @@ pub fn effective_language(
     }
 
     if intent != "auto" {
-        // Prefer the same base code before considering an equivalence alias. If
-        // a future model advertises both `no` and `nb`, an explicit `nb` intent
-        // must select `nb`, regardless of capability-list order.
-        let exact_base_match = supported_languages
-            .iter()
-            .find(|language| base_language(language) == base_language(intent));
-        let equivalent_match = || {
-            supported_languages.iter().find(|language| {
-                canonical_language_code(language) == canonical_language_code(intent)
-            })
-        };
-
-        if let Some(code) = exact_base_match.or_else(equivalent_match) {
+        if let Some(code) = supported_code(intent, supported_languages) {
             return code.clone();
         }
     }
@@ -275,7 +269,13 @@ pub fn effective_language(
     }
 
     // Model can't auto-detect and the intent isn't usable: fall back to a
-    // concrete language (prefer English) so we never hand the engine "auto".
+    // concrete language so we never hand the engine "auto". The one language
+    // they speak, if the model hears it; else English; else the model's first.
+    if let [only] = preferred_languages {
+        if let Some(code) = supported_code(only, supported_languages) {
+            return code.clone();
+        }
+    }
     if let Some(en) = supported_languages
         .iter()
         .find(|language| base_language(language) == "en")
@@ -285,12 +285,31 @@ pub fn effective_language(
     recognition_language(&supported_languages[0]).to_string()
 }
 
+/// The model's own code for `language`, if it hears it.
+pub(crate) fn supported_code<'a>(
+    language: &str,
+    supported_languages: &'a [String],
+) -> Option<&'a String> {
+    // Exact base first, then aliases: with both `no` and `nb` listed, `nb` must pick `nb`.
+    supported_languages
+        .iter()
+        .find(|code| base_language(code) == base_language(language))
+        .or_else(|| {
+            supported_languages
+                .iter()
+                .find(|code| canonical_language_code(code) == canonical_language_code(language))
+        })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct DownloadProgress {
     pub model_id: String,
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
+    /// Measured over a trailing window of this transfer only (bytes resumed
+    /// from disk excluded); `None` until there is enough to measure.
+    pub bytes_per_sec: Option<f64>,
 }
 
 /// Return the active HF cache followed by the pre-v0.9.6 cache for portable
@@ -505,18 +524,81 @@ fn local_caps(probe: &CapabilityProbe) -> LocalCaps {
     }
 }
 
+/// Download id under which a standalone language detector download reports
+/// progress, completion and cancellation, like a model's.
+pub const LANGUAGE_DETECTOR_ID: &str = "language-detector";
+
+/// Where one file's download progress is reported: under `model_id`, its bytes
+/// counted from `offset`, out of `total` (default: `offset` + the file's own
+/// size). Lets two files (the language detector, then a model) fill one bar.
+#[derive(Clone)]
+pub(super) struct ProgressTarget {
+    pub model_id: String,
+    pub offset: u64,
+    pub total: Option<u64>,
+}
+
+impl ProgressTarget {
+    /// A file reporting on its own.
+    fn own(model_id: &str) -> Self {
+        Self {
+            model_id: model_id.to_string(),
+            offset: 0,
+            total: None,
+        }
+    }
+
+    /// The event for `downloaded` of this file's `total` bytes.
+    pub(super) fn progress(
+        &self,
+        downloaded: u64,
+        total: u64,
+        bytes_per_sec: Option<f64>,
+    ) -> DownloadProgress {
+        let downloaded = self.offset + downloaded;
+        let total = self.total.unwrap_or(self.offset + total).max(downloaded);
+        DownloadProgress {
+            model_id: self.model_id.clone(),
+            downloaded,
+            total,
+            percentage: if total > 0 {
+                downloaded as f64 / total as f64 * 100.0
+            } else {
+                0.0
+            },
+            bytes_per_sec,
+        }
+    }
+}
+
+/// One file to fetch from Hugging Face, with mirror fallback.
+struct FileTransfer<'a> {
+    /// What the logs call it.
+    label: &'a str,
+    repo_id: &'a str,
+    revision: &'a str,
+    filename: &'a str,
+    mirrors: Vec<crate::catalog::MirrorFile>,
+    progress: ProgressTarget,
+}
+
 /// Bridges hf-hub's async download progress to Handy's `model-download-progress`
 /// event. hf-hub clones the reporter, so shared state lives behind an `Arc`.
 #[derive(Clone)]
 struct HfDownloadProgress {
     app_handle: AppHandle,
-    model_id: String,
+    target: ProgressTarget,
     state: Arc<Mutex<HfProgressState>>,
 }
+
+/// `(downloaded, total, bytes_per_sec)` to emit.
+type HfProgressSnapshot = (u64, u64, Option<f64>);
 
 struct HfProgressState {
     total: u64,
     downloaded: u64,
+    /// `None` until hf-hub reports the resume offset; see [`Self::on_update`].
+    rate: Option<RateMeter>,
     last_emit: Instant,
     /// Every callback (even throttled-out ones) bumps this; the stall watchdog
     /// reads it. Starts at construction so a hang before the first byte —
@@ -524,17 +606,70 @@ struct HfProgressState {
     last_activity: Instant,
 }
 
+impl HfProgressState {
+    fn new(now: Instant) -> Self {
+        Self {
+            total: 0,
+            downloaded: 0,
+            rate: None,
+            last_emit: now,
+            last_activity: now,
+        }
+    }
+
+    fn on_init(&mut self, size: u64, now: Instant) {
+        self.total = size;
+        self.downloaded = 0;
+        self.rate = None;
+        self.last_activity = now;
+    }
+
+    fn on_update(&mut self, size: u64, now: Instant) -> Option<HfProgressSnapshot> {
+        self.last_activity = now;
+        let Some(rate) = self.rate.as_mut() else {
+            // hf-hub's first `update(start)` after `init` is the resume offset already
+            // on disk, not transfer: use it as the rate baseline and emit it at once
+            // so the bar doesn't flash 0%.
+            self.downloaded = size;
+            self.rate = Some(RateMeter::new(size));
+            self.last_emit = now;
+            return Some((self.downloaded, self.total, None));
+        };
+        self.downloaded = self.downloaded.saturating_add(size);
+        // Throttle, but always emit the final byte.
+        let done = self.total > 0 && self.downloaded >= self.total;
+        if !done && now.duration_since(self.last_emit) < PROGRESS_THROTTLE {
+            return None;
+        }
+        self.last_emit = now;
+        Some((
+            self.downloaded,
+            self.total,
+            rate.sample(self.downloaded, now),
+        ))
+    }
+
+    /// Re-emit during a lull so the rate decays instead of freezing.
+    fn on_tick(&mut self, now: Instant) -> Option<HfProgressSnapshot> {
+        let rate = self.rate.as_mut()?;
+        if now.duration_since(self.last_emit) < PROGRESS_TICK {
+            return None;
+        }
+        self.last_emit = now;
+        Some((
+            self.downloaded,
+            self.total,
+            rate.sample(self.downloaded, now),
+        ))
+    }
+}
+
 impl HfDownloadProgress {
-    fn new(app_handle: AppHandle, model_id: String) -> Self {
+    fn new(app_handle: AppHandle, target: ProgressTarget) -> Self {
         Self {
             app_handle,
-            model_id,
-            state: Arc::new(Mutex::new(HfProgressState {
-                total: 0,
-                downloaded: 0,
-                last_emit: Instant::now(),
-                last_activity: Instant::now(),
-            })),
+            target,
+            state: Arc::new(Mutex::new(HfProgressState::new(Instant::now()))),
         }
     }
 
@@ -543,52 +678,39 @@ impl HfDownloadProgress {
         self.state.lock().unwrap().last_activity
     }
 
-    fn emit(&self, downloaded: u64, total: u64) {
-        let percentage = if total > 0 {
-            (downloaded as f64 / total as f64) * 100.0
-        } else {
-            0.0
-        };
+    /// Called periodically by the stall watchdog.
+    fn tick(&self) {
+        let snapshot = self.state.lock().unwrap().on_tick(Instant::now());
+        if let Some(snapshot) = snapshot {
+            self.emit(snapshot);
+        }
+    }
+
+    fn emit(&self, (downloaded, total, bytes_per_sec): HfProgressSnapshot) {
         let _ = self.app_handle.emit(
             "model-download-progress",
-            &DownloadProgress {
-                model_id: self.model_id.clone(),
-                downloaded,
-                total,
-                percentage,
-            },
+            &self.target.progress(downloaded, total, bytes_per_sec),
         );
     }
 }
 
 impl Progress for HfDownloadProgress {
     async fn init(&mut self, size: usize, _filename: &str) {
-        {
-            let mut st = self.state.lock().unwrap();
-            st.total = size as u64;
-            st.downloaded = 0;
-            st.last_emit = Instant::now();
-            st.last_activity = Instant::now();
-        }
-        self.emit(0, size as u64);
+        // No emit: the resume offset follows immediately (see `on_update`).
+        self.state
+            .lock()
+            .unwrap()
+            .on_init(size as u64, Instant::now());
     }
 
     async fn update(&mut self, size: usize) {
-        let (downloaded, total, emit) = {
-            let mut st = self.state.lock().unwrap();
-            st.downloaded = st.downloaded.saturating_add(size as u64);
-            let now = Instant::now();
-            st.last_activity = now;
-            // Throttle to ~10 updates/sec, but always emit the final byte.
-            let emit = now.duration_since(st.last_emit) >= Duration::from_millis(100)
-                || (st.total > 0 && st.downloaded >= st.total);
-            if emit {
-                st.last_emit = now;
-            }
-            (st.downloaded, st.total, emit)
-        };
-        if emit {
-            self.emit(downloaded, total);
+        let snapshot = self
+            .state
+            .lock()
+            .unwrap()
+            .on_update(size as u64, Instant::now());
+        if let Some(snapshot) = snapshot {
+            self.emit(snapshot);
         }
     }
 
@@ -597,7 +719,7 @@ impl Progress for HfDownloadProgress {
             let st = self.state.lock().unwrap();
             st.total.max(st.downloaded)
         };
-        self.emit(total, total);
+        self.emit((total, total, None));
     }
 }
 
@@ -750,6 +872,9 @@ pub struct ModelManager {
     /// Single-flight guard for [`Self::rescan_local_models`] so concurrent
     /// refresh requests coalesce instead of scanning the disk in parallel.
     is_rescanning: Arc<AtomicBool>,
+    /// One language detector transfer at a time, however many downloads
+    /// want it.
+    detector_download: tokio::sync::Mutex<()>,
 }
 
 impl ModelManager {
@@ -953,6 +1078,7 @@ impl ModelManager {
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             is_rescanning: Arc::new(AtomicBool::new(false)),
+            detector_download: tokio::sync::Mutex::new(()),
         };
 
         // Migrate any bundled models to user directory
@@ -1437,8 +1563,13 @@ impl ModelManager {
                 continue;
             };
 
-            // Skip predefined model files
-            if predefined_filenames.contains(&filename) {
+            // Skip predefined model files, and the language detector (a mirror
+            // download lands here), which isn't a transcription model.
+            if predefined_filenames.contains(&filename)
+                || crate::catalog::LANGUAGE_DETECTOR
+                    .as_ref()
+                    .is_some_and(|detector| detector.filename == filename)
+            {
                 continue;
             }
 
@@ -1682,6 +1813,7 @@ impl ModelManager {
     /// hf-hub, reporting progress through the same `model-download-progress`
     /// event the URL path uses. Uses hf-hub's stock cache, but deliberately
     /// disables authentication because every catalog repository is public.
+    /// A model that needs the language detector gets it first, in one bar.
     async fn download_hf_model(
         &self,
         model_info: &ModelInfo,
@@ -1692,10 +1824,11 @@ impl ModelManager {
         let filename = model_info.filename.clone();
 
         // Already in the shared cache (possibly from another tool), or dropped
-        // into the models dir (mirror fallback / manual install)? Done.
-        if hf_cached_path(&repo_id, &revision, &filename).is_some()
-            || self.models_dir.join(&filename).exists()
-        {
+        // into the models dir (mirror fallback / manual install)?
+        let model_present = hf_cached_path(&repo_id, &revision, &filename).is_some()
+            || self.models_dir.join(&filename).exists();
+        let detector = self.missing_detector_for(model_info);
+        if model_present && detector.is_none() {
             self.update_download_status()?;
             let _ = self.app_handle.emit("model-download-complete", &model_id);
             return Ok(());
@@ -1724,8 +1857,151 @@ impl ModelManager {
             disarmed: false,
         };
 
+        // The detector, then the model, as one bar: the detector's bytes come
+        // first, out of both files' total.
+        let mut offset = 0;
+        if let Some(detector) = detector {
+            let model_bytes = if model_present {
+                0
+            } else {
+                crate::catalog::file_in_catalog(&filename, Some(&repo_id))
+                    .map(|(_, file)| file.size_bytes)
+                    .unwrap_or(model_info.size_mb * 1024 * 1024)
+            };
+            let progress = ProgressTarget {
+                model_id: model_id.clone(),
+                offset: 0,
+                total: Some(detector.size_bytes + model_bytes),
+            };
+            match self.fetch_language_detector(progress, &cancel_token).await {
+                Ok(true) => offset = detector.size_bytes,
+                Ok(false) => {
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(());
+                }
+                // The model works without it: Auto falls back to the first
+                // preferred language and the language picker offers the
+                // download, so it doesn't cost them the model.
+                Err(e) => warn!(
+                    "Language detector download failed; continuing with {}: {:#}",
+                    model_id, e
+                ),
+            }
+        }
+
+        if !model_present {
+            let transfer = FileTransfer {
+                label: &model_id,
+                repo_id: &repo_id,
+                revision: &revision,
+                filename: &filename,
+                mirrors: crate::catalog::mirror_fallbacks(&model_id),
+                progress: ProgressTarget {
+                    model_id: model_id.clone(),
+                    offset,
+                    total: None,
+                },
+            };
+            if !self.fetch_hf_file(&transfer, &cancel_token).await? {
+                return Ok(());
+            }
+        }
+
+        cleanup.disarmed = true;
+        self.update_download_status()?;
+        self.cancel_flags.lock().unwrap().remove(&model_id);
+        let _ = self.app_handle.emit("model-download-complete", &model_id);
+        info!("HF model {} downloaded", model_id);
+        Ok(())
+    }
+
+    /// The language detector, when `model` needs it for Auto and it isn't on
+    /// disk.
+    fn missing_detector_for(
+        &self,
+        model: &ModelInfo,
+    ) -> Option<&'static crate::catalog::LanguageDetectorFile> {
+        let languages = crate::language_detection::policy::ModelLanguages {
+            languages: &model.supported_languages,
+            detects: model.supports_language_detection,
+            streaming: model.supports_streaming,
+        };
+        if !crate::language_detection::policy::requires_language_detector(&languages)
+            || self.language_detector_path().is_some()
+        {
+            return None;
+        }
+        crate::catalog::LANGUAGE_DETECTOR.as_ref()
+    }
+
+    /// Download the language detector on its own, tracked and cancelled under
+    /// [`LANGUAGE_DETECTOR_ID`] like a model.
+    pub async fn download_language_detector(&self) -> Result<()> {
+        let cancel_token = CancellationToken::new();
+        self.cancel_flags
+            .lock()
+            .unwrap()
+            .insert(LANGUAGE_DETECTOR_ID.to_string(), cancel_token.clone());
+        let fetched = self
+            .fetch_language_detector(ProgressTarget::own(LANGUAGE_DETECTOR_ID), &cancel_token)
+            .await;
+        self.cancel_flags
+            .lock()
+            .unwrap()
+            .remove(LANGUAGE_DETECTOR_ID);
+        if fetched? {
+            let _ = self
+                .app_handle
+                .emit("model-download-complete", LANGUAGE_DETECTOR_ID);
+        }
+        Ok(())
+    }
+
+    /// Fetch the language detector unless it's on disk. One transfer at a
+    /// time: a second caller waits, then finds the file there. `Ok(false)` if
+    /// cancelled.
+    async fn fetch_language_detector(
+        &self,
+        progress: ProgressTarget,
+        cancel_token: &CancellationToken,
+    ) -> Result<bool> {
+        let detector = crate::catalog::LANGUAGE_DETECTOR
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("The catalog names no language detector"))?;
+        let _single = tokio::select! {
+            guard = self.detector_download.lock() => guard,
+            _ = cancel_token.cancelled() => return Ok(false),
+        };
+        if self.language_detector_path().is_some() {
+            return Ok(true);
+        }
+        let transfer = FileTransfer {
+            label: "the language detector",
+            repo_id: &detector.repo_id,
+            revision: &detector.revision,
+            filename: &detector.filename,
+            mirrors: crate::catalog::language_detector_mirrors(),
+            progress,
+        };
+        self.fetch_hf_file(&transfer, cancel_token).await
+    }
+
+    /// Fetch one file from Hugging Face into the shared cache, retrying, then
+    /// falling back to the mirrors into the models dir. `Ok(false)` if
+    /// cancelled (partial kept for resume).
+    async fn fetch_hf_file(
+        &self,
+        transfer: &FileTransfer<'_>,
+        cancel_token: &CancellationToken,
+    ) -> Result<bool> {
+        let model_id = transfer.label;
+        let repo_id = transfer.repo_id.to_string();
+        let revision = transfer.revision.to_string();
+        let filename = transfer.filename;
+        let cancel_token = cancel_token.clone();
+
         info!(
-            "Downloading HF model {} from {}@{} ({})",
+            "Downloading {} from {}@{} ({})",
             model_id, repo_id, revision, filename
         );
 
@@ -1767,23 +2043,26 @@ impl ModelManager {
                 RepoType::Model,
                 revision.clone(),
             ));
-            let progress = HfDownloadProgress::new(self.app_handle.clone(), model_id.clone());
+            let progress =
+                HfDownloadProgress::new(self.app_handle.clone(), transfer.progress.clone());
 
             // hf-hub has no internal timeouts, so a wedged connection would
             // otherwise hang this attempt forever and neither the retry loop
             // nor the mirror fallback would ever fire. The watchdog cancels a
             // per-attempt child token when progress goes stale; a user cancel
-            // on the parent propagates through the same child.
+            // on the parent propagates through the same child. Each wake also
+            // re-emits progress, so the reported rate decays through a lull.
             let attempt_token = cancel_token.child_token();
             let watchdog = tokio::spawn({
                 let probe = progress.clone();
                 let attempt_token = attempt_token.clone();
                 async move {
                     loop {
-                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        tokio::time::sleep(PROGRESS_TICK).await;
                         if attempt_token.is_cancelled() {
                             break;
                         }
+                        probe.tick();
                         if probe.last_activity().elapsed() > DOWNLOAD_STALL_TIMEOUT {
                             attempt_token.cancel();
                             break;
@@ -1799,7 +2078,7 @@ impl ModelManager {
             // `.sync.part` resume offset), then drop the future outright,
             // which aborts whatever request it was wedged in.
             let mut download = std::pin::pin!(repo.download_with_progress_cancellable(
-                &filename,
+                filename,
                 progress,
                 attempt_token.clone()
             ));
@@ -1823,7 +2102,7 @@ impl ModelManager {
                     // drops the token; `cancel_download` already emitted
                     // `model-download-cancelled`.
                     info!("HF download cancelled for: {}", model_id);
-                    return Ok(());
+                    return Ok(false);
                 }
                 Err(hf_hub::api::tokio::ApiError::Cancelled) => {
                     let err = anyhow::anyhow!(
@@ -1852,7 +2131,7 @@ impl ModelManager {
                         _ = tokio::time::sleep(delay) => {}
                         _ = cancel_token.cancelled() => {
                             info!("HF download cancelled for: {}", model_id);
-                            return Ok(());
+                            return Ok(false);
                         }
                     }
                     attempt += 1;
@@ -1879,7 +2158,7 @@ impl ModelManager {
                         _ = tokio::time::sleep(delay) => {}
                         _ = cancel_token.cancelled() => {
                             info!("HF download cancelled for: {}", model_id);
-                            return Ok(());
+                            return Ok(false);
                         }
                     }
                     attempt += 1;
@@ -1893,7 +2172,7 @@ impl ModelManager {
                 "HF download failed for {} after {} attempt(s): {:?}",
                 model_id, attempt, hf_error
             );
-            let mirrors = crate::catalog::mirror_fallbacks(&model_id);
+            let mirrors = &transfer.mirrors;
             if mirrors.is_empty() {
                 return Err(anyhow::anyhow!(
                     "Hugging Face download failed after {} attempt(s): {}",
@@ -1902,10 +2181,15 @@ impl ModelManager {
                 ));
             }
             let mut completed = false;
-            for mirror in &mirrors {
+            for mirror in mirrors {
                 info!("Falling back to mirror for {}: {}", model_id, mirror.url);
                 match self
-                    .download_from_mirror(&model_id, &filename, mirror, cancel_token.clone())
+                    .download_from_mirror(
+                        &transfer.progress,
+                        filename,
+                        mirror,
+                        cancel_token.clone(),
+                    )
                     .await
                 {
                     Ok(true) => {
@@ -1914,7 +2198,7 @@ impl ModelManager {
                     }
                     Ok(false) => {
                         info!("Mirror download cancelled for: {}", model_id);
-                        return Ok(());
+                        return Ok(false);
                     }
                     Err(e) => {
                         warn!(
@@ -1933,12 +2217,7 @@ impl ModelManager {
             }
         }
 
-        cleanup.disarmed = true;
-        self.update_download_status()?;
-        self.cancel_flags.lock().unwrap().remove(&model_id);
-        let _ = self.app_handle.emit("model-download-complete", &model_id);
-        info!("HF model {} downloaded", model_id);
-        Ok(())
+        Ok(true)
     }
 
     /// Direct-HTTP download of a catalog model's file from a mirror into the
@@ -1946,7 +2225,7 @@ impl ModelManager {
     /// `Ok(true)` on completion, `Ok(false)` if cancelled (partial kept).
     async fn download_from_mirror(
         &self,
-        model_id: &str,
+        progress: &ProgressTarget,
         filename: &str,
         mirror: &crate::catalog::MirrorFile,
         cancel_token: CancellationToken,
@@ -1961,7 +2240,7 @@ impl ModelManager {
 
         match self
             .download_http_resumable(
-                model_id,
+                progress,
                 &mirror.url,
                 &partial_path,
                 Some(mirror.size_bytes),
@@ -1975,7 +2254,7 @@ impl ModelManager {
                 fs::rename(&partial_path, &model_path)?;
                 info!(
                     "Mirror download of {} completed and verified ({:?})",
-                    model_id, model_path
+                    filename, model_path
                 );
                 Ok(true)
             }
@@ -2045,7 +2324,7 @@ impl ModelManager {
         // the server's content-length for progress and completeness checks.
         match self
             .download_http_resumable(
-                model_id,
+                &ProgressTarget::own(model_id),
                 &url,
                 &partial_path,
                 None,
@@ -2288,6 +2567,16 @@ impl ModelManager {
         Ok(model_path)
     }
 
+    /// The spoken-language detector's file, when it is fully on disk: in the
+    /// HF cache, or in the models dir (mirror fallback / manual drop-in).
+    pub fn language_detector_path(&self) -> Option<PathBuf> {
+        let detector = crate::catalog::LANGUAGE_DETECTOR.as_ref()?;
+        hf_cached_path(&detector.repo_id, &detector.revision, &detector.filename).or_else(|| {
+            let local = self.models_dir.join(&detector.filename);
+            local.is_file().then_some(local)
+        })
+    }
+
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
         debug!("ModelManager: cancel_download called for: {}", model_id);
 
@@ -2326,6 +2615,26 @@ impl ModelManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detector_then_model_report_as_one_bar() {
+        // 45 MB detector, then a 700 MB model: one bar from 0 to 745 MB.
+        let detector = ProgressTarget {
+            model_id: "m".into(),
+            offset: 0,
+            total: Some(745),
+        };
+        let p = detector.progress(45, 45, None);
+        assert_eq!((p.model_id.as_str(), p.downloaded, p.total), ("m", 45, 745));
+
+        let model = ProgressTarget {
+            model_id: "m".into(),
+            offset: 45,
+            total: None,
+        };
+        let p = model.progress(350, 700, Some(1.0));
+        assert_eq!((p.downloaded, p.total), (395, 745));
+    }
     use std::fs::File;
     use std::io::Write;
     use tempfile::TempDir;
@@ -2602,7 +2911,36 @@ mod tests {
     fn test_effective_language_falls_back_to_canonical_chinese() {
         let languages = vec!["zh-Hant".to_string()];
 
-        assert_eq!(effective_language("auto", &languages, false), "zh");
+        assert_eq!(effective_language("auto", &[], &languages, false), "zh");
+    }
+
+    #[test]
+    fn test_effective_language_falls_back_to_the_one_preferred_language() {
+        let languages = vec!["en".to_string(), "es-ES".to_string(), "de".to_string()];
+        let spanish = vec!["es".to_string()];
+        let several = vec!["es".to_string(), "de".to_string()];
+        let unheard = vec!["ja".to_string()];
+
+        // A model that must be told: the one language they speak.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, false),
+            "es-ES"
+        );
+        // Several, or one the model doesn't hear: the English fallback.
+        assert_eq!(
+            effective_language("auto", &several, &languages, false),
+            "en"
+        );
+        assert_eq!(
+            effective_language("auto", &unheard, &languages, false),
+            "en"
+        );
+        // A model that detects stays on auto; a usable intent still wins.
+        assert_eq!(
+            effective_language("auto", &spanish, &languages, true),
+            "auto"
+        );
+        assert_eq!(effective_language("de", &spanish, &languages, false), "de");
     }
 
     #[test]
@@ -2618,29 +2956,49 @@ mod tests {
             "ja-JP".to_string(),
         ];
 
-        assert_eq!(effective_language("en", &languages, true), "en-US");
-        assert_eq!(effective_language("es", &languages, true), "es-ES");
+        assert_eq!(effective_language("en", &[], &languages, true), "en-US");
+        assert_eq!(effective_language("es", &[], &languages, true), "es-ES");
         // `zh`/`ja` have no bare entry in this model's table; resolve to locale.
-        assert_eq!(effective_language("zh", &languages, true), "zh-CN");
-        assert_eq!(effective_language("ja", &languages, true), "ja-JP");
+        assert_eq!(effective_language("zh", &[], &languages, true), "zh-CN");
+        assert_eq!(effective_language("ja", &[], &languages, true), "ja-JP");
         // An unsupported intent still auto-detects when the model can.
-        assert_eq!(effective_language("fr", &languages, true), "auto");
+        assert_eq!(effective_language("fr", &[], &languages, true), "auto");
     }
 
     #[test]
     fn test_effective_language_preserves_intent_across_model_code_variants() {
-        assert_eq!(effective_language("no", &["nb".to_string()], true), "nb");
-        assert_eq!(effective_language("nb", &["no".to_string()], true), "no");
-        assert_eq!(effective_language("tl", &["fil".to_string()], true), "fil");
-        assert_eq!(effective_language("fil", &["tl".to_string()], true), "tl");
+        assert_eq!(
+            effective_language("no", &[], &["nb".to_string()], true),
+            "nb"
+        );
+        assert_eq!(
+            effective_language("nb", &[], &["no".to_string()], true),
+            "no"
+        );
+        assert_eq!(
+            effective_language("tl", &[], &["fil".to_string()], true),
+            "fil"
+        );
+        assert_eq!(
+            effective_language("fil", &[], &["tl".to_string()], true),
+            "tl"
+        );
+        assert_eq!(
+            effective_language("jv", &[], &["jw".to_string()], true),
+            "jw"
+        );
+        assert_eq!(
+            effective_language("he", &[], &["iw".to_string()], true),
+            "iw"
+        );
     }
 
     #[test]
     fn test_effective_language_prefers_exact_norwegian_code() {
         let languages = vec!["no".to_string(), "nb".to_string()];
 
-        assert_eq!(effective_language("nb", &languages, true), "nb");
-        assert_eq!(effective_language("no", &languages, true), "no");
+        assert_eq!(effective_language("nb", &[], &languages, true), "nb");
+        assert_eq!(effective_language("no", &[], &languages, true), "no");
     }
 
     #[test]
@@ -2777,6 +3135,17 @@ mod tests {
 
         // No new models should be added
         assert_eq!(models.len(), count_before);
+    }
+
+    #[test]
+    fn a_mirrored_language_detector_is_not_a_custom_model() {
+        let temp_dir = TempDir::new().unwrap();
+        let detector = crate::catalog::LANGUAGE_DETECTOR.as_ref().unwrap();
+        fs::write(temp_dir.path().join(&detector.filename), b"gguf").unwrap();
+
+        let mut models = HashMap::new();
+        ModelManager::discover_custom_transcribe_models(temp_dir.path(), &mut models).unwrap();
+        assert!(models.is_empty());
     }
 
     #[test]

@@ -15,18 +15,12 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
-/// Serializes pastes. Each one snapshots and restores the clipboard, so two
-/// overlapping pastes would save each other's transcript as "the user's
-/// clipboard". Only taken by `paste`, which never runs on the main thread.
+/// Serializes pastes: overlapping ones would restore each other's transcript as
+/// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
 
-/// Runs `f` with the shared Enigo on the main thread and waits for its result.
-///
-/// Paste runs on a worker thread so the main thread stays free while it
-/// sleeps, which lets Handy's own windows handle a paste aimed at them. Input
-/// injection hops back here because macOS's TIS keyboard layout APIs must run
-/// on the main thread. Tauri runs the closure inline when already on the main
-/// thread, so nested calls can't deadlock.
+/// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
+/// and waits for the result. Runs inline if already on the main thread, so no deadlock.
 fn with_enigo<T: Send + 'static>(
     app_handle: &AppHandle,
     f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
@@ -500,6 +494,29 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Builds the dotool stdin script that types `text`.
+///
+/// dotool reads one command per line, so each line of `text` gets its own
+/// `type` command and line breaks are sent as `key enter`, like the other
+/// typing tools do. Otherwise everything after the first newline would be run
+/// as dotool commands instead of being typed.
+#[cfg(target_os = "linux")]
+fn dotool_type_script(text: &str) -> String {
+    let mut script = String::new();
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            script.push_str("key enter\n");
+        }
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if !line.is_empty() {
+            script.push_str("type ");
+            script.push_str(line);
+            script.push('\n');
+        }
+    }
+    script
+}
+
 /// Type text directly via dotool (works on both Wayland and X11 via uinput).
 #[cfg(target_os = "linux")]
 fn type_text_via_dotool(text: &str) -> Result<(), String> {
@@ -512,8 +529,8 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        // dotool uses "type <text>" command
-        writeln!(stdin, "type {}", text)
+        stdin
+            .write_all(dotool_type_script(text).as_bytes())
             .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
     }
 
@@ -800,9 +817,8 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-/// Pastes `text` into the focused application. Call it from a worker thread,
-/// never the main thread: it sleeps between steps, and only the input
-/// injection hops to the main thread (see `with_enigo`).
+/// Pastes `text` into the focused app. Call from a worker thread, never the main
+/// thread: it sleeps between steps (input injection hops via `with_enigo`).
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
@@ -983,6 +999,24 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
         assert_eq!(
             ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
             ["key", "42:1", "110:1", "110:0", "42:0"]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_types_single_line_text_unchanged() {
+        assert_eq!(dotool_type_script("hello world"), "type hello world\n");
+        assert_eq!(dotool_type_script(" indented"), "type  indented\n");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_does_not_run_lines_of_text_as_commands() {
+        // dotool reads one command per line; text after a line break must still
+        // be typed, not executed as `key`/`click` commands.
+        assert_eq!(
+            dotool_type_script("first line\nkey super+l\r\nclick left\n"),
+            "type first line\nkey enter\ntype key super+l\nkey enter\ntype click left\nkey enter\n"
         );
     }
 

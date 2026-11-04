@@ -122,6 +122,25 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
+### Transcription hook
+
+Advanced users on macOS and Linux can rewrite text right before Handy pastes it. Put an executable at `hooks/transcription` in Handy's app data folder (`~/Library/Application Support/com.pais.handy/` on macOS, `~/.local/share/com.pais.handy/` on Linux). Handy writes the text to its stdin, after any LLM post-processing, and pastes its stdout. One trailing newline is removed, and empty output pastes nothing. If the hook fails or runs longer than 30 seconds, the original text is pasted.
+
+The hook doesn't get your shell's `PATH`: on macOS, Handy started from the Dock or Finder only sees `/usr/bin:/bin:/usr/sbin:/sbin`. Use absolute paths for anything else, such as `/opt/homebrew/bin/opencc`.
+
+Example that prefixes `#` when Terminal is the frontmost app (macOS):
+
+```bash
+mkdir -p ~/Library/Application\ Support/com.pais.handy/hooks
+cd ~/Library/Application\ Support/com.pais.handy/hooks
+cat > transcription << 'EOF'
+#!/bin/bash
+app=$(osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true')
+if [ "$app" = "Terminal" ]; then echo "# $(cat)"; else cat; fi
+EOF
+chmod +x transcription
+```
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
@@ -176,7 +195,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   - For building from source on Ubuntu/Debian, you may also need `libgtk-layer-shell-dev`.
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
-- Handy disables the WebKit DMA-BUF renderer by default on Linux, but preserves explicit `WEBKIT_DISABLE_DMABUF_RENDERER` values. For rendering workarounds, see [Troubleshooting → Linux Startup Crashes or Instability](#linux-startup-crashes-or-instability).
+- Handy picks the WebKit renderer on Linux from the linked WebKitGTK version: 2.54 and newer keep the compositor on shared memory (`WEBKIT_DMABUF_RENDERER_FORCE_SHM=1`), older releases disable DMA-BUF rendering (`WEBKIT_DISABLE_DMABUF_RENDERER=1`). Explicit values for either variable are preserved. For rendering workarounds, see [Troubleshooting → Configure the WebKit renderer](#3-configure-the-webkit-renderer).
 - If Handy fails to start reliably on Linux, see [Troubleshooting → Linux Startup Crashes or Instability](#linux-startup-crashes-or-instability).
 - **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the [CLI flags](#cli-parameters) as the command for your custom shortcut.
 
@@ -398,23 +417,27 @@ If installing the library does not help, you can skip `gtk-layer-shell` initiali
 HANDY_NO_GTK_LAYER_SHELL=1 handy
 ```
 
-**3. Configure WebKit DMA-BUF rendering (`WEBKIT_DISABLE_DMABUF_RENDERER`)**
+**3. Configure the WebKit renderer (`WEBKIT_DISABLE_DMABUF_RENDERER` / `WEBKIT_DMABUF_RENDERER_FORCE_SHM`)**
 
-Handy disables the WebKitGTK DMA-BUF renderer by default on Linux because it can cause blank windows or crashes on some GPU/driver combinations. Explicit environment-variable values are preserved, including in the Nix package. To explicitly keep the renderer disabled:
+Handy picks the renderer at startup from the WebKitGTK build it links, because the DMA-BUF renderer crashes on some GPU/driver combinations but the non-composited fallback loses pixels on the 2.54 series:
+
+- **WebKitGTK 2.54 and newer:** the compositor stays enabled and is forced onto shared memory with `WEBKIT_DMABUF_RENDERER_FORCE_SHM=1`. 2.54 composites only the damaged region of every frame, so the previous workaround (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) left transparent windows — such as the recording overlay — showing only their animated parts ([#2166](https://github.com/cjpais/Handy/issues/2166)).
+- **Older releases:** DMA-BUF rendering is disabled with `WEBKIT_DISABLE_DMABUF_RENDERER=1`, which can cause blank windows but matches the previous behavior.
+
+Explicit environment-variable values are preserved, including in the Nix package:
 
 ```bash
+# Force the legacy non-composited renderer (2.54: partial frames may reappear)
 WEBKIT_DISABLE_DMABUF_RENDERER=1 handy
-```
 
-Some users on WebKitGTK 2.54 report a flickering or partially drawn recording overlay with the renderer disabled ([#2166](https://github.com/cjpais/Handy/issues/2166)). If affected, try opting out of the default workaround:
+# Keep the compositor on shared memory (the 2.54 default below)
+WEBKIT_DMABUF_RENDERER_FORCE_SHM=1 handy
 
-```bash
+# Let WebKit use DMA-BUF when supported (may reintroduce the GPU/driver crashes)
 WEBKIT_DISABLE_DMABUF_RENDERER=0 handy
 ```
 
-This allows WebKit to use the renderer when supported, but can reintroduce the GPU/driver-specific crashes described above. Remove the override or use `=1` if that happens.
-
-Fully quit Handy, including its tray instance, before testing either value. Running a second instance with `--toggle-transcription` does not change the running process's environment.
+Fully quit Handy, including its tray instance, before testing a value. Running a second instance with `--toggle-transcription` does not change the running process's environment.
 
 **Making a workaround permanent**
 
