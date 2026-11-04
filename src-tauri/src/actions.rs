@@ -1261,18 +1261,25 @@ mod tests {
     }
 
     /// Starts a server that accepts every connection, reads the request and
-    /// never answers, and returns settings that post-process through it.
-    async fn settings_for_silent_endpoint(structured_output: bool) -> AppSettings {
+    /// never answers, and returns settings that post-process through it,
+    /// plus a signal raised each time a request arrives.
+    async fn settings_for_silent_endpoint(
+        structured_output: bool,
+    ) -> (AppSettings, Arc<tokio::sync::Notify>) {
         use tokio::io::AsyncReadExt;
 
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
+        let request_seen = Arc::new(tokio::sync::Notify::new());
+        let request_seen_by_server = Arc::clone(&request_seen);
         tokio::spawn(async move {
             loop {
                 let (mut stream, _) = listener.accept().await.unwrap();
+                let request_seen = Arc::clone(&request_seen_by_server);
                 tokio::spawn(async move {
                     let mut request = [0_u8; 4096];
                     let _ = stream.read(&mut request).await;
+                    request_seen.notify_one();
                     // Keep the connection open and never write a response.
                     future::pending::<()>().await;
                 });
@@ -1295,24 +1302,36 @@ mod tests {
             .post_process_prompts
             .first()
             .map(|prompt| prompt.id.clone());
-        settings
+        (settings, request_seen)
     }
 
     /// A post-processing endpoint that never answers must give up after one
     /// timeout and fall back to the original transcription, even when a failed
-    /// structured request would otherwise be retried in legacy mode. The clock
-    /// is paused, so tokio jumps to each deadline instead of sleeping through
-    /// it; without the step timeout the only deadline left is the outer guard.
+    /// structured request would otherwise be retried in legacy mode. Once the
+    /// request has arrived the clock is paused, so tokio jumps to each deadline
+    /// instead of sleeping through it; without the step timeout the only
+    /// deadline left is the outer guard.
     async fn assert_silent_endpoint_times_out_once(structured_output: bool) {
-        let settings = settings_for_silent_endpoint(structured_output).await;
+        let (settings, request_seen) = settings_for_silent_endpoint(structured_output).await;
         let started = tokio::time::Instant::now();
+        let post_process =
+            post_process_transcription_within(&settings, "hello", POST_PROCESS_TIMEOUT);
+        tokio::pin!(post_process);
 
-        let outcome = tokio::time::timeout(
-            Duration::from_secs(600),
-            post_process_transcription_within(&settings, "hello", POST_PROCESS_TIMEOUT),
-        )
-        .await
-        .expect("post-processing a silent endpoint never gave up");
+        // Connect on the real clock: on macOS a loopback connect can still be
+        // pending when a paused clock auto-advances, which fires the client's
+        // 10 second connect timeout instead.
+        tokio::select! {
+            _ = request_seen.notified() => {}
+            outcome = &mut post_process => {
+                panic!("post-processing ended before its request arrived: {outcome:?}")
+            }
+        }
+        tokio::time::pause();
+
+        let outcome = tokio::time::timeout(Duration::from_secs(600), post_process)
+            .await
+            .expect("post-processing a silent endpoint never gave up");
 
         assert_eq!(outcome, PostProcessOutcome::Failed);
         let elapsed = started.elapsed();
@@ -1326,12 +1345,12 @@ mod tests {
         );
     }
 
-    #[tokio::test(start_paused = true)]
+    #[tokio::test]
     async fn post_processing_a_silent_endpoint_times_out() {
         assert_silent_endpoint_times_out_once(false).await;
     }
 
-    #[tokio::test(start_paused = true)]
+    #[tokio::test]
     async fn structured_post_processing_a_silent_endpoint_times_out_once() {
         assert_silent_endpoint_times_out_once(true).await;
     }

@@ -751,27 +751,36 @@ mod tests {
 
     /// A models endpoint that reads the request and never answers must fail
     /// with a timeout instead of leaving the settings screen waiting.
-    #[tokio::test(start_paused = true)]
+    #[tokio::test]
     async fn model_list_from_silent_endpoint_times_out() {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
+        let (request_seen, request_arrived) = tokio::sync::oneshot::channel();
         tokio::spawn(async move {
             let (mut stream, _) = listener.accept().await.unwrap();
             let mut request = [0_u8; 2048];
             let _ = stream.read(&mut request).await;
+            let _ = request_seen.send(());
             // Keep the connection open and never write a response.
             std::future::pending::<()>().await;
         });
 
         let silent = provider("custom", &format!("http://{address}"));
         let started = tokio::time::Instant::now();
-        let outcome = tokio::time::timeout(
-            Duration::from_secs(600),
-            fetch_models(&silent, String::new()),
-        )
-        .await;
+        let fetch = fetch_models(&silent, String::new());
+        tokio::pin!(fetch);
 
-        let error = outcome
+        // Connect on the real clock: on macOS a loopback connect can still be
+        // pending when a paused clock auto-advances, which fires the client's
+        // 10 second connect timeout instead.
+        tokio::select! {
+            _ = request_arrived => {}
+            outcome = &mut fetch => panic!("model list ended before its request arrived: {outcome:?}"),
+        }
+        tokio::time::pause();
+
+        let error = tokio::time::timeout(Duration::from_secs(600), fetch)
+            .await
             .expect("model list request to a silent endpoint never gave up")
             .unwrap_err();
         assert!(error.contains("timeout"), "unexpected error: {error}");
