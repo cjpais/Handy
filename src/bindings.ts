@@ -1466,7 +1466,7 @@ export type ShortcutActivation =
  */
 "hold_or_toggle"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
-export type SoundTheme = "marimba" | "pop" | "custom"
+export type SoundTheme = "marimba" | "pop" | "rustig" | "custom"
 /**
  * Phase of the streaming overlay card, emitted to drive its UI state.
  */
