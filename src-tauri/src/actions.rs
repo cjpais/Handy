@@ -1,6 +1,6 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
-use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::audio_toolkit::VadPolicy;
 use crate::managers::audio::{recording_notice_code, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
@@ -579,6 +579,9 @@ impl ShortcutAction for TranscribeAction {
                     "Recording request accepted in {:?}; waiting for first microphone samples",
                     recording_start_time.elapsed()
                 );
+                // Play the start cue as soon as the shortcut is accepted so the user
+                // gets immediate feedback; capture readiness still gates mute below.
+                play_feedback_sound(app, SoundType::Start);
                 let generation = readiness.generation();
                 let app_clone = app.clone();
                 let rm_clone = Arc::clone(&rm);
@@ -611,13 +614,6 @@ impl ShortcutAction for TranscribeAction {
                     debug!("Microphone is receiving samples; recording is ready");
                     utils::emit_recording_ready(&app_clone);
 
-                    // The start chime is a readiness cue, so it must follow the
-                    // first real input callback rather than Stream::play() or a
-                    // fixed delay. The helper returns immediately when feedback
-                    // is disabled; mute still follows the same readiness point.
-                    if rm_clone.is_recording_readiness_current(generation) {
-                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                    }
                     if rm_clone.is_recording_readiness_current(generation) {
                         rm_clone.apply_mute();
                     }
