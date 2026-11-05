@@ -3,7 +3,7 @@ use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
 };
-use crate::chinese_script::{convert_chinese_script, ChineseVariety};
+use crate::chinese_script::{contains_convertible_han, convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     Unloading,
@@ -1635,6 +1635,13 @@ fn transcribe_cpp_run_plan(
     }
 }
 
+/// Whether a language tag's base is Japanese or Korean, whose Han characters
+/// are never converted.
+fn is_japanese_or_korean(language: &str) -> bool {
+    let base = language.split(&['-', '_'][..]).next().unwrap_or("");
+    base.eq_ignore_ascii_case("ja") || base.eq_ignore_ascii_case("ko")
+}
+
 fn post_process_transcription_text(
     raw: String,
     settings: &AppSettings,
@@ -1670,7 +1677,17 @@ fn post_process_transcription_text(
         // e.g. Japanese kanji are never rewritten.
         let variety = output_language
             .language()
-            .and_then(ChineseVariety::from_language);
+            .and_then(ChineseVariety::from_language)
+            .or_else(|| {
+                // Mixed-language takes are tagged with their dominant language
+                // (#2239). Han text that isn't Japanese or Korean is Chinese.
+                let neighbour = output_language
+                    .language()
+                    .map(is_japanese_or_korean)
+                    .unwrap_or(false);
+                (converts_script && !neighbour && contains_convertible_han(&raw))
+                    .then_some(ChineseVariety::Mandarin)
+            });
         let raw = match variety {
             Some(variety) if converts_script => {
                 convert_chinese_script(&raw, variety, settings.chinese_script)
@@ -1714,6 +1731,8 @@ struct PreviewScript {
     /// The language wasn't known when the stream started (auto-detect), so it
     /// is detected from the streamed text until it turns out to be Chinese.
     detect: bool,
+    /// The stream is known to be Japanese or Korean, so Han text is left alone.
+    cjk_neighbour: bool,
 }
 
 impl PreviewScript {
@@ -1726,6 +1745,10 @@ impl PreviewScript {
                 .and_then(ChineseVariety::from_language)
                 .filter(|_| enabled),
             detect: enabled && *output_language == OutputLanguageEvidence::Unknown,
+            cjk_neighbour: output_language
+                .language()
+                .map(is_japanese_or_korean)
+                .unwrap_or(false),
         }
     }
 
@@ -1739,13 +1762,29 @@ impl PreviewScript {
         tentative: &str,
         supported_languages: &[String],
     ) -> (String, String) {
+        let mut detection_tried = !self.detect;
         if self.variety.is_none() && self.detect {
             let text = format!("{committed}{tentative}");
             if text.chars().count() >= PREVIEW_DETECTION_MIN_CHARS {
-                self.variety = detect_output_language(&text, supported_languages)
+                detection_tried = true;
+                let detected = detect_output_language(&text, supported_languages);
+                self.cjk_neighbour = detected
                     .as_deref()
-                    .and_then(ChineseVariety::from_language);
+                    .map(is_japanese_or_korean)
+                    .unwrap_or(false);
+                self.variety = detected.as_deref().and_then(ChineseVariety::from_language);
             }
+        }
+
+        // Same fallback as the final paste: Han text in a take tagged with
+        // another language (#2239) is Chinese. Sticky once set.
+        if self.variety.is_none()
+            && self.script != ChineseScript::AsTranscribed
+            && detection_tried
+            && !self.cjk_neighbour
+            && contains_convertible_han(&format!("{committed}{tentative}"))
+        {
+            self.variety = Some(ChineseVariety::Mandarin);
         }
 
         match self.variety {
@@ -2065,6 +2104,60 @@ mod tests {
 
             assert_eq!(result, "学校に行きます", "{evidence:?}");
         }
+    }
+
+    #[test]
+    fn mixed_take_tagged_english_is_converted_to_traditional() {
+        let settings = AppSettings {
+            chinese_script: ChineseScript::TraditionalTw,
+            filler_word_removal_enabled: false,
+            ..Default::default()
+        };
+        let result = post_process_transcription_text(
+            "欸我跟你说，我今天早上本来想要去咖啡厅工作，结果一打开电脑就发现，Oh my god, I forgot to charge my laptop last night.".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::ModelDetected("en".to_string()),
+            &languages(&["zh", "en", "ja"]),
+        );
+
+        assert_eq!(
+            result,
+            "欸我跟你說，我今天早上本來想要去咖啡廳工作，結果一打開電腦就發現，Oh my god, I forgot to charge my laptop last night."
+        );
+    }
+
+    #[test]
+    fn japanese_korean_and_english_only_text_is_left_alone_when_converting() {
+        let settings = AppSettings {
+            chinese_script: ChineseScript::TraditionalTw,
+            filler_word_removal_enabled: false,
+            ..Default::default()
+        };
+        for (language, text) in [
+            ("ja", "東京に行きます"),
+            ("en", "I forgot to charge my laptop last night."),
+            ("ko", "韓国 서울"),
+            ("en", "韓国 서울"),
+        ] {
+            let result = post_process_transcription_text(
+                text.to_string(),
+                &settings,
+                false,
+                &OutputLanguageEvidence::ModelDetected(language.to_string()),
+                &languages(&["zh", "en", "ja", "ko"]),
+            );
+
+            assert_eq!(result, text, "{language}: {text}");
+        }
+    }
+
+    #[test]
+    fn preview_converts_mixed_take_tagged_english() {
+        let evidence = OutputLanguageEvidence::ModelDetected("en".to_string());
+        let mut preview = PreviewScript::new(ChineseScript::TraditionalTw, &evidence);
+        let (committed, _) = preview.convert("我今天来了 and", "", &languages(&["zh", "en"]));
+        assert_eq!(committed, "我今天來了 and");
     }
 
     #[test]

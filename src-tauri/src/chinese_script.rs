@@ -110,9 +110,51 @@ pub fn convert_chinese_script(
     }
 }
 
+/// Whether `text` holds Han characters that are safe to convert as Chinese.
+///
+/// Mixed-language takes are tagged with their dominant language (an English
+/// tag on a Mandarin/English take, #2239), so the language tag alone can't
+/// say whether Chinese is present. True when there is at least one CJK
+/// ideograph and no kana or Hangul: kana and Hangul mean Japanese or Korean,
+/// whose kanji and hanja must never be rewritten.
+pub fn contains_convertible_han(text: &str) -> bool {
+    let mut has_han = false;
+    for c in text.chars() {
+        match c {
+            '\u{3040}'..='\u{30FF}' | '\u{AC00}'..='\u{D7AF}' => return false,
+            '\u{4E00}'..='\u{9FFF}'
+            | '\u{3400}'..='\u{4DBF}'
+            | '\u{F900}'..='\u{FAFF}'
+            | '\u{20000}'..='\u{2A6DF}' => has_han = true,
+            _ => {}
+        }
+    }
+    has_han
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn han_with_latin_is_convertible() {
+        assert!(contains_convertible_han("我今天 forgot my laptop"));
+        assert!(contains_convertible_han("㐀"));
+        assert!(contains_convertible_han("\u{20000}"));
+    }
+
+    #[test]
+    fn text_without_han_is_not_convertible() {
+        assert!(!contains_convertible_han(""));
+        assert!(!contains_convertible_han("Oh my god, 123."));
+    }
+
+    #[test]
+    fn kana_or_hangul_blocks_conversion() {
+        assert!(!contains_convertible_han("東京に行きます"));
+        assert!(!contains_convertible_han("カタカナ and 漢字"));
+        assert!(!contains_convertible_han("韓國 서울"));
+    }
 
     #[test]
     fn cantonese_uses_hong_kong_tables() {
