@@ -943,6 +943,8 @@
     "recordingFailedTitle": "錄音啟動失敗",
     "modelLoadFailed": "Handy 無法載入此模型。請再試一次或選擇其他模型。",
     "modelLoadFailedTitle": "載入模型失敗",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "下載失敗",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",

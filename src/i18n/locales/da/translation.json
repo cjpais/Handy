@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Kunne ikke starte optagelse",
     "modelLoadFailed": "Handy kunne ikke indlæse denne model. Prøv igen, eller vælg en anden.",
     "modelLoadFailedTitle": "Kunne ikke indlæse model",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Download mislykkedes",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",

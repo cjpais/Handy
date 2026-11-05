@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Không thể bắt đầu ghi âm",
     "modelLoadFailed": "Handy không thể tải mô hình này. Hãy thử lại hoặc chọn mô hình khác.",
     "modelLoadFailedTitle": "Không thể tải mô hình",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Tải xuống thất bại",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
