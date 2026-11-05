@@ -950,6 +950,12 @@ pub fn run(cli_args: CliArgs) {
                 std::env::var_os("VK_LOADER_LAYERS_DISABLE"),
                 utils::env_flag_enabled("HANDY_KEEP_VULKAN_IMPLICIT_LAYERS"),
             );
+            #[cfg(any(target_os = "windows", target_os = "linux"))]
+            log::info!(
+                "Vulkan host-visible VRAM policy: GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM={:?}, HANDY_KEEP_VULKAN_HOST_VISIBLE_VIDMEM={}",
+                std::env::var_os("GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM"),
+                utils::env_flag_enabled("HANDY_KEEP_VULKAN_HOST_VISIBLE_VIDMEM"),
+            );
             system_languages::log_system_languages();
 
             specta_builder.mount_events(app);

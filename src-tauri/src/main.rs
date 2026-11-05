@@ -18,9 +18,22 @@ fn main() {
         }
     }
 
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        // Reloading a model after an idle unload takes ~70s on NVIDIA when
+        // ggml-vulkan uses host-visible VRAM (#1841). Disable it by default,
+        // preserving user overrides; HANDY_KEEP_VULKAN_HOST_VISIBLE_VIDMEM=1
+        // opts back in.
+        if std::env::var_os("GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM").is_none()
+            && !handy_app_lib::env_flag_enabled("HANDY_KEEP_VULKAN_HOST_VISIBLE_VIDMEM")
+        {
+            std::env::set_var("GGML_VK_DISABLE_HOST_VISIBLE_VIDMEM", "1");
+        }
+    }
+
     // Transcription worker: runs transcribe.cpp in isolation and never touches
     // Tauri, the CLI, or single-instance handling. Checked after the env setup
-    // above so the worker inherits it (e.g. the Vulkan layer opt-out).
+    // above so the worker inherits it (e.g. the Vulkan opt-outs).
     if handy_app_lib::engine_supervisor::is_worker_invocation() {
         std::process::exit(handy_app_lib::engine_supervisor::run_worker());
     }
