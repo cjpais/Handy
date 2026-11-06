@@ -715,6 +715,11 @@
       "readingFile": "Lecture du fichier...",
       "showMore": "Afficher plus",
       "showLess": "Afficher moins",
+      "postProcess": "Post-traiter la transcription",
+      "postProcessError": "Le post-traitement a échoué. Vérifiez les paramètres de post-traitement ou les journaux.",
+      "postProcessedTab": "Post-traité",
+      "originalTab": "Original",
+      "postProcessFailed": "Le post-traitement a échoué, la transcription d'origine a donc été utilisée.",
       "dropTitle": "Déposez pour transcrire",
       "dropDescription": "Il apparaîtra dans l'historique."
     },

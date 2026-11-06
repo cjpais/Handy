@@ -432,6 +432,48 @@ impl HistoryManager {
         Ok(entry)
     }
 
+    /// Stores a new post-processing result for an entry, keeping its
+    /// transcription. `source_text` is the transcription the result was made
+    /// from; if the entry was re-transcribed meanwhile, nothing is stored.
+    pub fn update_post_processed(
+        &self,
+        id: i64,
+        source_text: &str,
+        post_processed_text: String,
+        post_process_prompt: Option<String>,
+    ) -> Result<HistoryEntry> {
+        let conn = self.get_connection()?;
+        let updated = conn.execute(
+            "UPDATE transcription_history
+             SET post_processed_text = ?1,
+                 post_process_prompt = ?2
+             WHERE id = ?3 AND transcription_text = ?4",
+            params![post_processed_text, post_process_prompt, id, source_text],
+        )?;
+
+        if updated == 0 {
+            return Err(anyhow!(
+                "History entry {} was deleted or re-transcribed during post-processing",
+                id
+            ));
+        }
+
+        let entry = conn.query_row(
+            &format!("SELECT {ENTRY_COLUMNS} FROM transcription_history WHERE id = ?1"),
+            params![id],
+            Self::map_history_entry,
+        )?;
+
+        debug!("Updated post-processed text for history entry {}", id);
+
+        (HistoryUpdatePayload::Updated {
+            entry: entry.clone(),
+        })
+        .emit(&self.app_handle)?;
+
+        Ok(entry)
+    }
+
     pub fn cleanup_old_entries(&self) -> Result<()> {
         let retention_period = crate::settings::get_recording_retention_period(&self.app_handle);
 

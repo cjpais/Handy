@@ -987,6 +987,19 @@ async retryHistoryEntryTranscription(id: number) : Promise<void> {
     await TAURI_INVOKE("retry_history_entry_transcription", { id });
 },
 /**
+ * Runs the entry's transcription through post-processing again with the
+ * current provider, model and prompt, and stores the result next to it.
+ * The reason for a failure is in the log.
+ */
+async postProcessHistoryEntry(id: number) : Promise<Result<HistoryEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("post_process_history_entry", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Stops the entry's background transcription: a queued one is dropped, a
  * running one stops after the chunk it is on. The entry keeps the text it
  * had before.
@@ -1023,10 +1036,8 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
- * Checks if the Mac is a laptop by detecting battery presence
- * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {

@@ -715,6 +715,11 @@
       "readingFile": "S'està llegint el fitxer...",
       "showMore": "Mostra'n més",
       "showLess": "Mostra'n menys",
+      "postProcess": "Postprocessa la transcripció",
+      "postProcessError": "El postprocessament ha fallat. Comprova la configuració del postprocessament o els registres.",
+      "postProcessedTab": "Postprocessat",
+      "originalTab": "Original",
+      "postProcessFailed": "El postprocessament ha fallat, així que s'ha fet servir la transcripció original.",
       "dropTitle": "Deixa anar per transcriure",
       "dropDescription": "Apareixerà a l'historial."
     },

@@ -715,6 +715,11 @@
       "readingFile": "Načítám soubor...",
       "showMore": "Zobrazit více",
       "showLess": "Zobrazit méně",
+      "postProcess": "Dodatečně zpracovat přepis",
+      "postProcessError": "Dodatečné zpracování selhalo. Zkontrolujte nastavení dodatečného zpracování nebo protokoly.",
+      "postProcessedTab": "Zpracovaný",
+      "originalTab": "Původní",
+      "postProcessFailed": "Dodatečné zpracování selhalo, proto byl použit původní přepis.",
       "dropTitle": "Pusťte pro přepis",
       "dropDescription": "Zobrazí se v historii."
     },
