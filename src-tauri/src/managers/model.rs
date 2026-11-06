@@ -345,7 +345,74 @@ fn hf_cached_path_in(
 ) -> Option<PathBuf> {
     hf_cached_paths_in(caches, repo_id, revision, filename)
         .into_iter()
-        .find(|path| path.is_file())
+        .find_map(|path| resolve_cached_file(&path))
+}
+
+/// Resolve `.` and `..` components without touching the filesystem.
+fn normalize_lexically(path: &Path) -> PathBuf {
+    use std::path::Component;
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if !out.pop() {
+                    out.push("..");
+                }
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+/// Where a symlink points, resolved by hand: read the link, join a relative
+/// target onto the link's directory, and normalise `..` lexically. Unlike
+/// `fs::canonicalize` this never follows the link, which fails with os error
+/// 448 when Windows RedirectionGuard is inherited (e.g. Handy relaunched by
+/// msiexec after an update). `None` when `path` is not a symlink.
+fn symlink_target_lexical(path: &Path) -> Option<PathBuf> {
+    if !fs::symlink_metadata(path).ok()?.file_type().is_symlink() {
+        return None;
+    }
+    let target = fs::read_link(path).ok()?;
+    let joined = if target.is_absolute() {
+        target
+    } else {
+        path.parent()?.join(target)
+    };
+    Some(normalize_lexically(&joined))
+}
+
+/// A readable regular-file path for a cached model file. A plain file is
+/// returned as is. A snapshot symlink that can't be followed (RedirectionGuard)
+/// is resolved by hand and its blob path returned, which the guard allows.
+fn resolve_cached_file(path: &Path) -> Option<PathBuf> {
+    if path.is_file() {
+        return Some(path.to_path_buf());
+    }
+    let target = symlink_target_lexical(path)?;
+    if target.is_file() {
+        debug!("resolved model symlink {:?} -> {:?}", path, target);
+        Some(target)
+    } else {
+        None
+    }
+}
+
+/// Canonical path a symlink points at; falls back to resolving by hand when
+/// the OS refuses to follow it.
+fn canonical_link_target(path: &Path) -> std::io::Result<PathBuf> {
+    match fs::canonicalize(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            let target = symlink_target_lexical(path).ok_or(e)?;
+            match (target.parent(), target.file_name()) {
+                (Some(dir), Some(name)) => Ok(fs::canonicalize(dir)?.join(name)),
+                _ => Ok(target),
+            }
+        }
+        other => other,
+    }
 }
 
 /// Snapshot directories in lookup order, with the active cache winning ties.
@@ -432,7 +499,7 @@ fn unshared_blob(pointer: &Path, deleting: &HashSet<PathBuf>) -> std::io::Result
     let Some(repo_dir) = hf_repo_dir(pointer).filter(|_| is_symlink) else {
         return Ok(None);
     };
-    let blob = match fs::canonicalize(pointer) {
+    let blob = match canonical_link_target(pointer) {
         Ok(blob) => blob,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(e),
@@ -462,7 +529,7 @@ fn blob_is_shared(dir: &Path, blob: &Path, deleting: &HashSet<PathBuf>) -> std::
                 return Ok(true);
             }
         } else if kind.is_symlink() {
-            match fs::canonicalize(&path) {
+            match canonical_link_target(&path) {
                 Ok(target) if target == blob => return Ok(true),
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
@@ -1729,7 +1796,7 @@ impl ModelManager {
 
                 for file in files.flatten() {
                     let fname = file.file_name().to_string_lossy().to_string();
-                    if !fname.ends_with(".gguf") || !file.path().is_file() {
+                    if !fname.ends_with(".gguf") || resolve_cached_file(&file.path()).is_none() {
                         continue;
                     }
                     if known_hf.contains(&(repo_id.clone(), fname.clone())) {
@@ -1762,7 +1829,8 @@ impl ModelManager {
                         continue;
                     }
 
-                    let path = snapshot.join(&fname);
+                    let path = resolve_cached_file(&snapshot.join(&fname))
+                        .unwrap_or_else(|| snapshot.join(&fname));
                     let probe = prober.probe_file(&path);
                     // Only surface models transcribe-cpp recognises.
                     if probe.verdict != Compatibility::Compatible {
@@ -2647,6 +2715,62 @@ mod tests {
         fs::write(repo_dir.join("refs").join(revision), revision).unwrap();
         fs::write(&snapshot, b"model").unwrap();
         snapshot
+    }
+
+    #[test]
+    fn test_normalize_lexically_resolves_parent_components() {
+        assert_eq!(
+            normalize_lexically(Path::new("a/b/snap/rev/../../blobs/x")),
+            PathBuf::from("a/b/blobs/x")
+        );
+        assert_eq!(
+            normalize_lexically(Path::new("a/./b/../c")),
+            PathBuf::from("a/c")
+        );
+    }
+
+    #[test]
+    fn test_hf_cached_path_resolves_relative_snapshot_symlink() {
+        let cache = TempDir::new().unwrap();
+        let repo_dir = cache.path().join("models--someone--model");
+        let blob = repo_dir.join("blobs").join("c".repeat(64));
+        let link = repo_dir.join("snapshots").join("rev1").join("model.gguf");
+        fs::create_dir_all(blob.parent().unwrap()).unwrap();
+        fs::create_dir_all(link.parent().unwrap()).unwrap();
+        fs::create_dir_all(repo_dir.join("refs")).unwrap();
+        fs::write(&blob, b"gguf-bytes").unwrap();
+        fs::write(repo_dir.join("refs").join("main"), "rev1").unwrap();
+        let target = Path::new("..")
+            .join("..")
+            .join("blobs")
+            .join("c".repeat(64));
+        #[cfg(windows)]
+        let made = std::os::windows::fs::symlink_file(&target, &link);
+        #[cfg(not(windows))]
+        let made = std::os::unix::fs::symlink(&target, &link);
+        if let Err(e) = made {
+            println!("skipped: symlink creation not permitted ({e})");
+            return;
+        }
+        let caches = vec![Cache::new(cache.path().to_path_buf())];
+
+        let found = hf_cached_path_in(&caches, "someone/model", "main", "model.gguf")
+            .expect("symlinked model is found");
+        assert!(found == link || found == blob, "unexpected path {found:?}");
+        assert!(found.is_file());
+        assert_eq!(fs::read(&found).unwrap(), b"gguf-bytes");
+        // The manual resolution itself points at the blob.
+        assert_eq!(symlink_target_lexical(&link).unwrap(), blob);
+        // Deletion still finds the blob through the link.
+        assert!(ModelManager::delete_hf_cache_file_in(
+            &caches,
+            "someone/model",
+            "main",
+            "model.gguf"
+        )
+        .unwrap());
+        assert!(!blob.exists());
+        assert!(fs::symlink_metadata(&link).is_err());
     }
 
     #[test]
