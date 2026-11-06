@@ -879,7 +879,7 @@ impl ShortcutAction for TranscribeAction {
                                             || RECORDING_SESSION.load(Ordering::SeqCst) == session;
                                         let (outcome, notice) =
                                             match utils::paste(final_text, ah_clone.clone()) {
-                                                Ok(()) => {
+                                                Ok(utils::PasteOutcome::Pasted) => {
                                                     debug!(
                                                         "Text pasted successfully in {:?}",
                                                         paste_time.elapsed()
@@ -899,6 +899,15 @@ impl ShortcutAction for TranscribeAction {
                                                     });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }
+                                                // The focused app runs as administrator;
+                                                // nothing was typed.
+                                                Ok(utils::PasteOutcome::LeftOnClipboard) => (
+                                                    TranscriptionOutcome::Failed,
+                                                    Some(Notice::new(
+                                                        NoticeCode::TargetElevated,
+                                                        NoticeSource::Dictation,
+                                                    )),
+                                                ),
                                                 Err(e) => {
                                                     error!("Failed to paste transcription: {}", e);
                                                     (
