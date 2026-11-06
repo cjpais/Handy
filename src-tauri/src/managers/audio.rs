@@ -8,7 +8,7 @@ use crate::audio_toolkit::{
 };
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
-use crate::notices::NoticeCode;
+use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
 use crate::utils;
 use handy_recorder::{Channels, EndReason, ErrorKind, Recorder, RecorderConfig, StartError};
@@ -19,6 +19,11 @@ use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+/// A take ends if no audio has arrived this long after it started.
+const FIRST_AUDIO_DEADLINE: Duration = Duration::from_secs(3);
+/// A take ends if audio stops arriving for this long once it has started.
+const MAX_AUDIO_GAP: Duration = Duration::from_secs(2);
+const AUDIO_WATCH_INTERVAL: Duration = Duration::from_millis(100);
 const SILERO_VAD_THRESHOLD: f32 = 0.3;
 const EARSHOT_VAD_THRESHOLD: f32 = 0.5;
 
@@ -291,6 +296,74 @@ enum VadSlot {
     },
 }
 
+/// How a take's microphone stopped delivering audio.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AudioStall {
+    /// Nothing arrived after the take started.
+    NoFirstAudio { waited: Duration },
+    /// Audio arrived, then stopped.
+    Gap { gap: Duration, deliveries: u64 },
+}
+
+impl AudioStall {
+    fn describe(self) -> String {
+        match self {
+            Self::NoFirstAudio { waited } => format!(
+                "no audio arrived {:.1} s after the recording started",
+                waited.as_secs_f64()
+            ),
+            Self::Gap { gap, deliveries } => format!(
+                "no audio for {:.1} s after {deliveries} deliveries",
+                gap.as_secs_f64()
+            ),
+        }
+    }
+}
+
+/// Watches one take for audio deliveries that stop coming. It counts
+/// deliveries, not their content: a working microphone in a quiet room keeps
+/// delivering (near-)zero samples, so silence never trips it. Every method
+/// takes the time, so tests drive it with made-up instants.
+struct AudioDeliveryWatchdog {
+    started_at: Instant,
+    last_delivery_at: Option<Instant>,
+    deliveries: u64,
+}
+
+impl AudioDeliveryWatchdog {
+    fn new(started_at: Instant) -> Self {
+        Self {
+            started_at,
+            last_delivery_at: None,
+            deliveries: 0,
+        }
+    }
+
+    fn delivered(&mut self, now: Instant) {
+        self.deliveries += 1;
+        self.last_delivery_at = Some(now);
+    }
+
+    fn check(&self, now: Instant) -> Option<AudioStall> {
+        match self.last_delivery_at {
+            None => {
+                let waited = now.saturating_duration_since(self.started_at);
+                (waited >= FIRST_AUDIO_DEADLINE).then_some(AudioStall::NoFirstAudio { waited })
+            }
+            Some(last) => {
+                let gap = now.saturating_duration_since(last);
+                (gap >= MAX_AUDIO_GAP).then_some(AudioStall::Gap {
+                    gap,
+                    deliveries: self.deliveries,
+                })
+            }
+        }
+    }
+}
+
+/// Called with a recorder's failure flag and its error when it fails.
+type FailureCallback = Arc<dyn Fn(&Arc<AtomicBool>, handy_recorder::Error) + Send + Sync>;
+
 /// An open microphone: the stream is running whether or not it is recording.
 struct OpenMicrophone {
     recorder: Recorder<CaptureSink>,
@@ -410,13 +483,20 @@ fn microphone_config(
     }
 }
 
-fn open_microphone(config: RecorderConfig) -> Result<OpenMicrophone, handy_recorder::Error> {
+fn open_microphone(
+    config: RecorderConfig,
+    on_failure: &FailureCallback,
+) -> Result<OpenMicrophone, handy_recorder::Error> {
     let failed = Arc::new(AtomicBool::new(false));
     let recorder = Recorder::open_with_failure_handler(config, {
         let failed = Arc::clone(&failed);
+        let on_failure = Arc::clone(on_failure);
         // handy-recorder logs the failure. The stream is rebuilt on the next
-        // start; a recording in progress keeps the audio captured before it.
-        move |_| failed.store(true, Ordering::Release)
+        // start; a recording in progress is ended by `on_failure`.
+        move |error| {
+            failed.store(true, Ordering::Release);
+            on_failure(&failed, error);
+        }
     })?;
     Ok(OpenMicrophone { recorder, failed })
 }
@@ -428,21 +508,18 @@ fn open_microphone_on_channel(
     channel: Option<u16>,
     take_headset: bool,
     frames_per_chunk: usize,
+    on_failure: &FailureCallback,
 ) -> Result<OpenMicrophone, handy_recorder::Error> {
-    match open_microphone(microphone_config(
-        device.clone(),
-        channel,
-        take_headset,
-        frames_per_chunk,
-    )) {
+    match open_microphone(
+        microphone_config(device.clone(), channel, take_headset, frames_per_chunk),
+        on_failure,
+    ) {
         Err(error) if error.kind() == ErrorKind::InvalidChannel => {
             warn!("{error}; averaging all input channels instead");
-            open_microphone(microphone_config(
-                device,
-                None,
-                take_headset,
-                frames_per_chunk,
-            ))
+            open_microphone(
+                microphone_config(device, None, take_headset, frames_per_chunk),
+                on_failure,
+            )
         }
         result => result,
     }
@@ -871,12 +948,14 @@ impl AudioRecordingManager {
 
         let channel = *self.selected_channel.lock().unwrap();
         let take_headset = self.airpods_mode.load(Ordering::Acquire);
+        let on_failure = self.failure_callback();
         let open_started = Instant::now();
         let microphone = match open_microphone_on_channel(
             resolution.device.clone(),
             channel,
             take_headset,
             frames_per_chunk,
+            &on_failure,
         ) {
             Err(first_err) if resolution.from_cache => {
                 // The cached device ID may have gone stale (unplugged).
@@ -890,6 +969,7 @@ impl AudioRecordingManager {
                     channel,
                     take_headset,
                     frames_per_chunk,
+                    &on_failure,
                 )
             }
             result => result,
@@ -1062,10 +1142,21 @@ impl AudioRecordingManager {
             }
 
             let (ready_tx, receiver) = mpsc::channel();
+            // The sink emits levels for every window of samples it receives,
+            // silent or not, so they mark deliveries for the watchdog.
+            let watchdog = Arc::new(Mutex::new(AudioDeliveryWatchdog::new(Instant::now())));
+            let on_levels: LevelCallback = {
+                let watchdog = Arc::clone(&watchdog);
+                let on_levels = Arc::clone(&self.on_levels);
+                Arc::new(move |levels| {
+                    watchdog.lock().unwrap().delivered(Instant::now());
+                    on_levels(levels);
+                })
+            };
             let sink = CaptureSink::new(
                 self.lend_vad()?,
                 vad_policy,
-                Arc::clone(&self.on_levels),
+                on_levels,
                 Arc::clone(&self.on_audio),
                 ready_tx,
             );
@@ -1086,6 +1177,11 @@ impl AudioRecordingManager {
                         },
                     );
                     debug!("Recording requested for binding {binding_id}");
+                    self.watch_audio_delivery(
+                        generation,
+                        watchdog,
+                        microphone.recorder.info().device.name.clone(),
+                    );
                     return Ok(RecordingReadiness {
                         receiver,
                         generation,
@@ -1216,6 +1312,117 @@ impl AudioRecordingManager {
         }
         drop(state);
         Ok(())
+    }
+
+    /* ---------- stalled microphone ----------------------------------------- */
+
+    /// What a recorder opened by this manager calls when it fails. Looked up
+    /// through the app, since the always-on stream opens before the manager
+    /// is managed.
+    fn failure_callback(&self) -> FailureCallback {
+        let app = self.app_handle.clone();
+        Arc::new(move |failed, error| {
+            if let Some(manager) = app.try_state::<Arc<AudioRecordingManager>>() {
+                manager.recorder_failed(failed, error);
+            }
+        })
+    }
+
+    /// Ends the take on a recorder that just failed (stream error, device
+    /// lost, or handy-recorder's own stall bound), instead of leaving the
+    /// overlay up until the user lets go.
+    fn recorder_failed(&self, failed: &Arc<AtomicBool>, error: handy_recorder::Error) {
+        // A late report from a recorder that was already replaced.
+        let current = self
+            .recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .is_some_and(|microphone| Arc::ptr_eq(&microphone.failed, failed));
+        if !current {
+            return;
+        }
+        let generation = {
+            let state = self.state.lock().unwrap();
+            if !matches!(*state, RecordingState::Recording { .. }) {
+                return;
+            }
+            self.capture_generation.load(Ordering::Acquire)
+        };
+        let code = match error.kind() {
+            ErrorKind::PermissionDenied => NoticeCode::MicPermissionDenied,
+            _ => NoticeCode::MicrophoneStalled,
+        };
+        self.end_stalled_take(generation, code, error.to_string());
+    }
+
+    /// Checks the take started as `generation` until it ends, and ends it if
+    /// its audio stops arriving.
+    fn watch_audio_delivery(
+        &self,
+        generation: u64,
+        watchdog: Arc<Mutex<AudioDeliveryWatchdog>>,
+        device: String,
+    ) {
+        let manager = self.clone();
+        let spawned = std::thread::Builder::new()
+            .name("handy-mic-watch".into())
+            .spawn(move || loop {
+                std::thread::sleep(AUDIO_WATCH_INTERVAL);
+                if !manager.is_recording_readiness_current(generation) {
+                    return;
+                }
+                let stall = watchdog.lock().unwrap().check(Instant::now());
+                if let Some(stall) = stall {
+                    manager.end_stalled_take(
+                        generation,
+                        NoticeCode::MicrophoneStalled,
+                        format!(
+                            "Microphone '{device}' stopped delivering audio: {}",
+                            stall.describe()
+                        ),
+                    );
+                    return;
+                }
+            });
+        if let Err(e) = spawned {
+            warn!("Could not start the microphone watchdog: {e}");
+        }
+    }
+
+    /// Ends the take started as `generation` the way a cancel does (no
+    /// transcription; overlay and tray back to idle) and tells the user why.
+    fn end_stalled_take(&self, generation: u64, code: NoticeCode, detail: String) {
+        if !matches!(
+            *self.state.lock().unwrap(),
+            RecordingState::Recording { .. }
+        ) {
+            return;
+        }
+        // The watchdog and the failure handler can both see one stall; the
+        // first to claim the take ends it.
+        if self
+            .capture_generation
+            .compare_exchange(
+                generation,
+                generation + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_err()
+        {
+            return;
+        }
+        error!("Ending the recording: {detail}");
+        // The next take opens a new stream instead of reusing this one.
+        if let Some(microphone) = self.recorder.lock().unwrap().as_ref() {
+            microphone.failed.store(true, Ordering::Release);
+        }
+        utils::cancel_current_operation(&self.app_handle);
+        notices::raise(
+            &self.app_handle,
+            Notice::new(code, NoticeSource::Dictation).with_detail(detail),
+        );
     }
 
     /// Invalidate pending first-sample UI and audio-feedback work immediately.
@@ -1408,6 +1615,107 @@ mod tests {
         assert_eq!(second.channels, Channels::Only(1));
         assert_eq!(second.device.as_deref(), Some("id"));
         assert_eq!(second.frames_per_chunk, Some(256));
+    }
+
+    fn ms(millis: u64) -> Duration {
+        Duration::from_millis(millis)
+    }
+
+    #[test]
+    fn watchdog_fires_when_no_audio_arrives_by_the_deadline() {
+        let start = Instant::now();
+        let watchdog = AudioDeliveryWatchdog::new(start);
+        assert_eq!(watchdog.check(start), None);
+        assert_eq!(watchdog.check(start + ms(2_999)), None);
+        assert_eq!(
+            watchdog.check(start + ms(3_000)),
+            Some(AudioStall::NoFirstAudio { waited: ms(3_000) })
+        );
+    }
+
+    #[test]
+    fn watchdog_waits_the_gap_bound_once_audio_has_arrived() {
+        let start = Instant::now();
+        let mut watchdog = AudioDeliveryWatchdog::new(start);
+        // First audio just before the first-audio deadline: only the gap
+        // bound applies from then on.
+        watchdog.delivered(start + ms(2_900));
+        assert_eq!(watchdog.check(start + ms(4_000)), None);
+        assert_eq!(watchdog.check(start + ms(4_899)), None);
+        assert_eq!(
+            watchdog.check(start + ms(4_900)),
+            Some(AudioStall::Gap {
+                gap: ms(2_000),
+                deliveries: 1
+            })
+        );
+    }
+
+    #[test]
+    fn watchdog_fires_on_a_gap_in_the_middle_of_a_take() {
+        let start = Instant::now();
+        let mut watchdog = AudioDeliveryWatchdog::new(start);
+        for i in 0..100 {
+            watchdog.delivered(start + ms(30 + i * 32));
+        }
+        let last = start + ms(30 + 99 * 32);
+        assert_eq!(watchdog.check(last + ms(1_999)), None);
+        assert_eq!(
+            watchdog.check(last + ms(2_500)),
+            Some(AudioStall::Gap {
+                gap: ms(2_500),
+                deliveries: 100
+            })
+        );
+    }
+
+    /// A quiet room still delivers audio. The watchdog never sees sample
+    /// values, so a long take of silence that keeps arriving never trips it.
+    #[test]
+    fn watchdog_never_fires_while_audio_keeps_arriving() {
+        let start = Instant::now();
+        let mut watchdog = AudioDeliveryWatchdog::new(start);
+        // Two minutes of deliveries every 64 ms, checked every 100 ms.
+        let mut delivered_at = ms(30);
+        let mut checked_at = ms(0);
+        while checked_at < Duration::from_secs(120) {
+            while delivered_at <= checked_at {
+                watchdog.delivered(start + delivered_at);
+                delivered_at += ms(64);
+            }
+            assert_eq!(
+                watchdog.check(start + checked_at),
+                None,
+                "at {checked_at:?}"
+            );
+            checked_at += ms(100);
+        }
+    }
+
+    #[test]
+    fn watchdog_tolerates_a_clock_read_before_the_last_delivery() {
+        // The watch thread can read the time just before the delivery thread
+        // records a later one.
+        let start = Instant::now();
+        let mut watchdog = AudioDeliveryWatchdog::new(start);
+        watchdog.delivered(start + ms(500));
+        assert_eq!(watchdog.check(start + ms(400)), None);
+    }
+
+    #[test]
+    fn stalls_say_how_long_nothing_arrived() {
+        assert_eq!(
+            AudioStall::NoFirstAudio { waited: ms(3_100) }.describe(),
+            "no audio arrived 3.1 s after the recording started"
+        );
+        assert_eq!(
+            AudioStall::Gap {
+                gap: ms(2_000),
+                deliveries: 42
+            }
+            .describe(),
+            "no audio for 2.0 s after 42 deliveries"
+        );
     }
 
     #[test]

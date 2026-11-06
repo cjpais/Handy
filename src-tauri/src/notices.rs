@@ -44,6 +44,7 @@ pub enum NoticeCode {
     NoMicrophone,
     MicPermissionDenied,
     RecordingFailed,
+    MicrophoneStalled,
     ModelLoadFailed,
     PostProcessFailed,
     FileTranscriptionFailed,
@@ -58,6 +59,7 @@ impl NoticeCode {
             | Self::NoMicrophone
             | Self::MicPermissionDenied
             | Self::RecordingFailed
+            | Self::MicrophoneStalled
             | Self::ModelLoadFailed
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
             Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
@@ -72,6 +74,7 @@ impl NoticeCode {
             Self::NoMicrophone => &strings.no_input_device_title,
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,
             Self::RecordingFailed => &strings.recording_failed_title,
+            Self::MicrophoneStalled => &strings.microphone_stalled_title,
             Self::ModelLoadFailed => &strings.model_load_failed_title,
             Self::PostProcessFailed => &strings.post_process_failed_title,
             Self::FileTranscriptionFailed => &strings.file_transcription_failed_title,
@@ -250,6 +253,11 @@ mod tests {
                 file(NoticeCode::FileTranscriptionFailed),
             ]
         );
+    }
+
+    #[test]
+    fn microphone_stalled_is_an_error() {
+        assert_eq!(NoticeCode::MicrophoneStalled.level(), NoticeLevel::Error);
     }
 
     #[test]
