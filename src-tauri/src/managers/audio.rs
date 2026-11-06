@@ -11,6 +11,7 @@ use crate::managers::transcription::StreamRouter;
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{get_settings, write_settings, AppSettings, VadBackend};
 use crate::utils;
+use crate::TranscriptionCoordinator;
 use handy_recorder::{Channels, EndReason, ErrorKind, Recorder, RecorderConfig, StartError};
 use log::{debug, error, info, trace, warn};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -20,7 +21,8 @@ use tauri::{Emitter, Manager};
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 /// A take ends if no audio has arrived this long after it started.
-const FIRST_AUDIO_DEADLINE: Duration = Duration::from_secs(3);
+/// Generous, because a Bluetooth headset can take seconds to start.
+const FIRST_AUDIO_DEADLINE: Duration = Duration::from_secs(5);
 /// A take ends if audio stops arriving for this long once it has started.
 const MAX_AUDIO_GAP: Duration = Duration::from_secs(2);
 const AUDIO_WATCH_INTERVAL: Duration = Duration::from_millis(100);
@@ -306,6 +308,14 @@ enum AudioStall {
 }
 
 impl AudioStall {
+    /// Nothing to keep before the first audio; after it, keep what came.
+    fn end(self) -> StalledTakeEnd {
+        match self {
+            Self::NoFirstAudio { .. } => StalledTakeEnd::Discard(NoticeCode::MicrophoneStalled),
+            Self::Gap { .. } => StalledTakeEnd::KeepAudio,
+        }
+    }
+
     fn describe(self) -> String {
         match self {
             Self::NoFirstAudio { waited } => format!(
@@ -344,6 +354,10 @@ impl AudioDeliveryWatchdog {
         self.last_delivery_at = Some(now);
     }
 
+    fn has_delivered(&self) -> bool {
+        self.deliveries > 0
+    }
+
     fn check(&self, now: Instant) -> Option<AudioStall> {
         match self.last_delivery_at {
             None => {
@@ -359,6 +373,15 @@ impl AudioDeliveryWatchdog {
             }
         }
     }
+}
+
+/// How a stalled take ends.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StalledTakeEnd {
+    /// No audio arrived: cancel, and raise this error notice.
+    Discard(NoticeCode),
+    /// Audio arrived first: stop normally and transcribe it.
+    KeepAudio,
 }
 
 /// Called with a recorder's failure flag and its error when it fails.
@@ -590,6 +613,12 @@ pub struct AudioRecordingManager {
     cached_device: Arc<Mutex<Option<(String, String)>>>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
+    /// The current take's delivery watchdog, so a recorder failure can tell
+    /// whether any audio arrived first.
+    take_watchdog: Arc<Mutex<Option<Arc<Mutex<AudioDeliveryWatchdog>>>>>,
+    /// Why the last take was cut short after audio had arrived; read once by
+    /// the stop path, which transcribes what came before.
+    cut_out: Arc<Mutex<Option<String>>>,
 }
 
 impl AudioRecordingManager {
@@ -632,6 +661,8 @@ impl AudioRecordingManager {
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
+            take_watchdog: Arc::new(Mutex::new(None)),
+            cut_out: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -1177,6 +1208,8 @@ impl AudioRecordingManager {
                         },
                     );
                     debug!("Recording requested for binding {binding_id}");
+                    *self.cut_out.lock().unwrap() = None;
+                    *self.take_watchdog.lock().unwrap() = Some(Arc::clone(&watchdog));
                     self.watch_audio_delivery(
                         generation,
                         watchdog,
@@ -1349,11 +1382,21 @@ impl AudioRecordingManager {
             }
             self.capture_generation.load(Ordering::Acquire)
         };
-        let code = match error.kind() {
-            ErrorKind::PermissionDenied => NoticeCode::MicPermissionDenied,
-            _ => NoticeCode::MicrophoneStalled,
+        let audio_arrived = self
+            .take_watchdog
+            .lock()
+            .unwrap()
+            .as_ref()
+            .is_some_and(|watchdog| watchdog.lock().unwrap().has_delivered());
+        let end = if audio_arrived {
+            StalledTakeEnd::KeepAudio
+        } else {
+            StalledTakeEnd::Discard(match error.kind() {
+                ErrorKind::PermissionDenied => NoticeCode::MicPermissionDenied,
+                _ => NoticeCode::MicrophoneStalled,
+            })
         };
-        self.end_stalled_take(generation, code, error.to_string());
+        self.end_stalled_take(generation, end, error.to_string());
     }
 
     /// Checks the take started as `generation` until it ends, and ends it if
@@ -1376,7 +1419,7 @@ impl AudioRecordingManager {
                 if let Some(stall) = stall {
                     manager.end_stalled_take(
                         generation,
-                        NoticeCode::MicrophoneStalled,
+                        stall.end(),
                         format!(
                             "Microphone '{device}' stopped delivering audio: {}",
                             stall.describe()
@@ -1390,15 +1433,16 @@ impl AudioRecordingManager {
         }
     }
 
-    /// Ends the take started as `generation` the way a cancel does (no
-    /// transcription; overlay and tray back to idle) and tells the user why.
-    fn end_stalled_take(&self, generation: u64, code: NoticeCode, detail: String) {
-        if !matches!(
-            *self.state.lock().unwrap(),
-            RecordingState::Recording { .. }
-        ) {
-            return;
-        }
+    /// Ends the take started as `generation`. Before any audio arrived there
+    /// is nothing to keep, so it ends the way a cancel does (overlay and tray
+    /// back to idle) with an error notice. After audio arrived it ends the way
+    /// a key release does, so what was captured is transcribed; the stop path
+    /// then raises the cut-out warning (see [`Self::take_cut_out`]).
+    fn end_stalled_take(&self, generation: u64, end: StalledTakeEnd, detail: String) {
+        let binding_id = match &*self.state.lock().unwrap() {
+            RecordingState::Recording { binding_id } => binding_id.clone(),
+            _ => return,
+        };
         // The watchdog and the failure handler can both see one stall; the
         // first to claim the take ends it.
         if self
@@ -1413,16 +1457,40 @@ impl AudioRecordingManager {
         {
             return;
         }
-        error!("Ending the recording: {detail}");
         // The next take opens a new stream instead of reusing this one.
         if let Some(microphone) = self.recorder.lock().unwrap().as_ref() {
             microphone.failed.store(true, Ordering::Release);
         }
-        utils::cancel_current_operation(&self.app_handle);
-        notices::raise(
-            &self.app_handle,
-            Notice::new(code, NoticeSource::Dictation).with_detail(detail),
-        );
+        let coordinator = self.app_handle.try_state::<TranscriptionCoordinator>();
+        match (end, coordinator) {
+            (StalledTakeEnd::KeepAudio, Some(coordinator)) => {
+                error!(
+                    "Ending the recording and transcribing the audio before the cut-out: {detail}"
+                );
+                *self.cut_out.lock().unwrap() = Some(detail);
+                // The same stop a toggle press makes, so the coordinator,
+                // overlay and transcription all follow the normal path.
+                coordinator.send_external_input(&binding_id, "microphone cut out");
+            }
+            (end, _) => {
+                let code = match end {
+                    StalledTakeEnd::Discard(code) => code,
+                    StalledTakeEnd::KeepAudio => NoticeCode::MicrophoneStalled,
+                };
+                error!("Ending the recording: {detail}");
+                utils::cancel_current_operation(&self.app_handle);
+                notices::raise(
+                    &self.app_handle,
+                    Notice::new(code, NoticeSource::Dictation).with_detail(detail),
+                );
+            }
+        }
+    }
+
+    /// Why the last take was cut short after audio had arrived, if it was.
+    /// Cleared by reading, so the notice is raised once.
+    pub fn take_cut_out(&self) -> Option<String> {
+        self.cut_out.lock().unwrap().take()
     }
 
     /// Invalidate pending first-sample UI and audio-feedback work immediately.
@@ -1626,11 +1694,13 @@ mod tests {
         let start = Instant::now();
         let watchdog = AudioDeliveryWatchdog::new(start);
         assert_eq!(watchdog.check(start), None);
-        assert_eq!(watchdog.check(start + ms(2_999)), None);
+        // A Bluetooth headset that takes 4 s to start is not cut off.
+        assert_eq!(watchdog.check(start + ms(4_999)), None);
         assert_eq!(
-            watchdog.check(start + ms(3_000)),
-            Some(AudioStall::NoFirstAudio { waited: ms(3_000) })
+            watchdog.check(start + ms(5_000)),
+            Some(AudioStall::NoFirstAudio { waited: ms(5_000) })
         );
+        assert!(!watchdog.has_delivered());
     }
 
     #[test]
@@ -1639,11 +1709,12 @@ mod tests {
         let mut watchdog = AudioDeliveryWatchdog::new(start);
         // First audio just before the first-audio deadline: only the gap
         // bound applies from then on.
-        watchdog.delivered(start + ms(2_900));
-        assert_eq!(watchdog.check(start + ms(4_000)), None);
-        assert_eq!(watchdog.check(start + ms(4_899)), None);
+        watchdog.delivered(start + ms(4_900));
+        assert!(watchdog.has_delivered());
+        assert_eq!(watchdog.check(start + ms(6_000)), None);
+        assert_eq!(watchdog.check(start + ms(6_899)), None);
         assert_eq!(
-            watchdog.check(start + ms(4_900)),
+            watchdog.check(start + ms(6_900)),
             Some(AudioStall::Gap {
                 gap: ms(2_000),
                 deliveries: 1
@@ -1703,10 +1774,26 @@ mod tests {
     }
 
     #[test]
+    fn a_take_keeps_its_audio_only_if_some_arrived() {
+        assert_eq!(
+            AudioStall::NoFirstAudio { waited: ms(5_000) }.end(),
+            StalledTakeEnd::Discard(NoticeCode::MicrophoneStalled)
+        );
+        assert_eq!(
+            AudioStall::Gap {
+                gap: ms(2_000),
+                deliveries: 10
+            }
+            .end(),
+            StalledTakeEnd::KeepAudio
+        );
+    }
+
+    #[test]
     fn stalls_say_how_long_nothing_arrived() {
         assert_eq!(
-            AudioStall::NoFirstAudio { waited: ms(3_100) }.describe(),
-            "no audio arrived 3.1 s after the recording started"
+            AudioStall::NoFirstAudio { waited: ms(5_100) }.describe(),
+            "no audio arrived 5.1 s after the recording started"
         );
         assert_eq!(
             AudioStall::Gap {

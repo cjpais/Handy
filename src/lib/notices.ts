@@ -35,6 +35,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.microphoneStalledTitle",
     explanation: (t) => t("errors.microphoneStalled"),
   },
+  MicrophoneCutOut: {
+    title: "errors.microphoneCutOutTitle",
+    explanation: (t) => t("errors.microphoneCutOut"),
+  },
   ModelLoadFailed: {
     title: "errors.modelLoadFailedTitle",
     explanation: (t) => t("errors.modelLoadFailed"),

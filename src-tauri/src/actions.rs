@@ -706,6 +706,12 @@ impl ShortcutAction for TranscribeAction {
                 // Read now: by the time transcribing ends, another take may
                 // have replaced it.
                 let input_silent = rm.last_input_silent();
+                // The microphone cut out partway: what came before is still
+                // transcribed, and the user is told it may be incomplete.
+                let cut_out_notice = rm.take_cut_out().map(|detail| {
+                    Notice::new(NoticeCode::MicrophoneCutOut, NoticeSource::Dictation)
+                        .with_detail(detail)
+                });
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -725,7 +731,10 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
+                    match cut_out_notice {
+                        Some(notice) => notices::raise(&ah, notice),
+                        None => utils::hide_recording_overlay(&ah),
+                    }
                     set_tray_state(&ah, TrayIconState::Idle);
                     emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
                 } else {
@@ -843,7 +852,10 @@ impl ShortcutAction for TranscribeAction {
                             };
 
                             if final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
+                                match cut_out_notice {
+                                    Some(notice) => notices::raise(&ah, notice),
+                                    None => utils::hide_recording_overlay(&ah),
+                                }
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
                                     &ah,
@@ -891,11 +903,15 @@ impl ShortcutAction for TranscribeAction {
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    let notice = post_process_failed.then(|| {
-                                                        Notice::new(
-                                                            NoticeCode::PostProcessFailed,
-                                                            NoticeSource::Dictation,
-                                                        )
+                                                    // An incomplete transcript matters
+                                                    // more than a skipped polish.
+                                                    let notice = cut_out_notice.or_else(|| {
+                                                        post_process_failed.then(|| {
+                                                            Notice::new(
+                                                                NoticeCode::PostProcessFailed,
+                                                                NoticeSource::Dictation,
+                                                            )
+                                                        })
                                                     });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }
