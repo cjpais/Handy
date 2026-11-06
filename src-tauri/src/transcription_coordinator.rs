@@ -4,7 +4,10 @@ use crate::settings::ShortcutActivation;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::sync::mpsc::{self, Sender};
+use std::any::Any;
+use std::collections::VecDeque;
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -13,6 +16,54 @@ use tauri_specta::Event;
 
 const DEBOUNCE: Duration = Duration::from_millis(30);
 const RELEASE_GRACE: Duration = Duration::from_millis(50);
+
+/// The coordinator survives a panic in one command (#2408), but a fault that
+/// panics on every command would spin; past this many panics inside
+/// `PANIC_WINDOW` it gives up as it did before.
+const PANIC_LIMIT: usize = 5;
+const PANIC_WINDOW: Duration = Duration::from_secs(60);
+
+/// The text of a panic payload. `{:?}` on a `Box<dyn Any>` prints only
+/// `Any { .. }`, which is how #2408 lost its message. Takes the `Box` itself:
+/// a `&dyn Any` parameter would silently accept `&Box<..>` and downcast the
+/// box instead of the payload.
+#[allow(clippy::borrowed_box)]
+fn panic_message(payload: &Box<dyn Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        (*message).to_string()
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.clone()
+    } else {
+        "non-string panic payload".to_string()
+    }
+}
+
+/// Panic timestamps inside the sliding `PANIC_WINDOW`.
+struct PanicBudget {
+    recent: VecDeque<Instant>,
+}
+
+impl PanicBudget {
+    fn new() -> Self {
+        Self {
+            recent: VecDeque::new(),
+        }
+    }
+
+    /// Records a panic at `now`; false once more than `PANIC_LIMIT` panics
+    /// fall inside the window.
+    fn record(&mut self, now: Instant) -> bool {
+        while self
+            .recent
+            .front()
+            .is_some_and(|t| now.saturating_duration_since(*t) >= PANIC_WINDOW)
+        {
+            self.recent.pop_front();
+        }
+        self.recent.push_back(now);
+        self.recent.len() <= PANIC_LIMIT
+    }
+}
 
 /// Recording phase events for windows that follow along (onboarding's Try it).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -201,6 +252,133 @@ enum Command {
     Input(InputEvent),
     Cancel { recording_was_active: bool },
     ProcessingFinished,
+}
+
+/// One unit of work for the coordinator thread: a received command, or the
+/// release grace window running out.
+enum Step {
+    Command(Command),
+    GraceExpired,
+}
+
+impl Step {
+    /// Names the step in the panic log line.
+    fn kind(&self) -> &'static str {
+        match self {
+            Step::Command(Command::Input(_)) => "input",
+            Step::Command(Command::Cancel { .. }) => "cancel",
+            Step::Command(Command::ProcessingFinished) => "processing-finished",
+            Step::GraceExpired => "release-grace",
+        }
+    }
+}
+
+/// Why [`run_coordinator`] returned.
+#[derive(Debug, PartialEq, Eq)]
+enum CoordinatorExit {
+    /// Every sender is gone (app shutdown).
+    Disconnected,
+    /// More than `PANIC_LIMIT` panics inside `PANIC_WINDOW`.
+    PanicLimit,
+}
+
+/// The coordinator loop. Each step runs under its own `catch_unwind`, so a
+/// panic in one effect (overlay, tray, audio start) no longer ends the thread
+/// and closes the channel for good (#2408): the state machine is reset,
+/// `recover(kind, message)` runs, and the next command is served.
+/// `handle` and `recover` are parameters so tests can drive the loop without
+/// an `AppHandle`.
+fn run_coordinator<H, R>(rx: Receiver<Command>, mut handle: H, mut recover: R) -> CoordinatorExit
+where
+    H: FnMut(&mut CoordinatorState, Step),
+    R: FnMut(&str, &str),
+{
+    let mut state = CoordinatorState::new();
+    let mut budget = PanicBudget::new();
+
+    loop {
+        let step = if let Some(deadline) = state.grace_deadline() {
+            match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+                Ok(cmd) => Step::Command(cmd),
+                Err(mpsc::RecvTimeoutError::Timeout) => Step::GraceExpired,
+                Err(mpsc::RecvTimeoutError::Disconnected) => return CoordinatorExit::Disconnected,
+            }
+        } else {
+            match rx.recv() {
+                Ok(cmd) => Step::Command(cmd),
+                Err(_) => return CoordinatorExit::Disconnected,
+            }
+        };
+
+        let kind = step.kind();
+        // State is replaced wholesale after a panic, so a half-applied
+        // transition cannot leak into the next command.
+        if let Err(payload) = catch_unwind(AssertUnwindSafe(|| handle(&mut state, step))) {
+            let message = panic_message(&payload);
+            error!(
+                "Transcription coordinator panicked while handling {kind}: {message}; resetting to idle"
+            );
+            state = CoordinatorState::new();
+            recover(kind, &message);
+            if !budget.record(Instant::now()) {
+                error!(
+                    "Transcription coordinator panicked more than {PANIC_LIMIT} times within {PANIC_WINDOW:?}; giving up until restart"
+                );
+                return CoordinatorExit::PanicLimit;
+            }
+        }
+    }
+}
+
+/// Executes one step against the app. Behaviour is unchanged from the old
+/// single loop; only the panic boundary moved.
+fn handle_step(app: &AppHandle, state: &mut CoordinatorState, step: Step) {
+    let was_locked = state.is_recording_locked();
+    match step {
+        Step::GraceExpired => {
+            if let Some(effect) = state.on_grace_expired() {
+                run_effect(app, state, effect);
+            }
+        }
+        Step::Command(Command::Input(input)) => {
+            if let Some(effect) = state.on_input(input, Instant::now()) {
+                run_effect(app, state, effect);
+            }
+        }
+        Step::Command(Command::Cancel {
+            recording_was_active,
+        }) => {
+            // A cancel while transcribing ends the take too.
+            let busy = recording_was_active || matches!(state.stage, Stage::Processing);
+            state.on_cancel(recording_was_active);
+            if busy {
+                emit_recording_phase(app, RecordingPhase::Cancelled);
+            }
+        }
+        Step::Command(Command::ProcessingFinished) => {
+            if let Some(effect) = state.on_processing_finished() {
+                run_effect(app, state, effect);
+            }
+        }
+    }
+    if !was_locked && state.is_recording_locked() {
+        emit_recording_phase(app, RecordingPhase::Locked);
+    }
+}
+
+/// After a panic the effect may have half-started a session: tray showing
+/// recording, overlay up, microphone open. Undo it the way Escape does, then
+/// tell followers the session is over.
+fn recover_after_panic(app: &AppHandle) {
+    if let Err(payload) = catch_unwind(AssertUnwindSafe(|| {
+        crate::utils::cancel_current_operation(app)
+    })) {
+        error!(
+            "Cleanup after a transcription coordinator panic also panicked: {}",
+            panic_message(&payload)
+        );
+    }
+    emit_recording_phase(app, RecordingPhase::Cancelled);
 }
 
 /// Decide whether a key-up should be deferred (so auto-repeat can cancel it)
@@ -577,65 +755,12 @@ impl TranscriptionCoordinator {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
-            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let mut state = CoordinatorState::new();
-
-                loop {
-                    let cmd = if let Some(deadline) = state.grace_deadline() {
-                        match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
-                            Ok(cmd) => cmd,
-                            Err(mpsc::RecvTimeoutError::Timeout) => {
-                                let was_locked = state.is_recording_locked();
-                                if let Some(effect) = state.on_grace_expired() {
-                                    run_effect(&app, &mut state, effect);
-                                }
-                                if !was_locked && state.is_recording_locked() {
-                                    emit_recording_phase(&app, RecordingPhase::Locked);
-                                }
-                                continue;
-                            }
-                            Err(mpsc::RecvTimeoutError::Disconnected) => break,
-                        }
-                    } else {
-                        match rx.recv() {
-                            Ok(cmd) => cmd,
-                            Err(_) => break,
-                        }
-                    };
-
-                    let was_locked = state.is_recording_locked();
-                    match cmd {
-                        Command::Input(input) => {
-                            if let Some(effect) = state.on_input(input, Instant::now()) {
-                                run_effect(&app, &mut state, effect);
-                            }
-                        }
-                        Command::Cancel {
-                            recording_was_active,
-                        } => {
-                            // A cancel while transcribing ends the take too.
-                            let busy =
-                                recording_was_active || matches!(state.stage, Stage::Processing);
-                            state.on_cancel(recording_was_active);
-                            if busy {
-                                emit_recording_phase(&app, RecordingPhase::Cancelled);
-                            }
-                        }
-                        Command::ProcessingFinished => {
-                            if let Some(effect) = state.on_processing_finished() {
-                                run_effect(&app, &mut state, effect);
-                            }
-                        }
-                    }
-                    if !was_locked && state.is_recording_locked() {
-                        emit_recording_phase(&app, RecordingPhase::Locked);
-                    }
-                }
-                debug!("Transcription coordinator exited");
-            }));
-            if let Err(e) = result {
-                error!("Transcription coordinator panicked: {e:?}");
-            }
+            let exit = run_coordinator(
+                rx,
+                |state, step| handle_step(&app, state, step),
+                |_, _| recover_after_panic(&app),
+            );
+            debug!("Transcription coordinator exited: {exit:?}");
         });
 
         Self { tx }
@@ -1669,5 +1794,118 @@ mod tests {
             "held 400ms since the real key-down: must stop, not lock"
         );
         assert_eq!(state.stage, Stage::Processing);
+    }
+
+    // ---------------------------------------------------------------------
+    // Panic recovery (#2408): one panicking effect must not kill the thread.
+    // ---------------------------------------------------------------------
+
+    #[test]
+    fn panic_message_reads_str_and_string_payloads() {
+        let from_str = catch_unwind(|| panic!("tray exploded")).unwrap_err();
+        assert_eq!(panic_message(&from_str), "tray exploded");
+
+        let from_string = catch_unwind(|| panic!("overlay {} failed", 2)).unwrap_err();
+        assert_eq!(panic_message(&from_string), "overlay 2 failed");
+
+        let other: Box<dyn Any + Send> = Box::new(42u32);
+        assert_eq!(panic_message(&other), "non-string panic payload");
+    }
+
+    /// A panic while handling one press resets the machine and the next press
+    /// is served: it starts a fresh recording instead of "channel closed".
+    #[test]
+    fn coordinator_survives_a_panicking_command() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(Command::Input(toggle_input(true))).unwrap();
+        tx.send(Command::Input(toggle_input(true))).unwrap();
+        drop(tx);
+
+        let mut calls = 0;
+        let mut effects = Vec::new();
+        let mut recovered = Vec::new();
+        let exit = run_coordinator(
+            rx,
+            |state, step| {
+                calls += 1;
+                let Step::Command(Command::Input(input)) = step else {
+                    panic!("unexpected step");
+                };
+                if calls == 1 {
+                    // Leave the machine mid-transition, then blow up as an
+                    // effect would.
+                    assert!(state.on_input(input, Instant::now()).is_some());
+                    assert_eq!(state.stage, Stage::Recording(BINDING.to_string()));
+                    panic!("audio start failed after sleep");
+                }
+                assert_eq!(
+                    state.stage,
+                    Stage::Idle,
+                    "state must be reset after a panic"
+                );
+                effects.push(state.on_input(input, Instant::now()));
+            },
+            |kind, message| recovered.push((kind.to_string(), message.to_string())),
+        );
+
+        assert_eq!(exit, CoordinatorExit::Disconnected);
+        assert_eq!(calls, 2, "the command after the panic must be processed");
+        assert_eq!(
+            recovered,
+            vec![(
+                "input".to_string(),
+                "audio start failed after sleep".to_string()
+            )]
+        );
+        assert!(
+            matches!(effects.as_slice(), [Some(Effect::Start { .. })]),
+            "the press after the panic starts a new recording"
+        );
+    }
+
+    /// A fault that panics on every command stops the loop after the cap
+    /// instead of spinning, even with senders still alive.
+    #[test]
+    fn coordinator_gives_up_after_panic_limit() {
+        let (tx, rx) = mpsc::channel();
+        for _ in 0..PANIC_LIMIT + 3 {
+            tx.send(Command::ProcessingFinished).unwrap();
+        }
+
+        let mut calls = 0;
+        let exit = run_coordinator(
+            rx,
+            |_, _| {
+                calls += 1;
+                panic!("always broken");
+            },
+            |_, _| {},
+        );
+
+        assert_eq!(exit, CoordinatorExit::PanicLimit);
+        assert_eq!(calls, PANIC_LIMIT + 1);
+        drop(tx);
+    }
+
+    #[test]
+    fn panic_budget_forgets_panics_older_than_the_window() {
+        let mut budget = PanicBudget::new();
+        let t0 = Instant::now();
+        for i in 0..PANIC_LIMIT {
+            assert!(budget.record(t0 + ms(i as u64)));
+        }
+        assert!(
+            !budget.record(t0 + ms(10)),
+            "one more inside the window trips it"
+        );
+
+        let mut budget = PanicBudget::new();
+        for i in 0..PANIC_LIMIT {
+            assert!(budget.record(t0 + ms(i as u64)));
+        }
+        assert!(
+            budget.record(t0 + PANIC_WINDOW + ms(10)),
+            "panics older than the window no longer count"
+        );
     }
 }
