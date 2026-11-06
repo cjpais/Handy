@@ -373,6 +373,15 @@ async fn post_process_transcription(
                 error!("LLM API response has no content");
                 return PostProcessOutcome::Failed;
             }
+            Err(e) if crate::llm_client::is_request_timeout_error(&e) => {
+                // Legacy mode would wait out a second full deadline on the
+                // same unresponsive endpoint.
+                error!(
+                    "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
+                    provider.id, e
+                );
+                return PostProcessOutcome::Failed;
+            }
             Err(e) => {
                 warn!(
                     "Structured output failed for provider '{}': {}. Falling back to legacy mode.",

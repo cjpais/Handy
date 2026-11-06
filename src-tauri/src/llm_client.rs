@@ -1,5 +1,5 @@
 use crate::settings::{PostProcessApiFormat, PostProcessProvider};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -7,6 +7,26 @@ use std::collections::HashSet;
 use std::error::Error as StdError;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
+
+/// Overall deadline for one post-processing request, including reading the
+/// response. `connect_timeout` on the shared client only bounds the connection;
+/// without this an endpoint that accepts the connection and never answers
+/// would hold a dictation for as long as some proxy keeps the socket open.
+/// Generous enough for slow reasoning endpoints.
+const POST_PROCESS_REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Deadline for listing models, which is a light request.
+const FETCH_MODELS_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// Start of the error text returned when a request hits its deadline.
+const REQUEST_TIMEOUT_ERROR: &str = "Request timed out after";
+
+/// True when `error` came from a post-processing request that hit its deadline.
+/// The caller skips further attempts against the same endpoint, because a
+/// second try would only wait out another full deadline.
+pub fn is_request_timeout_error(error: &str) -> bool {
+    error.starts_with(REQUEST_TIMEOUT_ERROR)
+}
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -371,6 +391,21 @@ fn report_reqwest_error(context: &str, error: &reqwest::Error) -> String {
     details
 }
 
+/// Like `report_reqwest_error`, but a request that hit `timeout` gets its own
+/// log line and a short error text that `is_request_timeout_error` recognises.
+fn report_request_error(context: &str, error: &reqwest::Error, timeout: Duration) -> String {
+    let details = report_reqwest_error(context, error);
+    if error.is_timeout() {
+        warn!(
+            "post-processing request timed out after {} s; pasting the raw transcript",
+            timeout.as_secs()
+        );
+        format!("{REQUEST_TIMEOUT_ERROR} {} s", timeout.as_secs())
+    } else {
+        details
+    }
+}
+
 /// Send a chat completion request to an OpenAI-compatible API
 /// Returns Ok(Some(content)) on success, Ok(None) if response has no content,
 /// or Err on actual errors (HTTP, parsing, etc.)
@@ -382,7 +417,14 @@ pub async fn send_chat_completion(
     disable_reasoning: bool,
 ) -> Result<Option<String>, String> {
     if provider.api_format == PostProcessApiFormat::Anthropic {
-        return send_anthropic_message(provider, api_key, model, prompt).await;
+        return send_anthropic_message(
+            provider,
+            api_key,
+            model,
+            prompt,
+            POST_PROCESS_REQUEST_TIMEOUT,
+        )
+        .await;
     }
 
     send_chat_completion_with_schema(
@@ -415,6 +457,30 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
     disable_reasoning: bool,
+) -> Result<Option<String>, String> {
+    send_chat_completion_with_timeout(
+        provider,
+        api_key,
+        model,
+        user_content,
+        system_prompt,
+        json_schema,
+        disable_reasoning,
+        POST_PROCESS_REQUEST_TIMEOUT,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn send_chat_completion_with_timeout(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    user_content: String,
+    system_prompt: Option<String>,
+    json_schema: Option<Value>,
+    disable_reasoning: bool,
+    timeout: Duration,
 ) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
@@ -470,10 +536,11 @@ pub async fn send_chat_completion_with_schema(
 
     let mut response = client
         .post(&url)
+        .timeout(timeout)
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| report_reqwest_error("HTTP request failed", &e))?;
+        .map_err(|e| report_request_error("HTTP request failed", &e, timeout))?;
     let mut status = response.status();
     debug!(
         "Chat completion response received with status {} over {:?} from {}",
@@ -499,10 +566,11 @@ pub async fn send_chat_completion_with_schema(
         request_body.reasoning = ReasoningParams::default();
         response = client
             .post(&url)
+            .timeout(timeout)
             .json(&request_body)
             .send()
             .await
-            .map_err(|e| report_reqwest_error("HTTP retry failed", &e))?;
+            .map_err(|e| report_request_error("HTTP retry failed", &e, timeout))?;
         status = response.status();
         debug!(
             "Chat completion retry response received with status {} over {:?} from {}",
@@ -534,7 +602,7 @@ pub async fn send_chat_completion_with_schema(
     let completion: ChatCompletionResponse = response
         .json()
         .await
-        .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
+        .map_err(|e| report_request_error("Failed to parse API response", &e, timeout))?;
 
     let Some(choice) = completion.choices.into_iter().next() else {
         return Ok(None);
@@ -560,6 +628,7 @@ async fn send_anthropic_message(
     api_key: String,
     model: &str,
     prompt: String,
+    timeout: Duration,
 ) -> Result<Option<String>, String> {
     let url = format!("{}/messages", provider.base_url.trim_end_matches('/'));
 
@@ -579,10 +648,11 @@ async fn send_anthropic_message(
 
     let response = create_client(provider, &api_key)?
         .post(&url)
+        .timeout(timeout)
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| report_reqwest_error("HTTP request failed", &e))?;
+        .map_err(|e| report_request_error("HTTP request failed", &e, timeout))?;
     let status = response.status();
     debug!(
         "Anthropic Messages response received with status {} over {:?} from {}",
@@ -605,7 +675,7 @@ async fn send_anthropic_message(
     let message: AnthropicMessagesResponse = response
         .json()
         .await
-        .map_err(|e| report_reqwest_error("Failed to parse API response", &e))?;
+        .map_err(|e| report_request_error("Failed to parse API response", &e, timeout))?;
 
     // A response cut off at the token budget is incomplete; pasting it would
     // silently drop the end of the dictation.
@@ -634,6 +704,7 @@ pub async fn fetch_models(
 
     let response = client
         .get(&url)
+        .timeout(FETCH_MODELS_TIMEOUT)
         .send()
         .await
         .map_err(|e| report_reqwest_error("Failed to fetch models", &e))?;
@@ -942,6 +1013,68 @@ mod tests {
 
         let empty: AnthropicMessagesResponse = serde_json::from_str(r#"{"content":[]}"#).unwrap();
         assert_eq!(empty.into_text(), None);
+    }
+
+    /// A server that accepts the connection and never writes a byte.
+    async fn serve_silence() -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            std::future::pending::<()>().await;
+            drop(stream);
+        });
+        format!("http://{address}")
+    }
+
+    #[tokio::test]
+    async fn stalled_chat_completion_fails_at_the_deadline() {
+        let base_url = serve_silence().await;
+        let started = std::time::Instant::now();
+        let result = send_chat_completion_with_timeout(
+            &provider("custom", &base_url),
+            "key".to_string(),
+            "model",
+            "raw text".to_string(),
+            None,
+            None,
+            false,
+            Duration::from_secs(1),
+        )
+        .await;
+        let error = result.expect_err("a silent server must not succeed");
+        assert!(
+            is_request_timeout_error(&error),
+            "unexpected error: {error}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(3));
+    }
+
+    #[tokio::test]
+    async fn stalled_anthropic_message_fails_at_the_deadline() {
+        let base_url = serve_silence().await;
+        let started = std::time::Instant::now();
+        let result = send_anthropic_message(
+            &anthropic_format_provider(&base_url),
+            "key".to_string(),
+            "claude-haiku",
+            "raw text".to_string(),
+            Duration::from_secs(1),
+        )
+        .await;
+        let error = result.expect_err("a silent server must not succeed");
+        assert!(
+            is_request_timeout_error(&error),
+            "unexpected error: {error}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(3));
+    }
+
+    #[test]
+    fn other_errors_are_not_timeouts() {
+        assert!(!is_request_timeout_error(
+            "API request failed with status 500: x"
+        ));
     }
 
     #[tokio::test]
