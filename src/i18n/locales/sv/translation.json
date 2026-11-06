@@ -715,6 +715,11 @@
       "readingFile": "Läser fil...",
       "showMore": "Visa mer",
       "showLess": "Visa mindre",
+      "postProcess": "Efterbearbeta transkription",
+      "postProcessError": "Efterbearbetningen misslyckades. Kontrollera inställningarna för efterbearbetning eller loggarna.",
+      "postProcessedTab": "Efterbearbetad",
+      "originalTab": "Original",
+      "postProcessFailed": "Efterbearbetningen misslyckades, så den ursprungliga transkriptionen användes.",
       "dropTitle": "Släpp för att transkribera",
       "dropDescription": "Den visas i historiken."
     },

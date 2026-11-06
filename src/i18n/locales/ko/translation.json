@@ -715,6 +715,11 @@
       "readingFile": "파일 읽는 중...",
       "showMore": "더 보기",
       "showLess": "간략히 보기",
+      "postProcess": "전사 후처리",
+      "postProcessError": "후처리에 실패했습니다. 후처리 설정이나 로그를 확인하세요.",
+      "postProcessedTab": "후처리됨",
+      "originalTab": "원본",
+      "postProcessFailed": "후처리에 실패하여 원본 전사가 사용되었습니다.",
       "dropTitle": "놓아서 받아쓰기",
       "dropDescription": "기록에 표시됩니다."
     },

@@ -715,6 +715,11 @@
       "readingFile": "Lendo arquivo...",
       "showMore": "Mostrar mais",
       "showLess": "Mostrar menos",
+      "postProcess": "Pós-processar transcrição",
+      "postProcessError": "O pós-processamento falhou. Verifique as configurações de pós-processamento ou os logs.",
+      "postProcessedTab": "Pós-processado",
+      "originalTab": "Original",
+      "postProcessFailed": "O pós-processamento falhou, então a transcrição original foi usada.",
       "dropTitle": "Solte para transcrever",
       "dropDescription": "Ele aparecerá no histórico."
     },

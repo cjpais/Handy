@@ -14,6 +14,7 @@ import {
   FilePlus,
   FolderOpen,
   RotateCcw,
+  Sparkles,
   Star,
   Trash2,
   X,
@@ -27,6 +28,7 @@ import {
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
+import { useSettings } from "@/hooks/useSettings";
 import {
   useTranscriptionJobsStore,
   type ActiveJobStatus,
@@ -127,6 +129,8 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
+  const { getSetting } = useSettings();
+  const postProcessEnabled = getSetting("post_process_enabled") === true;
   const jobs = useTranscriptionJobsStore((state) => state.jobs);
   const reads = useFileReadsStore((state) => state.reads);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -331,10 +335,12 @@ export const HistorySettings: React.FC = () => {
                 entry={entry}
                 job={jobs[entry.id]}
                 onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
+                onCopyText={copyToClipboard}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
                 retryTranscription={commands.retryHistoryEntryTranscription}
+                postProcessEnabled={postProcessEnabled}
+                postProcess={commands.postProcessHistoryEntry}
                 cancelTranscription={commands.cancelHistoryEntryTranscription}
               />
             ))}
@@ -380,10 +386,12 @@ interface HistoryEntryProps {
   entry: HistoryEntry;
   job?: ActiveJobStatus;
   onToggleSaved: () => void;
-  onCopyText: () => Promise<boolean>;
+  onCopyText: (text: string) => Promise<boolean>;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   retryTranscription: (id: number) => Promise<void>;
+  postProcessEnabled: boolean;
+  postProcess: typeof commands.postProcessHistoryEntry;
   cancelTranscription: (id: number) => Promise<void>;
 }
 
@@ -395,6 +403,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
   retryTranscription,
+  postProcessEnabled,
+  postProcess,
   cancelTranscription,
 }) => {
   const { t, i18n } = useTranslation();
@@ -403,6 +413,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [cancelling, setCancelling] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [postProcessing, setPostProcessing] = useState(false);
   const textRef = useRef<HTMLParagraphElement>(null);
 
   // Queued or being transcribed in the background.
@@ -412,6 +424,21 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   }, [retrying]);
   const hasTranscription = entry.transcription_text.trim().length > 0;
   const folded = hasTranscription && !retrying && !expanded;
+  const postProcessedText = entry.post_processed_text;
+  // A new result is shown, even if the original was being looked at.
+  useEffect(() => {
+    setShowOriginal(false);
+  }, [postProcessedText]);
+  const showPostProcessed = postProcessedText !== null && !showOriginal;
+  const shownText = showPostProcessed
+    ? postProcessedText
+    : entry.transcription_text;
+  // Asked for at dictation, but the transcript went out as it was.
+  const postProcessFailed =
+    entry.post_process_requested &&
+    postProcessedText === null &&
+    hasTranscription &&
+    !retrying;
 
   // Offer "Show more" only when the folded text is actually cut off.
   useLayoutEffect(() => {
@@ -422,7 +449,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [folded, entry.transcription_text]);
+  }, [folded, shownText]);
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -434,7 +461,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       return;
     }
 
-    const copied = await onCopyText();
+    const copied = await onCopyText(shownText);
     if (!copied) {
       notify({ title: t("settings.history.copyError") });
       return;
@@ -442,6 +469,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  const handlePostProcess = async () => {
+    setPostProcessing(true);
+    try {
+      const result = await postProcess(entry.id);
+      if (result.status === "error") {
+        console.error("Failed to post-process entry:", result.error);
+        notify({ title: t("settings.history.postProcessError") });
+      }
+    } finally {
+      setPostProcessing(false);
+    }
   };
 
   const handleDeleteEntry = async () => {
@@ -506,6 +546,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               fill={entry.saved ? "currentColor" : "none"}
             />
           </IconButton>
+          {postProcessEnabled && (
+            <IconButton
+              onClick={handlePostProcess}
+              disabled={!hasTranscription || retrying || postProcessing}
+              title={t("settings.history.postProcess")}
+            >
+              <Sparkles
+                width={16}
+                height={16}
+                className={postProcessing ? "animate-pulse" : undefined}
+              />
+            </IconButton>
+          )}
           {retrying ? (
             <IconButton
               onClick={() => {
@@ -520,6 +573,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           ) : (
             <IconButton
               onClick={() => retryTranscription(entry.id)}
+              disabled={postProcessing}
               title={t("settings.history.retranscribe")}
             >
               <RotateCcw width={16} height={16} />
@@ -535,6 +589,32 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       </div>
 
       <div className="flex flex-col items-start gap-1 pb-2">
+        {postProcessedText !== null && hasTranscription && !retrying && (
+          <div className="flex items-center gap-3 pb-1">
+            <button
+              type="button"
+              onClick={() => setShowOriginal(false)}
+              className={`text-xs font-medium cursor-pointer ${
+                showPostProcessed
+                  ? "text-logo-primary"
+                  : "text-ink-3 hover:text-logo-primary"
+              }`}
+            >
+              {t("settings.history.postProcessedTab")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowOriginal(true)}
+              className={`text-xs font-medium cursor-pointer ${
+                showPostProcessed
+                  ? "text-ink-3 hover:text-logo-primary"
+                  : "text-logo-primary"
+              }`}
+            >
+              {t("settings.history.originalTab")}
+            </button>
+          </div>
+        )}
         <p
           ref={textRef}
           className={`italic text-sm w-full ${
@@ -561,7 +641,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           {retrying
             ? progressText
             : hasTranscription
-              ? entry.transcription_text
+              ? shownText
               : entry.source_name
                 ? // Cancelled, interrupted by a quit, or failed.
                   t("settings.history.notTranscribed")
@@ -577,6 +657,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               ? t("settings.history.showLess")
               : t("settings.history.showMore")}
           </button>
+        )}
+        {postProcessFailed && (
+          <p className="text-xs text-ink-3">
+            {t("settings.history.postProcessFailed")}
+          </p>
         )}
       </div>
 
