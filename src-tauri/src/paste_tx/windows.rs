@@ -26,7 +26,7 @@ use windows::Win32::Foundation::{
 };
 
 use super::{evaluate, send_chord, TxState, WaitDecision};
-use crate::clipboard::send_return_key;
+use crate::clipboard::{send_return_key, send_space_key};
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
 use windows::Win32::Foundation::GlobalFree;
@@ -73,6 +73,9 @@ pub(super) struct WinTxShared {
     app_handle: tauri::AppHandle,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
+    /// Send a Space key press once the paste is confirmed (trailing space as a
+    /// keystroke, because some targets trim pasted text).
+    send_space: bool,
     /// ClipboardHandling::CopyToClipboard — settle by leaving the transcript
     /// on the clipboard as plain text instead of restoring the snapshot.
     preserve_transcript: bool,
@@ -90,8 +93,9 @@ unsafe fn shared_ptr(hwnd: HWND) -> *const WinTxShared {
     GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *const WinTxShared
 }
 
-/// Sends the auto-submit Enter. Uses `try_lock` because the paste caller may
-/// currently hold the enigo lock while waiting for this worker.
+/// Sends the owed trailing Space keystroke (if any), then the auto-submit
+/// Enter (if enabled). Uses `try_lock` because the paste caller may currently
+/// hold the enigo lock while waiting for this worker.
 fn send_auto_submit(shared: &WinTxShared) {
     {
         let mut st = match shared.state.lock() {
@@ -106,9 +110,22 @@ fn send_auto_submit(shared: &WinTxShared) {
     if let Some(enigo_state) = shared.app_handle.try_state::<EnigoState>() {
         match enigo_state.0.try_lock() {
             Ok(mut enigo) => {
-                let _ = send_return_key(&mut enigo, shared.auto_submit_key);
+                if shared.send_space {
+                    match send_space_key(&mut enigo) {
+                        Ok(()) => {
+                            log::debug!("[reliable-paste] sent trailing space as a keystroke")
+                        }
+                        Err(e) => warn!("[reliable-paste] trailing space keystroke failed: {e}"),
+                    }
+                }
+                if shared.auto_submit {
+                    if shared.send_space {
+                        std::thread::sleep(std::time::Duration::from_millis(50));
+                    }
+                    let _ = send_return_key(&mut enigo, shared.auto_submit_key);
+                }
             }
-            Err(_) => warn!("[reliable-paste] skipping auto-submit: input state busy"),
+            Err(_) => warn!("[reliable-paste] skipping space/auto-submit: input state busy"),
         }
     }
 }
@@ -116,12 +133,8 @@ fn send_auto_submit(shared: &WinTxShared) {
 /// Renders the promised transcript into the clipboard, which must already be
 /// open: the system opens it on our behalf for WM_RENDERFORMAT; every other
 /// caller has to wrap this in OpenClipboard/CloseClipboard itself.
-unsafe fn render_text(shared: &WinTxShared) {
-    let wide_text: Vec<u16> = shared
-        .text
-        .encode_utf16()
-        .chain(std::iter::once(0))
-        .collect();
+unsafe fn render_text(text: &str) {
+    let wide_text: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
     let Ok(hg) = GlobalAlloc(GMEM_MOVEABLE, wide_text.len() * 2) else {
         return;
     };
@@ -152,7 +165,7 @@ unsafe extern "system" fn paste_wnd_proc(
                     st.record_receipt(Instant::now());
                 }
                 if wparam.0 as u32 == CF_UNICODETEXT.0 as u32 {
-                    render_text(shared);
+                    render_text(&shared.text);
                 }
             }
             LRESULT(0)
@@ -169,7 +182,7 @@ unsafe extern "system" fn paste_wnd_proc(
                         .map(|owner| owner == hwnd)
                         .unwrap_or(false)
                     {
-                        render_text(shared);
+                        render_text(&shared.text);
                     }
                     let _ = CloseClipboard();
                 }
@@ -229,7 +242,7 @@ fn flush_pending() {
         st.cancelled = true;
         st.any_receipt_after_injection()
     };
-    if previous.auto_submit && receipt {
+    if (previous.auto_submit || previous.send_space) && receipt {
         send_auto_submit(&previous);
     }
     let sequence = *previous.sequence.lock().unwrap();
@@ -253,7 +266,13 @@ unsafe fn settle_clipboard(shared: &WinTxShared) {
         return;
     }
     let _ = EmptyClipboard();
-    render_text(shared);
+    // The clipboard copy keeps the space in the text, as before.
+    let kept = if shared.send_space {
+        format!("{} ", shared.text)
+    } else {
+        shared.text.clone()
+    };
+    render_text(&kept);
     let _ = CloseClipboard();
     info!("[reliable-paste] left transcript on clipboard as plain text");
 }
@@ -456,7 +475,7 @@ fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
 
     // Auto-submit only once the target demonstrably read the transcript;
     // pressing Enter after an unconfirmed paste could submit stale content.
-    if shared.auto_submit && receipt {
+    if (shared.auto_submit || shared.send_space) && receipt {
         send_auto_submit(shared);
     }
 
@@ -578,6 +597,7 @@ pub(super) fn run(
     enigo: &mut enigo::Enigo,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
+    send_space: bool,
     clipboard_handling: ClipboardHandling,
 ) -> Result<(), String> {
     let shared = Arc::new(WinTxShared {
@@ -589,6 +609,7 @@ pub(super) fn run(
         app_handle: app_handle.clone(),
         auto_submit,
         auto_submit_key,
+        send_space,
         preserve_transcript: clipboard_handling == ClipboardHandling::CopyToClipboard,
     });
 

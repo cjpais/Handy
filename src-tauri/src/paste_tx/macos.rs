@@ -25,7 +25,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use super::{evaluate, send_chord, TxState, WaitDecision};
-use crate::clipboard::send_return_key;
+use crate::clipboard::{send_return_key, send_space_key};
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
 
@@ -101,6 +101,9 @@ struct MacPending {
     provider: Option<Retained<HandyPasteProvider>>,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
+    /// Send a Space key press once the paste is confirmed (trailing space as a
+    /// keystroke, because some targets trim pasted text).
+    send_space: bool,
     /// ClipboardHandling::CopyToClipboard — instead of restoring, settle by
     /// re-writing the transcript as plain text (without the concealment
     /// markers), so clipboard managers record it and it outlives the promise.
@@ -139,15 +142,30 @@ fn settle(
 
     // Auto-submit only once the target demonstrably read the transcript;
     // pressing Enter after an unconfirmed paste could submit stale content.
-    if p.auto_submit && receipt_seen {
-        match enigo {
-            Some(e) => {
-                let _ = send_return_key(e, p.auto_submit_key);
+    if (p.auto_submit || p.send_space) && receipt_seen {
+        let (send_space, auto_submit, key) = (p.send_space, p.auto_submit, p.auto_submit_key);
+        let keys = move |e: &mut enigo::Enigo| {
+            if send_space {
+                match send_space_key(e) {
+                    Ok(()) => log::debug!("[reliable-paste] sent trailing space as a keystroke"),
+                    Err(err) => {
+                        log::warn!("[reliable-paste] trailing space keystroke failed: {err}")
+                    }
+                }
             }
+            if auto_submit {
+                if send_space {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                let _ = send_return_key(e, key);
+            }
+        };
+        match enigo {
+            Some(e) => keys(e),
             None => {
                 if let Some(enigo_state) = app_handle.try_state::<EnigoState>() {
                     if let Ok(mut e) = enigo_state.0.lock() {
-                        let _ = send_return_key(&mut e, p.auto_submit_key);
+                        keys(&mut e);
                     }
                 }
             }
@@ -162,7 +180,11 @@ fn settle(
         // The user asked for the transcript to stay on the clipboard: replace
         // the concealed promise with plain text so clipboard managers record
         // it and it survives this app exiting.
-        let _ = app_handle.clipboard().write_text(&p.transcript);
+        let _ = app_handle.clipboard().write_text(&if p.send_space {
+            format!("{} ", p.transcript)
+        } else {
+            p.transcript.clone()
+        });
         info!("[reliable-paste] left transcript on clipboard as plain text");
     } else {
         let clipboard = app_handle.clipboard();
@@ -260,6 +282,7 @@ pub(super) fn run(
     enigo: &mut enigo::Enigo,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
+    send_space: bool,
     clipboard_handling: ClipboardHandling,
 ) -> Result<(), String> {
     // Settle any previous transaction first so the snapshot below captures the
@@ -323,6 +346,7 @@ pub(super) fn run(
         provider: Some(provider),
         auto_submit,
         auto_submit_key,
+        send_space,
         preserve_transcript: clipboard_handling == ClipboardHandling::CopyToClipboard,
         transcript: text.to_string(),
         settled: false,
