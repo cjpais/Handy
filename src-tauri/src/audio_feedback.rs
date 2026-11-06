@@ -7,7 +7,7 @@ use rodio::cpal::ErrorKind;
 use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player, Source};
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -104,24 +104,69 @@ const PLAYBACK_MARGIN: Duration = Duration::from_secs(1);
 /// Wait used when the decoder cannot tell how long the sound is.
 const UNKNOWN_LENGTH_WAIT: Duration = Duration::from_secs(3);
 const POLL_INTERVAL: Duration = Duration::from_millis(20);
+/// A stream with no chime for this long is closed, so Handy does not hold an
+/// output stream (and keep the device awake) while it sits idle.
+const IDLE_CLOSE_AFTER: Duration = Duration::from_secs(30);
 
 /// One output stream shared by every feedback sound.
 ///
 /// Opening a fresh stream per chime left a playback stream behind on each
 /// play under PipeWire (#1973), and on Windows a per-chime WASAPI stream could
 /// stall with a frozen clock so the playing thread never returned (#1712).
-/// The stream is opened once and reused until the configured device changes,
-/// the stream reports a fatal error, or a sound fails to finish in time.
+/// The stream is opened on the first chime and reused until the configured
+/// device changes, the stream reports a fatal error, a sound fails to finish
+/// in time, or no chime has played for `IDLE_CLOSE_AFTER`.
 struct CachedOutput {
     device: String,
     sink: MixerDeviceSink,
     /// Set from cpal's error callback when the stream can no longer play.
     failed: Arc<AtomicBool>,
+    /// Identifies this stream, so an idle watcher never closes a newer one.
+    generation: u64,
+    /// When the last chime on this stream finished.
+    last_used: Instant,
 }
 
 /// Held for the length of one sound, so overlapping chimes play one after the
 /// other. Every hold is bounded by `playback_deadline`.
 static OUTPUT: Mutex<Option<CachedOutput>> = Mutex::new(None);
+static NEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// Time left before an unused stream should be closed, or `None` when it has
+/// been idle long enough to close now.
+fn idle_time_left(last_used: Instant, now: Instant, idle_limit: Duration) -> Option<Duration> {
+    let idle_for = now.saturating_duration_since(last_used);
+    idle_limit
+        .checked_sub(idle_for)
+        .filter(|left| !left.is_zero())
+}
+
+/// Runs for the life of one cached stream and closes it once it has gone
+/// unused for `IDLE_CLOSE_AFTER`. Exits as soon as the stream it watches has
+/// been replaced or dropped for another reason.
+fn spawn_idle_watcher(generation: u64) {
+    thread::spawn(move || {
+        let mut wait = IDLE_CLOSE_AFTER;
+        loop {
+            thread::sleep(wait);
+            let mut output = OUTPUT
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let last_used = match output.as_ref() {
+                Some(cached) if cached.generation == generation => cached.last_used,
+                _ => return,
+            };
+            match idle_time_left(last_used, Instant::now(), IDLE_CLOSE_AFTER) {
+                Some(left) => wait = left,
+                None => {
+                    debug!("closing idle feedback output stream");
+                    discard(&mut output);
+                    return;
+                }
+            }
+        }
+    });
+}
 
 enum PlayOutcome {
     Finished,
@@ -191,10 +236,16 @@ fn open_output(device_name: &str) -> Result<CachedOutput, Box<dyn std::error::Er
     // warning to stderr each time.
     sink.log_on_drop(false);
     debug!("opened feedback output stream for {}", device_name);
+    let generation = NEXT_GENERATION.fetch_add(1, Ordering::Relaxed);
+    // The caller holds the cache lock, so the watcher cannot look before this
+    // stream is stored.
+    spawn_idle_watcher(generation);
     Ok(CachedOutput {
         device: device_name.to_string(),
         sink,
         failed,
+        generation,
+        last_used: Instant::now(),
     })
 }
 
@@ -265,7 +316,12 @@ fn play_audio_file(
             .ok_or("feedback output stream missing after open")?;
 
         match play_on(cached, path, volume)? {
-            PlayOutcome::Finished => return Ok(()),
+            PlayOutcome::Finished => {
+                if let Some(cached) = output.as_mut() {
+                    cached.last_used = Instant::now();
+                }
+                return Ok(());
+            }
             PlayOutcome::StreamFailed => {
                 discard(&mut output);
                 if attempt == 0 && !reopen {
@@ -326,6 +382,40 @@ mod tests {
     #[test]
     fn deadline_falls_back_when_length_is_unknown() {
         assert_eq!(playback_deadline(None), Duration::from_secs(3));
+    }
+
+    #[test]
+    fn idle_stream_stays_open_until_the_limit() {
+        let start = Instant::now();
+        let limit = Duration::from_secs(30);
+        assert_eq!(
+            idle_time_left(start, start + Duration::from_secs(10), limit),
+            Some(Duration::from_secs(20))
+        );
+        assert_eq!(idle_time_left(start, start, limit), Some(limit));
+    }
+
+    #[test]
+    fn idle_stream_closes_at_or_after_the_limit() {
+        let start = Instant::now();
+        let limit = Duration::from_secs(30);
+        assert_eq!(idle_time_left(start, start + limit, limit), None);
+        assert_eq!(
+            idle_time_left(start, start + Duration::from_secs(45), limit),
+            None
+        );
+    }
+
+    #[test]
+    fn chime_after_the_watcher_woke_pushes_the_close_back() {
+        // last_used later than "now" (clock read before the chime finished)
+        // must not close the stream.
+        let now = Instant::now();
+        let limit = Duration::from_secs(30);
+        assert_eq!(
+            idle_time_left(now + Duration::from_secs(1), now, limit),
+            Some(limit)
+        );
     }
 
     #[test]
