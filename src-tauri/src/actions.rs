@@ -11,7 +11,7 @@ use crate::managers::transcription::{Transcription, TranscriptionManager};
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
-use crate::tray::{set_tray_state, TrayIconState};
+use crate::tray::{last_transcript_text, set_tray_state, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
@@ -1021,6 +1021,51 @@ impl ShortcutAction for CancelAction {
 }
 
 // Test Action
+// Time for the rest of the shortcut to come up after its first key: a modifier
+// still held on Windows or Linux would turn the paste into another shortcut.
+const PASTE_LAST_SETTLE: Duration = Duration::from_millis(150);
+
+struct PasteLastTranscriptAction;
+
+impl ShortcutAction for PasteLastTranscriptAction {
+    fn start(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+
+    // On release, so the shortcut's own keys are out of the paste's way.
+    fn stop(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(PASTE_LAST_SETTLE);
+            paste_last_transcript(&app);
+        });
+    }
+}
+
+fn paste_last_transcript(app: &AppHandle) {
+    let history = app.state::<Arc<HistoryManager>>();
+    let entry = match history.get_latest_completed_entry() {
+        Ok(Some(entry)) => entry,
+        Ok(None) => {
+            warn!("No transcript to paste.");
+            return;
+        }
+        Err(e) => {
+            error!("Failed to fetch the last transcript: {}", e);
+            return;
+        }
+    };
+
+    match utils::paste(last_transcript_text(&entry).to_string(), app.clone()) {
+        Ok(()) => notices::clear(app, NoticeSource::Dictation),
+        Err(e) => {
+            error!("Failed to paste the last transcript: {}", e);
+            notices::raise(
+                app,
+                Notice::new(NoticeCode::PasteFailed, NoticeSource::Dictation),
+            );
+        }
+    }
+}
+
 struct TestAction;
 
 impl ShortcutAction for TestAction {
@@ -1061,6 +1106,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
+        "paste_last_transcript".to_string(),
+        Arc::new(PasteLastTranscriptAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
         "test".to_string(),
         Arc::new(TestAction) as Arc<dyn ShortcutAction>,
     );
@@ -1072,7 +1121,7 @@ mod tests {
     use super::{
         complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
         post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
-        strip_think_block, PostProcessOutcome,
+        strip_think_block, PostProcessOutcome, ACTION_MAP,
     };
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
@@ -1122,6 +1171,13 @@ mod tests {
 
     fn run_post_process(settings: &AppSettings, transcription: &str) -> PostProcessOutcome {
         tauri::async_runtime::block_on(post_process_transcription(settings, transcription))
+    }
+
+    #[test]
+    fn every_default_binding_has_an_action() {
+        for id in get_default_settings().bindings.keys() {
+            assert!(ACTION_MAP.contains_key(id), "{id} has no action");
+        }
     }
 
     #[test]

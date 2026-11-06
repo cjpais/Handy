@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
+          },
+          "paste_last_transcript": {
+            "name": "Vložit poslední přepis",
+            "description": "Znovu vloží váš poslední přepis, když skončil ve špatném okně."
           }
         },
         "errors": {

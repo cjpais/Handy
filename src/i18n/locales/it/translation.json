@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Tasto di post-elaborazione",
             "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
+          },
+          "paste_last_transcript": {
+            "name": "Incolla ultima trascrizione",
+            "description": "Incolla di nuovo l'ultima trascrizione, se è finita nella finestra sbagliata."
           }
         },
         "errors": {

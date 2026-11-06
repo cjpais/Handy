@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "paste_last_transcript": {
+            "name": "Dán bản ghi cuối",
+            "description": "Dán lại bản ghi cuối của bạn khi nó vào nhầm cửa sổ."
           }
         },
         "errors": {

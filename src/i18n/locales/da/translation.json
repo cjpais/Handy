@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Genvej til efterbehandling",
             "description": "Valgfrit: En dedikeret genvej, der altid anvender AI-efterbehandling på din transskription."
+          },
+          "paste_last_transcript": {
+            "name": "Indsæt seneste transskription",
+            "description": "Indsætter din seneste transskription igen, hvis den endte i det forkerte vindue."
           }
         },
         "errors": {

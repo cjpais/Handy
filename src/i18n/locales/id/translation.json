@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Pintasan Pascaproses",
             "description": "Opsional: pintasan khusus yang selalu menerapkan pascaproses AI pada transkripsi Anda."
+          },
+          "paste_last_transcript": {
+            "name": "Tempel transkrip terakhir",
+            "description": "Menempelkan kembali transkrip terakhir Anda, jika masuk ke jendela yang salah."
           }
         },
         "errors": {

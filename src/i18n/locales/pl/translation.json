@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "paste_last_transcript": {
+            "name": "Wklej ostatnią transkrypcję",
+            "description": "Wkleja ponownie ostatnią transkrypcję, gdy trafiła do złego okna."
           }
         },
         "errors": {

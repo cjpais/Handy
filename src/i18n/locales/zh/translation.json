@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "paste_last_transcript": {
+            "name": "粘贴上次转录",
+            "description": "再次粘贴上次的转录内容,用于粘贴到了错误窗口的情况。"
           }
         },
         "errors": {

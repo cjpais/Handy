@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
             "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
+          },
+          "paste_last_transcript": {
+            "name": "Letzte Transkription einfügen",
+            "description": "Fügt deine letzte Transkription erneut ein, falls sie im falschen Fenster gelandet ist."
           }
         },
         "errors": {

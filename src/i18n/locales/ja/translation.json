@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "後処理のショートカット",
             "description": "文字起こしに常に AI 後処理を適用するキーボードショートカット。 (任意)"
+          },
+          "paste_last_transcript": {
+            "name": "最後の文字起こしを貼り付け",
+            "description": "間違ったウィンドウに入ったときのために、最後の文字起こしをもう一度貼り付けます。"
           }
         },
         "errors": {

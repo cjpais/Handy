@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Sneltoets voor naverwerking",
             "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
+          },
+          "paste_last_transcript": {
+            "name": "Laatste transcriptie plakken",
+            "description": "Plakt je laatste transcriptie opnieuw, als die in het verkeerde venster terechtkwam."
           }
         },
         "errors": {
