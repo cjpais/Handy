@@ -198,6 +198,7 @@ pub(crate) fn try_reliable_paste(
     enigo: &mut enigo::Enigo,
     auto_submit: bool,
     auto_submit_key: crate::settings::AutoSubmitKey,
+    send_space: bool,
     clipboard_handling: crate::settings::ClipboardHandling,
 ) -> Result<(), String> {
     platform::run(
@@ -207,6 +208,7 @@ pub(crate) fn try_reliable_paste(
         enigo,
         auto_submit,
         auto_submit_key,
+        send_space,
         clipboard_handling,
     )
 }

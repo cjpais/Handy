@@ -813,6 +813,38 @@ pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Res
     Ok(())
 }
 
+/// Presses and releases the Space key.
+pub(crate) fn send_space_key(enigo: &mut Enigo) -> Result<(), String> {
+    enigo
+        .key(Key::Space, Direction::Press)
+        .map_err(|e| format!("Failed to press Space key: {}", e))?;
+    enigo
+        .key(Key::Space, Direction::Release)
+        .map_err(|e| format!("Failed to release Space key: {}", e))?;
+    Ok(())
+}
+
+/// Decides how the "append trailing space" setting is applied. Returns the
+/// payload to paste and whether a Space key press must follow the paste.
+///
+/// Clipboard paste methods drop the space from the payload and send it as a
+/// keystroke instead, because some apps (Slack, browser address bars, Anki)
+/// trim pasted text. Other methods keep the space inside the text. As before,
+/// the space is added even when the text already ends with whitespace.
+fn trailing_space_plan(text: &str, append: bool, method: PasteMethod) -> (String, bool) {
+    if !append {
+        return (text.to_string(), false);
+    }
+    match method {
+        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            (text.to_string(), true)
+        }
+        PasteMethod::Direct | PasteMethod::ExternalScript | PasteMethod::None => {
+            (format!("{} ", text), false)
+        }
+    }
+}
+
 fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool {
     auto_submit && paste_method != PasteMethod::None
 }
@@ -826,12 +858,16 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
 
-    // Append trailing space if setting is enabled
-    let text = if settings.append_trailing_space {
+    // Append trailing space if setting is enabled. Clipboard paste methods send
+    // it as a Space keystroke after the paste; the clipboard copy keeps it.
+    let (payload, send_space) =
+        trailing_space_plan(&text, settings.append_trailing_space, paste_method);
+    let clipboard_copy = if settings.append_trailing_space {
         format!("{} ", text)
     } else {
         text
     };
+    let text = payload;
 
     info!(
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
@@ -874,6 +910,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                         enigo,
                         auto_submit,
                         auto_submit_key,
+                        send_space,
                         clipboard_handling,
                     )
                 });
@@ -890,7 +927,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
-            )?
+            )?;
+            if send_space {
+                std::thread::sleep(Duration::from_millis(50));
+                match with_enigo(&app_handle, send_space_key) {
+                    Ok(()) => log::debug!("Sent trailing space as a keystroke"),
+                    Err(error) => log::warn!("Paste succeeded, but trailing space failed: {error}"),
+                }
+            }
         }
         PasteMethod::ExternalScript => {
             let script_path = settings
@@ -914,7 +958,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
-        write_text_to_clipboard(&app_handle, &text)?;
+        write_text_to_clipboard(&app_handle, &clipboard_copy)?;
     }
 
     Ok(())
@@ -924,6 +968,64 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[test]
+    fn trailing_space_plan_clipboard_methods_send_a_keystroke() {
+        for m in [
+            PasteMethod::CtrlV,
+            PasteMethod::CtrlShiftV,
+            PasteMethod::ShiftInsert,
+        ] {
+            assert_eq!(
+                trailing_space_plan("hello", true, m),
+                ("hello".into(), true)
+            );
+        }
+    }
+
+    #[test]
+    fn trailing_space_plan_other_methods_keep_space_in_text() {
+        for m in [
+            PasteMethod::Direct,
+            PasteMethod::ExternalScript,
+            PasteMethod::None,
+        ] {
+            assert_eq!(
+                trailing_space_plan("hello", true, m),
+                ("hello ".into(), false)
+            );
+        }
+    }
+
+    #[test]
+    fn trailing_space_plan_off_changes_nothing() {
+        for m in [
+            PasteMethod::CtrlV,
+            PasteMethod::CtrlShiftV,
+            PasteMethod::ShiftInsert,
+            PasteMethod::Direct,
+            PasteMethod::ExternalScript,
+            PasteMethod::None,
+        ] {
+            assert_eq!(
+                trailing_space_plan("hello", false, m),
+                ("hello".into(), false)
+            );
+        }
+    }
+
+    #[test]
+    fn trailing_space_plan_text_already_ending_in_space_matches_old_behaviour() {
+        // Old code always appended one space, so the visible result is the same.
+        assert_eq!(
+            trailing_space_plan("hi ", true, PasteMethod::Direct),
+            ("hi  ".into(), false)
+        );
+        assert_eq!(
+            trailing_space_plan("hi ", true, PasteMethod::CtrlV),
+            ("hi ".into(), true)
+        );
+    }
 
     #[cfg(target_os = "linux")]
     const YDOTOOL_0_1_8_HELP: &str = r#"
