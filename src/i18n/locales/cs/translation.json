@@ -946,6 +946,8 @@
     "modelDownloadFailed": "Stahování selhalo",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "targetElevatedTitle": "Can't Type Into an Admin App",
+    "targetElevated": "The app you were in runs as administrator, so Windows blocks Handy's typing. The text is on your clipboard; press Ctrl+V to paste it.",
     "postProcessFailedTitle": "Vloženo bez následného zpracování",
     "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
     "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",

@@ -946,6 +946,8 @@
     "modelDownloadFailed": "ダウンロードに失敗しました",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
+    "targetElevatedTitle": "Can't Type Into an Admin App",
+    "targetElevated": "The app you were in runs as administrator, so Windows blocks Handy's typing. The text is on your clipboard; press Ctrl+V to paste it.",
     "postProcessFailedTitle": "後処理なしで貼り付けました",
     "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
     "filePostProcessFailedTitle": "後処理なしで文字起こししました",

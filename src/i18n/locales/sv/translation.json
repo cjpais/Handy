@@ -946,6 +946,8 @@
     "modelDownloadFailed": "Nedladdningen misslyckades",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
+    "targetElevatedTitle": "Can't Type Into an Admin App",
+    "targetElevated": "The app you were in runs as administrator, so Windows blocks Handy's typing. The text is on your clipboard; press Ctrl+V to paste it.",
     "postProcessFailedTitle": "Inklistrat utan efterbearbetning",
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",

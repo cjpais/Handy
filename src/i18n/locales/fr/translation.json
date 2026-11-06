@@ -946,6 +946,8 @@
     "modelDownloadFailed": "Échec du téléchargement",
     "pasteFailedTitle": "Échec du collage du texte",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
+    "targetElevatedTitle": "Can't Type Into an Admin App",
+    "targetElevated": "The app you were in runs as administrator, so Windows blocks Handy's typing. The text is on your clipboard; press Ctrl+V to paste it.",
     "postProcessFailedTitle": "Collé sans post-traitement",
     "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
     "filePostProcessFailedTitle": "Transcrit sans post-traitement",

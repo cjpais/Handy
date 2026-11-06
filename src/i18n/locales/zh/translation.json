@@ -946,6 +946,8 @@
     "modelDownloadFailed": "下载失败",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "targetElevatedTitle": "Can't Type Into an Admin App",
+    "targetElevated": "The app you were in runs as administrator, so Windows blocks Handy's typing. The text is on your clipboard; press Ctrl+V to paste it.",
     "postProcessFailedTitle": "已粘贴，未经后处理",
     "postProcessFailed": "后处理未完成，因此按原样粘贴转录内容。",
     "filePostProcessFailedTitle": "已转录，未经后处理",

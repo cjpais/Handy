@@ -817,9 +817,44 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
+/// What [`paste`] did with the text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PasteOutcome {
+    /// Sent to the focused app, or held back on purpose (`PasteMethod::None`).
+    Pasted,
+    /// The focused app runs as administrator, where Windows drops Handy's
+    /// input, so the text was put on the clipboard instead (#434, #2319).
+    #[cfg_attr(not(windows), allow(dead_code))]
+    LeftOnClipboard,
+}
+
+/// Windows drops input sent to a higher-integrity window without an error,
+/// so check before sending any. Unknown means paste as usual.
+#[cfg(windows)]
+fn target_blocks_input(paste_method: PasteMethod) -> bool {
+    if matches!(
+        paste_method,
+        PasteMethod::None | PasteMethod::ExternalScript
+    ) {
+        return false;
+    }
+    match crate::elevation::foreground_target() {
+        Some(target) if target.elevated => {
+            log::warn!(
+                "Focused window (pid {}, class {:?}) runs above Handy's integrity level; \
+                 Windows would drop the paste, leaving the text on the clipboard",
+                target.pid,
+                target.class
+            );
+            true
+        }
+        _ => false,
+    }
+}
+
 /// Pastes `text` into the focused app. Call from a worker thread, never the main
 /// thread: it sleeps between steps (input injection hops via `with_enigo`).
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
@@ -837,6 +872,12 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
+
+    #[cfg(windows)]
+    if target_blocks_input(paste_method) {
+        write_text_to_clipboard(&app_handle, &text)?;
+        return Ok(PasteOutcome::LeftOnClipboard);
+    }
 
     // Perform the paste operation
     match paste_method {
@@ -878,7 +919,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                     )
                 });
                 match reliable_result {
-                    Ok(()) => return Ok(()),
+                    Ok(()) => return Ok(PasteOutcome::Pasted),
                     Err(e) => {
                         log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
                     }
@@ -917,7 +958,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         write_text_to_clipboard(&app_handle, &text)?;
     }
 
-    Ok(())
+    Ok(PasteOutcome::Pasted)
 }
 
 #[cfg(test)]

@@ -41,6 +41,7 @@ pub enum NoticeSource {
 pub enum NoticeCode {
     TranscriptionFailed,
     PasteFailed,
+    TargetElevated,
     NoMicrophone,
     MicPermissionDenied,
     RecordingFailed,
@@ -60,7 +61,10 @@ impl NoticeCode {
             | Self::RecordingFailed
             | Self::ModelLoadFailed
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            // The text is on the clipboard instead of in the app.
+            Self::TargetElevated | Self::PostProcessFailed | Self::FilePostProcessFailed => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -69,6 +73,7 @@ impl NoticeCode {
         match self {
             Self::TranscriptionFailed => &strings.transcription_failed_title,
             Self::PasteFailed => &strings.paste_failed_title,
+            Self::TargetElevated => &strings.target_elevated_title,
             Self::NoMicrophone => &strings.no_input_device_title,
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,
             Self::RecordingFailed => &strings.recording_failed_title,
@@ -250,6 +255,11 @@ mod tests {
                 file(NoticeCode::FileTranscriptionFailed),
             ]
         );
+    }
+
+    #[test]
+    fn target_elevated_is_a_warning() {
+        assert_eq!(NoticeCode::TargetElevated.level(), NoticeLevel::Warning);
     }
 
     #[test]
