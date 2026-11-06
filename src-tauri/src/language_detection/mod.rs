@@ -68,9 +68,25 @@ pub fn status_for(
 /// The detector rejects less speech than this (`InputTooShort`).
 const MIN_SPEECH_SAMPLES: usize = 16_000 / 2;
 
-/// A pick less than this many times as likely as the runner-up is logged as
-/// uncertain (with two languages: p < 0.6). It is used either way.
+/// Candidates within this ratio of the top pick (with two languages: a top
+/// p < 0.6) are too close to call; the person's earlier-listed language of
+/// those wins (#2405: accented English read as Romanian, then transcribed as
+/// Romanian by a model that trusts the language it is given).
 const UNSURE_RATIO: f32 = 1.5;
+
+/// The index in `allowed` of the language to use: the earliest-preferred of
+/// the candidates the detector can't tell apart from its top pick, and how
+/// many of those there were. `None` when the top pick is unusable.
+fn preferred_pick(candidates: &[(String, f32)], allowed: &[String]) -> Option<(usize, usize)> {
+    let (_, top) = candidates.first().filter(|(_, p)| p.is_finite())?;
+    let close: Vec<usize> = candidates
+        .iter()
+        .enumerate()
+        .filter(|(i, (_, p))| *i == 0 || (p.is_finite() && *top < UNSURE_RATIO * p))
+        .filter_map(|(_, (label, _))| allowed.iter().position(|a| a == label))
+        .collect();
+    close.iter().min().map(|&i| (i, close.len()))
+}
 
 /// How a transcription's language was chosen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -205,22 +221,16 @@ impl Plan {
             }
         };
 
-        let top = identified.candidates.first();
-        let language = top
-            .filter(|(_, p)| p.is_finite())
-            .and_then(|(label, _)| allowed.iter().position(|a| a == label))
-            .and_then(|i| languages.get(i))
-            .cloned();
+        let pick = preferred_pick(&identified.candidates, allowed);
+        let language = pick.and_then(|(i, _)| languages.get(i)).cloned();
         let scores = identified
             .candidates
             .iter()
             .map(|(label, p)| format!("{label} {:.1}%", p * 100.0))
             .collect::<Vec<_>>()
             .join(", ");
-        let uncertain = match (top, identified.candidates.get(1)) {
-            (Some((_, first)), Some((_, second))) if *first < UNSURE_RATIO * second => {
-                ", uncertain"
-            }
+        let uncertain = match pick {
+            Some((_, close)) if close > 1 => ", uncertain: the first preferred of the close ones",
             _ => "",
         };
         info!(
@@ -279,6 +289,70 @@ mod tests {
         });
         assert_eq!(decision.language.as_deref(), Some("he"));
         assert_eq!(decision.source, LanguageSource::Detected);
+    }
+
+    fn pick(spoken: &[&str], candidates: &[(&str, f32)]) -> Option<String> {
+        let plan = Plan::Detect {
+            languages: codes(spoken),
+            allowed: codes(spoken),
+            fallback: DetectFallback::FirstLanguage,
+        };
+        plan.decide(Some(&SPEECH), |_, _| ranked(candidates))
+            .language
+    }
+
+    /// #2405: English speech with English listed first. A close call goes to
+    /// English; a clear one is still followed, either way round.
+    #[test]
+    fn a_close_call_goes_to_the_first_preferred_language() {
+        for other in ["ro", "ru", "pt", "it"] {
+            let spoken = ["en", other];
+            assert_eq!(
+                pick(&spoken, &[(other, 0.55), ("en", 0.45)]).as_deref(),
+                Some("en")
+            );
+            assert_eq!(
+                pick(&spoken, &[(other, 0.59), ("en", 0.41)]).as_deref(),
+                Some("en")
+            );
+            assert_eq!(
+                pick(&spoken, &[(other, 0.61), ("en", 0.39)]).as_deref(),
+                Some(other)
+            );
+            assert_eq!(
+                pick(&spoken, &[("en", 0.7), (other, 0.3)]).as_deref(),
+                Some("en")
+            );
+        }
+        // Romanian listed first keeps a close call in Romanian.
+        assert_eq!(
+            pick(&["ro", "en"], &[("en", 0.55), ("ro", 0.45)]).as_deref(),
+            Some("ro")
+        );
+    }
+
+    #[test]
+    fn only_the_close_candidates_break_the_tie() {
+        let spoken = ["en", "ro", "fr"];
+        // English is close to the top pick: it wins.
+        assert_eq!(
+            pick(&spoken, &[("ro", 0.5), ("en", 0.4), ("fr", 0.1)]).as_deref(),
+            Some("en")
+        );
+        // English is far behind: the earlier of the two close ones wins.
+        assert_eq!(
+            pick(&spoken, &[("fr", 0.5), ("ro", 0.4), ("en", 0.1)]).as_deref(),
+            Some("ro")
+        );
+        assert_eq!(
+            pick(&spoken, &[("fr", 0.8), ("ro", 0.15), ("en", 0.05)]).as_deref(),
+            Some("fr")
+        );
+        // An unusable top pick still falls back to the first language.
+        assert_eq!(
+            pick(&spoken, &[("ro", f32::NAN), ("en", 0.4)]).as_deref(),
+            Some("en")
+        );
     }
 
     #[test]
