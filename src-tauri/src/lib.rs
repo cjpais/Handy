@@ -143,11 +143,11 @@ fn show_main_window(app: &AppHandle) {
 /// transition entirely; showing the window later promotes to Regular, which is
 /// the supported direction.
 ///
-/// Mirrors the show-window decision in `setup`: the app launches without a
+/// Follows the show-window decision in `setup`: the app launches without a
 /// Dock icon only when it will start hidden (setting or `--start-hidden`) AND a
 /// tray icon is available (setting and not `--no-tray`). With no tray the Dock
-/// icon stays as the only way back into the app (#903). Headless one-shot
-/// runs are left alone.
+/// icon stays as the way back into the app (#903), even when `--start-hidden`
+/// keeps the window hidden. Headless one-shot runs are left alone.
 #[cfg(target_os = "macos")]
 fn apply_startup_activation_policy(app: &mut tauri::App, headless_mode: bool) {
     if headless_mode {
@@ -1122,11 +1122,19 @@ pub fn run(cli_args: CliArgs) {
             let should_hide = settings.start_hidden || cli_args.start_hidden;
             let should_force_show = should_force_show_permissions_window(&app_handle);
 
-            // If start_hidden but tray is disabled, we must show the window
-            // anyway. Without a tray icon, the dock is the only way back in.
+            // If the start_hidden setting is on but the tray is disabled, show
+            // the window anyway so the setting can't strand the user. An explicit
+            // --start-hidden is honored: launching Handy again raises the window.
             // Keep in sync with `apply_startup_activation_policy` (macOS).
             let tray_available = settings.show_tray_icon && !cli_args.no_tray;
-            if should_force_show || !should_hide || !tray_available {
+            let show_for_access = !tray_available && !cli_args.start_hidden;
+            if should_hide && show_for_access {
+                log::info!(
+                    "start_hidden setting ignored because no tray icon is available; \
+                     pass --start-hidden to keep the main window hidden"
+                );
+            }
+            if should_force_show || !should_hide || show_for_access {
                 show_main_window(&app_handle);
             }
 
