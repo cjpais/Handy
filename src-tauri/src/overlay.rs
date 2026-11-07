@@ -197,6 +197,33 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     });
 }
 
+/// Turns off WebView2's built-in context menu and browser accelerator keys for
+/// the overlay (Windows only). The overlay floats over other apps, so a stray
+/// right-click on it would otherwise open the browser menu (Back / Refresh /
+/// Save as / Print) on top of whatever the user is doing.
+#[cfg(target_os = "windows")]
+fn disable_overlay_webview_defaults(overlay_window: &tauri::webview::WebviewWindow) {
+    let _ = overlay_window.with_webview(|webview| unsafe {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+        use windows::core::Interface;
+
+        let result = webview
+            .controller()
+            .CoreWebView2()
+            .and_then(|core| core.Settings())
+            .and_then(|settings| {
+                settings.SetAreDefaultContextMenusEnabled(false)?;
+                settings
+                    .cast::<ICoreWebView2Settings3>()?
+                    .SetAreBrowserAcceleratorKeysEnabled(false)
+            });
+
+        if let Err(error) = result {
+            log::warn!("Failed to disable WebView2 defaults on the recording overlay: {error}");
+        }
+    });
+}
+
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
@@ -460,6 +487,9 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
                     debug!("GTK layer shell not available, falling back to regular window");
                 }
             }
+
+            #[cfg(target_os = "windows")]
+            disable_overlay_webview_defaults(&window);
 
             debug!("Recording overlay window created successfully (hidden)");
         }
