@@ -37,6 +37,8 @@ pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
+#[cfg(target_os = "linux")]
+pub use utils::apply_handy_gdk_backend;
 pub use utils::env_flag_enabled;
 
 use env_filter::Builder as EnvFilterBuilder;
@@ -949,6 +951,13 @@ pub fn run(cli_args: CliArgs) {
                 "Vulkan layer policy: VK_LOADER_LAYERS_DISABLE={:?}, HANDY_KEEP_VULKAN_IMPLICIT_LAYERS={}",
                 std::env::var_os("VK_LOADER_LAYERS_DISABLE"),
                 utils::env_flag_enabled("HANDY_KEEP_VULKAN_IMPLICIT_LAYERS"),
+            );
+            #[cfg(target_os = "linux")]
+            log::info!(
+                "GTK backend: GDK_BACKEND={:?}, HANDY_GDK_BACKEND={:?} (applied: {})",
+                std::env::var_os("GDK_BACKEND"),
+                std::env::var_os("HANDY_GDK_BACKEND"),
+                std::env::var("HANDY_GDK_BACKEND").is_ok_and(|v| !v.trim().is_empty()),
             );
             system_languages::log_system_languages();
 
