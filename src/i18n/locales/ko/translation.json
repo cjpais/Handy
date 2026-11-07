@@ -946,6 +946,8 @@
     "modelDownloadFailed": "다운로드 실패",
     "pasteFailedTitle": "텍스트 붙여넣기 실패",
     "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
+    "noWaylandTypingToolTitle": "No Wayland Typing Tool",
+    "noWaylandTypingTool": "Handy found none of wtype, dotool, ydotool or kwtype, so it typed through X11, which only reaches X11 apps. Install one of them to type into Wayland apps.",
     "postProcessFailedTitle": "후처리 없이 붙여넣음",
     "postProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 붙여넣었습니다.",
     "filePostProcessFailedTitle": "후처리 없이 받아씀",

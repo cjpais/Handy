@@ -946,6 +946,8 @@
     "modelDownloadFailed": "فشل التنزيل",
     "pasteFailedTitle": "فشل لصق النص",
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
+    "noWaylandTypingToolTitle": "No Wayland Typing Tool",
+    "noWaylandTypingTool": "Handy found none of wtype, dotool, ydotool or kwtype, so it typed through X11, which only reaches X11 apps. Install one of them to type into Wayland apps.",
     "postProcessFailedTitle": "لُصق بدون معالجة لاحقة",
     "postProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا لُصق النص المنسوخ كما هو.",
     "filePostProcessFailedTitle": "نُسخ بدون معالجة لاحقة",

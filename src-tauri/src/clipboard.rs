@@ -6,6 +6,8 @@ use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
 #[cfg(target_os = "linux")]
+use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(target_os = "linux")]
 use std::sync::OnceLock;
 use std::sync::{mpsc, Mutex, PoisonError};
 use std::time::Duration;
@@ -18,6 +20,42 @@ use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 /// Serializes pastes: overlapping ones would restore each other's transcript as
 /// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
+
+/// What [`paste`] did with the text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PasteOutcome {
+    /// Sent to the focused app, or held back on purpose (`PasteMethod::None`).
+    Pasted,
+    /// Wayland with no typing tool installed: the text went through enigo's X11
+    /// backend, which only reaches X11 apps (#2275). Returned once per process;
+    /// the caller raises the notice after it clears the previous one.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    PastedThroughX11,
+}
+
+/// Set once the user has been told about the Wayland fallback.
+#[cfg(target_os = "linux")]
+static WAYLAND_FALLBACK_NOTICED: AtomicBool = AtomicBool::new(false);
+
+/// Whether this fallback to enigo should raise the notice: only on Wayland (an
+/// X11 session types into X11 apps, which is what enigo does), and only the first time.
+#[cfg(target_os = "linux")]
+fn should_notice_x11_fallback(wayland: bool, already_noticed: &AtomicBool) -> bool {
+    wayland && !already_noticed.swap(true, Ordering::SeqCst)
+}
+
+/// Called wherever a Linux paste falls back to enigo. Logs on every Wayland
+/// fallback and returns true the first time, when the caller should warn the user.
+#[cfg(target_os = "linux")]
+fn note_x11_fallback(what: &str) -> bool {
+    let wayland = is_wayland();
+    if wayland {
+        log::warn!(
+            "No Wayland typing tool found (wtype, dotool, ydotool, kwtype); sending {what} through enigo's X11 backend, which only reaches X11 apps"
+        );
+    }
+    should_notice_x11_fallback(wayland, &WAYLAND_FALLBACK_NOTICED)
+}
 
 /// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
 /// and waits for the result. Runs inline if already on the main thread, so no deadlock.
@@ -77,7 +115,7 @@ fn paste_via_clipboard(
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
-) -> Result<(), String> {
+) -> Result<PasteOutcome, String> {
     let clipboard = app_handle.clipboard();
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
     // Only probe for an image when there is no text to restore. Text is by far the
@@ -96,6 +134,8 @@ fn paste_via_clipboard(
 
     // Capture key injection errors so the original clipboard is restored before
     // propagating them to the caller.
+    #[cfg_attr(not(target_os = "linux"), allow(unused_mut))]
+    let mut outcome = PasteOutcome::Pasted;
     let paste_result = (|| -> Result<(), String> {
         // Send paste key combo
         #[cfg(target_os = "linux")]
@@ -106,6 +146,10 @@ fn paste_via_clipboard(
 
         // Fall back to enigo if no native tool handled it
         if !key_combo_sent {
+            #[cfg(target_os = "linux")]
+            if note_x11_fallback("the paste shortcut") {
+                outcome = PasteOutcome::PastedThroughX11;
+            }
             let paste_method = *paste_method;
             with_enigo(app_handle, move |enigo| match paste_method {
                 // The legacy path cannot detect a mistimed chord, so it keeps the
@@ -134,7 +178,8 @@ fn paste_via_clipboard(
             // Nothing was there to begin with — don't leave the transcription behind.
             let _ = clipboard.clear();
         }
-    })
+    })?;
+    Ok(outcome)
 }
 
 /// Attempts to send a key combination using Linux-native tools.
@@ -755,19 +800,27 @@ fn paste_direct(
     text: &str,
     app_handle: &AppHandle,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
-) -> Result<(), String> {
+) -> Result<PasteOutcome, String> {
     #[cfg(target_os = "linux")]
-    {
+    let outcome = {
         if try_direct_typing_linux(text, typing_tool)? {
-            return Ok(());
+            return Ok(PasteOutcome::Pasted);
         }
         info!("Falling back to enigo for direct text input");
-    }
+        if note_x11_fallback("the text") {
+            PasteOutcome::PastedThroughX11
+        } else {
+            PasteOutcome::Pasted
+        }
+    };
+    #[cfg(not(target_os = "linux"))]
+    let outcome = PasteOutcome::Pasted;
 
     let text = text.to_string();
     with_enigo(app_handle, move |enigo| {
         input::paste_text_direct(enigo, &text)
-    })
+    })?;
+    Ok(outcome)
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
@@ -819,7 +872,7 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 
 /// Pastes `text` into the focused app. Call from a worker thread, never the main
 /// thread: it sleeps between steps (input injection hops via `with_enigo`).
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
@@ -839,12 +892,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     );
 
     // Perform the paste operation
+    let mut outcome = PasteOutcome::Pasted;
     match paste_method {
         PasteMethod::None => {
             info!("PasteMethod::None selected - skipping paste action");
         }
         PasteMethod::Direct => {
-            paste_direct(
+            outcome = paste_direct(
                 &text,
                 &app_handle,
                 #[cfg(target_os = "linux")]
@@ -878,19 +932,19 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                     )
                 });
                 match reliable_result {
-                    Ok(()) => return Ok(()),
+                    Ok(()) => return Ok(PasteOutcome::Pasted),
                     Err(e) => {
                         log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
                     }
                 }
             }
-            paste_via_clipboard(
+            outcome = paste_via_clipboard(
                 &text,
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
-            )?
+            )?;
         }
         PasteMethod::ExternalScript => {
             let script_path = settings
@@ -917,13 +971,25 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         write_text_to_clipboard(&app_handle, &text)?;
     }
 
-    Ok(())
+    Ok(outcome)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::cell::Cell;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn x11_fallback_notice_is_for_wayland_and_only_once() {
+        let noticed = AtomicBool::new(false);
+        // An X11 session never warns and does not use up the one warning.
+        assert!(!should_notice_x11_fallback(false, &noticed));
+        assert!(!should_notice_x11_fallback(false, &noticed));
+        assert!(should_notice_x11_fallback(true, &noticed));
+        assert!(!should_notice_x11_fallback(true, &noticed));
+        assert!(!should_notice_x11_fallback(true, &noticed));
+    }
 
     #[cfg(target_os = "linux")]
     const YDOTOOL_0_1_8_HELP: &str = r#"

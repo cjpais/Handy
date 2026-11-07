@@ -946,6 +946,8 @@
     "modelDownloadFailed": "Download fehlgeschlagen",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "noWaylandTypingToolTitle": "No Wayland Typing Tool",
+    "noWaylandTypingTool": "Handy found none of wtype, dotool, ydotool or kwtype, so it typed through X11, which only reaches X11 apps. Install one of them to type into Wayland apps.",
     "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
     "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",

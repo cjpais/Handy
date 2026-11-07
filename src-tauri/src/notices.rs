@@ -41,6 +41,7 @@ pub enum NoticeSource {
 pub enum NoticeCode {
     TranscriptionFailed,
     PasteFailed,
+    NoWaylandTypingTool,
     NoMicrophone,
     MicPermissionDenied,
     RecordingFailed,
@@ -60,7 +61,10 @@ impl NoticeCode {
             | Self::RecordingFailed
             | Self::ModelLoadFailed
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            // The text was typed, but may have missed a Wayland-native app.
+            Self::NoWaylandTypingTool | Self::PostProcessFailed | Self::FilePostProcessFailed => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -69,6 +73,7 @@ impl NoticeCode {
         match self {
             Self::TranscriptionFailed => &strings.transcription_failed_title,
             Self::PasteFailed => &strings.paste_failed_title,
+            Self::NoWaylandTypingTool => &strings.no_wayland_typing_tool_title,
             Self::NoMicrophone => &strings.no_input_device_title,
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,
             Self::RecordingFailed => &strings.recording_failed_title,
@@ -249,6 +254,14 @@ mod tests {
                 dictation(NoticeCode::PostProcessFailed),
                 file(NoticeCode::FileTranscriptionFailed),
             ]
+        );
+    }
+
+    #[test]
+    fn no_wayland_typing_tool_is_a_warning() {
+        assert_eq!(
+            NoticeCode::NoWaylandTypingTool.level(),
+            NoticeLevel::Warning
         );
     }
 

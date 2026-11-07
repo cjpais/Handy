@@ -946,6 +946,8 @@
     "modelDownloadFailed": "下载失败",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "noWaylandTypingToolTitle": "No Wayland Typing Tool",
+    "noWaylandTypingTool": "Handy found none of wtype, dotool, ydotool or kwtype, so it typed through X11, which only reaches X11 apps. Install one of them to type into Wayland apps.",
     "postProcessFailedTitle": "已粘贴，未经后处理",
     "postProcessFailed": "后处理未完成，因此按原样粘贴转录内容。",
     "filePostProcessFailedTitle": "已转录，未经后处理",

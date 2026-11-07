@@ -17,6 +17,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.pasteFailedTitle",
     explanation: (t) => t("errors.pasteFailed"),
   },
+  NoWaylandTypingTool: {
+    title: "errors.noWaylandTypingToolTitle",
+    explanation: (t) => t("errors.noWaylandTypingTool"),
+  },
   NoMicrophone: {
     title: "errors.noInputDeviceTitle",
     explanation: (t) => t("errors.noInputDevice"),

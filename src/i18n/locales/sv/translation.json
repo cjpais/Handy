@@ -946,6 +946,8 @@
     "modelDownloadFailed": "Nedladdningen misslyckades",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
+    "noWaylandTypingToolTitle": "No Wayland Typing Tool",
+    "noWaylandTypingTool": "Handy found none of wtype, dotool, ydotool or kwtype, so it typed through X11, which only reaches X11 apps. Install one of them to type into Wayland apps.",
     "postProcessFailedTitle": "Inklistrat utan efterbearbetning",
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",

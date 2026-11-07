@@ -879,7 +879,7 @@ impl ShortcutAction for TranscribeAction {
                                             || RECORDING_SESSION.load(Ordering::SeqCst) == session;
                                         let (outcome, notice) =
                                             match utils::paste(final_text, ah_clone.clone()) {
-                                                Ok(()) => {
+                                                Ok(paste_outcome) => {
                                                     debug!(
                                                         "Text pasted successfully in {:?}",
                                                         paste_time.elapsed()
@@ -891,11 +891,20 @@ impl ShortcutAction for TranscribeAction {
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    let notice = post_process_failed.then(|| {
-                                                        Notice::new(
-                                                            NoticeCode::PostProcessFailed,
-                                                            NoticeSource::Dictation,
-                                                        )
+                                                    // The Wayland fallback outranks a skipped
+                                                    // post-process: the text may not have arrived.
+                                                    let notice = match paste_outcome {
+                                                        utils::PasteOutcome::PastedThroughX11 => {
+                                                            Some(NoticeCode::NoWaylandTypingTool)
+                                                        }
+                                                        utils::PasteOutcome::Pasted => {
+                                                            post_process_failed.then_some(
+                                                                NoticeCode::PostProcessFailed,
+                                                            )
+                                                        }
+                                                    }
+                                                    .map(|code| {
+                                                        Notice::new(code, NoticeSource::Dictation)
                                                     });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }
