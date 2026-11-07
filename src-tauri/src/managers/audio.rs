@@ -102,12 +102,110 @@ fn set_mute(mute: bool) {
 
     #[cfg(target_os = "macos")]
     {
-        use std::process::Command;
-        let script = format!(
-            "set volume output muted {}",
-            if mute { "true" } else { "false" }
-        );
-        let _ = Command::new("osascript").args(["-e", &script]).output();
+        if !macos_output_mute::set(mute) {
+            use std::process::Command;
+            let script = format!(
+                "set volume output muted {}",
+                if mute { "true" } else { "false" }
+            );
+            let _ = Command::new("osascript").args(["-e", &script]).output();
+        }
+    }
+}
+
+/// The default output device's mute switch, through CoreAudio. It is the same
+/// switch AppleScript's `output muted` uses, but takes well under a
+/// millisecond instead of about 140 ms per osascript run.
+#[cfg(target_os = "macos")]
+mod macos_output_mute {
+    use std::ffi::c_void;
+
+    #[repr(C)]
+    struct PropertyAddress {
+        selector: u32,
+        scope: u32,
+        element: u32,
+    }
+
+    const fn fourcc(code: &[u8; 4]) -> u32 {
+        u32::from_be_bytes(*code)
+    }
+
+    const SYSTEM_OBJECT: u32 = 1;
+    const DEFAULT_OUTPUT_DEVICE: PropertyAddress = PropertyAddress {
+        selector: fourcc(b"dOut"),
+        scope: fourcc(b"glob"),
+        element: 0,
+    };
+    const OUTPUT_MUTE: PropertyAddress = PropertyAddress {
+        selector: fourcc(b"mute"),
+        scope: fourcc(b"outp"),
+        element: 0,
+    };
+
+    #[link(name = "CoreAudio", kind = "framework")]
+    unsafe extern "C" {
+        fn AudioObjectGetPropertyData(
+            object: u32,
+            address: *const PropertyAddress,
+            qualifier_size: u32,
+            qualifier: *const c_void,
+            data_size: *mut u32,
+            data: *mut c_void,
+        ) -> i32;
+        fn AudioObjectSetPropertyData(
+            object: u32,
+            address: *const PropertyAddress,
+            qualifier_size: u32,
+            qualifier: *const c_void,
+            data_size: u32,
+            data: *const c_void,
+        ) -> i32;
+    }
+
+    fn read_u32(object: u32, address: &PropertyAddress) -> Option<u32> {
+        let mut value = 0_u32;
+        let mut size = std::mem::size_of::<u32>() as u32;
+        // SAFETY: value is a u32 and size says so. CoreAudio writes at most size bytes.
+        let status = unsafe {
+            AudioObjectGetPropertyData(
+                object,
+                address,
+                0,
+                std::ptr::null(),
+                &mut size,
+                (&mut value as *mut u32).cast(),
+            )
+        };
+        (status == 0).then_some(value)
+    }
+
+    fn default_output_device() -> Option<u32> {
+        read_u32(SYSTEM_OBJECT, &DEFAULT_OUTPUT_DEVICE).filter(|&id| id != 0)
+    }
+
+    pub fn get() -> Option<bool> {
+        read_u32(default_output_device()?, &OUTPUT_MUTE).map(|v| v != 0)
+    }
+
+    /// Returns false when the device has no mute switch CoreAudio can set.
+    pub fn set(mute: bool) -> bool {
+        let Some(device) = default_output_device() else {
+            return false;
+        };
+        let value = u32::from(mute);
+        // SAFETY: value is a u32 and the size passed says so.
+        let status = unsafe {
+            AudioObjectSetPropertyData(
+                device,
+                &OUTPUT_MUTE,
+                0,
+                std::ptr::null(),
+                std::mem::size_of::<u32>() as u32,
+                (&value as *const u32).cast(),
+            )
+        };
+        status == 0
     }
 }
 
@@ -202,6 +300,9 @@ fn get_mute() -> Option<bool> {
 fn get_mute() -> Option<bool> {
     use std::process::Command;
 
+    if let Some(muted) = macos_output_mute::get() {
+        return Some(muted);
+    }
     let out = Command::new("osascript")
         .args(["-e", "output muted of (get volume settings)"])
         .output()
@@ -1360,6 +1461,21 @@ impl AudioRecordingManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Read only, so running the tests never mutes anything.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn coreaudio_mute_reads_the_same_switch_as_applescript() {
+        let Some(coreaudio) = macos_output_mute::get() else {
+            return; // no output device with a mute switch, e.g. on CI
+        };
+        let out = std::process::Command::new("osascript")
+            .args(["-e", "output muted of (get volume settings)"])
+            .output()
+            .unwrap();
+        let applescript = String::from_utf8_lossy(&out.stdout).trim() == "true";
+        assert_eq!(coreaudio, applescript);
+    }
 
     /// A recorder error, without touching a device: the request is rejected
     /// before one is opened.
