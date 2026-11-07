@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatisch",
           "pushToTalk": "Vasthouden",
+          "holdOrDoubleTap": "Vasthouden of dubbel tikken",
           "toggle": "Schakelen"
         },
         "descriptions": {
           "hold_or_toggle": "Houd ingedrukt om op te nemen of tik om te schakelen",
           "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
+          "hold_or_double_tap": "Houd ingedrukt om iets korts te zeggen; tik twee keer om handsfree op te nemen tot de volgende druk",
           "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
         }
       }

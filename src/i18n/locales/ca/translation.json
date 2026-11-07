@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automàtic",
           "pushToTalk": "Mantén premuda",
+          "holdOrDoubleTap": "Mantén o toca dues vegades",
           "toggle": "Commuta"
         },
         "descriptions": {
           "hold_or_toggle": "Manteniu-la premuda per enregistrar o feu una pulsació breu per iniciar o aturar l'enregistrament",
           "push_to_talk": "Enregistreu mentre manteniu premuda la drecera",
+          "hold_or_double_tap": "Mantén premut per dir alguna cosa curta; toca dues vegades per gravar sense mans fins a la següent pulsació",
           "toggle": "Premeu la drecera per iniciar l'enregistrament i torneu-la a prémer per aturar-lo"
         }
       }

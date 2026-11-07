@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "自動",
           "pushToTalk": "長押し",
+          "holdOrDoubleTap": "長押しまたはダブルタップ",
           "toggle": "切り替え"
         },
         "descriptions": {
           "hold_or_toggle": "長押しで録音、タップで切り替え",
           "push_to_talk": "ショートカットを押している間だけ録音します",
+          "hold_or_double_tap": "長押しで短く話し、ダブルタップで次に押すまでハンズフリーで録音",
           "toggle": "ショートカットをタップすると録音を開始し、もう一度タップすると停止します"
         }
       }

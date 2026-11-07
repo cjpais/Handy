@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatiskt",
           "pushToTalk": "Håll",
+          "holdOrDoubleTap": "Håll eller dubbeltryck",
           "toggle": "Växla"
         },
         "descriptions": {
           "hold_or_toggle": "Håll nere för att spela in eller tryck kort för att växla",
           "push_to_talk": "Spelar in så länge du håller genvägen nedtryckt",
+          "hold_or_double_tap": "Håll inne för att säga något kort; dubbeltryck för handsfree-inspelning tills nästa tryck",
           "toggle": "Tryck på genvägen för att starta inspelningen, tryck igen för att stoppa"
         }
       }

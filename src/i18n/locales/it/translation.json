@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatico",
           "pushToTalk": "Tieni premuto",
+          "holdOrDoubleTap": "Tieni premuto o tocca due volte",
           "toggle": "Alterna"
         },
         "descriptions": {
           "hold_or_toggle": "Tieni premuto per registrare o tocca per alternare",
           "push_to_talk": "Registra finché tieni premuta la scorciatoia",
+          "hold_or_double_tap": "Tieni premuto per dire qualcosa di breve; tocca due volte per registrare a mani libere fino alla pressione successiva",
           "toggle": "Tocca la scorciatoia per avviare la registrazione, tocca di nuovo per fermarla"
         }
       }

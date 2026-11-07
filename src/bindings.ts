@@ -1464,7 +1464,13 @@ export type ShortcutActivation =
  * next press. Which one it was is decided by how long the key was held
  * (`hold_threshold_ms`).
  */
-"hold_or_toggle"
+"hold_or_toggle" | 
+/**
+ * Hold to record and release to stop, or double-tap to keep recording
+ * until the next press. A lone tap records nothing: the take is
+ * discarded once no second tap arrives.
+ */
+"hold_or_double_tap"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
 /**

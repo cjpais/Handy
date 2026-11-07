@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Maintenir",
+          "holdOrDoubleTap": "Maintenir ou double appui",
           "toggle": "Basculer"
         },
         "descriptions": {
           "hold_or_toggle": "Maintenez pour enregistrer ou appuyez brièvement pour basculer",
           "push_to_talk": "Enregistre tant que le raccourci est maintenu",
+          "hold_or_double_tap": "Maintenez pour une courte dictée ; appuyez deux fois pour enregistrer en mains libres jusqu'à la prochaine pression",
           "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
         }
       }

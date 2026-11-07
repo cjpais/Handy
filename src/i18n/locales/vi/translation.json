@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Tự động",
           "pushToTalk": "Giữ",
+          "holdOrDoubleTap": "Giữ hoặc nhấn đúp",
           "toggle": "Bật/tắt"
         },
         "descriptions": {
           "hold_or_toggle": "Giữ để ghi âm hoặc nhấn nhanh để bật/tắt",
           "push_to_talk": "Ghi âm trong lúc bạn giữ phím tắt",
+          "hold_or_double_tap": "Giữ để nói ngắn gọn; nhấn đúp để ghi âm rảnh tay cho đến lần nhấn tiếp theo",
           "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
         }
       }

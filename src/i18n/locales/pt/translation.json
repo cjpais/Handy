@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automático",
           "pushToTalk": "Segurar",
+          "holdOrDoubleTap": "Manter ou toque duplo",
           "toggle": "Alternar"
         },
         "descriptions": {
           "hold_or_toggle": "Segure para gravar ou toque para alternar",
           "push_to_talk": "Grava enquanto você mantém o atalho pressionado",
+          "hold_or_double_tap": "Mantenha pressionado para dizer algo curto; toque duas vezes para gravar sem as mãos até o próximo pressionamento",
           "toggle": "Toque no atalho para começar a gravar, toque novamente para parar"
         }
       }

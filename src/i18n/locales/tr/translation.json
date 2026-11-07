@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Otomatik",
           "pushToTalk": "Basılı tut",
+          "holdOrDoubleTap": "Basılı tut veya çift dokun",
           "toggle": "Aç/Kapat"
         },
         "descriptions": {
           "hold_or_toggle": "Kaydetmek için basılı tutun veya açıp kapatmak için dokunun",
           "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
+          "hold_or_double_tap": "Kısa bir şey söylemek için basılı tutun; bir sonraki basışa kadar eller serbest kayıt için çift dokunun",
           "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
         }
       }

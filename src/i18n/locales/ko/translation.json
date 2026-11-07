@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "자동",
           "pushToTalk": "길게 누르기",
+          "holdOrDoubleTap": "길게 누르기 또는 두 번 탭",
           "toggle": "전환"
         },
         "descriptions": {
           "hold_or_toggle": "길게 누르면 녹음, 탭하면 전환",
           "push_to_talk": "단축키를 누르고 있는 동안 녹음합니다",
+          "hold_or_double_tap": "짧게 말하려면 길게 누르고, 다음에 누를 때까지 핸즈프리로 녹음하려면 두 번 탭하세요",
           "toggle": "단축키를 탭하면 녹음을 시작하고, 다시 탭하면 중지합니다"
         }
       }

@@ -31,6 +31,13 @@ export const ShortcutActivationSetting: React.FC<ShortcutActivationProps> =
         ),
       },
       {
+        value: "hold_or_double_tap",
+        label: t("settings.general.shortcutActivation.options.holdOrDoubleTap"),
+        description: t(
+          "settings.general.shortcutActivation.descriptions.hold_or_double_tap",
+        ),
+      },
+      {
         value: "toggle",
         label: t("settings.general.shortcutActivation.options.toggle"),
         description: t(

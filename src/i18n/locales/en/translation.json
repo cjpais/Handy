@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Auto",
           "pushToTalk": "Hold",
+          "holdOrDoubleTap": "Hold or double-tap",
           "toggle": "Toggle"
         },
         "descriptions": {
           "hold_or_toggle": "Hold to record or tap to toggle",
           "push_to_talk": "Records while you hold the shortcut",
+          "hold_or_double_tap": "Hold to say something short, double-tap for hands-free until the next press",
           "toggle": "Tap the shortcut to start recording, tap again to stop"
         }
       }
@@ -831,7 +833,7 @@
       },
       "holdThreshold": {
         "title": "Hold Threshold",
-        "description": "Auto mode only: how long (in milliseconds) the shortcut must be held before it counts as a hold instead of a tap. Lower if short holds keep leaving recording on; raise if deliberate taps get treated as holds."
+        "description": "Auto and Hold or double-tap modes only: how long (in milliseconds) the shortcut must be held before it counts as a hold instead of a tap. Lower if short holds keep leaving recording on; raise if deliberate taps get treated as holds."
       },
       "reliablePaste": {
         "title": "Reliable Paste (Beta)",
