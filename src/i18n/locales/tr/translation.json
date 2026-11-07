@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Kayıt başlatılamadı",
     "modelLoadFailed": "Handy bu modeli yükleyemedi. Yeniden deneyin veya başka bir model seçin.",
     "modelLoadFailedTitle": "Model yüklenemedi",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "İndirme başarısız oldu",
     "pasteFailedTitle": "Metin yapıştırılamadı",
     "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı.",

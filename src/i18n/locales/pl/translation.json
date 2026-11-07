@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Nie udało się rozpocząć nagrywania",
     "modelLoadFailed": "Handy nie mógł załadować tego modelu. Spróbuj ponownie lub wybierz inny.",
     "modelLoadFailedTitle": "Nie udało się załadować modelu",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Pobieranie nie powiodło się",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",

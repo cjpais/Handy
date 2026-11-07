@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Failed to Start Recording",
     "modelLoadFailed": "Handy couldn't load this model. Try again or choose a different one.",
     "modelLoadFailedTitle": "Failed to Load Model",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Download failed",
     "pasteFailedTitle": "Failed to Paste Text",
     "pasteFailed": "Text could not be pasted into the active application.",

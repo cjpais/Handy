@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Échec de l'enregistrement",
     "modelLoadFailed": "Handy n'a pas pu charger ce modèle. Réessayez ou choisissez-en un autre.",
     "modelLoadFailedTitle": "Échec du chargement du modèle",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Échec du téléchargement",
     "pasteFailedTitle": "Échec du collage du texte",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",

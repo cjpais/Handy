@@ -943,6 +943,8 @@
     "recordingFailedTitle": "녹음을 시작하지 못했습니다",
     "modelLoadFailed": "이 모델을 불러오지 못했습니다. 다시 시도하거나 다른 모델을 선택하세요.",
     "modelLoadFailedTitle": "모델을 불러오지 못했습니다",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "다운로드 실패",
     "pasteFailedTitle": "텍스트 붙여넣기 실패",
     "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",

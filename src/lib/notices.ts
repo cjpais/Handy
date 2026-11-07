@@ -35,6 +35,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.modelLoadFailedTitle",
     explanation: (t) => t("errors.modelLoadFailed"),
   },
+  NoModelSelected: {
+    title: "errors.noModelSelectedTitle",
+    explanation: (t) => t("errors.noModelSelected"),
+  },
   PostProcessFailed: {
     title: "errors.postProcessFailedTitle",
     explanation: (t) => t("errors.postProcessFailed"),

@@ -943,6 +943,8 @@
     "recordingFailedTitle": "הפעלת ההקלטה נכשלה",
     "modelLoadFailed": "Handy לא הצליח לטעון את המודל הזה. נסו שוב או בחרו מודל אחר.",
     "modelLoadFailedTitle": "טעינת המודל נכשלה",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",

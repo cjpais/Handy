@@ -943,6 +943,8 @@
     "recordingFailedTitle": "रिकॉर्डिंग शुरू नहीं हो सकी",
     "modelLoadFailed": "Handy इस मॉडल को लोड नहीं कर सका। फिर से कोशिश करें या कोई दूसरा मॉडल चुनें।",
     "modelLoadFailedTitle": "मॉडल लोड नहीं हो सका",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "डाउनलोड विफल रहा",
     "pasteFailedTitle": "टेक्स्ट पेस्ट नहीं हो सका",
     "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",

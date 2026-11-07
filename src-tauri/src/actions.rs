@@ -485,7 +485,9 @@ impl ShortcutAction for TranscribeAction {
 
         // Load ASR model and VAD model in parallel
         let kickoff_started = Instant::now();
-        let load_started = tm.initiate_model_load(true);
+        // An empty selection has nothing to load; the check below says so.
+        let selected_model = get_settings(app).selected_model;
+        let load_started = !selected_model.is_empty() && tm.initiate_model_load(true);
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
@@ -497,7 +499,11 @@ impl ShortcutAction for TranscribeAction {
         // Don't open the mic if nothing can transcribe the recording. A load
         // started above reports its own failure; one already running doesn't.
         if !tm.is_model_loaded() {
-            let selected_model = get_settings(app).selected_model;
+            if selected_model.is_empty() {
+                warn!("Not starting recording: no model is selected");
+                tm.raise_no_model_selected();
+                return;
+            }
             if let Err(e) = app
                 .state::<Arc<ModelManager>>()
                 .get_model_path(&selected_model)

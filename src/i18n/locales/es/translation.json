@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Error al iniciar la grabación",
     "modelLoadFailed": "Handy no pudo cargar este modelo. Inténtalo de nuevo o elige otro.",
     "modelLoadFailedTitle": "Error al cargar el modelo",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Error en la descarga",
     "pasteFailedTitle": "Error al pegar el texto",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",

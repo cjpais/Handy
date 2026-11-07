@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Nepodařilo se spustit nahrávání",
     "modelLoadFailed": "Handy nemohl načíst tento model. Zkuste to znovu nebo vyberte jiný.",
     "modelLoadFailedTitle": "Nepodařilo se načíst model",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Stahování selhalo",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",

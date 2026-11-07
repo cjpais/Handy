@@ -943,6 +943,8 @@
     "recordingFailedTitle": "Не вдалося розпочати запис",
     "modelLoadFailed": "Handy не вдалося завантажити цю модель. Спробуйте ще раз або виберіть іншу.",
     "modelLoadFailedTitle": "Не вдалося завантажити модель",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Помилка завантаження",
     "pasteFailedTitle": "Не вдалося вставити текст",
     "pasteFailed": "Не вдалося вставити текст до активної програми.",

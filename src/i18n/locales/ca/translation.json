@@ -943,6 +943,8 @@
     "recordingFailedTitle": "No s'ha pogut iniciar l'enregistrament",
     "modelLoadFailed": "Handy no ha pogut carregar aquest model. Torna-ho a provar o tria'n un altre.",
     "modelLoadFailedTitle": "No s'ha pogut carregar el model",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Ha fallat la baixada",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",

@@ -678,7 +678,9 @@ impl TranscriptionManager {
         );
         // Only this code: the source's other notices aren't about the model.
         for source in [NoticeSource::Dictation, NoticeSource::Model] {
-            notices::clear_matching(&self.app_handle, source, Some(NoticeCode::ModelLoadFailed));
+            for code in [NoticeCode::ModelLoadFailed, NoticeCode::NoModelSelected] {
+                notices::clear_matching(&self.app_handle, source, Some(code));
+            }
         }
 
         let load_duration = load_start.elapsed();
@@ -742,6 +744,19 @@ impl TranscriptionManager {
 
     pub fn raise_model_load_failed(&self, model_id: &str, error: &anyhow::Error) {
         let notice = self.model_load_notice(model_id, error, NoticeSource::Dictation);
+        self.raise_dictation_notice(notice);
+    }
+
+    /// The selection is empty (its files were gone at startup), so there is
+    /// nothing to load. Ends when a model next loads.
+    pub fn raise_no_model_selected(&self) {
+        self.raise_dictation_notice(Notice::new(
+            NoticeCode::NoModelSelected,
+            NoticeSource::Dictation,
+        ));
+    }
+
+    fn raise_dictation_notice(&self, notice: Notice) {
         // A recording in progress keeps the overlay; its transcription fails
         // next and reports that itself.
         if overlay::is_session_showing() {

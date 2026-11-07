@@ -943,6 +943,8 @@
     "recordingFailedTitle": "录音启动失败",
     "modelLoadFailed": "Handy 无法加载此模型。请重试或选择其他模型。",
     "modelLoadFailedTitle": "加载模型失败",
+    "noModelSelected": "Download or select a model in Settings > Models.",
+    "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "下载失败",
     "pasteFailedTitle": "粘贴文本失败",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
