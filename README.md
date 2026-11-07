@@ -179,6 +179,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 **Wayland Support (Linux):**
 
 - Limited support for Wayland display server
+- Clipboard history: with `wl-clipboard` 2.3.0 or newer, Handy copies dictated text with `wl-copy --sensitive`, which adds the `x-kde-passwordManagerHint` hint so history managers that honour it (reported for Klipper, cliphist, Noctalia and Stash) skip it. Pasting is unaffected. If you choose to keep the transcript on the clipboard, Handy copies it normally so it stays in your history.
 - Requires [`wtype`](https://github.com/atx/wtype) or [`dotool`](https://sr.ht/~geb/dotool/) for text input to work correctly (see [Linux Notes](#linux-notes) below for installation)
 
 **Other Notes:**
