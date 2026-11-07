@@ -105,8 +105,10 @@ fn send_auto_submit(shared: &WinTxShared) {
     }
     if let Some(enigo_state) = shared.app_handle.try_state::<EnigoState>() {
         match enigo_state.0.try_lock() {
-            Ok(mut enigo) => {
-                let _ = send_return_key(&mut enigo, shared.auto_submit_key);
+            Ok(mut slot) => {
+                if let Some(enigo) = slot.as_mut() {
+                    let _ = send_return_key(enigo, shared.auto_submit_key);
+                }
             }
             Err(_) => warn!("[reliable-paste] skipping auto-submit: input state busy"),
         }

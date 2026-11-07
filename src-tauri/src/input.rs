@@ -174,12 +174,36 @@ impl EnigoState {
 /// Drop reverts the old instance's bindings, and an instance created earlier
 /// would have captured those bindings in its keymap snapshot and kept firing
 /// the then-dead keycodes.
+#[cfg(target_os = "linux")]
 pub fn refresh_enigo(slot: &mut Option<Enigo>) -> Result<(), String> {
     slot.take();
-    let fresh = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to recreate Enigo: {}", e))?;
+    let fresh =
+        Enigo::new(&Settings::default()).map_err(|e| format!("Failed to recreate Enigo: {}", e))?;
     *slot = Some(fresh);
     Ok(())
+}
+
+/// Returns the Enigo instance to inject input with, first replacing it with a
+/// fresh one when `refresh` is set (Linux only; see `refresh_enigo`).
+///
+/// An empty slot gets a new instance. The slot is only empty after
+/// `refresh_enigo` failed to create one; retrying here lets input recover once
+/// the display is reachable again instead of failing every later paste.
+pub fn prepare_enigo(slot: &mut Option<Enigo>, refresh: bool) -> Result<&mut Enigo, String> {
+    #[cfg(target_os = "linux")]
+    if refresh {
+        refresh_enigo(slot)?;
+    }
+    #[cfg(not(target_os = "linux"))]
+    let _ = refresh;
+
+    if slot.is_none() {
+        let enigo = Enigo::new(&Settings::default())
+            .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
+        *slot = Some(enigo);
+    }
+    slot.as_mut()
+        .ok_or_else(|| "Enigo instance is not available".to_string())
 }
 
 /// Get the current mouse cursor position using the managed Enigo instance.
@@ -295,4 +319,51 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to send text directly: {}", e))?;
 
     Ok(())
+}
+
+/// Manual X11 regression check for #429: run with `--ignored` against an X
+/// server on `$DISPLAY` whose focused window records what it receives, with
+/// `setxkbmap` on PATH. Each test types, reloads the keymap the way a layout
+/// re-apply or resume does, then types again through `prepare_enigo`, the
+/// function the paste path calls.
+#[cfg(all(test, target_os = "linux"))]
+mod x11_keymap_reload_tests {
+    use super::*;
+
+    fn type_around_keymap_reload(refresh: bool) {
+        let mut slot = None;
+        let enigo = prepare_enigo(&mut slot, false).unwrap();
+        // Capital letters are not on the first level of the US layout, so
+        // enigo binds them to spare keycodes here.
+        paste_text_direct(enigo, "Hello World ").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(500));
+
+        let status = std::process::Command::new("setxkbmap")
+            .arg("us")
+            .status()
+            .unwrap();
+        assert!(status.success(), "setxkbmap failed: {status}");
+        std::thread::sleep(std::time::Duration::from_millis(500));
+
+        let started = std::time::Instant::now();
+        let enigo = prepare_enigo(&mut slot, refresh).unwrap();
+        println!(
+            "prepare_enigo(refresh: {refresh}) took {:?}",
+            started.elapsed()
+        );
+        paste_text_direct(enigo, "Hello World Again\n").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+
+    #[test]
+    #[ignore = "needs an X server and a window capturing input"]
+    fn long_lived_enigo_after_keymap_reload() {
+        type_around_keymap_reload(false);
+    }
+
+    #[test]
+    #[ignore = "needs an X server and a window capturing input"]
+    fn refreshed_enigo_after_keymap_reload() {
+        type_around_keymap_reload(true);
+    }
 }

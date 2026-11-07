@@ -25,6 +25,30 @@ fn with_enigo<T: Send + 'static>(
     app_handle: &AppHandle,
     f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
+    run_with_enigo(app_handle, false, f)
+}
+
+/// Like `with_enigo`, for injecting a paste. On X11 it first replaces the
+/// shared Enigo with a fresh instance: a long-lived instance keeps keycode
+/// bindings that an external keymap reload has discarded, and the characters
+/// that used them (capital letters among them) are then silently dropped
+/// (see `input::refresh_enigo`). Other platforms keep their long-lived instance.
+fn with_paste_enigo<T: Send + 'static>(
+    app_handle: &AppHandle,
+    f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    #[cfg(target_os = "linux")]
+    let refresh = !is_wayland();
+    #[cfg(not(target_os = "linux"))]
+    let refresh = false;
+    run_with_enigo(app_handle, refresh, f)
+}
+
+fn run_with_enigo<T: Send + 'static>(
+    app_handle: &AppHandle,
+    refresh: bool,
+    f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
     let (tx, rx) = mpsc::sync_channel(1);
     let app = app_handle.clone();
     app_handle
@@ -33,11 +57,11 @@ fn with_enigo<T: Send + 'static>(
                 let enigo_state = app
                     .try_state::<EnigoState>()
                     .ok_or("Enigo state not initialized")?;
-                let mut enigo = enigo_state
+                let mut slot = enigo_state
                     .0
                     .lock()
                     .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-                f(&mut enigo)
+                f(input::prepare_enigo(&mut slot, refresh)?)
             })();
             let _ = tx.send(result);
         })
@@ -107,7 +131,7 @@ fn paste_via_clipboard(
         // Fall back to enigo if no native tool handled it
         if !key_combo_sent {
             let paste_method = *paste_method;
-            with_enigo(app_handle, move |enigo| match paste_method {
+            with_paste_enigo(app_handle, move |enigo| match paste_method {
                 // The legacy path cannot detect a mistimed chord, so it keeps the
                 // conservative 100ms modifier hold.
                 PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
@@ -765,7 +789,7 @@ fn paste_direct(
     }
 
     let text = text.to_string();
-    with_enigo(app_handle, move |enigo| {
+    with_paste_enigo(app_handle, move |enigo| {
         input::paste_text_direct(enigo, &text)
     })
 }

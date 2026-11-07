@@ -146,8 +146,10 @@ fn settle(
             }
             None => {
                 if let Some(enigo_state) = app_handle.try_state::<EnigoState>() {
-                    if let Ok(mut e) = enigo_state.0.lock() {
-                        let _ = send_return_key(&mut e, p.auto_submit_key);
+                    if let Ok(mut slot) = enigo_state.0.lock() {
+                        if let Some(e) = slot.as_mut() {
+                            let _ = send_return_key(e, p.auto_submit_key);
+                        }
                     }
                 }
             }
