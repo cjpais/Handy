@@ -3,7 +3,7 @@ use super::model_capabilities::{
 };
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
-use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
+use hf_hub::api::tokio::{ApiBuilder, CancellationToken};
 use hf_hub::{Cache, Repo, RepoType};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -13,14 +13,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 
 mod download;
+mod hf_download;
 
-use download::{
-    HttpDownloadOutcome, RateMeter, DOWNLOAD_STALL_TIMEOUT, PROGRESS_THROTTLE, PROGRESS_TICK,
-};
+use download::{HttpDownloadOutcome, DOWNLOAD_STALL_TIMEOUT, PROGRESS_TICK};
+use hf_download::HfDownloadProgress;
 
 /// Where a model comes from and how Handy obtains it — the routing discriminant
 /// for downloading and on-disk resolution.
@@ -580,147 +580,6 @@ struct FileTransfer<'a> {
     filename: &'a str,
     mirrors: Vec<crate::catalog::MirrorFile>,
     progress: ProgressTarget,
-}
-
-/// Bridges hf-hub's async download progress to Handy's `model-download-progress`
-/// event. hf-hub clones the reporter, so shared state lives behind an `Arc`.
-#[derive(Clone)]
-struct HfDownloadProgress {
-    app_handle: AppHandle,
-    target: ProgressTarget,
-    state: Arc<Mutex<HfProgressState>>,
-}
-
-/// `(downloaded, total, bytes_per_sec)` to emit.
-type HfProgressSnapshot = (u64, u64, Option<f64>);
-
-struct HfProgressState {
-    total: u64,
-    downloaded: u64,
-    /// `None` until hf-hub reports the resume offset; see [`Self::on_update`].
-    rate: Option<RateMeter>,
-    last_emit: Instant,
-    /// Every callback (even throttled-out ones) bumps this; the stall watchdog
-    /// reads it. Starts at construction so a hang before the first byte —
-    /// e.g. a wedged metadata/resolve request — also counts as a stall.
-    last_activity: Instant,
-}
-
-impl HfProgressState {
-    fn new(now: Instant) -> Self {
-        Self {
-            total: 0,
-            downloaded: 0,
-            rate: None,
-            last_emit: now,
-            last_activity: now,
-        }
-    }
-
-    fn on_init(&mut self, size: u64, now: Instant) {
-        self.total = size;
-        self.downloaded = 0;
-        self.rate = None;
-        self.last_activity = now;
-    }
-
-    fn on_update(&mut self, size: u64, now: Instant) -> Option<HfProgressSnapshot> {
-        self.last_activity = now;
-        let Some(rate) = self.rate.as_mut() else {
-            // hf-hub's first `update(start)` after `init` is the resume offset already
-            // on disk, not transfer: use it as the rate baseline and emit it at once
-            // so the bar doesn't flash 0%.
-            self.downloaded = size;
-            self.rate = Some(RateMeter::new(size));
-            self.last_emit = now;
-            return Some((self.downloaded, self.total, None));
-        };
-        self.downloaded = self.downloaded.saturating_add(size);
-        // Throttle, but always emit the final byte.
-        let done = self.total > 0 && self.downloaded >= self.total;
-        if !done && now.duration_since(self.last_emit) < PROGRESS_THROTTLE {
-            return None;
-        }
-        self.last_emit = now;
-        Some((
-            self.downloaded,
-            self.total,
-            rate.sample(self.downloaded, now),
-        ))
-    }
-
-    /// Re-emit during a lull so the rate decays instead of freezing.
-    fn on_tick(&mut self, now: Instant) -> Option<HfProgressSnapshot> {
-        let rate = self.rate.as_mut()?;
-        if now.duration_since(self.last_emit) < PROGRESS_TICK {
-            return None;
-        }
-        self.last_emit = now;
-        Some((
-            self.downloaded,
-            self.total,
-            rate.sample(self.downloaded, now),
-        ))
-    }
-}
-
-impl HfDownloadProgress {
-    fn new(app_handle: AppHandle, target: ProgressTarget) -> Self {
-        Self {
-            app_handle,
-            target,
-            state: Arc::new(Mutex::new(HfProgressState::new(Instant::now()))),
-        }
-    }
-
-    /// Instant of the most recent sign of life from the transfer.
-    fn last_activity(&self) -> Instant {
-        self.state.lock().unwrap().last_activity
-    }
-
-    /// Called periodically by the stall watchdog.
-    fn tick(&self) {
-        let snapshot = self.state.lock().unwrap().on_tick(Instant::now());
-        if let Some(snapshot) = snapshot {
-            self.emit(snapshot);
-        }
-    }
-
-    fn emit(&self, (downloaded, total, bytes_per_sec): HfProgressSnapshot) {
-        let _ = self.app_handle.emit(
-            "model-download-progress",
-            &self.target.progress(downloaded, total, bytes_per_sec),
-        );
-    }
-}
-
-impl Progress for HfDownloadProgress {
-    async fn init(&mut self, size: usize, _filename: &str) {
-        // No emit: the resume offset follows immediately (see `on_update`).
-        self.state
-            .lock()
-            .unwrap()
-            .on_init(size as u64, Instant::now());
-    }
-
-    async fn update(&mut self, size: usize) {
-        let snapshot = self
-            .state
-            .lock()
-            .unwrap()
-            .on_update(size as u64, Instant::now());
-        if let Some(snapshot) = snapshot {
-            self.emit(snapshot);
-        }
-    }
-
-    async fn finish(&mut self) {
-        let total = {
-            let st = self.state.lock().unwrap();
-            st.total.max(st.downloaded)
-        };
-        self.emit((total, total, None));
-    }
 }
 
 /// RAII guard that clears the `is_rescanning` single-flight flag on drop, so the
@@ -2043,8 +1902,18 @@ impl ModelManager {
                 RepoType::Model,
                 revision.clone(),
             ));
-            let progress =
-                HfDownloadProgress::new(self.app_handle.clone(), transfer.progress.clone());
+            let attempt_token = cancel_token.child_token();
+            let app_handle = self.app_handle.clone();
+            let target = transfer.progress.clone();
+            let progress = HfDownloadProgress::new(
+                attempt_token.clone(),
+                move |downloaded, total, bytes_per_sec| {
+                    let _ = app_handle.emit(
+                        "model-download-progress",
+                        target.progress(downloaded, total, bytes_per_sec),
+                    );
+                },
+            );
 
             // hf-hub has no internal timeouts, so a wedged connection would
             // otherwise hang this attempt forever and neither the retry loop
@@ -2052,7 +1921,6 @@ impl ModelManager {
             // per-attempt child token when progress goes stale; a user cancel
             // on the parent propagates through the same child. Each wake also
             // re-emits progress, so the reported rate decays through a lull.
-            let attempt_token = cancel_token.child_token();
             let watchdog = tokio::spawn({
                 let probe = progress.clone();
                 let attempt_token = attempt_token.clone();
@@ -2079,7 +1947,7 @@ impl ModelManager {
             // which aborts whatever request it was wedged in.
             let mut download = std::pin::pin!(repo.download_with_progress_cancellable(
                 filename,
-                progress,
+                progress.clone(),
                 attempt_token.clone()
             ));
             let result = tokio::select! {
@@ -2092,6 +1960,20 @@ impl ModelManager {
                 }
             };
             watchdog.abort();
+
+            // A live stream can exceed the byte budget without ever stalling.
+            // Skip further HF retries and reach the bounded, verified mirror.
+            if let Some((expected, received)) = progress.exceeded_total() {
+                if cancel_token.is_cancelled() {
+                    info!("HF download cancelled for: {}", model_id);
+                    return Ok(false);
+                }
+                break Some(anyhow::anyhow!(
+                    "HF download exceeded the expected {} bytes (received {}); server may have ignored Range requests",
+                    expected,
+                    received
+                ));
+            }
 
             match result {
                 Ok(_) => break None,
