@@ -784,7 +784,9 @@
       "historyLimit": {
         "title": "हिस्ट्री सीमा",
         "description": "राखिने अधिकतम हिस्ट्री प्रविष्टिहरूको सङ्ख्या",
-        "entries": "प्रविष्टिहरू"
+        "entries": "प्रविष्टिहरू",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "रेकर्डिङहरू स्वतः मेटाउनुहोस्",
@@ -794,7 +796,9 @@
         "days3": "3 दिनपछि",
         "weeks2": "2 हप्तापछि",
         "months3": "3 महिनापछि",
-        "placeholder": "राख्ने अवधि चयन गर्नुहोस्..."
+        "placeholder": "राख्ने अवधि चयन गर्नुहोस्...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "सधैँ-सक्रिय माइक्रोफोन",

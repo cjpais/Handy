@@ -784,7 +784,9 @@
       "historyLimit": {
         "title": "Historikgrænse",
         "description": "Maksimalt antal historikposter, der skal beholdes",
-        "entries": "poster"
+        "entries": "poster",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "Automatisk sletning af optagelser",
@@ -794,7 +796,9 @@
         "days3": "Efter 3 dage",
         "weeks2": "Efter 2 uger",
         "months3": "Efter 3 måneder",
-        "placeholder": "Vælg opbevaringsperiode..."
+        "placeholder": "Vælg opbevaringsperiode...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "Altid aktiv mikrofon",

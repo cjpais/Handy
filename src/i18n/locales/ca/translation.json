@@ -784,7 +784,9 @@
       "historyLimit": {
         "title": "Límit de l'historial",
         "description": "Nombre màxim d'entrades de l'historial que es conservaran",
-        "entries": "entrades"
+        "entries": "entrades",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "Supressió automàtica d'enregistraments",
@@ -794,7 +796,9 @@
         "days3": "Al cap de 3 dies",
         "weeks2": "Al cap de 2 setmanes",
         "months3": "Al cap de 3 mesos",
-        "placeholder": "Selecciona el període de conservació..."
+        "placeholder": "Selecciona el període de conservació...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "Micròfon sempre actiu",

@@ -784,7 +784,9 @@
       "historyLimit": {
         "title": "Geschiedenislimiet",
         "description": "Maximum aantal te bewaren geschiedenisitems",
-        "entries": "items"
+        "entries": "items",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "Opnames automatisch verwijderen",
@@ -794,7 +796,9 @@
         "days3": "Na 3 dagen",
         "weeks2": "Na 2 weken",
         "months3": "Na 3 maanden",
-        "placeholder": "Selecteer bewaarperiode..."
+        "placeholder": "Selecteer bewaarperiode...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "Microfoon altijd aan",
