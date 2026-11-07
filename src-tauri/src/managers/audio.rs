@@ -6,6 +6,7 @@ use crate::audio_toolkit::{
     },
     CaptureSink, CaptureVad, SileroVad, SpeechScorer, VadPolicy, VoiceActivityDetector,
 };
+use crate::diagnostics::{self, Args, Code, Name, RunId};
 use crate::helpers::clamshell;
 use crate::managers::transcription::StreamRouter;
 use crate::notices::NoticeCode;
@@ -239,7 +240,12 @@ const WHISPER_SAMPLE_RATE: usize = 16000;
 #[derive(Clone, Debug)]
 pub enum RecordingState {
     Idle,
-    Recording { binding_id: String },
+    Recording {
+        binding_id: String,
+        /// The diagnostics run this take belongs to. Travels with the
+        /// recording so `stop_recording` can stamp spans without a global.
+        run: RunId,
+    },
     Stopping,
 }
 
@@ -305,6 +311,25 @@ impl OpenMicrophone {
     }
 }
 
+/// What a finished recording hands back: the samples that passed the VAD
+/// policy, and the diagnostics run they belong to.
+pub struct StoppedRecording {
+    pub samples: Vec<f32>,
+    pub run: RunId,
+    /// Microphone frames the recorder dropped during the take.
+    pub dropped_frames: u64,
+    /// Why the recorder ended the take early, if it failed. Fixed
+    /// vocabulary; the error text stays in the log.
+    pub recorder_failure: Option<Code>,
+}
+
+/// What stopping the recorder produced, before the VAD detector is reused.
+struct CollectedAudio {
+    samples: Vec<f32>,
+    dropped_frames: u64,
+    failure: Option<Code>,
+}
+
 /// The notice for a recording that couldn't start.
 pub fn recording_notice_code(error: &anyhow::Error) -> NoticeCode {
     match error
@@ -316,6 +341,16 @@ pub fn recording_notice_code(error: &anyhow::Error) -> NoticeCode {
         // means there is no input device at all.
         Some(ErrorKind::DeviceUnavailable) => NoticeCode::NoMicrophone,
         _ => NoticeCode::RecordingFailed,
+    }
+}
+
+/// Trace code for a failed start, from the same classification the UI event
+/// uses. Fixed vocabulary: no error text reaches the trace.
+pub(crate) fn code_from_recording_error(error: &anyhow::Error) -> Code {
+    match recording_notice_code(error) {
+        NoticeCode::MicPermissionDenied => Code::MicrophonePermissionDenied,
+        NoticeCode::NoMicrophone => Code::NoInputDevice,
+        _ => Code::Unknown,
     }
 }
 
@@ -956,19 +991,21 @@ impl AudioRecordingManager {
 
     /// Stops the recording on `microphone`, returning its audio and taking
     /// back the detector it borrowed.
-    fn collect_recording(&self, microphone: &OpenMicrophone) -> Vec<f32> {
+    fn collect_recording(&self, microphone: &OpenMicrophone) -> CollectedAudio {
         match microphone.recorder.stop() {
             Ok(stopped) => {
-                match &stopped.end_reason {
-                    EndReason::StopCalled => {}
+                let failure = match &stopped.end_reason {
+                    EndReason::StopCalled => None,
                     EndReason::RecorderFailed(error) => {
                         microphone.failed.store(true, Ordering::Release);
                         warn!("Recording cut short by a microphone failure; keeping the audio before it: {error}");
+                        Some(Code::RecorderFailed)
                     }
                     EndReason::SinkPanicked(message) => {
                         error!("Recording cut short; audio processing panicked: {message}");
+                        Some(Code::SinkPanicked)
                     }
-                }
+                };
                 if stopped.dropped_frames > 0 {
                     warn!(
                         "Recording completed after dropping {} microphone frames",
@@ -979,7 +1016,11 @@ impl AudioRecordingManager {
                 self.return_vad(captured.vad);
                 self.last_input_silent
                     .store(captured.input_silent, Ordering::Release);
-                captured.samples
+                CollectedAudio {
+                    samples: captured.samples,
+                    dropped_frames: stopped.dropped_frames,
+                    failure,
+                }
             }
             Err(e) => {
                 // The recording and its detector are lost with the sink.
@@ -989,7 +1030,11 @@ impl AudioRecordingManager {
                     microphone.failed.store(true, Ordering::Release);
                 }
                 *self.vad.lock().unwrap() = VadSlot::Unloaded;
-                Vec::new()
+                CollectedAudio {
+                    samples: Vec::new(),
+                    dropped_frames: 0,
+                    failure: None,
+                }
             }
         }
     }
@@ -1038,6 +1083,21 @@ impl AudioRecordingManager {
         &self,
         binding_id: &str,
         vad_policy: VadPolicy,
+        run: RunId,
+    ) -> Result<RecordingReadiness, anyhow::Error> {
+        let span = diagnostics::span(run, Name::MicOpen);
+        let result = self.try_start_recording_inner(binding_id, vad_policy, run);
+        span.end(Args::code(
+            result.as_ref().err().map(code_from_recording_error),
+        ));
+        result
+    }
+
+    fn try_start_recording_inner(
+        &self,
+        binding_id: &str,
+        vad_policy: VadPolicy,
+        run: RunId,
     ) -> Result<RecordingReadiness, anyhow::Error> {
         let mut state = self.state.lock().unwrap();
         if !matches!(*state, RecordingState::Idle) {
@@ -1068,6 +1128,7 @@ impl AudioRecordingManager {
                 Arc::clone(&self.on_levels),
                 Arc::clone(&self.on_audio),
                 ready_tx,
+                run,
             );
 
             let recorder = self.recorder.lock().unwrap();
@@ -1083,6 +1144,7 @@ impl AudioRecordingManager {
                         &mut state,
                         RecordingState::Recording {
                             binding_id: binding_id.to_string(),
+                            run,
                         },
                     );
                     debug!("Recording requested for binding {binding_id}");
@@ -1241,13 +1303,31 @@ impl AudioRecordingManager {
         self.cancel_generation.load(Ordering::Acquire) != generation
     }
 
-    pub fn stop_recording(&self, binding_id: &str, cancel_generation: u64) -> Option<Vec<f32>> {
+    /// The diagnostics run of the recording active for `binding_id`, if any.
+    /// Lets a caller open a span around the whole stop drain, before the run
+    /// leaves the state with the samples.
+    pub fn active_run(&self, binding_id: &str) -> Option<RunId> {
+        match &*self.state.lock().unwrap() {
+            RecordingState::Recording {
+                binding_id: active,
+                run,
+            } if active == binding_id => Some(*run),
+            _ => None,
+        }
+    }
+
+    pub fn stop_recording(
+        &self,
+        binding_id: &str,
+        cancel_generation: u64,
+    ) -> Option<StoppedRecording> {
         self.invalidate_recording_readiness();
         let mut state = self.state.lock().unwrap();
 
         match *state {
             RecordingState::Recording {
                 binding_id: ref active,
+                run,
             } if active == binding_id => {
                 self.set_state(&mut state, RecordingState::Stopping);
                 drop(state);
@@ -1274,12 +1354,16 @@ impl AudioRecordingManager {
                     }
                 }
 
-                let samples = match self.recorder.lock().unwrap().as_ref() {
+                let collected = match self.recorder.lock().unwrap().as_ref() {
                     Some(microphone) => self.collect_recording(microphone),
                     None => {
                         error!("Recorder not available");
                         self.last_input_silent.store(false, Ordering::Release);
-                        Vec::new()
+                        CollectedAudio {
+                            samples: Vec::new(),
+                            dropped_frames: 0,
+                            failure: None,
+                        }
                     }
                 };
 
@@ -1297,18 +1381,36 @@ impl AudioRecordingManager {
 
                 if self.was_cancelled_since(cancel_generation) {
                     debug!("Recording stop cancelled; discarding captured samples");
-                    return None;
+                    // The run travels back even with no samples: a cancel that
+                    // arrived mid-stop must still end its spans (cancelled),
+                    // which the caller can only do with the id.
+                    return Some(StoppedRecording {
+                        samples: Vec::new(),
+                        run,
+                        dropped_frames: collected.dropped_frames,
+                        recorder_failure: collected.failure,
+                    });
                 }
 
                 // Pad if very short
-                let s_len = samples.len();
+                let s_len = collected.samples.len();
                 // debug!("Got {} samples", s_len);
                 if s_len < WHISPER_SAMPLE_RATE && s_len > 0 {
-                    let mut padded = samples;
+                    let mut padded = collected.samples;
                     padded.resize(WHISPER_SAMPLE_RATE * 5 / 4, 0.0);
-                    Some(padded)
+                    Some(StoppedRecording {
+                        samples: padded,
+                        run,
+                        dropped_frames: collected.dropped_frames,
+                        recorder_failure: collected.failure,
+                    })
                 } else {
-                    Some(samples)
+                    Some(StoppedRecording {
+                        samples: collected.samples,
+                        run,
+                        dropped_frames: collected.dropped_frames,
+                        recorder_failure: collected.failure,
+                    })
                 }
             }
             _ => None,
@@ -1330,7 +1432,7 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         match *state {
-            RecordingState::Recording { .. } => {
+            RecordingState::Recording { run, .. } => {
                 self.set_state(&mut state, RecordingState::Idle);
                 drop(state);
 
@@ -1348,6 +1450,11 @@ impl AudioRecordingManager {
                         self.stop_microphone_stream();
                     }
                 }
+
+                // The take is discarded, so its spans end here with a cancel
+                // code rather than waiting incomplete at capture stop.
+                diagnostics::end(run, Name::Recording, Args::default());
+                diagnostics::end(run, Name::Run, Args::code(Code::Cancelled));
             }
             RecordingState::Stopping => {
                 debug!("Cancellation requested while recording is stopping");

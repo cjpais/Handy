@@ -719,6 +719,18 @@
       "dropDescription": "سيظهر في السجل."
     },
     "debug": {
+      "diagnostics": {
+        "title": "التقاط التشخيص",
+        "description": "تسجيل تشخيصات التوقيت لجلسة دعم.",
+        "start": "بدء التشخيص",
+        "stopAndSave": "إيقاف وحفظ",
+        "active": "جارٍ تسجيل التشخيص",
+        "counts": "{{events}} أحداث، تم إسقاط {{dropped}}",
+        "savedTo": "تم الحفظ في {{path}}",
+        "reveal": "إظهار",
+        "privacyNote": "بيانات التوقيت فقط — لا يتم تسجيل الصوت أو النص المنسوخ.",
+        "error": "فشل التشخيص: {{message}}"
+      },
       "title": "تصحيح الأخطاء",
       "logDirectory": {
         "title": "مجلد السجلات",

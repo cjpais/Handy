@@ -719,6 +719,18 @@
       "dropDescription": "它会出现在历史记录中。"
     },
     "debug": {
+      "diagnostics": {
+        "title": "诊断捕获",
+        "description": "为支持会话记录计时诊断数据。",
+        "start": "开始诊断",
+        "stopAndSave": "停止并保存",
+        "active": "正在记录诊断",
+        "counts": "{{events}} 个事件，{{dropped}} 个已丢弃",
+        "savedTo": "已保存到 {{path}}",
+        "reveal": "显示",
+        "privacyNote": "仅记录计时数据——不会记录音频或转录文本。",
+        "error": "诊断失败：{{message}}"
+      },
       "title": "调试",
       "logDirectory": {
         "title": "日志目录",

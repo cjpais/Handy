@@ -719,6 +719,18 @@
       "dropDescription": "הוא יופיע בהיסטוריה."
     },
     "debug": {
+      "diagnostics": {
+        "title": "לכידת אבחון",
+        "description": "מקליט אבחון תזמון עבור שיחת תמיכה.",
+        "start": "התחל אבחון",
+        "stopAndSave": "עצור ושמור",
+        "active": "מקליט אבחון",
+        "counts": "{{events}} אירועים, {{dropped}} הושמטו",
+        "savedTo": "נשמר ב-{{path}}",
+        "reveal": "הצג",
+        "privacyNote": "נתוני תזמון בלבד — לא נרשמים אודיו או טקסט מתועתק.",
+        "error": "האבחון נכשל: {{message}}"
+      },
       "title": "ניפוי שגיאות",
       "logDirectory": {
         "title": "תיקיית לוגים",
