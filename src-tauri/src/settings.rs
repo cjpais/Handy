@@ -1381,13 +1381,72 @@ fn os_languages() -> &'static [String] {
     }
 }
 
+/// How this build was packaged, as far as the updater is concerned. Mirrors
+/// the Linux cases of `tauri::utils::platform::BundleType`; `Other` covers
+/// every other stamped type and `None` (at the call site) a binary the bundler
+/// did not stamp, such as a source, AUR or other distro build.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+enum BundleKind {
+    AppImage,
+    Deb,
+    Rpm,
+    Other,
+}
+
+/// Whether the updater plugin can install an update on Linux. It runs
+/// `dpkg -i` for a deb build, `rpm -U` for an rpm build, and otherwise swaps
+/// the running AppImage. A build with no bundle type, or one whose tool is
+/// missing (the deb repacked for Arch), would only fail after a password
+/// prompt. Pure so it can be tested on any OS.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn linux_self_update_possible(kind: Option<BundleKind>, has_tool: impl Fn(&str) -> bool) -> bool {
+    match kind {
+        Some(BundleKind::AppImage) => true,
+        Some(BundleKind::Deb) => has_tool("dpkg"),
+        Some(BundleKind::Rpm) => has_tool("rpm"),
+        Some(BundleKind::Other) | None => false,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn self_update_possible() -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    use tauri::utils::platform::{bundle_type, BundleType};
+
+    let kind = bundle_type().map(|b| match b {
+        BundleType::AppImage => BundleKind::AppImage,
+        BundleType::Deb => BundleKind::Deb,
+        BundleType::Rpm => BundleKind::Rpm,
+        _ => BundleKind::Other,
+    });
+    let has_tool = |name: &str| {
+        let path = std::env::var_os("PATH").unwrap_or_default();
+        std::env::split_paths(&path)
+            .chain(["/usr/bin", "/bin", "/usr/sbin", "/sbin"].map(std::path::PathBuf::from))
+            .any(|dir| {
+                std::fs::metadata(dir.join(name))
+                    .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+                    .unwrap_or(false)
+            })
+    };
+    linux_self_update_possible(kind, has_tool)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn self_update_possible() -> bool {
+    true
+}
+
 /// Update checks are forced off (without touching the persisted setting) when
 /// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
-/// can't work against an immutable /nix/store install.
+/// can't work against an immutable /nix/store install — or when this build
+/// cannot install its own update (see `linux_self_update_possible`).
 pub fn update_checks_forced_disabled() -> bool {
     use std::sync::OnceLock;
     static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
-    *IS_UPDATER_DISABLED.get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER"))
+    *IS_UPDATER_DISABLED
+        .get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER") || !self_update_possible())
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`
@@ -2054,5 +2113,35 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn linux_self_update_possible_depends_on_bundle_and_tool() {
+        let all = |_: &str| true;
+        let none = |_: &str| false;
+        let only = |want: &'static str| move |name: &str| name == want;
+
+        assert!(linux_self_update_possible(Some(BundleKind::AppImage), none));
+        assert!(linux_self_update_possible(Some(BundleKind::Deb), all));
+        assert!(linux_self_update_possible(
+            Some(BundleKind::Deb),
+            only("dpkg")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Deb), none));
+        assert!(!linux_self_update_possible(
+            Some(BundleKind::Deb),
+            only("rpm")
+        ));
+        assert!(linux_self_update_possible(
+            Some(BundleKind::Rpm),
+            only("rpm")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Rpm), none));
+        assert!(!linux_self_update_possible(
+            Some(BundleKind::Rpm),
+            only("dpkg")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Other), all));
+        assert!(!linux_self_update_possible(None, all));
     }
 }

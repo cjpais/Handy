@@ -742,7 +742,7 @@
       "updateChecks": {
         "label": "Check for Updates",
         "description": "Automatically check for new versions of Handy",
-        "lockedDescription": "Disabled by system configuration (HANDY_DISABLE_UPDATER)"
+        "lockedDescription": "Disabled by system configuration or because this install cannot update itself"
       },
       "whatsNewPreview": {
         "title": "Preview What's New",
