@@ -94,6 +94,10 @@ fn paste_via_clipboard(
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
+    // A shortcut key still held would merge into the chord (#2051). Waiting
+    // after the delay above lets the two overlap instead of adding up.
+    crate::shortcut::wait_for_shortcut_release(crate::shortcut::PASTE_RELEASE_WAIT_MAX);
+
     // Capture key injection errors so the original clipboard is restored before
     // propagating them to the caller.
     let paste_result = (|| -> Result<(), String> {
@@ -859,6 +863,10 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             // the legacy path untouched.
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             if settings.reliable_paste {
+                // The transaction publishes and sends the chord back to back
+                // on the main thread, so wait for the shortcut keys here on
+                // the worker thread instead of blocking the main thread (#2051).
+                crate::shortcut::wait_for_shortcut_release(crate::shortcut::PASTE_RELEASE_WAIT_MAX);
                 // Runs entirely on the main thread, as it requires.
                 let (text, app) = (text.clone(), app_handle.clone());
                 let (auto_submit, auto_submit_key, clipboard_handling) = (

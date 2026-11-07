@@ -13,6 +13,8 @@ mod handler;
 pub mod handy_keys;
 pub mod tauri_impl;
 
+pub use handler::{wait_for_shortcut_release, PASTE_RELEASE_WAIT_MAX};
+
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
@@ -289,6 +291,8 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
 /// mid-capture. The "cancel" binding is untouched: it is managed dynamically
 /// by the recording lifecycle.
 pub fn suspend_all_shortcuts(app: &AppHandle) {
+    // A release missed while suspended would make every paste wait the full bound.
+    handler::clear_held_bindings();
     for (id, binding) in settings::get_bindings(app) {
         if id == "cancel" {
             continue;
@@ -468,6 +472,8 @@ fn parse_keyboard_implementation(s: &str) -> KeyboardImplementation {
 
 /// Unregister all shortcuts for the current implementation
 fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementation) {
+    // A release missed while unregistered would make every paste wait the full bound.
+    handler::clear_held_bindings();
     let bindings = settings::get_bindings(app);
 
     for (id, binding) in bindings {
