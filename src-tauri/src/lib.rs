@@ -14,6 +14,8 @@ mod helpers;
 mod input;
 mod language_detection;
 mod languages;
+#[cfg(target_os = "linux")]
+mod linux_typing_tools;
 mod llm_client;
 mod managers;
 mod memory;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
@@ -48,8 +48,13 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
       return null;
     }
 
-    const tools = availableTools ?? ["auto"];
-    const typingToolOptions = tools.map((tool) =>
+    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    const tools =
+      availableTools ??
+      ["auto", selectedTool].filter(
+        (tool, index, values) => values.indexOf(tool) === index,
+      );
+    const typingToolOptions: DropdownOption[] = tools.map((tool) =>
       tool === "auto"
         ? {
             value: "auto",
@@ -58,7 +63,16 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         : { value: tool, label: allToolLabels[tool] ?? tool },
     );
 
-    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    if (availableTools !== null && !tools.includes(selectedTool)) {
+      typingToolOptions.push({
+        value: selectedTool,
+        label: t("settings.advanced.typingTool.unavailable", {
+          tool: allToolLabels[selectedTool] ?? selectedTool,
+        }),
+        description: t("settings.advanced.typingTool.unavailableDescription"),
+        disabled: true,
+      });
+    }
 
     return (
       <SettingContainer
@@ -74,7 +88,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
           onSelect={(value) =>
             updateSetting("typing_tool", value as TypingTool)
           }
-          disabled={isUpdating("typing_tool")}
+          disabled={availableTools === null || isUpdating("typing_tool")}
         />
       </SettingContainer>
     );
