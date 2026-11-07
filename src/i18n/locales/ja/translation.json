@@ -68,6 +68,16 @@
         "name": "アクセシビリティ",
         "why": "どのアプリでもショートカットが使え、Handy がカーソル位置にテキストを入力できるようにします。"
       },
+      "remoteDesktop": {
+        "title": "入力の許可",
+        "description": "Handy が音声入力したテキストをアクティブなアプリへ自動的に挿入できるようにします。",
+        "note": "この権限は設定からいつでも無効化または有効化できます。",
+        "button": "自動入力を許可",
+        "skipButton": "今はしない",
+        "warningTooltip": "入力の許可が設定されていません",
+        "configured": "設定済み",
+        "notConfigured": "設定が必要"
+      },
       "errors": {
         "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
         "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
@@ -536,7 +546,14 @@
           "none": "なし",
           "externalScript": "外部スクリプト"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "リクエスト中…",
+          "errors": {
+            "requestFailed": "権限のリクエストに失敗しました。",
+            "revokeFailed": "権限の削除に失敗しました。"
+          }
+        }
       },
       "typingTool": {
         "title": "タイピングツール",
@@ -625,6 +642,11 @@
           "traditionalTw": "繁体字 (台湾)",
           "traditionalHk": "繁体字 (香港)"
         }
+      },
+      "typingDelay": {
+        "title": "入力遅延",
+        "description": "入力イベントを送信する速度を制御します。文字が順序どおりに入力されない場合は、この値を増やしてください。",
+        "unit": "ミリ秒"
       }
     },
     "postProcessing": {

@@ -993,6 +993,18 @@ pub fn change_reliable_paste_setting(app: AppHandle, enabled: bool) -> Result<()
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_remote_desktop_key_event_delay_ms_setting(
+    app: AppHandle,
+    ms: u64,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.remote_desktop_key_event_delay_ms = ms;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match method.as_str() {
@@ -1031,6 +1043,7 @@ pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), St
     let mut settings = settings::get_settings(&app);
     let parsed = match tool.as_str() {
         "auto" => TypingTool::Auto,
+        "remote_desktop" => TypingTool::RemoteDesktop,
         "wtype" => TypingTool::Wtype,
         "kwtype" => TypingTool::Kwtype,
         "dotool" => TypingTool::Dotool,

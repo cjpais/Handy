@@ -68,6 +68,16 @@
         "name": "Erişilebilirlik",
         "why": "Kısayolunuz her uygulamada çalışsın ve Handy metni imlecinizin bulunduğu yere yazabilsin diye."
       },
+      "remoteDesktop": {
+        "title": "Yazma izni",
+        "description": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
+        "note": "Bu izni ayarlardan istediğiniz zaman devre dışı bırakabilir veya etkinleştirebilirsiniz.",
+        "button": "Otomatik yazmaya izin ver",
+        "skipButton": "Şimdi değil",
+        "warningTooltip": "Yazma izni yapılandırılmadı",
+        "configured": "Yapılandırıldı",
+        "notConfigured": "Yapılandırılmalı"
+      },
       "errors": {
         "checkFailed": "İzinler kontrol edilemedi. Lütfen tekrar deneyin.",
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."
@@ -536,7 +546,14 @@
           "none": "Yok",
           "externalScript": "Harici Betik"
         },
-        "externalScriptPlaceholder": "/dosya/yolu/betik.sh"
+        "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
+        "portal": {
+          "buttonRequesting": "İsteniyor…",
+          "errors": {
+            "requestFailed": "İzin isteği başarısız.",
+            "revokeFailed": "İzin kaldırma başarısız."
+          }
+        }
       },
       "typingTool": {
         "title": "Yazma Aracı",
@@ -625,6 +642,11 @@
           "traditionalTw": "Geleneksel (Tayvan)",
           "traditionalHk": "Geleneksel (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "Yazma olaylarının gönderilme hızını kontrol eder. Karakterler yanlış sırayla yazılıyorsa bu değeri artırın.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

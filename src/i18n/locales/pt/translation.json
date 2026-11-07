@@ -68,6 +68,16 @@
         "name": "Acessibilidade",
         "why": "Para o seu atalho funcionar em todos os apps e o Handy digitar o texto onde está o cursor."
       },
+      "remoteDesktop": {
+        "title": "Autorização de digitação",
+        "description": "Permita que o Handy insira automaticamente o texto ditado no aplicativo ativo.",
+        "note": "Você pode desativar ou ativar esta permissão a qualquer momento nas configurações.",
+        "button": "Permitir digitação automática",
+        "skipButton": "Agora não",
+        "warningTooltip": "Autorização de digitação não configurada",
+        "configured": "Configurada",
+        "notConfigured": "A configurar"
+      },
       "errors": {
         "checkFailed": "Erro ao verificar permissões. Por favor, tente novamente.",
         "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."
@@ -536,7 +546,14 @@
           "none": "Nenhum",
           "externalScript": "Script externo"
         },
-        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh",
+        "portal": {
+          "buttonRequesting": "Solicitando…",
+          "errors": {
+            "requestFailed": "Falha ao solicitar autorização.",
+            "revokeFailed": "Falha ao remover autorização."
+          }
+        }
       },
       "typingTool": {
         "title": "Ferramenta de digitação",
@@ -625,6 +642,11 @@
           "traditionalTw": "Tradicional (Taiwan)",
           "traditionalHk": "Tradicional (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Atraso de digitação",
+        "description": "Controla a velocidade usada para enviar eventos de digitação. Aumente este valor se os caracteres forem digitados fora de ordem.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

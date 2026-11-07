@@ -72,6 +72,16 @@
         "checkFailed": "Gagal memeriksa izin. Silakan coba lagi.",
         "requestFailed": "Gagal meminta izin. Silakan coba lagi."
       },
+      "remoteDesktop": {
+        "title": "Izin pengetikan",
+        "description": "Izinkan Handy menyisipkan teks yang didiktekan secara otomatis ke aplikasi aktif.",
+        "note": "Anda dapat menonaktifkan atau mengaktifkan izin ini kapan saja di pengaturan.",
+        "button": "Izinkan pengetikan otomatis",
+        "skipButton": "Tidak sekarang",
+        "warningTooltip": "Izin pengetikan belum dikonfigurasi",
+        "configured": "Dikonfigurasi",
+        "notConfigured": "Konfigurasi diperlukan"
+      },
       "titleMac": "Dua izin, lalu selesai",
       "titleWindows": "Satu izin, lalu selesai",
       "subtitleMac": "macOS meminta persetujuan sebelum aplikasi apa pun dapat mendengar atau mengetik.",
@@ -536,7 +546,14 @@
           "none": "Tidak Ada",
           "externalScript": "Skrip Eksternal"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Meminta…",
+          "errors": {
+            "requestFailed": "Permintaan izin gagal.",
+            "revokeFailed": "Penghapusan izin gagal."
+          }
+        }
       },
       "typingTool": {
         "title": "Alat Pengetikan",
@@ -589,6 +606,11 @@
         "add": "Tambah",
         "remove": "Hapus {{word}}",
         "duplicate": "\"{{word}}\" sudah ada"
+      },
+      "typingDelay": {
+        "title": "Jeda pengetikan",
+        "description": "Kontrol kecepatan pengiriman peristiwa pengetikan. Tingkatkan nilai ini jika karakter diketik tidak berurutan.",
+        "unit": "ms"
       },
       "voiceActivityDetection": {
         "title": "Deteksi Aktivitas Suara",

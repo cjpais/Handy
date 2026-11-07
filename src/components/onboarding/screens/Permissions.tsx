@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { Keyboard, Mic } from "lucide-react";
+import { Keyboard, Mic, ScreenShare } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { Spinner } from "../../ui/Spinner";
 import { TextLink } from "../../ui/TextLink";
@@ -87,7 +87,7 @@ interface PermissionsProps {
   onContinue: () => void;
 }
 
-/** Screen 2: microphone, plus Accessibility on macOS, granted in order. */
+/** Permission rows for the current platform, with optional Wayland typing. */
 export const Permissions: React.FC<PermissionsProps> = ({
   permissions,
   progress,
@@ -97,6 +97,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
   const { t } = useTranslation();
   const { welcomeBack, preview, set } = useOnboardingStore();
   const isMac = permissions.platform === "macos";
+  const isWayland = permissions.platform === "linux-wayland";
   const rows = isMac
     ? (["microphone", "accessibility"] as const)
     : (["microphone"] as const);
@@ -121,7 +122,7 @@ export const Permissions: React.FC<PermissionsProps> = ({
       progress={progress}
       onBack={onBack}
       hint={
-        permissions.allGranted
+        permissions.allGranted || isWayland
           ? ""
           : t(
               isMac
@@ -130,17 +131,29 @@ export const Permissions: React.FC<PermissionsProps> = ({
             )
       }
       primary={
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!permissions.allGranted}
-          onClick={() => {
-            if (welcomeBack) set({ welcomeBack: false });
-            onContinue();
-          }}
-        >
-          {t("onboarding.shell.continue")}
-        </Button>
+        <>
+          {isWayland && !permissions.allGranted && (
+            <Button
+              variant="secondary"
+              size="lg"
+              disabled={permissions.remoteDesktop === "waiting"}
+              onClick={onContinue}
+            >
+              {t("onboarding.permissions.remoteDesktop.skipButton")}
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            size="lg"
+            disabled={!permissions.allGranted}
+            onClick={() => {
+              if (welcomeBack) set({ welcomeBack: false });
+              onContinue();
+            }}
+          >
+            {t("onboarding.shell.continue")}
+          </Button>
+        </>
       }
     >
       <ScreenMain
@@ -155,36 +168,52 @@ export const Permissions: React.FC<PermissionsProps> = ({
               )
             }
             title={t(
-              isMac
-                ? "onboarding.permissions.titleMac"
-                : "onboarding.permissions.titleWindows",
+              isWayland
+                ? "onboarding.permissions.remoteDesktop.title"
+                : isMac
+                  ? "onboarding.permissions.titleMac"
+                  : "onboarding.permissions.titleWindows",
             )}
             sub={t(
-              isMac
-                ? "onboarding.permissions.subtitleMac"
-                : "onboarding.permissions.subtitleWindows",
+              isWayland
+                ? "onboarding.permissions.remoteDesktop.note"
+                : isMac
+                  ? "onboarding.permissions.subtitleMac"
+                  : "onboarding.permissions.subtitleWindows",
             )}
           />
         }
       >
         <div className="flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
-          <PermissionRow
-            icon={<Mic size={20} aria-hidden="true" />}
-            title={t("onboarding.permissions.microphone.name")}
-            why={t("onboarding.permissions.microphone.why")}
-            status={permissions.microphone}
-            next={next === "microphone"}
-            action={t(
-              permissions.microphoneAsked && isMac
-                ? "onboarding.permissions.openSettings"
-                : "onboarding.permissions.allow",
-            )}
-            instruction={micInSettings ? turnOn : undefined}
-            onRequest={() => {
-              setMicInSettings(!isMac || permissions.microphoneAsked);
-              permissions.requestMicrophone();
-            }}
-          />
+          {isWayland ? (
+            <PermissionRow
+              icon={<ScreenShare size={20} aria-hidden="true" />}
+              title={t("onboarding.permissions.remoteDesktop.title")}
+              why={t("onboarding.permissions.remoteDesktop.description")}
+              status={permissions.remoteDesktop}
+              next
+              action={t("onboarding.permissions.remoteDesktop.button")}
+              onRequest={permissions.requestRemoteDesktop}
+            />
+          ) : (
+            <PermissionRow
+              icon={<Mic size={20} aria-hidden="true" />}
+              title={t("onboarding.permissions.microphone.name")}
+              why={t("onboarding.permissions.microphone.why")}
+              status={permissions.microphone}
+              next={next === "microphone"}
+              action={t(
+                permissions.microphoneAsked && isMac
+                  ? "onboarding.permissions.openSettings"
+                  : "onboarding.permissions.allow",
+              )}
+              instruction={micInSettings ? turnOn : undefined}
+              onRequest={() => {
+                setMicInSettings(!isMac || permissions.microphoneAsked);
+                permissions.requestMicrophone();
+              }}
+            />
+          )}
           {isMac && (
             <PermissionRow
               icon={<Keyboard size={20} aria-hidden="true" />}

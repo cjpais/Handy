@@ -72,6 +72,16 @@
         "checkFailed": "अनुमतियां जांची नहीं जा सकीं. कृपया फिर से कोशिश करें.",
         "requestFailed": "अनुमति मांगी नहीं जा सकी. कृपया फिर से कोशिश करें."
       },
+      "remoteDesktop": {
+        "title": "टाइपिंग की अनुमति",
+        "description": "Handy को सक्रिय ऐप में बोला गया टेक्स्ट अपने आप डालने दें।",
+        "note": "आप सेटिंग्स में इस अनुमति को कभी भी चालू या बंद कर सकते हैं।",
+        "button": "अपने आप टाइप करने दें",
+        "skipButton": "अभी नहीं",
+        "warningTooltip": "टाइपिंग की अनुमति कॉन्फ़िगर नहीं है",
+        "configured": "कॉन्फ़िगर किया गया",
+        "notConfigured": "कॉन्फ़िगरेशन आवश्यक है"
+      },
       "titleMac": "दो अनुमतियां, फिर आप तैयार",
       "titleWindows": "एक अनुमति, फिर आप तैयार",
       "subtitleMac": "कोई भी ऐप सुन या टाइप कर सके, इससे पहले macOS आपसे पूछता है.",
@@ -536,7 +546,14 @@
           "none": "कोई नहीं",
           "externalScript": "बाहरी स्क्रिप्ट"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "अनुमति माँगी जा रही है…",
+          "errors": {
+            "requestFailed": "अनुमति का अनुरोध विफल रहा।",
+            "revokeFailed": "अनुमति हटाना विफल रहा।"
+          }
+        }
       },
       "typingTool": {
         "title": "टाइपिंग टूल",
@@ -589,6 +606,11 @@
         "add": "जोड़ें",
         "remove": "{{word}} हटाएं",
         "duplicate": "\"{{word}}\" पहले से मौजूद है"
+      },
+      "typingDelay": {
+        "title": "टाइपिंग में देरी",
+        "description": "टाइपिंग इवेंट भेजने की गति नियंत्रित करें। यदि अक्षर गलत क्रम में टाइप हों तो यह मान बढ़ाएँ।",
+        "unit": "ms"
       },
       "voiceActivityDetection": {
         "title": "वॉइस एक्टिविटी डिटेक्शन",

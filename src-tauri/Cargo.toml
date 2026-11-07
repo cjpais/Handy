@@ -63,6 +63,7 @@ symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "ai
 rubato = "5"
 handy-recorder = "0.1"
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
+unicode-normalization = "0.1.23"
 futures-util = "0.3"
 rustfft = "6.4.0"
 strsim = "0.11.0"
@@ -167,6 +168,7 @@ objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
+ashpd = "0.12.1"
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 # Renderer policy in src/webkit_renderer.rs compares the linked WebKitGTK
 # version against the release that introduced damage-based compositing.
@@ -176,6 +178,8 @@ transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
+wayland-client = "0.31.12"
+xkbcommon = { version = "0.9.0", features = ["wayland"] }
 
 # TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
 # (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →

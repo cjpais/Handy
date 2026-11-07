@@ -72,6 +72,16 @@
         "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
       },
+      "remoteDesktop": {
+        "title": "Typemachtiging",
+        "description": "Sta Handy toe om gedicteerde tekst automatisch in de actieve app in te voegen.",
+        "note": "Je kunt deze toestemming op elk moment in de instellingen in- of uitschakelen.",
+        "button": "Automatisch typen toestaan",
+        "skipButton": "Niet nu",
+        "warningTooltip": "Typemachtiging niet ingesteld",
+        "configured": "Ingesteld",
+        "notConfigured": "Configuratie vereist"
+      },
       "titleMac": "Twee machtigingen, en klaar",
       "titleWindows": "Eén machtiging, en klaar",
       "subtitleMac": "macOS vraagt eerst toestemming voordat een app kan luisteren of typen.",
@@ -536,7 +546,14 @@
           "none": "Geen",
           "externalScript": "Extern script"
         },
-        "externalScriptPlaceholder": "/pad/naar/je/script.sh"
+        "externalScriptPlaceholder": "/pad/naar/je/script.sh",
+        "portal": {
+          "buttonRequesting": "Aanvragen…",
+          "errors": {
+            "requestFailed": "Toestemming aanvragen mislukt.",
+            "revokeFailed": "Toestemming intrekken mislukt."
+          }
+        }
       },
       "typingTool": {
         "title": "Typgereedschap",
@@ -589,6 +606,11 @@
         "add": "Toevoegen",
         "remove": "{{word}} verwijderen",
         "duplicate": "\"{{word}}\" bestaat al"
+      },
+      "typingDelay": {
+        "title": "Typevertraging",
+        "description": "Bepaal de snelheid waarmee toetsaanslagen worden verstuurd. Verhoog deze waarde als tekens in de verkeerde volgorde verschijnen.",
+        "unit": "ms"
       },
       "voiceActivityDetection": {
         "title": "Spraakactiviteitsdetectie (VAD)",

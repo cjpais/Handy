@@ -68,6 +68,16 @@
         "name": "輔助使用",
         "why": "讓快捷鍵在每個應用程式中都能使用，也讓 Handy 能把文字打在游標所在的位置。"
       },
+      "remoteDesktop": {
+        "title": "輸入授權",
+        "description": "允許 Handy 將聽寫文字自動插入目前作用中的應用程式。",
+        "note": "你可以隨時在設定中停用或啟用此權限。",
+        "button": "允許自動輸入",
+        "skipButton": "暫時不要",
+        "warningTooltip": "輸入授權尚未設定",
+        "configured": "已設定",
+        "notConfigured": "需要設定"
+      },
       "errors": {
         "checkFailed": "檢查權限失敗，請重試",
         "requestFailed": "請求權限失敗，請重試"
@@ -536,7 +546,14 @@
           "none": "無",
           "externalScript": "外部腳本"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "正在請求…",
+          "errors": {
+            "requestFailed": "權限請求失敗。",
+            "revokeFailed": "權限移除失敗。"
+          }
+        }
       },
       "typingTool": {
         "title": "輸入工具",
@@ -625,6 +642,11 @@
           "traditionalTw": "繁體（臺灣）",
           "traditionalHk": "繁體（香港）"
         }
+      },
+      "typingDelay": {
+        "title": "輸入延遲",
+        "description": "控制傳送輸入事件的速度。如果字元輸入順序錯誤，請增加此值。",
+        "unit": "毫秒"
       }
     },
     "postProcessing": {

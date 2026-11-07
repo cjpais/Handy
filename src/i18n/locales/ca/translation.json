@@ -72,6 +72,16 @@
         "checkFailed": "No s'han pogut comprovar els permisos. Torneu-ho a provar.",
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
       },
+      "remoteDesktop": {
+        "title": "Autorització d’escriptura",
+        "description": "Permeteu que Handy insereixi automàticament el text dictat a l’aplicació activa.",
+        "note": "Podeu activar o desactivar aquest permís en qualsevol moment a la configuració.",
+        "button": "Permet l’escriptura automàtica",
+        "skipButton": "Ara no",
+        "warningTooltip": "L’autorització d’escriptura no està configurada",
+        "configured": "Configurada",
+        "notConfigured": "Cal configurar-la"
+      },
       "titleMac": "Dos permisos i ja està",
       "titleWindows": "Un permís i ja està",
       "subtitleMac": "El macOS pregunta abans que qualsevol aplicació pugui escoltar o escriure.",
@@ -536,7 +546,14 @@
           "none": "Cap",
           "externalScript": "Script extern"
         },
-        "externalScriptPlaceholder": "/camí/al/vostre/script.sh"
+        "externalScriptPlaceholder": "/camí/al/vostre/script.sh",
+        "portal": {
+          "buttonRequesting": "S’està sol·licitant…",
+          "errors": {
+            "requestFailed": "No s’ha pogut sol·licitar el permís.",
+            "revokeFailed": "No s’ha pogut revocar el permís."
+          }
+        }
       },
       "typingTool": {
         "title": "Eina d'escriptura",
@@ -589,6 +606,11 @@
         "add": "Afegiu",
         "remove": "Suprimiu {{word}}",
         "duplicate": "«{{word}}» ja existeix"
+      },
+      "typingDelay": {
+        "title": "Retard entre pulsacions",
+        "description": "Controleu la velocitat d’enviament de les pulsacions. Augmenteu aquest valor si els caràcters s’escriuen fora d’ordre.",
+        "unit": "ms"
       },
       "voiceActivityDetection": {
         "title": "Detecció d'activitat de veu",
