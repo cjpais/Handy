@@ -1,4 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { flushSync } from "react-dom";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./RecordingOverlay.css";
@@ -36,9 +38,6 @@ const WAVE_BARS = 9;
 // Windows CPU backend), so the common case never flashes a loading notice while
 // the user is speaking; cold loads can take 40s+.
 const SLOW_MODEL_LOAD_MS = 2000;
-
-// Matches the delay in `hide_recording_overlay`, so a notice can fade out.
-const OVERLAY_FADE_MS = 300;
 
 // 13px padding on each side, the 16px badge and its 7px gap.
 const NOTICE_PILL_CHROME = 49;
@@ -82,7 +81,6 @@ const RecordingOverlay: React.FC = () => {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [noticeWidth, setNoticeWidth] = useState<number>();
   const noticeProbeRef = useRef<HTMLSpanElement>(null);
-  const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   // Live-text scroll-back: the text region "sticks" to the newest line while the
@@ -95,13 +93,11 @@ const RecordingOverlay: React.FC = () => {
   useEffect(() => {
     const setupEventListeners = async () => {
       const unlistenNotice = await listen<Notice>("overlay-notice", (event) => {
-        clearTimeout(fadeTimerRef.current);
         setNotice(event.payload);
       });
 
       const unlistenShow = await listen("show-overlay", async (event) => {
         const overlayState = event.payload as OverlayState;
-        clearTimeout(fadeTimerRef.current);
         if (!isNoticeState(overlayState)) setNotice(null);
         // Reset synchronously before settings I/O. A fast microphone can emit
         // recording-ready while the awaits below are in flight; resetting after
@@ -138,15 +134,28 @@ const RecordingOverlay: React.FC = () => {
       });
 
       const unlistenHide = await listen("hide-overlay", () => {
-        setIsVisible(false);
-        setCaptureReady(false);
-        // A notice keeps rendering while it fades. Dropping the transcript here
-        // stops a later notice from showing an old session's text.
-        clearTimeout(fadeTimerRef.current);
-        fadeTimerRef.current = setTimeout(() => {
+        // flushSync commits the unmount to the DOM right here; the ack then
+        // tells the backend it can park (shrink) the surface. A command, not
+        // an event: it must be delivered even while the GTK main thread is
+        // busy with the paste burst. Without this round-trip the parked frame
+        // bakes the old card in and the next session blends over it (the
+        // ghost-card hybrid).
+        //
+        // Contract: nothing async may run between the flushSync commit and
+        // the ack invoke below. The backend starts a bounded 500 ms wait at
+        // emit time; interleaving settings I/O here (as the show handler
+        // does) would start timing out hides during normal use.
+        //
+        // A notice goes with the card: the parked frame must be empty. The
+        // backend re-emits the notice payload with the show that re-applies a
+        // notice state, so dropping it here cannot lose a live notice.
+        flushSync(() => {
+          setIsVisible(false);
+          setCaptureReady(false);
           setNotice(null);
           setStreamText({ committed: "", tentative: "" });
-        }, OVERLAY_FADE_MS);
+        });
+        void invoke("overlay_hidden_ack");
       });
 
       const unlistenReady = await listen("recording-ready", () => {
@@ -213,7 +222,6 @@ const RecordingOverlay: React.FC = () => {
         unlistenPhase();
         unlistenModel();
         clearTimeout(modelLoadTimerRef.current);
-        clearTimeout(fadeTimerRef.current);
       };
     };
 

@@ -551,6 +551,12 @@ impl ShortcutAction for TranscribeAction {
         }
         let plan_elapsed = plan_started.elapsed();
 
+        // This transcription takes over overlay ownership: hides carrying an
+        // older op id become no-ops, so a late hide from the previous
+        // session's pipeline can never unmap this session's overlay. A notice
+        // raised instead of a hide below takes ownership again by itself.
+        utils::begin_operation();
+
         // Sizing the overlay follows the same advertised capability. A model that
         // doesn't stream (or whose capability is not known yet) gets the compact
         // pill instead of an oversized transparent live window.
@@ -693,6 +699,10 @@ impl ShortcutAction for TranscribeAction {
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
         let cancel_generation = rm.cancel_generation();
+        // The overlay currently shown belongs to this operation; tag every
+        // hide below with its id so a newer session's overlay is never
+        // unmapped by this task finishing late.
+        let overlay_op = utils::current_op();
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone(), Arc::clone(&tm));
@@ -715,7 +725,7 @@ impl ShortcutAction for TranscribeAction {
                 if rm.was_cancelled_since(cancel_generation) {
                     debug!("Transcription operation cancelled after recording stop");
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
+                    utils::hide_recording_overlay(&ah, overlay_op);
                     set_tray_state(&ah, TrayIconState::Idle);
                     return;
                 }
@@ -725,7 +735,7 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
+                    utils::hide_recording_overlay(&ah, overlay_op);
                     set_tray_state(&ah, TrayIconState::Idle);
                     emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
                 } else {
@@ -772,7 +782,7 @@ impl ShortcutAction for TranscribeAction {
 
                     if rm.was_cancelled_since(cancel_generation) {
                         debug!("Transcription operation cancelled before output handling");
-                        utils::hide_recording_overlay(&ah);
+                        utils::hide_recording_overlay(&ah, overlay_op);
                         set_tray_state(&ah, TrayIconState::Idle);
                         return;
                     }
@@ -802,14 +812,14 @@ impl ShortcutAction for TranscribeAction {
                             .await
                             else {
                                 debug!("Transcription operation cancelled during output handling");
-                                utils::hide_recording_overlay(&ah);
+                                utils::hide_recording_overlay(&ah, overlay_op);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 return;
                             };
 
                             if rm.was_cancelled_since(cancel_generation) {
                                 debug!("Transcription operation cancelled before paste");
-                                utils::hide_recording_overlay(&ah);
+                                utils::hide_recording_overlay(&ah, overlay_op);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 return;
                             }
@@ -837,13 +847,13 @@ impl ShortcutAction for TranscribeAction {
                             .await
                             else {
                                 debug!("Transcription operation cancelled during hook");
-                                utils::hide_recording_overlay(&ah);
+                                utils::hide_recording_overlay(&ah, overlay_op);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 return;
                             };
 
                             if final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
+                                utils::hide_recording_overlay(&ah, overlay_op);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
                                     &ah,
@@ -868,7 +878,7 @@ impl ShortcutAction for TranscribeAction {
                                             debug!(
                                                 "Transcription operation cancelled before paste"
                                             );
-                                            utils::hide_recording_overlay(&ah_clone);
+                                            utils::hide_recording_overlay(&ah_clone, overlay_op);
                                             set_tray_state(&ah_clone, TrayIconState::Idle);
                                             return;
                                         }
@@ -915,7 +925,7 @@ impl ShortcutAction for TranscribeAction {
                                                 notices::raise(&ah_clone, notice)
                                             }
                                             (true, None) => {
-                                                utils::hide_recording_overlay(&ah_clone)
+                                                utils::hide_recording_overlay(&ah_clone, overlay_op)
                                             }
                                             (false, Some(notice)) => {
                                                 notices::raise_without_overlay(&ah_clone, notice)
@@ -935,7 +945,7 @@ impl ShortcutAction for TranscribeAction {
                                     .map(|_| ())
                                     .unwrap_or_else(|e| {
                                         error!("Failed to start the paste thread: {:?}", e);
-                                        utils::hide_recording_overlay(&ah);
+                                        utils::hide_recording_overlay(&ah, overlay_op);
                                         set_tray_state(&ah, TrayIconState::Idle);
                                         emit_transcription_complete(
                                             &ah,
@@ -951,7 +961,7 @@ impl ShortcutAction for TranscribeAction {
                                 debug!(
                                     "Transcription operation cancelled after transcription error"
                                 );
-                                utils::hide_recording_overlay(&ah);
+                                utils::hide_recording_overlay(&ah, overlay_op);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 return;
                             }
@@ -992,7 +1002,7 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 // Tear down any streaming worker so its channel doesn't leak.
                 tm.cancel_stream();
-                utils::hide_recording_overlay(&ah);
+                utils::hide_recording_overlay(&ah, overlay_op);
                 set_tray_state(&ah, TrayIconState::Idle);
                 if !rm.was_cancelled_since(cancel_generation) {
                     emit_transcription_complete(&ah, TranscriptionOutcome::Empty, 0, stop_time);
