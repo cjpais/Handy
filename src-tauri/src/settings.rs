@@ -5,8 +5,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::fmt;
-use tauri::AppHandle;
-use tauri_plugin_store::StoreExt;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{AppHandle, Manager};
+use tauri_plugin_store::{Store, StoreExt};
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
@@ -1119,9 +1123,14 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 }
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
-    let store = app
-        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
+    let store = open_settings_store(app);
+
+    // The store starts empty when its file could not be parsed, exactly as
+    // when there is no file. Keep a copy of a file that exists before the
+    // defaults written below replace it (#2139).
+    if SETTINGS_FILE_UNREADABLE.swap(false, Ordering::AcqRel) {
+        back_up_unreadable_settings_file(app);
+    }
 
     // Settings reads also persist one-time migrations. Migration helpers are
     // idempotent, so this converges after the first read of an older store.
@@ -1164,6 +1173,105 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     }
 
     settings
+}
+
+type StoreError = Box<dyn std::error::Error + Send + Sync>;
+
+/// Set by [`deserialize_settings_store`] when the file on disk could not be
+/// parsed; [`get_settings`] reads and clears it. The store plugin swallows the
+/// parse error and starts empty, so this is the only way to tell "unreadable"
+/// from "missing".
+static SETTINGS_FILE_UNREADABLE: AtomicBool = AtomicBool::new(false);
+
+/// Opens the settings store with a reader that accepts the byte-order marks
+/// text editors write (#2139). Without it, a file saved by Notepad as
+/// "UTF-8 with BOM" fails to parse, the store plugin ignores the error and
+/// starts empty, and the user's settings are overwritten with defaults.
+fn open_settings_store(app: &AppHandle) -> Arc<Store<tauri::Wry>> {
+    app.store_builder(crate::portable::store_path(SETTINGS_STORE_PATH))
+        .deserialize(deserialize_settings_store)
+        .build()
+        .expect("Failed to initialize store")
+}
+
+fn deserialize_settings_store(
+    bytes: &[u8],
+) -> Result<HashMap<String, serde_json::Value>, StoreError> {
+    let parsed = decode_settings_text(bytes).and_then(|text| {
+        serde_json::from_str::<HashMap<String, serde_json::Value>>(&text).map_err(StoreError::from)
+    });
+    if let Err(e) = &parsed {
+        warn!("Settings file could not be parsed: {e}");
+        SETTINGS_FILE_UNREADABLE.store(true, Ordering::Release);
+    }
+    parsed
+}
+
+/// Decodes the settings file as text, honouring a UTF-8 or UTF-16 byte-order
+/// mark. `serde_json` rejects a leading BOM as invalid JSON.
+fn decode_settings_text(bytes: &[u8]) -> Result<String, StoreError> {
+    if let Some(rest) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        return Ok(String::from_utf8(rest.to_vec())?);
+    }
+    if let Some(rest) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        return decode_utf16(rest, u16::from_le_bytes);
+    }
+    if let Some(rest) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        return decode_utf16(rest, u16::from_be_bytes);
+    }
+    Ok(String::from_utf8(bytes.to_vec())?)
+}
+
+fn decode_utf16(bytes: &[u8], from_bytes: fn([u8; 2]) -> u16) -> Result<String, StoreError> {
+    let units: Vec<u16> = bytes
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|pair| from_bytes(*pair))
+        .collect();
+    Ok(String::from_utf16(&units)?)
+}
+
+/// Where the store plugin reads the settings file from: the portable data
+/// directory, or the app data directory for a relative store path.
+fn settings_store_file(app: &AppHandle) -> Option<PathBuf> {
+    let path = crate::portable::store_path(SETTINGS_STORE_PATH);
+    if path.is_absolute() {
+        return Some(path);
+    }
+    app.path().app_data_dir().ok().map(|dir| dir.join(path))
+}
+
+fn back_up_unreadable_settings_file(app: &AppHandle) {
+    let Some(path) = settings_store_file(app).filter(|path| path.is_file()) else {
+        return;
+    };
+    match back_up_file(&path) {
+        Ok(backup) => warn!(
+            "Settings file {} could not be read; a copy was saved at {} and defaults are in use",
+            path.display(),
+            backup.display()
+        ),
+        Err(e) => warn!(
+            "Settings file {} could not be read and could not be backed up ({e}); defaults are in use",
+            path.display()
+        ),
+    }
+}
+
+/// Copies `path` to `<name>.unreadable-<unix seconds>` beside it.
+fn back_up_file(path: &Path) -> std::io::Result<PathBuf> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or(0);
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(SETTINGS_STORE_PATH);
+    let backup = path.with_file_name(format!("{name}.unreadable-{stamp}"));
+    std::fs::copy(path, &backup)?;
+    Ok(backup)
 }
 
 /// Rebuilds settings from a store value that failed to deserialize as a whole.
@@ -1399,9 +1507,7 @@ pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
-    let store = app
-        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
-        .expect("Failed to initialize store");
+    let store = open_settings_store(app);
 
     store.set("settings", serde_json::to_value(&settings).unwrap());
 }
@@ -1433,6 +1539,63 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const STORE_JSON: &str = r#"{"settings":{"update_checks_enabled":false}}"#;
+
+    fn stored_update_checks(map: &HashMap<String, serde_json::Value>) -> Option<bool> {
+        map.get("settings")?.get("update_checks_enabled")?.as_bool()
+    }
+
+    #[test]
+    fn settings_store_reads_a_utf8_bom() {
+        let mut bytes = vec![0xEF, 0xBB, 0xBF];
+        bytes.extend_from_slice(STORE_JSON.as_bytes());
+        let map = deserialize_settings_store(&bytes).expect("BOM-prefixed JSON parses");
+        assert_eq!(stored_update_checks(&map), Some(false));
+    }
+
+    #[test]
+    fn settings_store_reads_utf16() {
+        let mut little = vec![0xFF, 0xFE];
+        little.extend(STORE_JSON.encode_utf16().flat_map(u16::to_le_bytes));
+        let mut big = vec![0xFE, 0xFF];
+        big.extend(STORE_JSON.encode_utf16().flat_map(u16::to_be_bytes));
+        for bytes in [little, big] {
+            let map = deserialize_settings_store(&bytes).expect("UTF-16 JSON parses");
+            assert_eq!(stored_update_checks(&map), Some(false));
+        }
+    }
+
+    #[test]
+    fn settings_store_without_bom_is_unchanged() {
+        let map = deserialize_settings_store(STORE_JSON.as_bytes()).unwrap();
+        assert_eq!(stored_update_checks(&map), Some(false));
+    }
+
+    #[test]
+    fn unreadable_settings_store_is_flagged() {
+        let broken = br#"{"settings":{"update_checks_enabled":false,}}"#;
+        assert!(deserialize_settings_store(broken).is_err());
+        assert!(SETTINGS_FILE_UNREADABLE.swap(false, Ordering::AcqRel));
+    }
+
+    #[test]
+    fn unreadable_settings_file_is_copied_beside_itself() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(SETTINGS_STORE_PATH);
+        std::fs::write(&path, b"not json").unwrap();
+
+        let backup = back_up_file(&path).unwrap();
+
+        assert_eq!(backup.parent(), path.parent());
+        let backup_name = backup.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(
+            backup_name.starts_with("settings_store.json.unreadable-"),
+            "{backup_name}"
+        );
+        assert_eq!(std::fs::read(&backup).unwrap(), b"not json");
+        assert!(path.is_file(), "the original stays in place");
+    }
 
     #[test]
     fn stored_binding_returns_the_requested_binding() {
