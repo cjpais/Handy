@@ -24,6 +24,10 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
         value: "copy_to_clipboard",
         label: t("settings.advanced.clipboardHandling.options.copyToClipboard"),
       },
+      {
+        value: "paste_shortcut",
+        label: t("settings.advanced.clipboardHandling.options.pasteShortcut"),
+      },
     ];
 
     const selectedHandling = (getSetting("clipboard_handling") ||

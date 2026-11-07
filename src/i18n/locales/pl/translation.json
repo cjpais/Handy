@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "paste_last_transcript": {
+            "name": "Wklej ostatnią transkrypcję",
+            "description": "Ponownie wkleja ostatnią transkrypcję."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Nie modyfikuj schowka zachowuje jego zawartość. Kopiuj do schowka pozostawia wynik transkrypcji w schowku.",
         "options": {
           "dontModify": "Nie modyfikuj schowka",
-          "copyToClipboard": "Kopiuj do schowka"
+          "copyToClipboard": "Kopiuj do schowka",
+          "pasteShortcut": "Skrót wklejania"
         }
       },
       "autoSubmit": {

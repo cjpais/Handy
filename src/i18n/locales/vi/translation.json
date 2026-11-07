@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "paste_last_transcript": {
+            "name": "Dán bản chép lời gần nhất",
+            "description": "Dán lại bản chép lời gần nhất."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Không sửa đổi Clipboard giữ nguyên nội dung clipboard hiện tại sau khi chuyển đổi. Sao chép vào Clipboard để lại kết quả chuyển đổi trong clipboard sau khi dán.",
         "options": {
           "dontModify": "Không sửa đổi Clipboard",
-          "copyToClipboard": "Sao chép vào Clipboard"
+          "copyToClipboard": "Sao chép vào Clipboard",
+          "pasteShortcut": "Phím tắt dán"
         }
       },
       "autoSubmit": {

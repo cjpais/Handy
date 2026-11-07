@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Genvej til efterbehandling",
             "description": "Valgfrit: En dedikeret genvej, der altid anvender AI-efterbehandling på din transskription."
+          },
+          "paste_last_transcript": {
+            "name": "Indsæt seneste transskription",
+            "description": "Indsætter den seneste transskription igen."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Rør ikke ved udklipsholder bevarer dit nuværende udklipsholderindhold efter transskription. Kopiér til udklipsholder efterlader transskriptionsresultatet i din udklipsholder efter indsætning.",
         "options": {
           "dontModify": "Rør ikke ved udklipsholder",
-          "copyToClipboard": "Kopiér til udklipsholder"
+          "copyToClipboard": "Kopiér til udklipsholder",
+          "pasteShortcut": "Genvej til indsæt"
         }
       },
       "autoSubmit": {

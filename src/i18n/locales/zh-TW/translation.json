@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "後處理快捷鍵",
             "description": "可選：專用快捷鍵，使用時一律對轉錄結果套用 AI 後處理"
+          },
+          "paste_last_transcript": {
+            "name": "貼上上一則轉錄",
+            "description": "再次貼上上一則轉錄。"
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "不修改剪貼簿將在轉錄後保留目前剪貼簿內容。複製到剪貼簿會在貼上後將轉錄結果留在剪貼簿中",
         "options": {
           "dontModify": "不修改剪貼簿",
-          "copyToClipboard": "複製到剪貼簿"
+          "copyToClipboard": "複製到剪貼簿",
+          "pasteShortcut": "貼上快捷鍵"
         }
       },
       "autoSubmit": {

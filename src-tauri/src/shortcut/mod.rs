@@ -311,7 +311,7 @@ pub fn resume_all_shortcuts(app: &AppHandle) {
         if id == "cancel" {
             continue;
         }
-        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+        if !crate::settings::binding_enabled(id, &settings) {
             continue;
         }
         if let Err(e) = register_shortcut(app, binding.clone()) {
@@ -506,8 +506,7 @@ fn register_all_shortcuts_for_implementation(
             continue;
         }
 
-        // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
+        if !settings::binding_enabled(id, &current_settings) {
             continue;
         }
 
@@ -1065,6 +1064,7 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
     let parsed = match handling.as_str() {
         "dont_modify" => ClipboardHandling::DontModify,
         "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
+        "paste_shortcut" => ClipboardHandling::PasteShortcut,
         other => {
             warn!(
                 "Invalid clipboard handling '{}', defaulting to dont_modify",
@@ -1074,7 +1074,18 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         }
     };
     settings.clipboard_handling = parsed;
-    settings::write_settings(&app, settings);
+    settings::write_settings(&app, settings.clone());
+
+    // Register or unregister the paste last transcription shortcut
+    if let Some(binding) = settings.bindings.get("paste_last_transcript").cloned() {
+        if parsed == ClipboardHandling::PasteShortcut {
+            let _ = register_shortcut(&app, binding);
+        } else {
+            let _ = unregister_shortcut(&app, binding);
+        }
+    }
+
+    crate::secure_input::reconcile_fallback(&app);
     Ok(())
 }
 

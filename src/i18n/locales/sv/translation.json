@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Snabbkommando för efterbearbetning",
             "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
+          },
+          "paste_last_transcript": {
+            "name": "Klistra in senaste transkriptionen",
+            "description": "Klistrar in den senaste transkriptionen igen."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Ändra inte urklipp bevarar ditt nuvarande urklippsinnehåll efter transkription. Kopiera till urklipp lämnar transkriptionsresultatet i ditt urklipp efter att ha klistrat in.",
         "options": {
           "dontModify": "Ändra inte urklipp",
-          "copyToClipboard": "Kopiera till urklipp"
+          "copyToClipboard": "Kopiera till urklipp",
+          "pasteShortcut": "Kortkommando för klistra in"
         }
       },
       "autoSubmit": {

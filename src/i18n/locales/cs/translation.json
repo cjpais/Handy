@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
+          },
+          "paste_last_transcript": {
+            "name": "Vložit poslední přepis",
+            "description": "Znovu vloží poslední přepis."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "'Neměnit schránku' zachová po přepisu aktuální obsah schránky. 'Kopírovat do schránky' ponechá po vložení výsledek přepisu ve schránce.",
         "options": {
           "dontModify": "Neměnit schránku",
-          "copyToClipboard": "Kopírovat do schránky"
+          "copyToClipboard": "Kopírovat do schránky",
+          "pasteShortcut": "Zkratka pro vložení"
         }
       },
       "autoSubmit": {

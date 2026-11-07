@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "קיצור לעיבוד משלים",
             "description": "אופציונלי: קיצור מקשים ייעודי שתמיד מפעיל עיבוד AI על התמלול."
+          },
+          "paste_last_transcript": {
+            "name": "הדבק את התמלול האחרון",
+            "description": "מדביק שוב את התמלול האחרון."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "אל תשנה את הלוח ישמור על תוכן הלוח הנוכחי שלך אחרי התמלול. העתק ללוח ישאיר את תוצאת התמלול בלוח אחרי ההדבקה.",
         "options": {
           "dontModify": "אל תשנה את הלוח",
-          "copyToClipboard": "העתק ללוח"
+          "copyToClipboard": "העתק ללוח",
+          "pasteShortcut": "קיצור הדבקה"
         }
       },
       "autoSubmit": {

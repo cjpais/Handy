@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Tecla de post procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
+          },
+          "paste_last_transcript": {
+            "name": "Pegar última transcripción",
+            "description": "Vuelve a pegar la última transcripción."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "No modificar portapapeles conserva el contenido actual de tu portapapeles después de la transcripción. Copiar al portapapeles deja el resultado de la transcripción en tu portapapeles después de pegar.",
         "options": {
           "dontModify": "No modificar portapapeles",
-          "copyToClipboard": "Copiar al portapapeles"
+          "copyToClipboard": "Copiar al portapapeles",
+          "pasteShortcut": "Atajo de pegado"
         }
       },
       "autoSubmit": {

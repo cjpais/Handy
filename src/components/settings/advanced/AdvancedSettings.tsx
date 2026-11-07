@@ -10,6 +10,7 @@ import { ShowTrayIcon } from "../ShowTrayIcon";
 import { PasteMethodSetting } from "../PasteMethod";
 import { TypingToolSetting } from "../TypingTool";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
+import { ShortcutInput } from "../ShortcutInput";
 import { AutoSubmit } from "../AutoSubmit";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
@@ -31,6 +32,7 @@ export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
   const experimentalEnabled = getSetting("experimental_enabled") || false;
+  const pasteShortcut = getSetting("clipboard_handling") === "paste_shortcut";
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -47,6 +49,13 @@ export const AdvancedSettings: React.FC = () => {
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <TypingToolSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
+        {pasteShortcut && (
+          <ShortcutInput
+            shortcutId="paste_last_transcript"
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+        )}
         <AutoSubmit descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 

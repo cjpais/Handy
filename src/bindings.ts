@@ -1205,7 +1205,11 @@ export type ChineseScript =
  * Traditional, in Hong Kong's standard forms.
  */
 "traditional_hk"
-export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
+export type ClipboardHandling = "dont_modify" | "copy_to_clipboard" | 
+/**
+ * Like `DontModify`, plus a shortcut that pastes the last transcription.
+ */
+"paste_shortcut"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean; 

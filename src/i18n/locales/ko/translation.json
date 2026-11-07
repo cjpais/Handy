@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "paste_last_transcript": {
+            "name": "마지막 전사 붙여넣기",
+            "description": "마지막 전사를 다시 붙여넣습니다."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "클립보드 수정 안 함은 전사 후 현재 클립보드 내용을 보존합니다. 클립보드에 복사는 붙여넣기 후 전사 결과를 클립보드에 남겨둡니다.",
         "options": {
           "dontModify": "클립보드 수정 안 함",
-          "copyToClipboard": "클립보드에 복사"
+          "copyToClipboard": "클립보드에 복사",
+          "pasteShortcut": "붙여넣기 단축키"
         }
       },
       "autoSubmit": {

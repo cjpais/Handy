@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "paste_last_transcript": {
+            "name": "粘贴上一条转录",
+            "description": "再次粘贴上一条转录。"
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
         "options": {
           "dontModify": "不修改剪贴板",
-          "copyToClipboard": "复制到剪贴板"
+          "copyToClipboard": "复制到剪贴板",
+          "pasteShortcut": "粘贴快捷键"
         }
       },
       "autoSubmit": {

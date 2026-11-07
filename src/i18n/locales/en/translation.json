@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "paste_last_transcript": {
+            "name": "Paste Last Transcription",
+            "description": "Pastes the last transcription again."
           }
         },
         "errors": {
@@ -547,10 +551,11 @@
       },
       "clipboardHandling": {
         "title": "Clipboard Handling",
-        "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
+        "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting. Paste Shortcut also lets a shortcut paste the last transcription again.",
         "options": {
           "dontModify": "Don't Modify Clipboard",
-          "copyToClipboard": "Copy to Clipboard"
+          "copyToClipboard": "Copy to Clipboard",
+          "pasteShortcut": "Paste Shortcut"
         }
       },
       "autoSubmit": {

@@ -1020,6 +1020,82 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+// Paste Last Transcription Action
+struct PasteLastTranscriptAction;
+
+// On macOS the paste chord's events carry their own modifier flags, so the
+// shortcut keys still held don't mix in and it can paste on press.
+#[cfg(target_os = "macos")]
+static LAST_PASTE_LAST_PRESS: std::sync::Mutex<Option<Instant>> = std::sync::Mutex::new(None);
+
+impl ShortcutAction for PasteLastTranscriptAction {
+    #[cfg(target_os = "macos")]
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // The paste chord makes the listener see the shortcut released, so a
+        // key repeat of the still-held key arrives as a new press. Skip it.
+        let repeat_delay = Duration::from_secs_f64(objc2_app_kit::NSEvent::keyRepeatDelay());
+        let mut last = LAST_PASTE_LAST_PRESS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if last.is_some_and(|t| t.elapsed() < repeat_delay + Duration::from_millis(100)) {
+            return;
+        }
+        *last = Some(Instant::now());
+        spawn_paste_last_transcript(app, Duration::ZERO);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn start(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+
+    #[cfg(target_os = "macos")]
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+
+    // Elsewhere held keys mix into the paste chord, so paste once they are up.
+    #[cfg(not(target_os = "macos"))]
+    fn stop(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        spawn_paste_last_transcript(app, Duration::from_millis(150));
+    }
+}
+
+fn spawn_paste_last_transcript(app: &AppHandle, delay: Duration) {
+    let app = app.clone();
+    // Off the main thread: paste sleeps between steps.
+    let spawned = std::thread::Builder::new()
+        .name("paste-last".into())
+        .spawn(move || {
+            std::thread::sleep(delay);
+            paste_last_transcript(&app);
+        });
+    if let Err(e) = spawned {
+        error!("Failed to start paste of last transcription: {}", e);
+    }
+}
+
+fn paste_last_transcript(app: &AppHandle) {
+    let history = app.state::<Arc<HistoryManager>>();
+    let entry = match history.get_latest_completed_entry() {
+        Ok(Some(entry)) => entry,
+        Ok(None) => {
+            warn!("No transcription to paste.");
+            return;
+        }
+        Err(e) => {
+            error!("Failed to fetch last transcription: {}", e);
+            return;
+        }
+    };
+
+    let text = utils::last_transcript_text(&entry);
+    if text.trim().is_empty() {
+        warn!("Last transcription is empty; skipping paste.");
+        return;
+    }
+
+    if let Err(e) = utils::paste(text.to_string(), app.clone()) {
+        error!("Failed to paste last transcription: {}", e);
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -1059,6 +1135,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "paste_last_transcript".to_string(),
+        Arc::new(PasteLastTranscriptAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
             "description": "İsteğe bağlı: Transkripsiyonunuza her zaman yapay zekâ ile son işlem uygulayan özel bir kısayol tuşu."
+          },
+          "paste_last_transcript": {
+            "name": "Son Transkripsiyonu Yapıştır",
+            "description": "Son transkripsiyonu yeniden yapıştırır."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Panoyu Değiştirme, transkripsiyon sonrası mevcut pano içeriğini korur. Panoya Kopyala ise yapıştırma işleminden sonra transkripsiyon sonucunu panoda bırakır.",
         "options": {
           "dontModify": "Panoyu Değiştirme",
-          "copyToClipboard": "Panoya Kopyala"
+          "copyToClipboard": "Panoya Kopyala",
+          "pasteShortcut": "Yapıştırma Kısayolu"
         }
       },
       "autoSubmit": {

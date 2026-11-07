@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Pintasan Pascaproses",
             "description": "Opsional: pintasan khusus yang selalu menerapkan pascaproses AI pada transkripsi Anda."
+          },
+          "paste_last_transcript": {
+            "name": "Tempel Transkripsi Terakhir",
+            "description": "Menempelkan transkripsi terakhir lagi."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "Jangan Ubah Papan Klip akan mempertahankan isi papan klip saat ini setelah transkripsi. Salin ke Papan Klip akan membiarkan hasil transkripsi tetap berada di papan klip setelah ditempel.",
         "options": {
           "dontModify": "Jangan Ubah Papan Klip",
-          "copyToClipboard": "Salin ke Papan Klip"
+          "copyToClipboard": "Salin ke Papan Klip",
+          "pasteShortcut": "Pintasan Tempel"
         }
       },
       "autoSubmit": {

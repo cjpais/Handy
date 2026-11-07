@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Sneltoets voor naverwerking",
             "description": "Optioneel: Een specifieke sneltoets die altijd AI-naverwerking toepast op je transcriptie."
+          },
+          "paste_last_transcript": {
+            "name": "Laatste transcriptie plakken",
+            "description": "Plakt de laatste transcriptie opnieuw."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "'Klembord niet aanpassen' behoudt je huidige klembordinhoud na een transcriptie. 'Kopiëren naar klembord' laat de getranscribeerde tekst achter op je klembord.",
         "options": {
           "dontModify": "Klembord niet aanpassen",
-          "copyToClipboard": "Kopiëren naar klembord"
+          "copyToClipboard": "Kopiëren naar klembord",
+          "pasteShortcut": "Plak-sneltoets"
         }
       },
       "autoSubmit": {

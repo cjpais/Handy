@@ -191,6 +191,8 @@ pub enum ClipboardHandling {
     #[default]
     DontModify,
     CopyToClipboard,
+    /// Like `DontModify`, plus a shortcut that pastes the last transcription.
+    PasteShortcut,
 }
 
 /// Script applied to Mandarin and Cantonese output. Traditional carries its region
@@ -947,6 +949,16 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
+/// Whether a binding's feature is on. Bindings of a feature that is off stay
+/// unregistered.
+pub fn binding_enabled(id: &str, settings: &AppSettings) -> bool {
+    match id {
+        "transcribe_with_post_process" => settings.post_process_enabled,
+        "paste_last_transcript" => settings.clipboard_handling == ClipboardHandling::PasteShortcut,
+        _ => true,
+    }
+}
+
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
     let default_shortcut = "ctrl+space";
@@ -996,6 +1008,21 @@ pub fn get_default_settings() -> AppSettings {
             description: "Cancels the current recording.".to_string(),
             default_binding: "escape".to_string(),
             current_binding: "escape".to_string(),
+        },
+    );
+    #[cfg(target_os = "macos")]
+    let default_paste_last_shortcut = "ctrl+command+v";
+    #[cfg(not(target_os = "macos"))]
+    let default_paste_last_shortcut = "ctrl+alt+shift+v";
+
+    bindings.insert(
+        "paste_last_transcript".to_string(),
+        ShortcutBinding {
+            id: "paste_last_transcript".to_string(),
+            name: "Paste Last Transcription".to_string(),
+            description: "Pastes the last transcription.".to_string(),
+            default_binding: default_paste_last_shortcut.to_string(),
+            current_binding: default_paste_last_shortcut.to_string(),
         },
     );
 
@@ -1433,6 +1460,16 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn paste_last_transcript_binding_follows_clipboard_handling() {
+        let mut settings = get_default_settings();
+        assert!(!binding_enabled("paste_last_transcript", &settings));
+
+        settings.clipboard_handling = ClipboardHandling::PasteShortcut;
+        assert!(binding_enabled("paste_last_transcript", &settings));
+        assert!(binding_enabled("transcribe", &settings));
+    }
 
     #[test]
     fn stored_binding_returns_the_requested_binding() {

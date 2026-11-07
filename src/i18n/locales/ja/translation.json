@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "後処理のショートカット",
             "description": "文字起こしに常に AI 後処理を適用するキーボードショートカット。 (任意)"
+          },
+          "paste_last_transcript": {
+            "name": "最後の文字起こしを貼り付け",
+            "description": "最後の文字起こしをもう一度貼り付けます。"
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "クリップボードを変更しないを選択すると、文字起こし後も現在のクリップボード内容が保持されます。クリップボードにコピーを選択すると、貼り付け後も文字起こし結果がクリップボードに残ります。",
         "options": {
           "dontModify": "クリップボードを変更しない",
-          "copyToClipboard": "クリップボードにコピー"
+          "copyToClipboard": "クリップボードにコピー",
+          "pasteShortcut": "貼り付けショートカット"
         }
       },
       "autoSubmit": {

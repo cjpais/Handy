@@ -348,6 +348,10 @@
           "transcribe_with_post_process": {
             "name": "Drecera de postprocessament",
             "description": "Opcional: una drecera específica que sempre aplica postprocessament amb IA a la transcripció."
+          },
+          "paste_last_transcript": {
+            "name": "Enganxa l'última transcripció",
+            "description": "Torna a enganxar l'última transcripció."
           }
         },
         "errors": {
@@ -550,7 +554,8 @@
         "description": "«No modifiqueu el porta-retalls» conserva el contingut actual del porta-retalls després de la transcripció. «Copieu al porta-retalls» hi deixa el resultat de la transcripció després d'enganxar-lo.",
         "options": {
           "dontModify": "No modifiqueu el porta-retalls",
-          "copyToClipboard": "Copia al porta-retalls"
+          "copyToClipboard": "Copia al porta-retalls",
+          "pasteShortcut": "Drecera d'enganxar"
         }
       },
       "autoSubmit": {
