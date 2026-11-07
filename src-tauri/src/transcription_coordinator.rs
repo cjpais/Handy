@@ -168,6 +168,12 @@ struct InputEvent {
     /// They fire on every edge by design and must never be debounced —
     /// dropping one desyncs toggle parity and wedges recording on.
     external: bool,
+    /// When the edge happened. Effects can block the coordinator thread
+    /// (starting a recording opens the microphone), so inputs are judged at
+    /// this instant rather than when they are dequeued — otherwise a burst
+    /// of queued edges collapses onto one timestamp and a quick tap-tap's
+    /// second press looks like auto-repeat of the first release.
+    at: Instant,
 }
 
 impl InputEvent {
@@ -279,6 +285,18 @@ impl CoordinatorState {
     /// A recording is running and outlives its key (a tap, or toggle mode).
     fn is_recording_locked(&self) -> bool {
         matches!(self.stage, Stage::Recording(_)) && self.hold.as_ref().is_some_and(|h| h.locked)
+    }
+
+    /// Handle an input at the instant it happened: a release grace that was
+    /// already due before it resolves first, so a queued burst replays in
+    /// the order the user produced it.
+    fn on_timed_input(&mut self, input: InputEvent, at: Instant) -> Vec<Effect> {
+        let mut effects = Vec::new();
+        if self.grace_deadline().is_some_and(|deadline| deadline <= at) {
+            effects.extend(self.on_grace_expired());
+        }
+        effects.extend(self.on_input(input, at));
+        effects
     }
 
     fn on_input(&mut self, input: InputEvent, now: Instant) -> Option<Effect> {
@@ -606,7 +624,8 @@ impl TranscriptionCoordinator {
                     let was_locked = state.is_recording_locked();
                     match cmd {
                         Command::Input(input) => {
-                            if let Some(effect) = state.on_input(input, Instant::now()) {
+                            let at = input.at;
+                            for effect in state.on_timed_input(input, at) {
                                 run_effect(&app, &mut state, effect);
                             }
                         }
@@ -692,6 +711,7 @@ impl TranscriptionCoordinator {
                 mode,
                 hold_threshold,
                 external,
+                at: Instant::now(),
             }))
             .is_err()
         {
@@ -952,6 +972,7 @@ mod tests {
             mode: ShortcutActivation::PushToTalk,
             hold_threshold: Duration::ZERO,
             external: false,
+            at: Instant::now(),
         }
     }
 
@@ -1090,6 +1111,7 @@ mod tests {
                     mode: ShortcutActivation::Toggle,
                     hold_threshold: Duration::ZERO,
                     external: true,
+                    at,
                 },
                 at,
             )
@@ -1152,6 +1174,7 @@ mod tests {
             mode: ShortcutActivation::Toggle,
             hold_threshold: Duration::ZERO,
             external,
+            at: Instant::now(),
         }
     }
 
@@ -1277,6 +1300,7 @@ mod tests {
             mode,
             hold_threshold: HOLD_THRESHOLD,
             external: false,
+            at: Instant::now(),
         }
     }
 
@@ -1667,6 +1691,38 @@ mod tests {
         assert!(
             matches!(state.on_grace_expired(), Some(Effect::Stop { .. })),
             "held 400ms since the real key-down: must stop, not lock"
+        );
+        assert_eq!(state.stage, Stage::Processing);
+    }
+
+    /// Starting a recording can block the coordinator thread (opening the
+    /// microphone takes ~100ms), so a quick tap-tap's release/press/release
+    /// queue up and are processed in one burst. Each must be judged at the
+    /// instant it happened, not when it was dequeued — otherwise the second
+    /// press lands inside the first release's grace window, is mistaken for
+    /// auto-repeat, and the session that should have stopped stays locked on.
+    #[test]
+    fn hold_or_toggle_burst_processed_after_slow_start_keeps_event_order() {
+        let mode = ShortcutActivation::HoldOrToggle;
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(matches!(
+            state.on_timed_input(input(mode, true), t0).as_slice(),
+            [Effect::Start { .. }]
+        ));
+        // Timestamped while `start` was blocking; no timers ran in between.
+        assert!(state
+            .on_timed_input(input(mode, false), t0 + ms(90))
+            .is_empty());
+        assert!(
+            matches!(
+                state
+                    .on_timed_input(input(mode, true), t0 + ms(180))
+                    .as_slice(),
+                [Effect::Stop { .. }]
+            ),
+            "the tap locked the session, so the next press must stop it"
         );
         assert_eq!(state.stage, Stage::Processing);
     }
