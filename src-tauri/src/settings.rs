@@ -286,6 +286,7 @@ impl ModelUnloadTimeout {
 pub enum SoundTheme {
     Marimba,
     Pop,
+    Rustig,
     Custom,
 }
 
@@ -294,6 +295,7 @@ impl SoundTheme {
         match self {
             SoundTheme::Marimba => "marimba",
             SoundTheme::Pop => "pop",
+            SoundTheme::Rustig => "rustig",
             SoundTheme::Custom => "custom",
         }
     }
@@ -694,7 +696,7 @@ fn default_audio_feedback_volume() -> f32 {
 }
 
 fn default_sound_theme() -> SoundTheme {
-    SoundTheme::Marimba
+    SoundTheme::Rustig
 }
 
 fn default_theme() -> Theme {
@@ -1004,7 +1006,7 @@ pub fn get_default_settings() -> AppSettings {
         bindings,
         shortcut_activation: ShortcutActivation::default(),
         hold_threshold_ms: default_hold_threshold_ms(),
-        audio_feedback: false,
+        audio_feedback: true,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
@@ -1467,7 +1469,7 @@ mod tests {
             ShortcutActivation::HoldOrToggle
         );
         assert_eq!(settings.hold_threshold_ms, default_hold_threshold_ms());
-        assert!(!settings.audio_feedback);
+        assert!(settings.audio_feedback);
         assert!(settings.filler_word_removal_enabled);
         // Bindings default to empty; the load path merges the real defaults in.
         assert!(settings.bindings.is_empty());
