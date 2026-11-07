@@ -612,8 +612,8 @@ impl ShortcutAction for TranscribeAction {
                     utils::emit_recording_ready(&app_clone);
 
                     // The start chime is a readiness cue, so it must follow the
-                    // first real input callback rather than Stream::play() or a
-                    // fixed delay. The helper returns immediately when feedback
+                    // first sound from the microphone rather than Stream::play()
+                    // or a fixed delay. The helper returns immediately when feedback
                     // is disabled; mute still follows the same readiness point.
                     if rm_clone.is_recording_readiness_current(generation) {
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
