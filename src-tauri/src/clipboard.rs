@@ -434,9 +434,166 @@ fn type_text_via_wtype(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// How long keysyms bound for an xdotool run stay in the keymap after xdotool
+/// returns. A busy client can look a key up after xdotool has finished sending
+/// it, and the lookup uses the keymap of that moment, so the bindings must
+/// outlive the typing by the client's lag.
+#[cfg(target_os = "linux")]
+const XDOTOOL_KEYMAP_HOLD: Duration = Duration::from_millis(300);
+
+/// X keysym for `c`: Latin-1 characters are their own keysym, everything else
+/// uses the Unicode keysym range.
+#[cfg(target_os = "linux")]
+fn keysym_for_char(c: char) -> u32 {
+    let cp = c as u32;
+    if (0x20..=0x7e).contains(&cp) || (0xa0..=0xff).contains(&cp) {
+        cp
+    } else {
+        0x0100_0000 | cp
+    }
+}
+
+/// Unshifted and shifted keysyms for one keycode that types `c`, so that both
+/// cases of a letter share a keycode and the shifted one is typed with Shift.
+#[cfg(target_os = "linux")]
+fn keysym_pair_for_char(c: char) -> [u32; 2] {
+    fn single(mut chars: impl Iterator<Item = char>, fallback: char) -> char {
+        match (chars.next(), chars.next()) {
+            (Some(x), None) if !x.is_ascii() => x,
+            _ => fallback,
+        }
+    }
+    let lower = single(c.to_lowercase(), c);
+    let upper = single(c.to_uppercase(), c);
+    [keysym_for_char(lower), keysym_for_char(upper)]
+}
+
+/// Plans which empty keycodes get which keysym pair so that every character of
+/// `text` the keymap cannot type becomes typeable for the whole xdotool run.
+///
+/// `keysyms` is the core keyboard mapping starting at `min_keycode`, with
+/// `per_keycode` keysyms per keycode. Only the unshifted and shifted keysyms of
+/// the first group count as present. One empty keycode is left unbound for
+/// xdotool's own remapping, which still handles any characters left over.
+#[cfg(target_os = "linux")]
+fn plan_keysym_bindings(
+    text: &str,
+    keysyms: &[u32],
+    per_keycode: usize,
+    min_keycode: u8,
+) -> Vec<(u8, [u32; 2])> {
+    if per_keycode == 0 {
+        return Vec::new();
+    }
+    let mut present = std::collections::HashSet::new();
+    let mut free = Vec::new();
+    for (i, syms) in keysyms.chunks(per_keycode).enumerate() {
+        let Ok(keycode) = u8::try_from(usize::from(min_keycode) + i) else {
+            break;
+        };
+        if syms.iter().all(|&s| s == 0) {
+            free.push(keycode);
+        }
+        present.extend(syms.iter().take(2).copied().filter(|&s| s != 0));
+    }
+    free.pop();
+
+    let mut pairs: Vec<[u32; 2]> = Vec::new();
+    for c in text.chars() {
+        if c.is_ascii() || c.is_control() || present.contains(&keysym_for_char(c)) {
+            continue;
+        }
+        let pair = keysym_pair_for_char(c);
+        if !pairs.contains(&pair) {
+            pairs.push(pair);
+        }
+    }
+    free.into_iter().zip(pairs).collect()
+}
+
+/// Characters bound to empty keycodes for the duration of one xdotool run.
+///
+/// For a character the keymap cannot type, xdotool maps a spare keycode to it,
+/// presses the key and unmaps it again at once. A client that looks the key up
+/// after the unmap reached it gets no character (#1853). Binding the characters
+/// up front means xdotool finds them in the keymap and never remaps; the
+/// bindings are removed only after `XDOTOOL_KEYMAP_HOLD`.
+#[cfg(target_os = "linux")]
+struct TemporaryKeysyms {
+    conn: x11rb::rust_connection::RustConnection,
+    keycodes: Vec<u8>,
+}
+
+#[cfg(target_os = "linux")]
+impl TemporaryKeysyms {
+    fn bind(text: &str) -> Result<Option<Self>, String> {
+        use x11rb::connection::Connection;
+        use x11rb::protocol::xproto::ConnectionExt as _;
+
+        if text.is_ascii() {
+            return Ok(None);
+        }
+        let (conn, _) = x11rb::connect(None).map_err(|e| e.to_string())?;
+        let (min, max) = (conn.setup().min_keycode, conn.setup().max_keycode);
+        let mapping = conn
+            .get_keyboard_mapping(min, max - min + 1)
+            .map_err(|e| e.to_string())?
+            .reply()
+            .map_err(|e| e.to_string())?;
+        let plan = plan_keysym_bindings(
+            text,
+            &mapping.keysyms,
+            usize::from(mapping.keysyms_per_keycode),
+            min,
+        );
+        if plan.is_empty() {
+            return Ok(None);
+        }
+        let mut bound = Self {
+            conn,
+            keycodes: Vec::with_capacity(plan.len()),
+        };
+        for (keycode, pair) in plan {
+            bound
+                .conn
+                .change_keyboard_mapping(1, keycode, 2, &pair)
+                .map_err(|e| e.to_string())?
+                .check()
+                .map_err(|e| e.to_string())?;
+            bound.keycodes.push(keycode);
+        }
+        Ok(Some(bound))
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl Drop for TemporaryKeysyms {
+    fn drop(&mut self) {
+        use x11rb::protocol::xproto::ConnectionExt as _;
+
+        // Wait for each reply so the unbinding has taken effect before the
+        // connection closes; with only a flush the bindings stayed in testing.
+        for &keycode in &self.keycodes {
+            let result = self
+                .conn
+                .change_keyboard_mapping(1, keycode, 2, &[0, 0])
+                .map_err(|e| e.to_string())
+                .and_then(|cookie| cookie.check().map_err(|e| e.to_string()));
+            if let Err(e) = result {
+                log::warn!("Failed to unbind temporary keycode {}: {}", keycode, e);
+            }
+        }
+    }
+}
+
 /// Type text directly via xdotool on X11.
 #[cfg(target_os = "linux")]
 fn type_text_via_xdotool(text: &str) -> Result<(), String> {
+    let temporary_keysyms = TemporaryKeysyms::bind(text).unwrap_or_else(|e| {
+        log::warn!("Could not pre-bind characters for xdotool: {}", e);
+        None
+    });
+
     let output = Command::new("xdotool")
         .arg("type")
         .arg("--clearmodifiers")
@@ -484,6 +641,11 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
         }
         Err(error) => log::warn!("Failed to execute xdotool modifier cleanup: {}", error),
         _ => {}
+    }
+
+    if let Some(temporary_keysyms) = temporary_keysyms {
+        std::thread::sleep(XDOTOOL_KEYMAP_HOLD);
+        drop(temporary_keysyms);
     }
 
     if !output.status.success() {
@@ -940,6 +1102,66 @@ we're using raw keycodes now.
 Syntax: <keycode>:<pressed>
 e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 "#;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn keysyms_use_latin1_codes_then_the_unicode_range() {
+        assert_eq!(keysym_for_char('a'), 0x61);
+        assert_eq!(keysym_for_char('é'), 0xe9);
+        assert_eq!(keysym_for_char('œ'), 0x0100_0153);
+        assert_eq!(keysym_for_char('—'), 0x0100_2014);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn keysym_pairs_put_both_cases_on_one_keycode() {
+        assert_eq!(keysym_pair_for_char('ê'), [0xea, 0xca]);
+        assert_eq!(keysym_pair_for_char('Ê'), [0xea, 0xca]);
+        assert_eq!(keysym_pair_for_char('—'), [0x0100_2014, 0x0100_2014]);
+        // The uppercase of ß is two characters, and the uppercase of ı is the
+        // ASCII I, which the layout already types.
+        assert_eq!(keysym_pair_for_char('ß'), [0xdf, 0xdf]);
+        assert_eq!(keysym_pair_for_char('ı'), [0x0100_0131, 0x0100_0131]);
+    }
+
+    /// Core keymap starting at keycode 8, two keysyms per keycode: `a A`,
+    /// empty, `é É`, empty, then `extra_free` more empty keycodes.
+    #[cfg(target_os = "linux")]
+    fn test_keymap(extra_free: usize) -> Vec<u32> {
+        let mut keysyms = vec![0x61, 0x41, 0, 0, 0xe9, 0xc9, 0, 0];
+        keysyms.extend(std::iter::repeat_n(0, 2 * extra_free));
+        keysyms
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn ascii_and_layout_characters_need_no_binding() {
+        assert!(plan_keysym_bindings("plain text", &test_keymap(2), 2, 8).is_empty());
+        assert!(plan_keysym_bindings("été Été", &test_keymap(2), 2, 8).is_empty());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn out_of_layout_characters_get_one_empty_keycode_per_case_pair() {
+        assert_eq!(
+            plan_keysym_bindings("Être, être, cœur — café", &test_keymap(2), 2, 8),
+            vec![
+                (9, [0xea, 0xca]),
+                (11, [0x0100_0153, 0x0100_0152]),
+                (12, [0x0100_2014, 0x0100_2014]),
+            ]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn one_empty_keycode_is_left_for_xdotool() {
+        assert_eq!(
+            plan_keysym_bindings("ê œ —", &test_keymap(0), 2, 8),
+            vec![(9, [0xea, 0xca])]
+        );
+        assert!(plan_keysym_bindings("ê", &test_keymap(0)[..6], 2, 8).is_empty());
+    }
 
     #[cfg(target_os = "linux")]
     #[test]

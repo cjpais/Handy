@@ -172,6 +172,8 @@ gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 # version against the release that introduced damage-based compositing.
 webkit2gtk-sys = "2.0"
 gtk = "0.18"
+# Binds out-of-layout characters before xdotool types them (clipboard.rs).
+x11rb = "0.13"
 transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
