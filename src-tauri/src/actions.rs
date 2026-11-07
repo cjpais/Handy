@@ -136,6 +136,31 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
+/// How a legacy-mode request carries the user's prompt template and the
+/// transcript to the model.
+enum LegacyPromptPayload {
+    /// The template contains `${output}`: the transcript is inlined by
+    /// substitution and sent as the whole user message, as before.
+    Substituted(String),
+    /// The template has no placeholder: substituting would leave the
+    /// transcript out of the request entirely, which the model answers with
+    /// uselessly empty output. The template instead becomes the system
+    /// message and the transcript the user message, mirroring the
+    /// structured-output path.
+    SystemAndUser { system: String, user: String },
+}
+
+fn legacy_prompt_payload(prompt_template: &str, transcription: &str) -> LegacyPromptPayload {
+    if prompt_template.contains("${output}") {
+        LegacyPromptPayload::Substituted(prompt_template.replace("${output}", transcription))
+    } else {
+        LegacyPromptPayload::SystemAndUser {
+            system: build_system_prompt(prompt_template),
+            user: transcription.to_string(),
+        }
+    }
+}
+
 /// Returns `true` when a transcription has no meaningful content to
 /// post-process (empty or whitespace-only). Used to skip the post-processing
 /// LLM call when nothing was actually transcribed, which would otherwise make
@@ -383,26 +408,56 @@ async fn post_process_transcription(
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
-    debug!("Processed prompt length: {} chars", processed_prompt.len());
+    // Legacy mode: the transcript reaches the model through the `${output}`
+    // placeholder when the template has one. A template without it would
+    // otherwise send the model instructions with no transcript at all, which
+    // used to come back as silently empty output — so there the transcript is
+    // sent as its own user message and the template as the system prompt,
+    // mirroring the structured-output path above.
+    let completion = match legacy_prompt_payload(&prompt, transcription) {
+        LegacyPromptPayload::Substituted(processed_prompt) => {
+            debug!("Processed prompt length: {} chars", processed_prompt.len());
+            crate::llm_client::send_chat_completion(
+                &provider,
+                api_key,
+                &model,
+                processed_prompt,
+                disable_reasoning,
+            )
+            .await
+        }
+        LegacyPromptPayload::SystemAndUser { system, user } => {
+            warn!(
+                "Prompt '{}' has no ${{output}} placeholder; sending the transcript as the user message with the template as the system prompt",
+                selected_prompt_id
+            );
+            crate::llm_client::send_prompt_with_system(
+                &provider,
+                api_key,
+                &model,
+                user,
+                Some(system),
+                disable_reasoning,
+            )
+            .await
+        }
+    };
 
-    match crate::llm_client::send_chat_completion(
-        &provider,
-        api_key,
-        &model,
-        processed_prompt,
-        disable_reasoning,
-    )
-    .await
-    {
+    match completion {
         Ok(Some(content)) => {
             let content = strip_invisible_chars(strip_think_block(&content));
-            debug!(
-                "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
-                provider.id,
-                content.len()
-            );
+            if content.trim().is_empty() {
+                warn!(
+                    "LLM post-processing returned an empty response for provider '{}'. The transcript was supplied to the model; check the selected prompt's instructions if this repeats.",
+                    provider.id
+                );
+            } else {
+                debug!(
+                    "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
+                    provider.id,
+                    content.len()
+                );
+            }
             PostProcessOutcome::Done(content)
         }
         Ok(None) => {
@@ -1070,9 +1125,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
-        post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
-        strip_think_block, PostProcessOutcome,
+        complete_unless_cancelled, is_blank_transcription, legacy_prompt_payload,
+        non_blank_post_processed_text, post_process_transcription,
+        should_use_streaming_overlay, strip_invisible_chars, strip_think_block,
+        LegacyPromptPayload, PostProcessOutcome,
     };
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
@@ -1179,6 +1235,14 @@ mod tests {
     }
 
     #[test]
+    fn legacy_payload_substitutes_when_placeholder_present() {
+        match legacy_prompt_payload("Transcript: ${output}", "hello") {
+            LegacyPromptPayload::Substituted(text) => assert_eq!(text, "Transcript: hello"),
+            LegacyPromptPayload::SystemAndUser { .. } => panic!("expected Substituted"),
+        }
+    }
+
+    #[test]
     fn cleaned_empty_post_processed_text_is_rejected() {
         for text in [
             "\u{200B}\u{200C}\u{200D}\u{FEFF}",
@@ -1191,12 +1255,31 @@ mod tests {
     }
 
     #[test]
+    fn legacy_payload_substitutes_every_placeholder_occurrence() {
+        match legacy_prompt_payload("${output} — clean ${output}", "hey") {
+            LegacyPromptPayload::Substituted(text) => assert_eq!(text, "hey — clean hey"),
+            LegacyPromptPayload::SystemAndUser { .. } => panic!("expected Substituted"),
+        }
+    }
+
+    #[test]
     fn non_blank_post_processed_text_is_preserved() {
         for text in ["Cleaned text.", "  정리된 문장입니다.\n", "0"] {
             assert_eq!(
                 non_blank_post_processed_text(text.to_string()),
                 Some(text.to_string())
             );
+        }
+    }
+
+    #[test]
+    fn legacy_payload_splits_when_placeholder_missing() {
+        match legacy_prompt_payload("Clean the transcript.", "hey um there") {
+            LegacyPromptPayload::SystemAndUser { system, user } => {
+                assert_eq!(system, "Clean the transcript.");
+                assert_eq!(user, "hey um there");
+            }
+            LegacyPromptPayload::Substituted(_) => panic!("expected SystemAndUser"),
         }
     }
 
