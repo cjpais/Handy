@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Genveje blokeret af Secure Input",
     "language": "Sprog",
     "autoLanguage": "Automatisk",
-    "otherLanguages": "Andre sprog"
+    "otherLanguages": "Andre sprog",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Generelt",

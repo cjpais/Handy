@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input",
     "language": "Taal",
     "autoLanguage": "Automatisch",
-    "otherLanguages": "Andere talen"
+    "otherLanguages": "Andere talen",
+    "microphone": "Microfoon"
   },
   "sidebar": {
     "general": "Algemeen",

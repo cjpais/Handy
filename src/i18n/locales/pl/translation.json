@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input",
     "language": "Język",
     "autoLanguage": "Automatycznie",
-    "otherLanguages": "Inne języki"
+    "otherLanguages": "Inne języki",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Ogólne",
