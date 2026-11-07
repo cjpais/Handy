@@ -38,6 +38,18 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ cfg.package ];
 
+    # Pull pre-built binaries from the Handy Cachix cache (populated by CI in
+    # .github/workflows/nix-check.yml) so users skip the ~25 min local build.
+    # `extra-*` settings append to the system defaults instead of replacing
+    # them, and going through nix.settings keeps this mergeable with any
+    # substituters/keys the user already configures.
+    nix.settings = {
+      extra-substituters = [ "https://handy-computer.cachix.org" ];
+      extra-trusted-public-keys = [
+        "handy-computer.cachix.org-1:Sihzctn6DC0CJM5QeL+9nBEL3CL8c33m777C+eIv748="
+      ];
+    };
+
     # rdev grab() creates virtual input devices via /dev/uinput.
     # Default permissions are crw------- root root — open it to the input group.
     services.udev.extraRules = ''
