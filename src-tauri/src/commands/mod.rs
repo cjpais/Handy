@@ -3,6 +3,9 @@ pub mod history;
 pub mod models;
 pub mod transcription;
 
+#[cfg(target_os = "linux")]
+mod linux_open_dir;
+
 use crate::settings::{
     get_settings, update_checks_forced_disabled, write_settings, AppSettings, LogLevel,
 };
@@ -76,6 +79,38 @@ pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens a directory in the user's file manager.
+///
+/// On Linux, `open_path` runs `xdg-open` as a child of Handy, so it inherits
+/// Handy's environment (an AppImage, for one, rewrites `XDG_DATA_DIRS`,
+/// `LD_LIBRARY_PATH` and GIO's module paths). There xdg-open can miss the file
+/// manager and hand the `file://` URL to the web browser (#2294). So Linux asks
+/// the file manager over D-Bus first, which runs it with the session's own
+/// environment, and falls back to `open_path`. The D-Bus call can wait for the
+/// file manager to start, so it runs off the main thread.
+#[cfg(target_os = "linux")]
+fn open_directory(app: &AppHandle, path: String, what: &'static str) -> Result<(), String> {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let result = linux_open_dir::open_with_fallback(&path, || {
+            app.opener()
+                .open_path(path.clone(), None::<String>)
+                .map_err(|e| e.to_string())
+        });
+        if let Err(e) = result {
+            log::error!("Failed to open {}: {}", what, e);
+        }
+    });
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn open_directory(app: &AppHandle, path: String, what: &str) -> Result<(), String> {
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| format!("Failed to open {}: {}", what, e))
+}
+
 #[specta::specta]
 #[tauri::command]
 pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
@@ -85,11 +120,7 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
     let recordings_dir = app_data_dir.join("recordings");
 
     let path = recordings_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
-
-    Ok(())
+    open_directory(&app, path, "recordings folder")
 }
 
 #[specta::specta]
@@ -99,11 +130,7 @@ pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
     let path = log_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open log directory: {}", e))?;
-
-    Ok(())
+    open_directory(&app, path, "log directory")
 }
 
 #[specta::specta]
@@ -113,11 +140,7 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
 
     let path = app_data_dir.to_string_lossy().as_ref().to_string();
-    app.opener()
-        .open_path(path, None::<String>)
-        .map_err(|e| format!("Failed to open app data directory: {}", e))?;
-
-    Ok(())
+    open_directory(&app, path, "app data directory")
 }
 
 /// Check if Apple Intelligence is available on this device.

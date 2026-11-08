@@ -2522,11 +2522,13 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-cpp",
+ "url",
  "webkit2gtk-sys",
  "webview2-com",
  "whatlang",
  "windows 0.61.3",
  "winreg 0.55.0",
+ "zbus",
 ]
 
 [[package]]

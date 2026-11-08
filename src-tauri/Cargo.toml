@@ -176,6 +176,10 @@ transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
+# Open folders via org.freedesktop.FileManager1 (#2294); same versions
+# tauri-plugin-opener already pulls in.
+zbus = "5.9"
+url = "2"
 
 # TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
 # (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
