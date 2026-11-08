@@ -220,6 +220,7 @@ struct Event {
     run: Option<RunId>,
     thread: ThreadTag,
     args: Args,
+    incomplete: bool,
 }
 
 /// Configuration snapshot embedded in `otherData` at capture start. Strings
@@ -299,20 +300,30 @@ pub struct Recorder {
 
 /// An operation span tied to its recorder, run, and event name.
 ///
-/// Call [`Span::end`] to complete it. Dropping it emits no end event, so an
-/// interrupted operation remains incomplete until the capture stops.
-#[must_use = "end completed spans explicitly; dropping leaves them incomplete"]
+/// `end` completes it with the supplied outcome. Dropping it without calling
+/// `end` ends the span at the drop point, marked `incomplete`.
+#[must_use = "bind the span for the operation's scope; call end to complete it, otherwise drop marks it incomplete"]
 pub struct Span<'a> {
     recorder: &'a Recorder,
+    /// Taken by the first end, so a later drop emits nothing.
     run: Option<RunId>,
     name: Name,
 }
 
 impl Span<'_> {
     /// Ends this operation with the supplied outcome and counters.
-    pub fn end(self, args: Args) {
-        if let Some(run) = self.run {
-            self.recorder.end(run, self.name, args);
+    pub fn end(mut self, args: Args) {
+        if let Some(run) = self.run.take() {
+            self.recorder.end_with(run, self.name, args, false);
+        }
+    }
+}
+
+impl Drop for Span<'_> {
+    fn drop(&mut self) {
+        if let Some(run) = self.run.take() {
+            self.recorder
+                .end_with(run, self.name, Args::default(), true);
         }
     }
 }
@@ -354,6 +365,20 @@ impl Recorder {
         }
     }
 
+    /// Runs `op` inside a span that ends with the code mapped from its result.
+    pub fn spanned<R>(
+        &self,
+        run: impl Into<Option<RunId>>,
+        name: Name,
+        code: impl FnOnce(&R) -> Option<Code>,
+        op: impl FnOnce() -> R,
+    ) -> R {
+        let span = self.span(run, name);
+        let result = op();
+        span.end(Args::code(code(&result)));
+        result
+    }
+
     pub fn begin(&self, run: RunId, name: Name) {
         if !self.active.load(Ordering::Relaxed) {
             return;
@@ -365,10 +390,15 @@ impl Recorder {
             run: Some(run),
             thread: thread_tag(),
             args: Args::default(),
+            incomplete: false,
         });
     }
 
     pub fn end(&self, run: RunId, name: Name, args: Args) {
+        self.end_with(run, name, args, false);
+    }
+
+    fn end_with(&self, run: RunId, name: Name, args: Args, incomplete: bool) {
         if !self.active.load(Ordering::Relaxed) {
             return;
         }
@@ -379,6 +409,7 @@ impl Recorder {
             run: Some(run),
             thread: thread_tag(),
             args,
+            incomplete,
         });
     }
 
@@ -394,6 +425,7 @@ impl Recorder {
             run: run.into(),
             thread: thread_tag(),
             args,
+            incomplete: false,
         });
     }
 
@@ -408,6 +440,7 @@ impl Recorder {
             run: run.into(),
             thread: thread_tag(),
             args,
+            incomplete: false,
         });
     }
 
@@ -634,6 +667,7 @@ impl Writer {
 
         self.out.write_all(TRACE_HEADER)?;
         let mut first = true;
+        let mut incomplete: u64 = 0;
         for ev in &self.rx {
             let thread_bytes = if threads.contains_key(&ev.thread.tid) {
                 0
@@ -655,6 +689,7 @@ impl Writer {
                 let end = Event {
                     phase: Phase::End,
                     args: Args::default(),
+                    incomplete: false,
                     ..ev
                 };
                 event_line_at_timestamp(&end, u64::MAX, true, &mut record_buffer)?.len() as u64 + 2
@@ -678,6 +713,9 @@ impl Writer {
             bytes = next_bytes as u64;
             reserved_bytes = next_reserved as u64;
             threads.entry(ev.thread.tid).or_insert(ev.thread.name);
+            if matches!(ev.phase, Phase::End) && ev.incomplete {
+                incomplete = incomplete.saturating_add(1);
+            }
             match ev.phase {
                 Phase::Begin => {
                     if let Some(run) = ev.run {
@@ -701,8 +739,9 @@ impl Writer {
 
         // The sender is gone: every admitted event has been handled. End
         // still-open spans at the drain moment rather than losing them.
+        // `incomplete` counts these spans plus the ones whose guard dropped
+        // without an explicit end.
         let stop_at = Instant::now();
-        let mut incomplete: u64 = 0;
         for ((run, name), span) in open {
             let tid = span.tid;
             let ev = Event {
@@ -715,6 +754,7 @@ impl Writer {
                     name: threads.get(&tid).copied().flatten(),
                 },
                 args: Args::default(),
+                incomplete: false,
             };
             if let Some(line) = event_line(&ev, self.epoch, true, &mut record_buffer)? {
                 write_record(&mut self.out, &mut first, line)?;
@@ -856,19 +896,19 @@ fn metadata_line<'a>(
 fn event_line<'a>(
     ev: &Event,
     epoch: Instant,
-    incomplete: bool,
+    force_incomplete: bool,
     buffer: &'a mut Vec<u8>,
 ) -> serde_json::Result<Option<&'a [u8]>> {
     let Some(ts) = ev.at.checked_duration_since(epoch) else {
         return Ok(None);
     };
-    event_line_at_timestamp(ev, ts.as_micros() as u64, incomplete, buffer).map(Some)
+    event_line_at_timestamp(ev, ts.as_micros() as u64, force_incomplete, buffer).map(Some)
 }
 
 fn event_line_at_timestamp<'a>(
     ev: &Event,
     timestamp: u64,
-    incomplete: bool,
+    force_incomplete: bool,
     buffer: &'a mut Vec<u8>,
 ) -> serde_json::Result<&'a [u8]> {
     #[derive(Serialize)]
@@ -905,6 +945,7 @@ fn event_line_at_timestamp<'a>(
         Phase::End => ("e", Some("run"), None),
         Phase::Instant => ("i", None, Some("t")),
     };
+    let incomplete = ev.incomplete || force_incomplete;
     let args =
         (ev.args.code.is_some() || ev.args.count.is_some() || ev.args.flag.is_some() || incomplete)
             .then_some(RecordArgs {
@@ -938,6 +979,16 @@ pub fn next_run() -> RunId {
 /// Begins an operation span on the global recorder; an absent run is a no-op.
 pub fn span(run: impl Into<Option<RunId>>, name: Name) -> Span<'static> {
     RECORDER.span(run, name)
+}
+
+/// Runs `op` on the global recorder inside a span ended by the mapped code.
+pub fn spanned<R>(
+    run: impl Into<Option<RunId>>,
+    name: Name,
+    code: impl FnOnce(&R) -> Option<Code>,
+    op: impl FnOnce() -> R,
+) -> R {
+    RECORDER.spanned(run, name, code, op)
 }
 
 pub fn begin(run: RunId, name: Name) {
@@ -1276,7 +1327,7 @@ mod tests {
             panic!("operation interrupted");
         });
         assert!(unwind.is_err());
-        assert_eq!(rec.status().events, 2);
+        assert_eq!(rec.status().events, 4);
         let trace = parse(&rec.stop().unwrap());
         let events = non_meta_events(&trace);
         assert_eq!(events.len(), 4);
@@ -1284,6 +1335,50 @@ mod tests {
         for event in events.iter().filter(|event| event["ph"] == "e") {
             assert_eq!(event["args"], serde_json::json!({"incomplete": true}));
         }
+    }
+
+    #[test]
+    fn dropped_span_without_explicit_end_ends_incomplete() {
+        let rec = Recorder::new();
+        let dir = tempfile::tempdir().unwrap();
+        start(&rec, dir.path());
+        let run = rec.next_run();
+        {
+            let _span = rec.span(run, Name::HistorySave);
+        }
+        assert_eq!(rec.status().events, 2);
+        let trace = parse(&rec.stop().unwrap());
+        let events = non_meta_events(&trace);
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[1]["ph"], "e");
+        assert_eq!(events[1]["args"], serde_json::json!({"incomplete": true}));
+        assert_eq!(trace["otherData"]["incomplete_spans"], 1);
+    }
+
+    #[test]
+    fn spanned_ends_with_mapped_code() {
+        let rec = Recorder::new();
+        let dir = tempfile::tempdir().unwrap();
+        start(&rec, dir.path());
+        let run = rec.next_run();
+        let failure: Result<u8, u8> = rec.spanned(
+            Some(run),
+            Name::LiveFinalize,
+            |result: &Result<u8, u8>| result.as_ref().err().map(|_| Code::TranscriptionFailed),
+            || Err(7u8),
+        );
+        assert_eq!(failure, Err(7));
+        let ok = rec.spanned(Some(run), Name::BatchDecode, |_: &u8| None, || 5u8);
+        assert_eq!(ok, 5);
+        let trace = parse(&rec.stop().unwrap());
+        let events = non_meta_events(&trace);
+        assert_eq!(events.len(), 4);
+        assert_eq!(
+            events[1]["args"],
+            serde_json::json!({"code": "transcription_failed"})
+        );
+        assert!(events[3].get("args").is_none());
+        assert_eq!(trace["otherData"]["incomplete_spans"], 0);
     }
 
     #[test]

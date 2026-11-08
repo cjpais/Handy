@@ -920,10 +920,12 @@ impl TranscriptionManager {
         let Some(route) = self.router.take() else {
             return Ok(None);
         };
-        let span = diagnostics::span(run, Name::LiveFinalize);
-        let result = self.finalize_route(route, recorded_samples);
-        span.end(Args::code(result.as_ref().err().map(span_code)));
-        result
+        diagnostics::spanned(
+            run,
+            Name::LiveFinalize,
+            |result: &Result<Option<RunOutcome>>| result.as_ref().err().map(span_code),
+            || self.finalize_route(route, recorded_samples),
+        )
     }
 
     fn finalize_route(&self, route: Route, recorded_samples: usize) -> Result<Option<RunOutcome>> {
@@ -1057,10 +1059,12 @@ impl TranscriptionManager {
     /// Decode a whole clip with the loaded model, loading it first if a load
     /// is under way.
     fn decode_batch(&self, audio: Vec<f32>, run: Option<RunId>) -> Result<RunOutcome> {
-        let span = diagnostics::span(run, Name::BatchDecode);
-        let result = self.decode_batch_inner(audio, run);
-        span.end(Args::code(result.as_ref().err().map(span_code)));
-        result
+        diagnostics::spanned(
+            run,
+            Name::BatchDecode,
+            |result: &Result<RunOutcome>| result.as_ref().err().map(span_code),
+            || self.decode_batch_inner(audio, run),
+        )
     }
 
     fn decode_batch_inner(&self, audio: Vec<f32>, run: Option<RunId>) -> Result<RunOutcome> {

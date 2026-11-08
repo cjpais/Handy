@@ -1085,12 +1085,14 @@ impl AudioRecordingManager {
         vad_policy: VadPolicy,
         run: RunId,
     ) -> Result<RecordingReadiness, anyhow::Error> {
-        let span = diagnostics::span(run, Name::MicOpen);
-        let result = self.try_start_recording_inner(binding_id, vad_policy, run);
-        span.end(Args::code(
-            result.as_ref().err().map(code_from_recording_error),
-        ));
-        result
+        diagnostics::spanned(
+            run,
+            Name::MicOpen,
+            |result: &Result<RecordingReadiness, anyhow::Error>| {
+                result.as_ref().err().map(code_from_recording_error)
+            },
+            || self.try_start_recording_inner(binding_id, vad_policy, run),
+        )
     }
 
     fn try_start_recording_inner(
