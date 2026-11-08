@@ -1,5 +1,5 @@
 use crate::settings::{PostProcessApiFormat, PostProcessProvider};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -177,6 +177,40 @@ impl AnthropicMessagesResponse {
             .collect();
         (!text.is_empty()).then_some(text)
     }
+}
+
+/// Marks a stored API key as a reference to an environment variable.
+const ENV_API_KEY_PREFIX: &str = "env:";
+
+/// The variable name in a stored `env:NAME` reference, if it is one.
+fn env_api_key_name(stored: &str) -> Option<&str> {
+    let name = stored.trim().strip_prefix(ENV_API_KEY_PREFIX)?;
+    let mut chars = name.chars();
+    let first = chars.next()?;
+    let valid = (first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|c| c.is_ascii_alphanumeric() || c == '_');
+    valid.then_some(name)
+}
+
+/// Returns the API key to send for a stored settings value. A value of
+/// `env:NAME` is read from Handy's environment on every call, so the settings
+/// file holds only the reference and a changed variable needs no restart.
+/// Anything else, a malformed reference included, is the key itself.
+pub fn resolve_api_key(stored: &str) -> Result<String, String> {
+    let Some(name) = env_api_key_name(stored) else {
+        return Ok(stored.to_string());
+    };
+    let reason = match std::env::var(name) {
+        Ok(value) if !value.trim().is_empty() => return Ok(value.trim().to_string()),
+        Ok(_) => "is empty",
+        Err(std::env::VarError::NotPresent) => "is not set",
+        Err(std::env::VarError::NotUnicode(_)) => "is not valid text",
+    };
+    warn!("API key environment variable {} {}", name, reason);
+    Err(format!(
+        "The API key environment variable {} {} in Handy's environment.",
+        name, reason
+    ))
 }
 
 /// Build headers for API requests based on provider type
@@ -896,6 +930,64 @@ mod tests {
         assert!(is_known_rejected(&key));
         // A different model on the same endpoint is tracked separately
         assert!(!is_known_rejected(&endpoint_key(&deepseek, "other-model")));
+    }
+
+    #[test]
+    fn a_plain_api_key_is_used_as_is() {
+        assert_eq!(resolve_api_key("sk-plain").unwrap(), "sk-plain");
+        assert_eq!(resolve_api_key(" sk-spaced ").unwrap(), " sk-spaced ");
+        assert_eq!(resolve_api_key("").unwrap(), "");
+    }
+
+    #[test]
+    fn an_env_reference_reads_the_variable_each_time() {
+        let name = "HANDY_TEST_RESOLVE_API_KEY_SET";
+        std::env::set_var(name, "sk-from-env");
+        assert_eq!(
+            resolve_api_key(&format!("env:{name}")).unwrap(),
+            "sk-from-env"
+        );
+        assert_eq!(
+            resolve_api_key(&format!("  env:{name}\n")).unwrap(),
+            "sk-from-env"
+        );
+        std::env::set_var(name, "sk-changed");
+        assert_eq!(
+            resolve_api_key(&format!("env:{name}")).unwrap(),
+            "sk-changed"
+        );
+        std::env::remove_var(name);
+    }
+
+    #[test]
+    fn an_unset_or_empty_variable_is_an_error_naming_it() {
+        let name = "HANDY_TEST_RESOLVE_API_KEY_UNSET";
+        std::env::remove_var(name);
+        let err = resolve_api_key(&format!("env:{name}")).unwrap_err();
+        assert!(err.contains(name) && err.contains("not set"), "{err}");
+
+        let name = "HANDY_TEST_RESOLVE_API_KEY_EMPTY";
+        std::env::set_var(name, "  ");
+        let err = resolve_api_key(&format!("env:{name}")).unwrap_err();
+        assert!(err.contains(name) && err.contains("empty"), "{err}");
+        std::env::remove_var(name);
+    }
+
+    #[test]
+    fn a_malformed_env_reference_is_a_literal_key() {
+        for stored in ["env:", "env:9x", "env:A-B", "env: X", "ENV:X"] {
+            assert_eq!(resolve_api_key(stored).unwrap(), stored);
+        }
+    }
+
+    #[test]
+    fn a_resolved_env_key_reaches_the_auth_header() {
+        let name = "HANDY_TEST_RESOLVE_API_KEY_HEADER";
+        std::env::set_var(name, "sk-header");
+        let key = resolve_api_key(&format!("env:{name}")).unwrap();
+        std::env::remove_var(name);
+        let client = create_client(&provider("custom", "http://localhost:11434/v1"), &key).unwrap();
+        assert_eq!(client.headers[AUTHORIZATION], "Bearer sk-header");
     }
 
     #[test]

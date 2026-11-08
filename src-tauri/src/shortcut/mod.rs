@@ -1347,12 +1347,13 @@ pub async fn fetch_post_process_models(
         }
     }
 
-    // Get API key
-    let api_key = settings
+    // Get API key, reading an `env:NAME` reference from the environment now
+    let stored_api_key = settings
         .post_process_api_keys
         .get(&provider_id)
-        .cloned()
+        .map(String::as_str)
         .unwrap_or_default();
+    let api_key = crate::llm_client::resolve_api_key(stored_api_key)?;
 
     // Skip fetching if no API key for providers that typically need one
     if api_key.trim().is_empty() && provider.id != "custom" {

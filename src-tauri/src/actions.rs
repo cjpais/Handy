@@ -255,11 +255,16 @@ async fn post_process_transcription(
         provider.id, model
     );
 
-    let api_key = settings
+    let stored_api_key = settings
         .post_process_api_keys
         .get(&provider.id)
-        .cloned()
+        .map(String::as_str)
         .unwrap_or_default();
+    // An `env:NAME` key is read now, so a changed variable needs no restart.
+    // The resolver has already logged why it failed.
+    let Ok(api_key) = crate::llm_client::resolve_api_key(stored_api_key) else {
+        return PostProcessOutcome::Failed;
+    };
 
     // Ask these providers to skip reasoning/thinking — post-processing rarely
     // benefits from it and it adds seconds of latency. llm_client picks the
@@ -1146,6 +1151,68 @@ mod tests {
         assert_eq!(
             run_post_process(&post_process_settings(&url), "hello"),
             PostProcessOutcome::Done("polished".to_string())
+        );
+    }
+
+    /// Like `serve_once`, and also hands back the request it received.
+    fn serve_once_capturing(body: &'static str) -> (String, std::sync::mpsc::Receiver<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0; 8192];
+            let read = stream.read(&mut request).unwrap_or(0);
+            let _ = sender.send(String::from_utf8_lossy(&request[..read]).into_owned());
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+        (format!("http://{address}"), receiver)
+    }
+
+    fn with_api_key(mut settings: AppSettings, key: &str) -> AppSettings {
+        let provider_id = settings.post_process_provider_id.clone();
+        settings
+            .post_process_api_keys
+            .insert(provider_id, key.to_string());
+        settings
+    }
+
+    #[test]
+    fn an_env_api_key_is_sent_as_the_variable_value() {
+        let name = "HANDY_TEST_POST_PROCESS_ENV_KEY";
+        std::env::set_var(name, "sk-from-env");
+        let (url, request) =
+            serve_once_capturing(r#"{"choices":[{"message":{"content":"polished"}}]}"#);
+        let settings = with_api_key(post_process_settings(&url), &format!("env:{name}"));
+        let outcome = run_post_process(&settings, "hello");
+        std::env::remove_var(name);
+        assert_eq!(outcome, PostProcessOutcome::Done("polished".to_string()));
+        let request = request.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(
+            request
+                .to_ascii_lowercase()
+                .contains("authorization: bearer sk-from-env"),
+            "{request}"
+        );
+        assert!(!request.contains("env:"), "{request}");
+    }
+
+    #[test]
+    fn an_unset_env_api_key_fails_post_processing() {
+        let name = "HANDY_TEST_POST_PROCESS_ENV_KEY_UNSET";
+        std::env::remove_var(name);
+        let settings = with_api_key(
+            post_process_settings("http://127.0.0.1:1"),
+            &format!("env:{name}"),
+        );
+        assert_eq!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::Failed
         );
     }
 

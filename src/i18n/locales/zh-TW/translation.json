@@ -657,7 +657,8 @@
         "apiKey": {
           "title": "API 金鑰",
           "description": "所選供應商的 API 金鑰",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "envHint": "To keep the key out of the settings file, type env:NAME and Handy reads it from the environment variable NAME each time."
         },
         "model": {
           "title": "模型",

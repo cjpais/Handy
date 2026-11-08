@@ -657,7 +657,8 @@
         "apiKey": {
           "title": "API-Schlüssel",
           "description": "API-Schlüssel für den ausgewählten Anbieter.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "envHint": "To keep the key out of the settings file, type env:NAME and Handy reads it from the environment variable NAME each time."
         },
         "model": {
           "title": "Modell",

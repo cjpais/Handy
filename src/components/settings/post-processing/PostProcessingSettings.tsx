@@ -114,7 +114,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
 
           <SettingContainer
             title={t("settings.postProcessing.api.apiKey.title")}
-            description={t("settings.postProcessing.api.apiKey.description")}
+            description={`${t("settings.postProcessing.api.apiKey.description")} ${t("settings.postProcessing.api.apiKey.envHint")}`}
             descriptionMode="tooltip"
             layout="horizontal"
             grouped={true}

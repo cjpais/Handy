@@ -657,7 +657,8 @@
         "apiKey": {
           "title": "API कुञ्जी",
           "description": "चयन गरिएको प्रदायकका लागि API कुञ्जी।",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "envHint": "To keep the key out of the settings file, type env:NAME and Handy reads it from the environment variable NAME each time."
         },
         "model": {
           "title": "मोडेल",
