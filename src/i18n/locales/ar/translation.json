@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "لم يتم العثور على ميكروفون",
     "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
     "recordingFailedTitle": "فشل في بدء التسجيل",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "تعذر على Handy تحميل هذا النموذج. حاول مرة أخرى أو اختر نموذجًا آخر.",
     "modelLoadFailedTitle": "فشل في تحميل النموذج",
     "modelDownloadFailed": "فشل التنزيل",

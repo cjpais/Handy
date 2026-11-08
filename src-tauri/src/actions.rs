@@ -706,6 +706,11 @@ impl ShortcutAction for TranscribeAction {
                 // Read now: by the time transcribing ends, another take may
                 // have replaced it.
                 let input_silent = rm.last_input_silent();
+                // The device sent no usable signal: say so, so an empty
+                // result isn't mistaken for speech the model missed.
+                let silence_notice = rm
+                    .last_capture_silent()
+                    .then(|| Notice::new(NoticeCode::CapturedSilence, NoticeSource::Dictation));
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -725,7 +730,10 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
+                    match silence_notice {
+                        Some(notice) => notices::raise(&ah, notice),
+                        None => utils::hide_recording_overlay(&ah),
+                    }
                     set_tray_state(&ah, TrayIconState::Idle);
                     emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
                 } else {
@@ -843,7 +851,10 @@ impl ShortcutAction for TranscribeAction {
                             };
 
                             if final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
+                                match silence_notice {
+                                    Some(notice) => notices::raise(&ah, notice),
+                                    None => utils::hide_recording_overlay(&ah),
+                                }
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
                                     &ah,
@@ -891,11 +902,16 @@ impl ShortcutAction for TranscribeAction {
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    let notice = post_process_failed.then(|| {
-                                                        Notice::new(
-                                                            NoticeCode::PostProcessFailed,
-                                                            NoticeSource::Dictation,
-                                                        )
+                                                    // Text typed from silence is
+                                                    // likely made up; that matters
+                                                    // more than a skipped polish.
+                                                    let notice = silence_notice.or_else(|| {
+                                                        post_process_failed.then(|| {
+                                                            Notice::new(
+                                                                NoticeCode::PostProcessFailed,
+                                                                NoticeSource::Dictation,
+                                                            )
+                                                        })
                                                     });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }

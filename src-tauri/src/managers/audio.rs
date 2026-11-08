@@ -513,6 +513,9 @@ pub struct AudioRecordingManager {
     cached_device: Arc<Mutex<Option<(String, String)>>>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
+    /// The last recording's raw capture held no usable signal (see
+    /// `CapturedAudio::captured_silence`).
+    last_capture_silent: Arc<AtomicBool>,
 }
 
 impl AudioRecordingManager {
@@ -555,6 +558,7 @@ impl AudioRecordingManager {
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
+            last_capture_silent: Arc::new(AtomicBool::new(false)),
         };
 
         // Always-on?  Open immediately.
@@ -979,12 +983,15 @@ impl AudioRecordingManager {
                 self.return_vad(captured.vad);
                 self.last_input_silent
                     .store(captured.input_silent, Ordering::Release);
+                self.last_capture_silent
+                    .store(captured.captured_silence, Ordering::Release);
                 captured.samples
             }
             Err(e) => {
                 // The recording and its detector are lost with the sink.
                 error!("Failed to stop recording: {e}");
                 self.last_input_silent.store(false, Ordering::Release);
+                self.last_capture_silent.store(false, Ordering::Release);
                 if e.kind() != ErrorKind::NotRecording {
                     microphone.failed.store(true, Ordering::Release);
                 }
@@ -1237,6 +1244,12 @@ impl AudioRecordingManager {
         self.last_input_silent.load(Ordering::Acquire)
     }
 
+    /// Whether the last stopped recording held no usable signal: at least a
+    /// second long and never above -60 dBFS before VAD.
+    pub fn last_capture_silent(&self) -> bool {
+        self.last_capture_silent.load(Ordering::Acquire)
+    }
+
     pub fn was_cancelled_since(&self, generation: u64) -> bool {
         self.cancel_generation.load(Ordering::Acquire) != generation
     }
@@ -1279,6 +1292,7 @@ impl AudioRecordingManager {
                     None => {
                         error!("Recorder not available");
                         self.last_input_silent.store(false, Ordering::Release);
+                        self.last_capture_silent.store(false, Ordering::Release);
                         Vec::new()
                     }
                 };

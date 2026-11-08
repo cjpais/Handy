@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "कुनै माइक्रोफोन भेटिएन",
     "noInputDevice": "कुनै अडियो इनपुट डिभाइस भेटिएन। कृपया माइक्रोफोन वा हेडसेट जोडेर फेरि प्रयास गर्नुहोस्।",
     "recordingFailedTitle": "रेकर्डिङ सुरु गर्न सकिएन",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy ले यो मोडेल लोड गर्न सकेन। फेरि प्रयास गर्नुहोस् वा अर्को मोडेल छान्नुहोस्।",
     "modelLoadFailedTitle": "मोडेल लोड गर्न सकिएन",
     "modelDownloadFailed": "डाउनलोड असफल भयो",

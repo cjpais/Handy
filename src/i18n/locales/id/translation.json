@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Mikrofon Tidak Ditemukan",
     "noInputDevice": "Tidak ada perangkat masukan audio yang terdeteksi. Hubungkan mikrofon atau headset lalu coba lagi.",
     "recordingFailedTitle": "Gagal Memulai Perekaman",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy tidak dapat memuat model ini. Coba lagi atau pilih model lain.",
     "modelLoadFailedTitle": "Gagal Memuat Model",
     "modelDownloadFailed": "Unduhan gagal",

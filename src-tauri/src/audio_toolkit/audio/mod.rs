@@ -1,6 +1,7 @@
 // Re-export all audio components
 mod decode;
 mod device;
+mod level;
 mod sink;
 mod utils;
 mod visualizer;

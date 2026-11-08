@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "未找到麦克风",
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
     "recordingFailedTitle": "录音启动失败",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy 无法加载此模型。请重试或选择其他模型。",
     "modelLoadFailedTitle": "加载模型失败",
     "modelDownloadFailed": "下载失败",

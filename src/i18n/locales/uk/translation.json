@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Мікрофон не знайдено",
     "noInputDevice": "Не виявлено жодного пристрою введення звуку. Підключіть мікрофон або гарнітуру та спробуйте знову.",
     "recordingFailedTitle": "Не вдалося розпочати запис",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy не вдалося завантажити цю модель. Спробуйте ще раз або виберіть іншу.",
     "modelLoadFailedTitle": "Не вдалося завантажити модель",
     "modelDownloadFailed": "Помилка завантаження",

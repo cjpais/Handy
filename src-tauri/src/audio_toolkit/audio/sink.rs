@@ -3,7 +3,7 @@ use std::sync::{mpsc, Arc};
 use handy_recorder::{AudioChunk, Sink};
 
 use crate::audio_toolkit::{
-    audio::AudioVisualiser,
+    audio::{level::TakeLevel, AudioVisualiser},
     constants,
     vad::{VadFrame, VoiceActivityDetector},
 };
@@ -74,6 +74,9 @@ pub struct CapturedAudio {
     /// Every sample received (pre-VAD) was exactly zero, e.g. a muted mic.
     /// False when no audio arrived at all.
     pub input_silent: bool,
+    /// The raw capture (pre-VAD) was at least a second long and never rose
+    /// above -60 dBFS: the device delivered no usable signal.
+    pub captured_silence: bool,
     /// The detector the recording borrowed, for the next one.
     pub vad: CaptureVad,
 }
@@ -92,6 +95,7 @@ pub struct CaptureSink {
     ready: Option<mpsc::Sender<()>>,
     samples: Vec<f32>,
     heard_sound: bool,
+    level: TakeLevel,
 }
 
 /// Spectrum window at 16 kHz: 32 ms, near the overlay's ~30 Hz refresh.
@@ -128,6 +132,7 @@ impl CaptureSink {
             ready: Some(ready),
             samples: Vec::new(),
             heard_sound: false,
+            level: TakeLevel::default(),
         }
     }
 
@@ -155,10 +160,19 @@ impl CaptureSink {
                 );
             }
         }
+        let captured_silence = self.level.is_silent();
+        if captured_silence {
+            log::warn!(
+                "Captured audio is silent: peak {:.1} dBFS over {:.1}s; check the input device",
+                self.level.peak_dbfs(),
+                self.level.seconds()
+            );
+        }
         CapturedAudio {
             samples: self.samples,
             // `ready` is spent on the first chunk, so `None` means audio came.
             input_silent: self.ready.is_none() && !self.heard_sound,
+            captured_silence,
             vad: self.vad,
         }
     }
@@ -180,6 +194,7 @@ impl Sink for CaptureSink {
 
         // Mono by construction: the recorder mixes down or picks one channel.
         let real = &chunk.samples[..chunk.valid_frames];
+        self.level.feed(real);
         if let Some(levels) = self.visualizer.feed(real) {
             (self.on_levels)(levels);
         }

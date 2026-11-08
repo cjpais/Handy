@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Не е намерен микрофон",
     "noInputDevice": "Не е открито аудио входно устройство. Свържете микрофон или слушалки и опитайте отново.",
     "recordingFailedTitle": "Записът не стартира",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy не можа да зареди този модел. Опитайте отново или изберете друг.",
     "modelLoadFailedTitle": "Моделът не се зареди",
     "modelDownloadFailed": "Изтеглянето е неуспешно",

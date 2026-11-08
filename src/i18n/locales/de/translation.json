@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Kein Mikrofon gefunden",
     "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließe ein Mikrofon oder Headset an und versuche es erneut.",
     "recordingFailedTitle": "Aufnahmestart fehlgeschlagen",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy konnte dieses Modell nicht laden. Versuche es erneut oder wähle ein anderes.",
     "modelLoadFailedTitle": "Modell konnte nicht geladen werden",
     "modelDownloadFailed": "Download fehlgeschlagen",

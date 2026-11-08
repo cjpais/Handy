@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Không tìm thấy micrô",
     "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
     "recordingFailedTitle": "Không thể bắt đầu ghi âm",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy không thể tải mô hình này. Hãy thử lại hoặc chọn mô hình khác.",
     "modelLoadFailedTitle": "Không thể tải mô hình",
     "modelDownloadFailed": "Tải xuống thất bại",

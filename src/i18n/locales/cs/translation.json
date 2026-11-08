@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Mikrofon nebyl nalezen",
     "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
     "recordingFailedTitle": "Nepodařilo se spustit nahrávání",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy nemohl načíst tento model. Zkuste to znovu nebo vyberte jiný.",
     "modelLoadFailedTitle": "Nepodařilo se načíst model",
     "modelDownloadFailed": "Stahování selhalo",

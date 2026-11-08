@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Aucun microphone trouvé",
     "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
     "recordingFailedTitle": "Échec de l'enregistrement",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "Handy n'a pas pu charger ce modèle. Réessayez ou choisissez-en un autre.",
     "modelLoadFailedTitle": "Échec du chargement du modèle",
     "modelDownloadFailed": "Échec du téléchargement",

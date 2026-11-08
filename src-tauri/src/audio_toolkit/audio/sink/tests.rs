@@ -136,6 +136,48 @@ fn a_recording_stopped_before_any_audio_is_not_silent_input() {
     assert!(!h.sink.finish().input_silent);
 }
 
+/// Feeds `seconds` of chunks all carrying `value`.
+fn feed_constant(h: &mut Harness, value: f32, seconds: f32) {
+    let frame = [value; FRAME];
+    for _ in 0..(seconds * 16_000.0) as usize / FRAME {
+        h.sink.process_chunk(chunk(&frame, FRAME));
+    }
+}
+
+#[test]
+fn a_silent_take_trimmed_to_nothing_by_vad_is_captured_silence() {
+    // Zeros are noise to the scripted VAD, so nothing reaches the recording;
+    // the level is judged on the raw capture.
+    let mut h = harness(VadPolicy::Offline);
+    feed_constant(&mut h, 0.0, 1.25);
+    let captured = h.sink.finish();
+    assert!(captured.samples.is_empty());
+    assert!(captured.captured_silence);
+}
+
+#[test]
+fn a_near_silent_take_kept_whole_is_captured_silence() {
+    // VAD off: every sample is delivered, all far below -60 dBFS.
+    let mut h = harness(VadPolicy::Disabled);
+    feed_constant(&mut h, 0.000_1, 1.25);
+    let captured = h.sink.finish();
+    assert_eq!(captured.samples.len(), 20_000);
+    assert!(!captured.input_silent, "not exact zeros");
+    assert!(captured.captured_silence);
+}
+
+#[test]
+fn a_short_or_audible_take_is_not_captured_silence() {
+    let mut h = harness(VadPolicy::Offline);
+    feed_constant(&mut h, 0.0, 0.5);
+    assert!(!h.sink.finish().captured_silence);
+
+    let mut h = harness(VadPolicy::Offline);
+    feed_constant(&mut h, 0.0, 1.0);
+    h.sink.process_chunk(chunk(&[0.1, 0.0, 0.0, 0.0], FRAME));
+    assert!(!h.sink.finish().captured_silence);
+}
+
 #[test]
 fn sound_counts_even_when_vad_drops_it() {
     let mut h = harness(VadPolicy::Offline);

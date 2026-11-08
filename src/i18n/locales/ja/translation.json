@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "マイクが見つかりません",
     "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
     "recordingFailedTitle": "録音の開始に失敗しました",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "このモデルを読み込めませんでした。もう一度試すか、別のモデルを選択してください。",
     "modelLoadFailedTitle": "モデルの読み込みに失敗しました",
     "modelDownloadFailed": "ダウンロードに失敗しました",

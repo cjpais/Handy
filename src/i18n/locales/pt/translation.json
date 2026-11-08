@@ -941,6 +941,8 @@
     "noInputDeviceTitle": "Nenhum microfone encontrado",
     "noInputDevice": "Nenhum dispositivo de entrada de áudio foi detectado. Conecte um microfone ou fone de ouvido e tente novamente.",
     "recordingFailedTitle": "Falha ao iniciar a gravação",
+    "capturedSilenceTitle": "Only Silence Recorded",
+    "capturedSilence": "Handy recorded only silence from the microphone. Check that the right input device is selected and that its level is up. On Windows, audio enhancements on the device can also mute it.",
     "modelLoadFailed": "O Handy não conseguiu carregar este modelo. Tente novamente ou escolha outro.",
     "modelLoadFailedTitle": "Falha ao carregar o modelo",
     "modelDownloadFailed": "Falha no download",
