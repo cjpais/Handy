@@ -240,9 +240,6 @@
       },
       "unsupported": "यो मोडेलले {{language}} बुझ्दैन, त्यसैले टाइप गर्न सक्दैन",
       "unrated": "यो मोडेलले {{language}} बुझ्छ, तर कति राम्ररी बुझ्छ भनेर हामीले अहिलेसम्म नापेका छैनौँ",
-      "under": "{{max}}% भन्दा कम",
-      "between": "{{min}} देखि {{max}}%",
-      "over": "{{min}}% वा बढी",
       "speedTitle": "गति: {{speed}}",
       "speedName": {
         "0": "धेरै ढिलो",
@@ -263,6 +260,13 @@
       "underSeconds": "{{max}} से. भन्दा कम",
       "betweenSeconds": "{{min}} देखि {{max}} से.",
       "overSeconds": "{{min}} से. वा बढी"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "सिफारिस गरिएको",

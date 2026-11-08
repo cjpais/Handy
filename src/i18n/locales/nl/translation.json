@@ -240,9 +240,6 @@
       },
       "unsupported": "Dit model verstaat geen {{language}} en kan het dus niet typen",
       "unrated": "Dit model verstaat {{language}}, maar we hebben nog niet gemeten hoe goed",
-      "under": "onder {{max}}%",
-      "between": "{{min}} tot {{max}}%",
-      "over": "{{min}}% of meer",
       "speedTitle": "Snelheid: {{speed}}",
       "speedName": {
         "0": "Zeer langzaam",
@@ -263,6 +260,13 @@
       "underSeconds": "onder {{max}} s",
       "betweenSeconds": "{{min}} tot {{max}} s",
       "overSeconds": "{{min}} s of meer"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Aanbevolen",

@@ -240,9 +240,6 @@
       },
       "unsupported": "המודל הזה לא מבין {{language}}, ולכן לא יכול להקליד בה",
       "unrated": "המודל הזה מבין {{language}}, אבל עדיין לא מדדנו עד כמה טוב",
-      "under": "מתחת ל-{{max}}%",
-      "between": "{{min}} עד {{max}}%",
-      "over": "{{min}}% ומעלה",
       "speedTitle": "מהירות: {{speed}}",
       "speedName": {
         "0": "איטי מאוד",
@@ -263,6 +260,13 @@
       "underSeconds": "מתחת ל-{{max}} שנ׳",
       "betweenSeconds": "{{min}} עד {{max}} שנ׳",
       "overSeconds": "{{min}} שנ׳ ומעלה"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "מומלץ",

@@ -321,7 +321,11 @@ export const Model: React.FC<ModelProps> = ({
                     langs={[l]}
                   >
                     <span className="inline-flex items-center gap-[6px]">
-                      <GradeChip letter={grade.letter} label={grade.label} />
+                      <GradeChip
+                        letter={grade.letter}
+                        label={grade.label}
+                        large
+                      />
                       <small className="text-small">
                         {dense ? l.toUpperCase() : nameOf(l)}
                       </small>
@@ -448,7 +452,11 @@ export const Model: React.FC<ModelProps> = ({
           <span {...vt(id, "g")} className="flex items-center gap-[10px]">
             <GradeTip grading={grading} model={row.model} langs={langs}>
               <span className="inline-grid">
-                <GradeChip letter={overall.letter} label={overall.label} />
+                <GradeChip
+                  letter={overall.letter}
+                  label={overall.label}
+                  large
+                />
               </span>
             </GradeTip>
             <SpeedTip

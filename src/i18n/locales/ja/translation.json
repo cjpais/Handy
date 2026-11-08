@@ -240,9 +240,6 @@
       },
       "unsupported": "このモデルは{{language}}に対応していないため、入力できません",
       "unrated": "このモデルは{{language}}に対応していますが、精度はまだ測定されていません",
-      "under": "{{max}}% 未満",
-      "between": "{{min}}〜{{max}}%",
-      "over": "{{min}}% 以上",
       "speedTitle": "速度: {{speed}}",
       "speedName": {
         "0": "とても遅い",
@@ -263,6 +260,13 @@
       "underSeconds": "{{max}} 秒未満",
       "betweenSeconds": "{{min}}〜{{max}} 秒",
       "overSeconds": "{{min}} 秒以上"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "おすすめ",
