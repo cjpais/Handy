@@ -63,6 +63,53 @@ fn supports_soundex(key: &str) -> bool {
     !key.is_empty() && key.chars().all(|c| c.is_ascii_alphabetic())
 }
 
+/// Number of consonant digits in the Soundex code of `key`, counted the same
+/// way `natural::phonetics::soundex` builds it (before padding to 4 chars).
+fn soundex_digit_count(key: &str) -> usize {
+    let mut digits: Vec<char> = key
+        .chars()
+        .skip(1)
+        .filter_map(|c| match c.to_ascii_lowercase() {
+            'b' | 'f' | 'p' | 'v' => Some('1'),
+            'c' | 'g' | 'j' | 'k' | 'q' | 's' | 'x' | 'z' => Some('2'),
+            'd' | 't' => Some('3'),
+            'l' => Some('4'),
+            'm' | 'n' => Some('5'),
+            'r' => Some('6'),
+            'h' | 'w' => None,
+            _ => Some('0'),
+        })
+        .collect();
+    digits.dedup();
+    digits.iter().filter(|&&d| d != '0').count()
+}
+
+/// Whether a shared Soundex code may boost the match between `candidate` and
+/// `custom_word_key`.
+///
+/// Soundex is an English algorithm, so the boost is skipped when the output is
+/// known to be another language. Unknown output keeps it, because many models
+/// (Parakeet in auto mode, for one) never report a language. A code padded
+/// with zeros (fewer than three coded consonants) is too weak to count either:
+/// "quand tu", "qui ont" and "Quanta" all reduce to q530, as do "next" and
+/// "Nuxt" to n230.
+fn phonetic_boost_applies(
+    candidate: &str,
+    custom_word_key: &str,
+    language: &OutputLanguageEvidence,
+) -> bool {
+    let english_or_unknown = language
+        .language()
+        .is_none_or(|lang| lang.split(&['-', '_'][..]).next() == Some("en"));
+
+    english_or_unknown
+        && supports_soundex(candidate)
+        && supports_soundex(custom_word_key)
+        && soundex_digit_count(candidate) >= 3
+        && soundex_digit_count(custom_word_key) >= 3
+        && soundex(candidate, custom_word_key)
+}
+
 /// Finds the best matching custom word for a candidate string
 ///
 /// Uses Levenshtein distance and Soundex phonetic matching to find
@@ -73,6 +120,7 @@ fn supports_soundex(key: &str) -> bool {
 /// * `custom_words` - Original custom words (for returning the replacement)
 /// * `custom_word_match_keys` - Normalized custom-word keys for comparison
 /// * `threshold` - Maximum similarity score to accept
+/// * `language` - Evidence for the output language (gates the Soundex boost)
 ///
 /// # Returns
 /// The best matching custom word and its score, if any match was found
@@ -81,6 +129,7 @@ fn find_best_match<'a>(
     custom_words: &'a [String],
     custom_word_match_keys: &[CustomWordMatchKey],
     threshold: f64,
+    language: &OutputLanguageEvidence,
 ) -> Option<(&'a String, f64)> {
     if !is_supported_fuzzy_key(candidate) || candidate.chars().count() > 50 {
         return None;
@@ -112,9 +161,7 @@ fn find_best_match<'a>(
 
         // Soundex is an English/ASCII phonetic algorithm. Numeric terms can
         // still use edit distance, but must not receive a phonetic boost.
-        let phonetic_match = supports_soundex(candidate)
-            && supports_soundex(&custom_word_key.key)
-            && soundex(candidate, &custom_word_key.key);
+        let phonetic_match = phonetic_boost_applies(candidate, &custom_word_key.key, language);
 
         // Combine scores: favor phonetic matches, but also consider string similarity
         let combined_score = if phonetic_match {
@@ -145,10 +192,17 @@ fn find_best_match<'a>(
 /// * `text` - The input text to correct
 /// * `custom_words` - List of custom words to match against
 /// * `threshold` - Maximum similarity score to accept (0.0 = exact match, 1.0 = any match)
+/// * `language` - Evidence for the output language; the Soundex boost only
+///   applies to English or unknown output
 ///
 /// # Returns
 /// The corrected text with custom words applied
-pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
+pub fn apply_custom_words(
+    text: &str,
+    custom_words: &[String],
+    threshold: f64,
+    language: &OutputLanguageEvidence,
+) -> String {
     if custom_words.is_empty() {
         return text.to_string();
     }
@@ -187,9 +241,13 @@ pub fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -
             }
             let ngram = build_ngram(ngram_words);
 
-            if let Some((replacement, score)) =
-                find_best_match(&ngram, custom_words, &custom_word_match_keys, threshold)
-            {
+            if let Some((replacement, score)) = find_best_match(
+                &ngram,
+                custom_words,
+                &custom_word_match_keys,
+                threshold,
+                language,
+            ) {
                 let is_better = best_match
                     .as_ref()
                     .is_none_or(|(_, _, best_score)| score < *best_score);
@@ -500,7 +558,7 @@ mod tests {
     fn test_apply_custom_words_exact_match() {
         let text = "hello world";
         let custom_words = vec!["Hello".to_string(), "World".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "Hello World");
     }
 
@@ -508,7 +566,7 @@ mod tests {
     fn test_apply_custom_words_fuzzy_match() {
         let text = "helo wrold";
         let custom_words = vec!["hello".to_string(), "world".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "hello world");
     }
 
@@ -537,7 +595,7 @@ mod tests {
     fn test_empty_custom_words() {
         let text = "hello world";
         let custom_words = vec![];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "hello world");
     }
 
@@ -792,7 +850,7 @@ mod tests {
     fn test_apply_custom_words_ngram_two_words() {
         let text = "il cui nome è Charge B, che permette";
         let custom_words = vec!["ChargeBee".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert!(result.contains("ChargeBee,"), "unexpected result: {result}");
         assert!(!result.contains("Charge B"));
     }
@@ -801,7 +859,7 @@ mod tests {
     fn test_apply_custom_words_ngram_three_words() {
         let text = "use Chat G P T for this";
         let custom_words = vec!["ChatGPT".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert!(result.contains("ChatGPT"));
     }
 
@@ -809,7 +867,7 @@ mod tests {
     fn test_apply_custom_words_prefers_longer_ngram() {
         let text = "Open AI GPT model";
         let custom_words = vec!["OpenAI".to_string(), "GPT".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "OpenAI GPT model");
     }
 
@@ -817,7 +875,7 @@ mod tests {
     fn test_apply_custom_words_ngram_preserves_case() {
         let text = "CHARGE B is great";
         let custom_words = vec!["ChargeBee".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert!(result.contains("CHARGEBEE"));
     }
 
@@ -826,7 +884,7 @@ mod tests {
         // Custom word with space should also match against split words
         let text = "using Mac Book Pro";
         let custom_words = vec!["MacBook Pro".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "using MacBook Pro");
     }
 
@@ -836,7 +894,7 @@ mod tests {
         // between build_ngram stripping them and extract_punctuation capturing them
         let text = "use GPT4 for this";
         let custom_words = vec!["GPT-4".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         // Should NOT produce "GPT-44" (double-counting the trailing 4)
         assert!(
             !result.contains("GPT-44"),
@@ -849,7 +907,8 @@ mod tests {
     fn test_apply_custom_words_matches_ampersand_word() {
         let text = "send it to RD for review";
         let custom_words = vec!["R&D".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.18);
+        let result =
+            apply_custom_words(text, &custom_words, 0.18, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "send it to R&D for review");
     }
 
@@ -857,7 +916,8 @@ mod tests {
     fn test_apply_custom_words_matches_spoken_ampersand_word() {
         let text = "send it to R and D for review";
         let custom_words = vec!["R&D".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.18);
+        let result =
+            apply_custom_words(text, &custom_words, 0.18, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "send it to R&D for review");
     }
 
@@ -865,7 +925,8 @@ mod tests {
     fn test_apply_custom_words_preserves_ampersand_word() {
         let text = "send it to R&D for review";
         let custom_words = vec!["R&D".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.18);
+        let result =
+            apply_custom_words(text, &custom_words, 0.18, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "send it to R&D for review");
     }
 
@@ -873,15 +934,106 @@ mod tests {
     fn test_apply_custom_words_handles_unicode_punctuation() {
         let text = "「Handee。」";
         let custom_words = vec!["Handy".to_string()];
-        let result = apply_custom_words(text, &custom_words, 0.5);
+        let result = apply_custom_words(text, &custom_words, 0.5, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, "「Handy。」");
+    }
+
+    #[test]
+    fn test_apply_custom_words_keeps_common_french_words() {
+        let custom_words = vec!["Madero".to_string(), "Quanta".to_string()];
+        for text in [
+            "Tu peux me dire quand tu arrives ?",
+            "Les enfants qui ont fini peuvent sortir.",
+            "Envoie-moi le devis quand tu peux.",
+        ] {
+            // Parakeet in auto mode reports no language, so Unknown is what the
+            // reporter's setup produces; known French must not change it either.
+            for language in [
+                OutputLanguageEvidence::Unknown,
+                OutputLanguageEvidence::ModelDetected("fr".to_string()),
+            ] {
+                assert_eq!(
+                    apply_custom_words(text, &custom_words, 0.18, &language),
+                    text
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_apply_custom_words_keeps_short_english_words() {
+        // "next" and "Nuxt" share n230, but two coded consonants are too
+        // little to call them the same word.
+        let custom_words = vec!["Nuxt".to_string()];
+        let text = "use the next version";
+        let language = OutputLanguageEvidence::UserSelected("en".to_string());
+        assert_eq!(
+            apply_custom_words(text, &custom_words, 0.18, &language),
+            text
+        );
+    }
+
+    #[test]
+    fn test_apply_custom_words_phonetic_boost_follows_output_language() {
+        // "chargeb" vs "chargebee" is 0.22 on edit distance alone, above the
+        // default threshold; only the Soundex boost (c621) brings it under.
+        let custom_words = vec!["ChargeBee".to_string()];
+        let text = "we pay with Charge B every month";
+
+        for language in [
+            OutputLanguageEvidence::ModelDetected("en".to_string()),
+            OutputLanguageEvidence::Unknown,
+        ] {
+            assert_eq!(
+                apply_custom_words(text, &custom_words, 0.18, &language),
+                "we pay with ChargeBee every month"
+            );
+        }
+
+        let french = OutputLanguageEvidence::ModelDetected("fr".to_string());
+        assert_eq!(apply_custom_words(text, &custom_words, 0.18, &french), text);
+    }
+
+    #[test]
+    fn test_phonetic_boost_applies() {
+        let english = OutputLanguageEvidence::UserSelected("en-US".to_string());
+        let unknown = OutputLanguageEvidence::Unknown;
+        let german = OutputLanguageEvidence::TextDetected("de".to_string());
+
+        assert!(phonetic_boost_applies("chargeb", "chargebee", &english));
+        assert!(phonetic_boost_applies("chargeb", "chargebee", &unknown));
+        assert!(phonetic_boost_applies(
+            "chargeb",
+            "chargebee",
+            &OutputLanguageEvidence::TranslatedToEnglish
+        ));
+        assert!(!phonetic_boost_applies("chargeb", "chargebee", &german));
+
+        // Padded codes: q530, m360, n230.
+        assert!(!phonetic_boost_applies("quandtu", "quanta", &unknown));
+        assert!(!phonetic_boost_applies("medire", "madero", &unknown));
+        assert!(!phonetic_boost_applies("next", "nuxt", &english));
+
+        // Different codes never boost; digits never use Soundex.
+        assert!(!phonetic_boost_applies("magenta", "mailchimp", &english));
+        assert!(!phonetic_boost_applies("gpt4", "gpt4", &english));
+    }
+
+    #[test]
+    fn test_soundex_digit_count() {
+        assert_eq!(soundex_digit_count("chargebee"), 3); // c621
+        assert_eq!(soundex_digit_count("magento"), 3); // m253
+        assert_eq!(soundex_digit_count("quandtu"), 2); // q53
+        assert_eq!(soundex_digit_count("quanta"), 2); // q53
+        assert_eq!(soundex_digit_count("ashcraft"), 4); // h is skipped, not a separator
+        assert_eq!(soundex_digit_count("a"), 0);
     }
 
     #[test]
     fn test_apply_custom_words_skips_cjk_fuzzy_matching() {
         let text = "你好。";
         let custom_words = vec!["你号".to_string()];
-        let result = apply_custom_words(text, &custom_words, 1.0);
+        let result = apply_custom_words(text, &custom_words, 1.0, &OutputLanguageEvidence::Unknown);
         assert_eq!(result, text);
     }
 }

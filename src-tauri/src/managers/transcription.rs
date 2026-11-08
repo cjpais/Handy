@@ -1643,14 +1643,16 @@ fn post_process_transcription_text(
     supported_languages: &[String],
 ) -> String {
     let converts_script = settings.chinese_script != ChineseScript::AsTranscribed;
+    let corrects_custom_words = !settings.custom_words.is_empty() && !custom_words_already_prompted;
     fail_open_text_transform(raw, |raw| {
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
-        // consulted when it can change the outcome (built-in gated fillers or
-        // Chinese script conversion).
+        // consulted when it can change the outcome (built-in gated fillers,
+        // Chinese script conversion, or the custom-word Soundex boost).
         let output_language = match output_language {
             OutputLanguageEvidence::Unknown
                 if converts_script
+                    || corrects_custom_words
                     || (settings.filler_word_removal_enabled
                         && settings.custom_filler_words.is_none()) =>
             {
@@ -1678,11 +1680,12 @@ fn post_process_transcription_text(
             _ => raw,
         };
 
-        let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
+        let corrected = if corrects_custom_words {
             apply_custom_words(
                 &raw,
                 &settings.custom_words,
                 settings.word_correction_threshold,
+                &output_language,
             )
         } else {
             raw
