@@ -22,7 +22,15 @@ const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const SILERO_VAD_THRESHOLD: f32 = 0.3;
 const EARSHOT_VAD_THRESHOLD: f32 = 0.5;
 
+#[cfg(all(test, target_os = "linux"))]
+mod lifecycle_tests;
+
 fn set_mute(mute: bool) {
+    #[cfg(all(test, target_os = "linux"))]
+    if lifecycle_tests::set_mute(mute) {
+        return;
+    }
+
     // Expected behavior:
     // - Windows: works on most systems using standard audio drivers.
     // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
@@ -146,6 +154,11 @@ fn get_mute() -> Option<bool> {
 
 #[cfg(target_os = "linux")]
 fn get_mute() -> Option<bool> {
+    #[cfg(test)]
+    if let Some(muted) = lifecycle_tests::get_mute() {
+        return Some(muted);
+    }
+
     use std::process::Command;
 
     // 1. PipeWire (wpctl): prints "[MUTED]" in the volume line when muted.
@@ -411,6 +424,11 @@ fn microphone_config(
 }
 
 fn open_microphone(config: RecorderConfig) -> Result<OpenMicrophone, handy_recorder::Error> {
+    #[cfg(all(test, target_os = "linux"))]
+    if let Some(result) = lifecycle_tests::open_microphone(&config) {
+        return result;
+    }
+
     let failed = Arc::new(AtomicBool::new(false));
     let recorder = Recorder::open_with_failure_handler(config, {
         let failed = Arc::clone(&failed);
@@ -513,6 +531,8 @@ pub struct AudioRecordingManager {
     cached_device: Arc<Mutex<Option<(String, String)>>>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
+    #[cfg(all(test, target_os = "linux"))]
+    lazy_close_hooks: Option<Arc<lifecycle_tests::LazyCloseHooks>>,
 }
 
 impl AudioRecordingManager {
@@ -555,6 +575,8 @@ impl AudioRecordingManager {
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
+            #[cfg(all(test, target_os = "linux"))]
+            lazy_close_hooks: None,
         };
 
         // Always-on?  Open immediately.
@@ -682,8 +704,14 @@ impl AudioRecordingManager {
     fn schedule_lazy_close(&self) {
         let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
+        #[cfg(all(test, target_os = "linux"))]
+        let hooks = self.lazy_close_hooks.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(STREAM_IDLE_TIMEOUT);
+            #[cfg(all(test, target_os = "linux"))]
+            let timeout = hooks.as_ref().map_or(STREAM_IDLE_TIMEOUT, |h| h.timeout);
+            #[cfg(not(all(test, target_os = "linux")))]
+            let timeout = STREAM_IDLE_TIMEOUT;
+            std::thread::sleep(timeout);
             let rm = app.state::<Arc<AudioRecordingManager>>();
             // Hold state lock across the check AND close to serialize against
             // try_start_recording, preventing a race where the stream is closed
@@ -692,6 +720,10 @@ impl AudioRecordingManager {
             if rm.close_generation.load(Ordering::SeqCst) == gen
                 && matches!(*state, RecordingState::Idle)
             {
+                #[cfg(all(test, target_os = "linux"))]
+                if let Some(hooks) = &hooks {
+                    (hooks.before_close)();
+                }
                 // stop_microphone_stream does not acquire the state lock,
                 // so holding it here is safe (no deadlock).
                 info!(
@@ -699,6 +731,10 @@ impl AudioRecordingManager {
                     STREAM_IDLE_TIMEOUT
                 );
                 rm.stop_microphone_stream();
+                #[cfg(all(test, target_os = "linux"))]
+                if let Some(hooks) = &hooks {
+                    (hooks.after_close)();
+                }
             }
         });
     }
