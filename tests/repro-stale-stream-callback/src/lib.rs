@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+// Token extraction removes newlines between independent production `if` blocks.
+#![allow(clippy::possible_missing_else)]
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -32,8 +34,8 @@ mod tests {
     #[test]
     fn fresh_callback_delivers_frame() {
         let router = Arc::new(StreamRouter::new());
-        let callback = manager_audio_callback(Arc::clone(&router));
         let (receiver, _) = router.open();
+        let callback = router.audio_callback();
         let mut samples = Vec::new();
         CaptureSink::emit(&mut samples, &callback, &[2.0]);
         assert_eq!(samples, vec![2.0]);
@@ -43,13 +45,17 @@ mod tests {
     #[test]
     fn callback_with_no_route_is_a_no_op() {
         let router = Arc::new(StreamRouter::new());
-        let callback = manager_audio_callback(Arc::clone(&router));
+        let callback = router.audio_callback();
         CaptureSink::emit(&mut Vec::new(), &callback, &[1.0]);
         let (receiver, _) = router.open();
+        CaptureSink::emit(&mut Vec::new(), &callback, &[2.0]);
         assert!(frames(&receiver).is_empty());
+        let fresh_callback = router.audio_callback();
+        CaptureSink::emit(&mut Vec::new(), &fresh_callback, &[3.0]);
+        assert_eq!(frames(&receiver), vec![vec![3.0]]);
         let route = router.take().expect("open route");
         drop(route);
-        CaptureSink::emit(&mut Vec::new(), &callback, &[2.0]);
+        CaptureSink::emit(&mut Vec::new(), &fresh_callback, &[4.0]);
         assert!(matches!(
             receiver.try_recv(),
             Err(mpsc::TryRecvError::Disconnected)
@@ -59,13 +65,12 @@ mod tests {
     #[test]
     fn old_callback_must_not_feed_replacement_route() {
         let router = Arc::new(StreamRouter::new());
-        let callback = manager_audio_callback(Arc::clone(&router));
         let manager = TranscriptionManager {
             router: Arc::clone(&router),
             stream_active: AtomicBool::new(true),
         };
         let (old_receiver, old_cancelled) = router.open();
-        let old_callback = Arc::clone(&callback);
+        let old_callback = router.audio_callback();
         let (paused_tx, paused_rx) = mpsc::channel();
         let (resume_tx, resume_rx) = mpsc::channel();
         let old_delivery = std::thread::spawn(move || {
@@ -85,6 +90,7 @@ mod tests {
             Err(mpsc::TryRecvError::Disconnected)
         ));
         let (replacement_receiver, _) = router.open();
+        let callback = router.audio_callback();
 
         resume_tx.send(()).unwrap();
         assert_eq!(old_delivery.join().unwrap(), vec![1.0]);
@@ -96,5 +102,53 @@ mod tests {
             vec![vec![2.0]],
             "replacement must receive its fresh frame, without the retired recording's frame"
         );
+    }
+
+    #[test]
+    fn retired_callback_cannot_feed_after_finalize_or_reopen() {
+        let router = Arc::new(StreamRouter::new());
+        let (old_receiver, cancelled) = router.open();
+        let old_callback = router.audio_callback();
+        CaptureSink::emit(&mut Vec::new(), &old_callback, &[1.0]);
+        let route = router.take().expect("open route");
+        let (reply, _) = mpsc::channel();
+        route
+            .tx
+            .send(StreamCmd::Finalize { reply, samples: 1 })
+            .unwrap();
+        drop(route);
+        CaptureSink::emit(&mut Vec::new(), &old_callback, &[2.0]);
+        let (replacement_receiver, _) = router.open();
+        CaptureSink::emit(&mut Vec::new(), &old_callback, &[3.0]);
+        assert!(!cancelled.load(Ordering::Acquire));
+        assert!(matches!(old_receiver.recv(), Ok(StreamCmd::Feed(frame)) if frame == vec![1.0]));
+        assert!(matches!(
+            old_receiver.recv(),
+            Ok(StreamCmd::Finalize { samples: 1, .. })
+        ));
+        assert!(matches!(
+            old_receiver.try_recv(),
+            Err(mpsc::TryRecvError::Disconnected)
+        ));
+        assert!(frames(&replacement_receiver).is_empty());
+        let fresh_callback = router.audio_callback();
+        CaptureSink::emit(&mut Vec::new(), &fresh_callback, &[4.0]);
+        assert_eq!(frames(&replacement_receiver), vec![vec![4.0]]);
+    }
+
+    #[test]
+    fn cleared_route_disconnects_with_callback_retained() {
+        let router = Arc::new(StreamRouter::new());
+        let (receiver, _) = router.open();
+        let callback = router.audio_callback();
+        router.clear();
+        CaptureSink::emit(&mut Vec::new(), &callback, &[1.0]);
+        assert!(matches!(
+            receiver.try_recv(),
+            Err(mpsc::TryRecvError::Disconnected)
+        ));
+        let (replacement_receiver, _) = router.open();
+        CaptureSink::emit(&mut Vec::new(), &callback, &[2.0]);
+        assert!(frames(&replacement_receiver).is_empty());
     }
 }

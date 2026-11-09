@@ -1,5 +1,5 @@
 use crate::audio_toolkit::{
-    audio::{AudioFrameCallback, LevelCallback},
+    audio::LevelCallback,
     vad::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
@@ -486,9 +486,7 @@ pub struct AudioRecordingManager {
     airpods_mode: Arc<AtomicBool>,
     /// Spectrum levels for the overlay.
     on_levels: LevelCallback,
-    /// VAD-passed frames for live streaming, via a shared `StreamRouter`
-    /// (captured directly, not via Tauri state — see its docs).
-    on_audio: AudioFrameCallback,
+    stream_router: Arc<StreamRouter>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     mute_state: Arc<Mutex<MuteState>>,
@@ -533,8 +531,6 @@ impl AudioRecordingManager {
             let app_handle = app.clone();
             Arc::new(move |levels| utils::emit_levels(&app_handle, &levels))
         };
-        let on_audio: AudioFrameCallback = Arc::new(move |frame| stream_router.feed(frame));
-
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
             mode: Arc::new(Mutex::new(mode.clone())),
@@ -545,7 +541,7 @@ impl AudioRecordingManager {
             selected_channel: Arc::new(Mutex::new(settings.selected_channel)),
             airpods_mode: Arc::new(AtomicBool::new(settings.airpods_mode)),
             on_levels,
-            on_audio,
+            stream_router,
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
             mute_state: Arc::new(Mutex::new(MuteState::default())),
@@ -1066,7 +1062,7 @@ impl AudioRecordingManager {
                 self.lend_vad()?,
                 vad_policy,
                 Arc::clone(&self.on_levels),
-                Arc::clone(&self.on_audio),
+                self.stream_router.audio_callback(),
                 ready_tx,
             );
 

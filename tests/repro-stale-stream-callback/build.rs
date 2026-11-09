@@ -1,6 +1,6 @@
 use quote::{format_ident, quote, ToTokens};
 use std::{env, fs, path::PathBuf};
-use syn::{ImplItem, ImplItemFn, Item, Stmt, Type};
+use syn::{ImplItem, ImplItemFn, Item, Type};
 
 fn method<'a>(file: &'a syn::File, owner: &str, name: &str) -> &'a ImplItemFn {
     let found: Vec<_> = file
@@ -136,51 +136,38 @@ fn main() {
     }), "replay boundary requires locked handy-recorder 0.1.0");
 
     let constructor = method(&audio, "AudioRecordingManager", "new");
-    let callbacks: Vec<_> = constructor
-        .block
-        .stmts
-        .iter()
-        .filter_map(|statement| {
-            let Stmt::Local(local) = statement else {
-                return None;
-            };
-            let syn::Pat::Type(typed) = &local.pat else {
-                return None;
-            };
-            let syn::Pat::Ident(name) = typed.pat.as_ref() else {
-                return None;
-            };
-            (name.ident == "on_audio").then_some(local)
-        })
-        .collect();
-    assert_eq!(
-        callbacks.len(),
-        1,
-        "manager on_audio declaration missing or ambiguous"
-    );
-    let initializer = &callbacks[0]
-        .init
-        .as_ref()
-        .expect("on_audio initializer")
-        .expr;
-    assert_eq!(
-        compact(initializer),
-        "Arc::new(move|frame|stream_router.feed(frame))",
-        "manager callback changed; review frame ownership"
+    let manager_fields = compact(named(&audio, "AudioRecordingManager"));
+    assert!(
+        manager_fields.contains("stream_router:Arc<StreamRouter>"),
+        "manager must store the shared router"
     );
     assert!(
-        compact(constructor).contains("on_levels,on_audio,is_open:"),
-        "callback must be stored in the manager"
+        !manager_fields.contains("on_audio:") && !compact(constructor).contains("on_audio"),
+        "manager must not retain a callback across recordings"
+    );
+    assert!(
+        compact(constructor).contains("on_levels,stream_router,is_open:"),
+        "router must be stored in the manager"
+    );
+    let start_recording = compact(method(
+        &audio,
+        "AudioRecordingManager",
+        "try_start_recording",
+    ));
+    assert_eq!(compact(&audio).matches("CaptureSink::new(").count(), 1);
+    assert_eq!(start_recording.matches("CaptureSink::new(").count(), 1);
+    assert_eq!(
+        start_recording
+            .matches("self.stream_router.audio_callback()")
+            .count(),
+        1
     );
     ordered(
-        &compact(method(
-            &audio,
-            "AudioRecordingManager",
-            "try_start_recording",
-        )),
+        &start_recording,
         &[
+            "loop{",
             "letsink=CaptureSink::new(",
-            "Arc::clone(&self.on_audio)",
+            "Arc::clone(&self.on_levels),self.stream_router.audio_callback(),ready_tx,)",
             "microphone.recorder.start(sink)",
         ],
     );
@@ -234,7 +221,7 @@ fn main() {
     output.extend(methods(
         &manager,
         "StreamRouter",
-        &["new", "open", "take", "feed"],
+        &["new", "open", "take", "clear", "audio_callback", "feed"],
     ));
     output.extend(methods(
         &manager,
@@ -242,11 +229,6 @@ fn main() {
         &["cancel_stream"],
     ));
     output.extend(methods(&sink, "CaptureSink", &["emit"]));
-    output.extend(quote! {
-        fn manager_audio_callback(stream_router: Arc<StreamRouter>) -> AudioFrameCallback {
-            #initializer
-        }
-    });
     fs::write(
         PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("production.rs"),
         output.to_string(),

@@ -1,10 +1,11 @@
 # Reproduce a stale callback feeding a replacement stream
 
-This fixture demonstrates a conditional frame ownership failure on upstream
+This fixture covers a conditional frame ownership failure on upstream
 `main` at `73cc8579cff74e97e08de9d86035a92e4335ff7f`. An old recording's
 callback resumes after its route is cancelled and a replacement route opens.
 The replacement receives both the old frame `[1.0]` and its own frame `[2.0]`.
-The regression assertion requires only `[[2.0]]`, so the test fails on main.
+The regression assertion requires only `[[2.0]]`. Before the fix, the original
+fixture failed that assertion with `[[1.0], [2.0]]`.
 
 Run from the repository root with stable Rust:
 
@@ -12,31 +13,31 @@ Run from the repository root with stable Rust:
 cargo test --manifest-path tests/repro-stale-stream-callback/Cargo.toml --locked -- --nocapture
 ```
 
-Expected result is two passing controls, one failed regression, and exit status
-`101`. The controls require fresh delivery and no delivery while no route exists.
-The regression also checks that cancellation marks the old route and disconnects
-its channel before replacement. It uses channels to suspend and resume the old
-callback, without sleeps or microphone access.
+Expected result is five passing tests and exit status `0`. The tests require
+fresh delivery, permanent inactivity of a callback captured without a route,
+isolation from replacement routes, and no feeds after finalize or clear.
+The cancellation regression also checks that cancellation marks the old route
+and disconnects its channel before replacement. It uses channels to suspend and
+resume the old callback, without sleeps or microphone access.
 
 ## Production source and fixture boundaries
 
 `build.rs` parses repository Rust with `syn`. It emits the actual declarations of
 `StreamRouter`, `Route`, and `StreamCmd`, the actual router methods `new`, `open`,
-`take`, and `feed`, `CaptureSink::emit`, and
-`TranscriptionManager::cancel_stream`. It also emits the actual `on_audio`
-initializer from `AudioRecordingManager::new` inside a small constructor.
-Production method bodies and the callback initializer are not rewritten.
+`take`, `clear`, `audio_callback`, and `feed`, `CaptureSink::emit`, and
+`TranscriptionManager::cancel_stream`. Production method bodies are not rewritten.
 
 The fixture provides a minimal `CaptureSink` type and the two manager fields used
 by `cancel_stream`. The unused `StreamFinalizeReply` payload is replaced with
 `Result<Option<()>, ()>`. It invokes `emit` directly and does not execute
 `CaptureSink::new`, VAD, the recorder, model workers, or the Tauri application.
-An old and a fresh callback clone correspond to the clones passed to each new
+Each callback comes from the extracted factory, as it does for a new production
 sink. Cancellation and replacement use the extracted production methods.
 
-Source correspondence gates require the callback to live on the audio manager,
-each recording start to build a new sink with that callback before recorder
-start, and live stream opening to precede recorder start. They also check the
+Source correspondence gates require the router to live on the audio manager,
+each recording attempt to capture a fresh callback inside sink construction
+before recorder start, and live stream opening to precede recorder start.
+They reject a manager-global audio callback. They also check the
 manager's stop failure, idle transition, close, reopen, and empty-recording
 cancellation paths. The product lockfile must select `handy-recorder 0.1.0` with
 its current registry checksum. A gate failure means the reproduction needs
@@ -70,13 +71,13 @@ replacement ends. No microphone, Bluetooth failure, operating system scheduling,
 or actual recorder timeout was exercised. The fixture proves routing behavior
 under that ordering, not how often that ordering happens in practice.
 
-## Proposed ownership rule
+## Recording ownership
 
-Give each route an immutable token. Capture the recording's route token when its
-sink is created, and carry it with every callback. Compare that token with the
-active route and send under the same route lock. An old callback must retain its
-old token when it resumes. Looking up the current token at callback execution
-would accept the stale frame again. This branch contains reproduction code only.
+Each route has an immutable `Arc<()>` identity. `audio_callback` captures that
+identity when the sink is created. `feed` compares the captured identity with the
+active route and sends under the same route lock. An old callback retains its
+old identity when it resumes. Capturing no route produces an inactive callback.
 
-The full observed output and exit status are saved under
-`.audit/stale-stream-callback/`. The expected stale-frame failure remains present.
+The original failing output and exit status are saved locally under
+`.audit/stale-stream-callback/`. Fixed verification output and a scratch mutation
+that removes the identity check are saved under `.audit/publish-formal/`.
