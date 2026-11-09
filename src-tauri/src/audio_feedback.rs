@@ -1,4 +1,5 @@
 use crate::audio_toolkit::audio::output_device_name;
+use crate::managers::audio::RecordingReadinessOwnership;
 use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
 use log::{debug, error, warn};
@@ -56,13 +57,23 @@ pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     }
 }
 
-pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
+pub(crate) fn play_start_feedback_if_current(
+    app: &AppHandle,
+    ownership: &RecordingReadinessOwnership,
+) {
     let settings = settings::get_settings(app);
     if !settings.audio_feedback {
         return;
     }
-    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_blocking(app, &path);
+    if let Some(path) = resolve_sound_path(app, &settings, SoundType::Start) {
+        if let Err(e) = play_audio_file(
+            &path,
+            settings.selected_output_device,
+            settings.audio_feedback_volume,
+            Some(ownership),
+        ) {
+            error!("Failed to play sound '{}': {}", path.display(), e);
+        }
     }
 }
 
@@ -92,13 +103,14 @@ fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::e
     let settings = settings::get_settings(app);
     let volume = settings.audio_feedback_volume;
     let selected_device = settings.selected_output_device.clone();
-    play_audio_file(path, selected_device, volume)
+    play_audio_file(path, selected_device, volume, None)
 }
 
 fn play_audio_file(
     path: &std::path::Path,
     selected_device: Option<String>,
     volume: f32,
+    ownership: Option<&RecordingReadinessOwnership>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let sink_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
@@ -129,9 +141,19 @@ fn play_audio_file(
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
 
-    let player = rodio::play(mixer, buf_reader)?;
+    let decoder = rodio::Decoder::new(buf_reader)?;
+    let player = rodio::Player::connect_new(mixer);
     player.set_volume(volume);
-    player.sleep_until_end();
+    let dispatched = match ownership {
+        Some(ownership) => ownership.with_current(|| player.append(decoder)).is_some(),
+        None => {
+            player.append(decoder);
+            true
+        }
+    };
+    if dispatched {
+        player.sleep_until_end();
+    }
 
     Ok(())
 }

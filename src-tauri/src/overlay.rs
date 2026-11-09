@@ -1,4 +1,5 @@
 use crate::input;
+use crate::managers::audio::RecordingReadinessOwnership;
 use crate::notices::Notice;
 use crate::settings;
 use crate::settings::{OverlayPosition, OverlayStyle};
@@ -620,7 +621,7 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
 /// Notify the visible recording overlay that the input stream has delivered its
 /// first sample chunk. Audio feedback uses the same backend readiness signal,
 /// but this targeted event is skipped when overlays are disabled.
-pub fn emit_recording_ready(app_handle: &AppHandle) {
+pub(crate) fn emit_recording_ready(app_handle: &AppHandle, ownership: RecordingReadinessOwnership) {
     if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
         return;
     }
@@ -630,7 +631,9 @@ pub fn emit_recording_ready(app_handle: &AppHandle) {
     // and then get reset back to the arming state by the frontend.
     let handle = app_handle.clone();
     let _ = app_handle.run_on_main_thread(move || {
-        let _ = handle.emit_to("recording_overlay", "recording-ready", ());
+        ownership.with_current(|| {
+            let _ = handle.emit_to("recording_overlay", "recording-ready", ());
+        });
     });
 }
 
