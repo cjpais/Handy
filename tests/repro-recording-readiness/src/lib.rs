@@ -209,11 +209,6 @@ fn readiness_chime_never_follows_ended_session() {
 }
 
 #[test]
-fn readiness_mute_never_changes_newer_session() {
-    race(Cue::Mute);
-}
-
-#[test]
 fn current_readiness_dispatches_all_effects() {
     builder().check(|| {
         let (audio, app) = setup(Some(false), true, true);

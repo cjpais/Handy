@@ -1,6 +1,6 @@
 # Reproduce stale recording readiness effects
 
-This standalone Rust fixture reproduces three readiness races at upstream
+This standalone Rust fixture reproduces two readiness cue races at upstream
 `73cc8579cff74e97e08de9d86035a92e4335ff7f`. It changes no application code and
 does not build Tauri, open an audio device, play sounds, or change system mute.
 
@@ -12,14 +12,13 @@ env -u HANDY_DEBUG_MIC_READY_DELAY_MS cargo test --locked \
   -- --test-threads=1 --nocapture
 ```
 
-The reproduced result is exit `101`, with four passing controls and three failing
+The reproduced result is exit `101`, with four passing controls and two failing
 regression assertions. These are intentional failures, without `should_panic`:
 
 ```text
 readiness_chime_never_follows_ended_session ... FAILED
-readiness_mute_never_changes_newer_session ... FAILED
 readiness_ui_never_changes_newer_session ... FAILED
-test result: FAILED. 4 passed; 3 failed
+test result: FAILED. 4 passed; 2 failed
 ```
 
 ## Source boundary
@@ -71,9 +70,8 @@ The ending worker also calls the real `remove_mute` before setting a test-only
 `newer_session` marker. The fixture leaves `is_open` true to model always-on
 capture. It does not reimplement stop, cancellation, the coordinator, or paste.
 
-The failing chime and mute executions pass a production generation check, then
-invalidate and restore before the corresponding effect dispatch. The mute witness
-finishes with fake system mute still true. The UI witness passes its generation
+The failing chime execution passes a production generation check, then
+invalidates before the helper invocation. The UI witness passes its generation
 check, then queues readiness after invalidation and the simulated newer show's
 enqueue. The simulated newer show therefore runs first. This execution preserves
 FIFO main-thread queue ordering.
@@ -105,10 +103,9 @@ Avoid holding a readiness lock across `run_on_main_thread` or sound playback.
 Sound work needs a defined dispatch commitment that invalidation synchronizes
 with, without requiring a lock throughout playback.
 
-For mute, pass the recording generation into the guarded mute operation and
-coordinate that check with invalidation under shared synchronization. Open
-[PR #1501](https://github.com/cjpais/Handy/pull/1501) is the closest existing repair
-for this race. Its implementation has not been replayed or formally verified by
-this fixture and targets an older audio architecture.
 [PR #2388](https://github.com/cjpais/Handy/pull/2388) concerns waiting for sound;
 that ordering alone does not close these generation-check races.
+
+Mute repair and a mute regression are excluded from this publication. The
+existing mute adapters and controls support running the unchanged readiness
+closure; they do not assert a mute-race repair.
