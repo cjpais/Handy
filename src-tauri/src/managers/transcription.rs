@@ -142,6 +142,11 @@ struct Route {
 }
 
 impl StreamRouter {
+    #[cfg(all(test, target_os = "linux"))]
+    pub(super) fn for_audio_tests() -> Self {
+        Self::new()
+    }
+
     fn new() -> Self {
         Self {
             route: Mutex::new(None),
