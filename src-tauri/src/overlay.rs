@@ -805,7 +805,7 @@ pub fn update_overlay_enabled_cache(enabled: bool) {
     OVERLAY_ENABLED.store(enabled, Ordering::Relaxed);
 }
 
-pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
+pub fn emit_levels<R: tauri::Runtime>(app_handle: &AppHandle<R>, levels: &[f32]) {
     // Skip emission when the overlay is disabled. The recording_overlay
     // window is created at boot regardless of overlay_style, so without this
     // guard a hidden overlay's WebKit subprocess still

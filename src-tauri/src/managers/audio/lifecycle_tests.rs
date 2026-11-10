@@ -3,7 +3,10 @@ use crate::settings::SETTINGS_STORE_PATH;
 use handy_recorder::testing::FakeMic;
 use std::cell::RefCell;
 use std::sync::{MutexGuard, OnceLock};
+use tauri::test::MockRuntime;
 use tauri_plugin_store::StoreExt;
+
+type TestManager = AudioRecordingManager<MockRuntime>;
 
 const WAIT: Duration = Duration::from_secs(5);
 const BINDING: &str = "transcribe";
@@ -49,18 +52,17 @@ pub(super) fn open_microphone(
     })
 }
 
-fn app() -> &'static tauri::AppHandle {
-    static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
+fn app() -> &'static tauri::AppHandle<MockRuntime> {
+    static APP: OnceLock<tauri::AppHandle<MockRuntime>> = OnceLock::new();
     APP.get_or_init(|| {
         let (tx, rx) = mpsc::sync_channel(1);
         std::thread::spawn(move || {
             let mut context = tauri::test::mock_context(tauri::test::noop_assets());
             context.config_mut().identifier = "computer.handy.audio-lifecycle-tests".into();
-            let app = tauri::Builder::default()
-                .any_thread()
+            let app = tauri::test::mock_builder()
                 .plugin(tauri_plugin_store::Builder::default().build())
                 .build(context)
-                .expect("build windowless test app under xvfb-run");
+                .expect("build headless audio lifecycle test app");
             tx.send(app.handle().clone()).unwrap();
             loop {
                 std::thread::park();
@@ -106,7 +108,7 @@ impl Fixture {
         }
     }
 
-    fn manager(&self) -> AudioRecordingManager {
+    fn manager(&self) -> TestManager {
         let mut manager =
             AudioRecordingManager::new(app(), Arc::new(StreamRouter::for_audio_tests())).unwrap();
         manager.on_levels = Arc::new(|_| {});
@@ -118,7 +120,7 @@ impl Fixture {
         self.hardware.muted.load(Ordering::SeqCst)
     }
 
-    fn capture(&self, manager: &mut AudioRecordingManager) -> Vec<f32> {
+    fn capture(&self, manager: &mut TestManager) -> Vec<f32> {
         let (tx, rx) = mpsc::channel();
         manager.on_audio = Arc::new(move |frame| {
             let _ = tx.send(frame.to_vec());

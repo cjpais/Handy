@@ -337,9 +337,9 @@ pub fn recording_notice_code(error: &anyhow::Error) -> NoticeCode {
 /// A fresh detector for `backend`, without Handy's smoothing: what a
 /// recording's VAD wraps, and what scores audio for long-form chunking, so
 /// every path uses the selected backend.
-pub fn create_detector(
+pub fn create_detector<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<Box<dyn SpeechScorer>, anyhow::Error> {
     Ok(match backend {
         VadBackend::Silero => {
@@ -365,9 +365,9 @@ pub fn create_detector(
 /// A detector for `backend` with a recording's smoothing (pre-roll, onset,
 /// offline hangover): what keeps speech in a recording, and what cuts the
 /// silence out of other audio the same way.
-pub fn create_smoothed_detector(
+pub fn create_smoothed_detector<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<SmoothedVad, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = create_detector(backend, app_handle)?;
 
@@ -383,9 +383,9 @@ pub fn create_smoothed_detector(
     ))
 }
 
-fn create_capture_vad(
+fn create_capture_vad<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<CaptureVad, anyhow::Error> {
     let smoothed_vad = create_smoothed_detector(backend, app_handle)?;
     let frame_samples = smoothed_vad.frame_samples();
@@ -485,13 +485,12 @@ impl RecordingReadiness {
     }
 }
 
-#[derive(Clone)]
-pub struct AudioRecordingManager {
+pub struct AudioRecordingManager<R: tauri::Runtime = tauri::Wry> {
     /// Never assign through this directly — route every write through
     /// `set_state()`, which keeps `recording_active` in sync.
     state: Arc<Mutex<RecordingState>>,
     mode: Arc<Mutex<MicrophoneMode>>,
-    app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle<R>,
 
     recorder: Arc<Mutex<Option<OpenMicrophone>>>,
     vad: Arc<Mutex<VadSlot>>,
@@ -534,11 +533,11 @@ pub struct AudioRecordingManager {
     last_input_silent: Arc<AtomicBool>,
 }
 
-impl AudioRecordingManager {
+impl<R: tauri::Runtime> AudioRecordingManager<R> {
     /* ---------- construction ------------------------------------------------ */
 
     pub fn new(
-        app: &tauri::AppHandle,
+        app: &tauri::AppHandle<R>,
         stream_router: Arc<StreamRouter>,
     ) -> Result<Self, anyhow::Error> {
         let settings = get_settings(app);
@@ -704,7 +703,7 @@ impl AudioRecordingManager {
         let app = self.app_handle.clone();
         std::thread::spawn(move || {
             std::thread::sleep(STREAM_IDLE_TIMEOUT);
-            let rm = app.state::<Arc<AudioRecordingManager>>();
+            let rm = app.state::<Arc<Self>>();
             // Hold state lock across the check AND close to serialize against
             // try_start_recording, preventing a race where the stream is closed
             // under an active recording.

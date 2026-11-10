@@ -1118,7 +1118,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     settings
 }
 
-pub fn get_settings(app: &AppHandle) -> AppSettings {
+pub fn get_settings<R: tauri::Runtime>(app: &AppHandle<R>) -> AppSettings {
     let store = app
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
@@ -1398,7 +1398,7 @@ pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
     settings.update_checks_enabled && !update_checks_forced_disabled()
 }
 
-pub fn write_settings(app: &AppHandle, settings: AppSettings) {
+pub fn write_settings<R: tauri::Runtime>(app: &AppHandle<R>, settings: AppSettings) {
     let store = app
         .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
