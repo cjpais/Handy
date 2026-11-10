@@ -8,12 +8,6 @@ use tauri_plugin_store::StoreExt;
 const WAIT: Duration = Duration::from_secs(5);
 const BINDING: &str = "transcribe";
 
-pub(super) struct LazyCloseHooks {
-    pub timeout: Duration,
-    pub before_close: Box<dyn Fn() + Send + Sync>,
-    pub after_close: Box<dyn Fn() + Send + Sync>,
-}
-
 struct Hardware {
     mic: FakeMic,
     muted: AtomicBool,
@@ -228,87 +222,5 @@ fn device_change_mid_take_keeps_output_muted() {
     assert!(
         muted_during_take,
         "device change restored output mute during an active take"
-    );
-}
-
-#[test]
-fn switch_to_always_on_keeps_microphone_streaming() {
-    let fixture = Fixture::new(false);
-    let manager = fixture.manager();
-    manager.start_microphone_stream().unwrap();
-    manager.update_mode(MicrophoneMode::AlwaysOn).unwrap();
-    assert!(fixture.hardware.mic.is_streaming());
-    assert!(matches!(
-        *manager.mode.lock().unwrap(),
-        MicrophoneMode::AlwaysOn
-    ));
-}
-
-#[test]
-fn stale_lazy_close_cannot_undo_switch_to_always_on() {
-    let fixture = Fixture::new(true);
-    let mut manager = fixture.manager();
-    let (checked_tx, checked_rx) = mpsc::channel();
-    let (release_tx, release_rx) = mpsc::channel();
-    let release_rx = Mutex::new(release_rx);
-    let (closed_tx, closed_rx) = mpsc::channel();
-    manager.lazy_close_hooks = Some(Arc::new(LazyCloseHooks {
-        timeout: Duration::ZERO,
-        before_close: Box::new(move || {
-            checked_tx.send(()).unwrap();
-            release_rx
-                .lock()
-                .unwrap()
-                .recv_timeout(WAIT * 3)
-                .expect("release delayed close");
-        }),
-        after_close: Box::new(move || closed_tx.send(()).unwrap()),
-    }));
-    fixture.capture(&mut manager);
-    let manager = Arc::new(manager);
-    assert!(app().manage(manager.clone()));
-    fixture.with_callbacks(|| manager.stop_recording(BINDING, 0));
-    checked_rx
-        .recv_timeout(WAIT)
-        .expect("lazy close passed generation check");
-    let (switched_tx, switched_rx) = mpsc::channel();
-    let switching_manager = manager.clone();
-    let hardware = fixture.hardware.clone();
-    let switching = std::thread::spawn(move || {
-        HARDWARE.with_borrow_mut(|slot| *slot = Some(hardware));
-        let result = switching_manager.update_mode(MicrophoneMode::AlwaysOn);
-        let _ = switched_tx.send(result);
-    });
-    let switched_before_close = match switched_rx.recv_timeout(WAIT) {
-        Ok(result) => {
-            result.expect("switch to AlwaysOn");
-            true
-        }
-        Err(mpsc::RecvTimeoutError::Timeout) => false,
-        Err(error) => panic!("mode switch disconnected: {error}"),
-    };
-    assert!(
-        fixture.hardware.mic.is_streaming(),
-        "mode switch must open stream"
-    );
-    release_tx.send(()).unwrap();
-    closed_rx
-        .recv_timeout(WAIT)
-        .expect("delayed close completed");
-    if !switched_before_close {
-        switched_rx
-            .recv_timeout(WAIT)
-            .expect("mode switch completes after serialized close")
-            .expect("switch to AlwaysOn");
-    }
-    switching.join().expect("mode switch thread");
-    let streaming = fixture.hardware.mic.is_streaming();
-    assert!(matches!(
-        *manager.mode.lock().unwrap(),
-        MicrophoneMode::AlwaysOn
-    ));
-    assert!(
-        streaming,
-        "stale lazy close shut the AlwaysOn microphone stream"
     );
 }

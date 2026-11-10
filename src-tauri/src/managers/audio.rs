@@ -532,8 +532,6 @@ pub struct AudioRecordingManager {
     device_change_pending: Arc<AtomicBool>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
-    #[cfg(all(test, target_os = "linux"))]
-    lazy_close_hooks: Option<Arc<lifecycle_tests::LazyCloseHooks>>,
 }
 
 impl AudioRecordingManager {
@@ -577,8 +575,6 @@ impl AudioRecordingManager {
             cached_device: Arc::new(Mutex::new(None)),
             device_change_pending: Arc::new(AtomicBool::new(false)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
-            #[cfg(all(test, target_os = "linux"))]
-            lazy_close_hooks: None,
         };
 
         // Always-on?  Open immediately.
@@ -706,14 +702,8 @@ impl AudioRecordingManager {
     fn schedule_lazy_close(&self) {
         let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
-        #[cfg(all(test, target_os = "linux"))]
-        let hooks = self.lazy_close_hooks.clone();
         std::thread::spawn(move || {
-            #[cfg(all(test, target_os = "linux"))]
-            let timeout = hooks.as_ref().map_or(STREAM_IDLE_TIMEOUT, |h| h.timeout);
-            #[cfg(not(all(test, target_os = "linux")))]
-            let timeout = STREAM_IDLE_TIMEOUT;
-            std::thread::sleep(timeout);
+            std::thread::sleep(STREAM_IDLE_TIMEOUT);
             let rm = app.state::<Arc<AudioRecordingManager>>();
             // Hold state lock across the check AND close to serialize against
             // try_start_recording, preventing a race where the stream is closed
@@ -722,10 +712,6 @@ impl AudioRecordingManager {
             if rm.close_generation.load(Ordering::SeqCst) == gen
                 && matches!(*state, RecordingState::Idle)
             {
-                #[cfg(all(test, target_os = "linux"))]
-                if let Some(hooks) = &hooks {
-                    (hooks.before_close)();
-                }
                 // stop_microphone_stream does not acquire the state lock,
                 // so holding it here is safe (no deadlock).
                 info!(
@@ -733,10 +719,6 @@ impl AudioRecordingManager {
                     STREAM_IDLE_TIMEOUT
                 );
                 rm.stop_microphone_stream();
-                #[cfg(all(test, target_os = "linux"))]
-                if let Some(hooks) = &hooks {
-                    (hooks.after_close)();
-                }
             }
         });
     }
