@@ -182,6 +182,15 @@ For reliable text input on Linux, install the appropriate tool for your display 
   sudo ./build.sh install
   ```
 
+- **Keyboard layouts**: `dotool` and `ydotool` send key positions for a US QWERTY layout. If you use a different layout, such as Dvorak, AZERTY or QWERTZ, the typed text is incorrect. `ydotool` cannot use a different layout, so use `dotool`. Put your layout in `~/.config/environment.d/dotool.conf`, then log out and log in again:
+
+  ```ini
+  DOTOOL_XKB_LAYOUT=us
+  DOTOOL_XKB_VARIANT=dvorak
+  ```
+
+  For AZERTY, use `DOTOOL_XKB_LAYOUT=fr` without a variant. On Wayland, Handy uses `dotool` before `ydotool` when you install both.
+
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 
 **Wayland Support (Linux):**
