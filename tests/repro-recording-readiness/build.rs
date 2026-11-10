@@ -1,6 +1,9 @@
 use quote::{quote, ToTokens};
 use std::{env, fs, path::Path};
-use syn::{visit::Visit, Expr, ImplItem, Item, Type};
+use syn::{visit::Visit, Expr, Item, Type};
+
+mod method_selector;
+use method_selector::method;
 
 fn read(root: &Path, path: &str) -> syn::File {
     let source = root.join(path);
@@ -24,25 +27,6 @@ impl<'ast> Visit<'ast> for ReadinessClosure {
         }
         syn::visit::visit_expr_closure(self, closure);
     }
-}
-
-fn method(file: &syn::File, owner: &str, name: &str) -> syn::ImplItemFn {
-    let found: Vec<_> = file
-        .items
-        .iter()
-        .filter_map(|item| {
-            let Item::Impl(item) = item else { return None };
-            matches!(item.self_ty.as_ref(), Type::Path(path) if path.path.is_ident(owner))
-                .then_some(item)
-        })
-        .flat_map(|item| &item.items)
-        .filter_map(|item| match item {
-            ImplItem::Fn(item) if item.sig.ident == name => Some(item.clone()),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(found.len(), 1, "{owner}::{name} missing or ambiguous");
-    found[0].clone()
 }
 
 fn function(file: &syn::File, name: &str) -> syn::ItemFn {

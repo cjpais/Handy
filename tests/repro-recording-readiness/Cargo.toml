@@ -8,6 +8,7 @@ publish = false
 
 [dev-dependencies]
 loom = "0.7.2"
+syn = { version = "2", features = ["full"] }
 
 [build-dependencies]
 prettyplease = "0.2"
