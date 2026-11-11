@@ -7,7 +7,10 @@
     "model": "מודל",
     "quit": "יציאה",
     "cancel": "ביטול",
-    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input"
+    "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input",
+    "language": "שפה",
+    "autoLanguage": "אוטומטי",
+    "otherLanguages": "שפות אחרות"
   },
   "sidebar": {
     "general": "כללי",
@@ -423,7 +426,6 @@
         "title": "מודלים ישנים כבר לא עובדים עם Handy",
         "description": "הם תופסים {{size}} במחשב שלך.",
         "delete": "מחיקת מודלים",
-        "deleted": "המודלים הישנים נמחקו",
         "deleteFailed": "לא ניתן היה למחוק חלק מהמודלים הישנים. פרטים נוספים ביומן."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "השאר את המיקרופון פתוח בין תמלולים",
         "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
+      },
+      "airpodsMode": {
+        "label": "מצב AirPods",
+        "description": "מעביר את ה-AirPods אוטומטית ל-Mac לצורך תמלול כאשר iPhone מנגן אודיו. בלי זה, ההקלטות עלולות לצאת שקטות."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "תמלול קובץ",
       "mediaFiles": "שמע ווידאו",
       "fileUnsupported": "לא ניתן לקרוא שמע מ-{{name}}.",
-      "readingFile": "קורא את {{name}}...",
       "transcribeFailed": "התמלול נכשל. נסו שוב.",
       "waiting": "ממתין לתמלול",
       "transcribingPercent": "מתמלל, {{percent}}%",
+      "readingFile": "קורא קובץ...",
       "showMore": "הצג עוד",
       "showLess": "הצג פחות",
       "dropTitle": "שחררו כדי לתמלל",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "תצוגה מקדימה של מה חדש",
         "description": "פתח את הערת הגרסה המצורפת האחרונה בלי לסמן אותה כנצפתה",
-        "button": "תצוגה מקדימה",
-        "noNotes": "לא נמצאו הערות גרסה מצורפות",
-        "error": "הצגת התצוגה המקדימה של הערות הגרסה נכשלה"
+        "button": "תצוגה מקדימה"
       },
       "onboardingPreview": {
         "title": "תצוגה מקדימה של ההגדרה הראשונית",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "העברת מודלים",
         "description": "פתח באמת את מסך עדכון המודלים בפורמט הישן: הוא מוריד תחליפים, מחליף מודלים ומוחק קבצים ישנים",
-        "button": "פתח",
-        "noRetired": "אין מודלים בפורמט ישן בדיסק"
+        "button": "פתח"
       },
       "soundTheme": {
         "label": "ערכת צלילים",
@@ -916,6 +919,8 @@
     "title": "חדש ב-Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "מיקום ההשמעה",
+    "resetSetting": "איפוס {{setting}} לערך ברירת המחדל",
     "loading": "טוען...",
     "delete": "מחק",
     "close": "סגור",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "לא נמצא מיקרופון",
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
-    "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
-    "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
-    "modelLoadFailedUnknown": "מודל לא ידוע",
+    "microphoneSilentTitle": "המיקרופון שקט",
+    "microphoneSilent": "המיקרופון שלח רק שקט. ודאו שהוא לא מושתק, או בחרו מיקרופון אחר בהגדרות.",
+    "recordingFailedTitle": "הפעלת ההקלטה נכשלה",
+    "modelLoadFailed": "Handy לא הצליח לטעון את המודל הזה. נסו שוב או בחרו מודל אחר.",
+    "modelLoadFailedTitle": "טעינת המודל נכשלה",
+    "noModelSelected": "הורידו או בחרו מודל בהגדרות > מודלים.",
+    "noModelSelectedTitle": "לא נבחר מודל",
+    "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
+    "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
+    "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
+    "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
+    "fileTranscriptionFailedTitle": "תמלול הקובץ נכשל",
     "transcriptionFailedTitle": "התמלול נכשל"
+  },
+  "notices": {
+    "errorOne": "{{n}} שגיאה",
+    "errorMany": "{{n}} שגיאות",
+    "warningOne": "{{n}} אזהרה",
+    "warningMany": "{{n}} אזהרות",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "שפת האפליקציה",

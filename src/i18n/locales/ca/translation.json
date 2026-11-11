@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Surt",
     "cancel": "Cancel·la",
-    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura"
+    "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura",
+    "language": "Llengua",
+    "autoLanguage": "Automàtica",
+    "otherLanguages": "Altres llengües"
   },
   "sidebar": {
     "general": "General",
@@ -423,7 +426,6 @@
         "title": "Els models antics ja no funcionen amb Handy",
         "description": "Ocupen {{size}} a l'ordinador.",
         "delete": "Suprimeix els models",
-        "deleted": "S'han suprimit els models antics",
         "deleteFailed": "No s'han pogut suprimir alguns models antics. Consulteu el registre per a més detalls."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "Mantén el micròfon obert entre transcripcions",
         "description": "Manté el flux d'àudio del micròfon obert durant 30 segons després d'aturar l'enregistrament per reduir la latència entre transcripcions consecutives. Mentre és actiu, pot reduir la qualitat de l'àudio Bluetooth."
+      },
+      "airpodsMode": {
+        "label": "Mode AirPods",
+        "description": "Canvia automàticament els AirPods al Mac per a la transcripció quan un iPhone està reproduint àudio. Sense això, les gravacions poden quedar en silenci."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "Transcriu un fitxer",
       "mediaFiles": "Àudio i vídeo",
       "fileUnsupported": "No s'ha pogut llegir l'àudio de {{name}}.",
-      "readingFile": "S'està llegint {{name}}...",
       "transcribeFailed": "La transcripció ha fallat. Torna-ho a provar.",
       "waiting": "Esperant per transcriure",
       "transcribingPercent": "Transcrivint, {{percent}}%",
+      "readingFile": "S'està llegint el fitxer...",
       "showMore": "Mostra'n més",
       "showLess": "Mostra'n menys",
       "dropTitle": "Deixa anar per transcriure",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "Previsualització de les novetats",
         "description": "Obre les últimes notes de la versió incloses sense marcar-les com a llegides",
-        "button": "Previsualitzeu",
-        "noNotes": "No s'han trobat notes de la versió incloses",
-        "error": "No s'han pogut previsualitzar les notes de la versió"
+        "button": "Previsualitzeu"
       },
       "onboardingPreview": {
         "title": "Previsualització de la configuració inicial",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "Migració de models",
         "description": "Obre de debò la pantalla d'actualització de models de format antic: baixa els substituts, canvia de model i elimina els fitxers antics",
-        "button": "Obre",
-        "noRetired": "No hi ha models de format antic al disc"
+        "button": "Obre"
       },
       "soundTheme": {
         "label": "Tema de so",
@@ -916,6 +919,8 @@
     "title": "Novetats del Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Posició de reproducció",
+    "resetSetting": "Restableix {{setting}} al valor predeterminat",
     "loading": "S'està carregant...",
     "delete": "Suprimeix",
     "close": "Tanca",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "No s'ha trobat cap micròfon",
     "noInputDevice": "No s'ha detectat cap dispositiu d'entrada d'àudio. Connecteu un micròfon o uns auriculars amb micròfon i torneu-ho a provar.",
-    "recordingFailed": "No s'ha pogut iniciar l'enregistrament: {{error}}",
-    "modelLoadFailed": "No s'ha pogut carregar el model: {{model}}",
-    "modelLoadFailedUnknown": "model desconegut",
+    "microphoneSilentTitle": "El micròfon està en silenci",
+    "microphoneSilent": "El micròfon només ha enviat silenci. Comprova que no estigui silenciat o tria un altre micròfon a Configuració.",
+    "recordingFailedTitle": "No s'ha pogut iniciar l'enregistrament",
+    "modelLoadFailed": "Handy no ha pogut carregar aquest model. Torna-ho a provar o tria'n un altre.",
+    "modelLoadFailedTitle": "No s'ha pogut carregar el model",
+    "noModelSelected": "Baixa o tria un model a Configuració > Models.",
+    "noModelSelectedTitle": "Cap model seleccionat",
+    "modelDownloadFailed": "Ha fallat la baixada",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
+    "postProcessFailedTitle": "Enganxat sense postprocessament",
+    "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
+    "filePostProcessFailedTitle": "Transcrit sense postprocessament",
+    "filePostProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha desat tal qual.",
+    "fileTranscriptionFailedTitle": "La transcripció del fitxer ha fallat",
     "transcriptionFailedTitle": "La transcripció ha fallat"
+  },
+  "notices": {
+    "errorOne": "{{n}} error",
+    "errorMany": "{{n}} errors",
+    "warningOne": "{{n}} avís",
+    "warningMany": "{{n}} avisos",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Llengua de l'aplicació",

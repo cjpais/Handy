@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.9.8"
+version = "0.10.0"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -51,7 +51,7 @@ anyhow = "1.0.95"
 hound = "3.5.1"
 log = "0.4.25"
 env_filter = "0.1.0"
-tokio = "1.43.0"
+tokio = { version = "1.43.0", features = ["process"] }
 earshot = "1.2.2"
 enigo = "0.6.1"
 # Feedback sounds. No `recording`: microphone capture is handy-recorder's.
@@ -59,9 +59,13 @@ rodio = { version = "0.23.0", default-features = false, features = ["playback", 
 # Decodes files for transcription. rodio's version, plus the M4A/MP4 (AAC,
 # ALAC) and AIFF support rodio leaves out.
 symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "aiff"] }
+# Opus (most .ogg/.opus/.webm voice notes), which symphonia can't decode.
+# Builds libopus from source with cmake. 0.2 is the last for symphonia 0.5;
+# 0.2.3 and older drop 120 ms stereo packets (too small a buffer).
+symphonia-adapter-libopus = "0.2.9"
 # Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
 rubato = "5"
-handy-recorder = "0.1"
+handy-recorder = "0.1.1"
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
 futures-util = "0.3"
 rustfft = "6.4.0"
@@ -168,6 +172,9 @@ objc2-service-management = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+# Renderer policy in src/webkit_renderer.rs compares the linked WebKitGTK
+# version against the release that introduced damage-based compositing.
+webkit2gtk-sys = "2.0"
 gtk = "0.18"
 transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",

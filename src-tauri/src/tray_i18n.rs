@@ -4,7 +4,8 @@
 //! frontend locale files (src/i18n/locales/*/translation.json).
 //!
 //! The English translation.json is the single source of truth:
-//! - TrayStrings struct fields are derived from the English "tray" keys
+//! - TrayStrings struct fields are derived from the English "tray" keys, plus
+//!   the notice titles (see `build.rs`)
 //! - All languages are auto-discovered from the locales directory
 //!
 //! To add a new tray menu item:

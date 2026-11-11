@@ -7,7 +7,10 @@
     "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء",
-    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input"
+    "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
+    "language": "اللغة",
+    "autoLanguage": "تلقائي",
+    "otherLanguages": "لغات أخرى"
   },
   "sidebar": {
     "general": "عام",
@@ -423,7 +426,6 @@
         "title": "النماذج القديمة لم تعد تعمل مع Handy",
         "description": "إنها تشغل {{size}} على جهاز الكمبيوتر الخاص بك.",
         "delete": "حذف النماذج",
-        "deleted": "تم حذف النماذج القديمة",
         "deleteFailed": "تعذّر حذف بعض النماذج القديمة. تحقق من السجل لمزيد من التفاصيل."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "إبقاء الميكروفون مفتوحًا بين عمليات النسخ",
         "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
+      },
+      "airpodsMode": {
+        "label": "وضع AirPods",
+        "description": "يبدّل سماعات AirPods تلقائيًا إلى الـ Mac لإجراء النسخ النصي عندما يكون iPhone قيد تشغيل الصوت. بدون ذلك قد تأتي التسجيلات صامتة."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "نسخ ملف",
       "mediaFiles": "الصوت والفيديو",
       "fileUnsupported": "تعذّرت قراءة الصوت من {{name}}.",
-      "readingFile": "جارٍ قراءة {{name}}...",
       "transcribeFailed": "فشل النسخ. يرجى المحاولة مرة أخرى.",
       "waiting": "في انتظار النسخ",
       "transcribingPercent": "جارٍ النسخ، {{percent}}%",
+      "readingFile": "جارٍ قراءة الملف...",
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
       "dropTitle": "أفلت الملف لنسخه",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "معاينة الجديد",
         "description": "افتح أحدث ملاحظات إصدار مضمنة دون وضع علامة عليها كمقروءة",
-        "button": "معاينة",
-        "noNotes": "لم يتم العثور على ملاحظات إصدار مضمنة",
-        "error": "تعذرت معاينة ملاحظات الإصدار"
+        "button": "معاينة"
       },
       "onboardingPreview": {
         "title": "معاينة الإعداد الأولي",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "ترحيل النماذج",
         "description": "افتح شاشة تحديث النماذج ذات الصيغة القديمة فعليًا: تنزّل البدائل، وتبدّل النماذج، وتحذف الملفات القديمة",
-        "button": "فتح",
-        "noRetired": "لا توجد نماذج بالصيغة القديمة على القرص"
+        "button": "فتح"
       },
       "soundTheme": {
         "label": "سمة الصوت",
@@ -916,6 +919,8 @@
     "title": "الجديد في Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "موضع التشغيل",
+    "resetSetting": "إعادة تعيين {{setting}} إلى القيمة الافتراضية",
     "loading": "جاري التحميل...",
     "delete": "حذف",
     "close": "إغلاق",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "لم يتم العثور على ميكروفون",
     "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
-    "recordingFailed": "فشل في بدء التسجيل: {{error}}",
-    "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
-    "modelLoadFailedUnknown": "نموذج غير معروف",
+    "microphoneSilentTitle": "الميكروفون صامت",
+    "microphoneSilent": "لم يرسل الميكروفون سوى الصمت. تأكد من أنه غير مكتوم، أو اختر ميكروفونًا آخر من الإعدادات.",
+    "recordingFailedTitle": "فشل في بدء التسجيل",
+    "modelLoadFailed": "تعذر على Handy تحميل هذا النموذج. حاول مرة أخرى أو اختر نموذجًا آخر.",
+    "modelLoadFailedTitle": "فشل في تحميل النموذج",
+    "noModelSelected": "نزّل نموذجًا أو اختره من الإعدادات > النماذج.",
+    "noModelSelectedTitle": "لم يتم اختيار نموذج",
+    "modelDownloadFailed": "فشل التنزيل",
     "pasteFailedTitle": "فشل لصق النص",
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
+    "postProcessFailedTitle": "لُصق بدون معالجة لاحقة",
+    "postProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا لُصق النص المنسوخ كما هو.",
+    "filePostProcessFailedTitle": "نُسخ بدون معالجة لاحقة",
+    "filePostProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا حُفظ النص المنسوخ كما هو.",
+    "fileTranscriptionFailedTitle": "فشل التفريغ النصي للملف",
     "transcriptionFailedTitle": "فشل التفريغ النصي"
+  },
+  "notices": {
+    "errorOne": "{{n}} خطأ",
+    "errorMany": "{{n}} أخطاء",
+    "warningOne": "{{n}} تحذير",
+    "warningMany": "{{n}} تحذيرات",
+    "errorsAndWarnings": "{{errors}}، {{warnings}}"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

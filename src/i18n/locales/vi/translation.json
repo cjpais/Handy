@@ -7,7 +7,10 @@
     "model": "Mô hình",
     "quit": "Thoát",
     "cancel": "Hủy",
-    "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn"
+    "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn",
+    "language": "Ngôn ngữ",
+    "autoLanguage": "Tự động",
+    "otherLanguages": "Ngôn ngữ khác"
   },
   "sidebar": {
     "general": "Chung",
@@ -423,7 +426,6 @@
         "title": "Các mô hình cũ không còn hoạt động với Handy",
         "description": "Chúng đang chiếm {{size}} trên máy tính của bạn.",
         "delete": "Xóa mô hình",
-        "deleted": "Đã xóa các mô hình cũ",
         "deleteFailed": "Không thể xóa một số mô hình cũ. Hãy kiểm tra nhật ký để biết chi tiết."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "Giữ micro mở giữa các lần phiên âm",
         "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
+      },
+      "airpodsMode": {
+        "label": "Chế độ AirPods",
+        "description": "Tự động chuyển AirPods sang máy Mac để phiên âm khi iPhone đang phát âm thanh. Nếu không, bản ghi có thể bị im lặng."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "Chép lời tệp",
       "mediaFiles": "Âm thanh và video",
       "fileUnsupported": "Không thể đọc âm thanh từ {{name}}.",
-      "readingFile": "Đang đọc {{name}}...",
       "transcribeFailed": "Chép lời thất bại. Vui lòng thử lại.",
       "waiting": "Đang chờ chép lời",
       "transcribingPercent": "Đang chép lời, {{percent}}%",
+      "readingFile": "Đang đọc tệp...",
       "showMore": "Xem thêm",
       "showLess": "Thu gọn",
       "dropTitle": "Thả để chép lời",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "Xem trước điểm mới",
         "description": "Mở ghi chú phát hành mới nhất được đóng gói mà không đánh dấu là đã xem",
-        "button": "Xem trước",
-        "noNotes": "Không tìm thấy ghi chú phát hành được đóng gói",
-        "error": "Không thể xem trước ghi chú phát hành"
+        "button": "Xem trước"
       },
       "onboardingPreview": {
         "title": "Xem trước thiết lập ban đầu",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "Chuyển đổi mô hình",
         "description": "Mở thật màn hình cập nhật mô hình định dạng cũ: nó sẽ tải xuống bản thay thế, chuyển mô hình và xóa các tệp cũ",
-        "button": "Mở",
-        "noRetired": "Không có mô hình định dạng cũ trên ổ đĩa"
+        "button": "Mở"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
@@ -916,6 +919,8 @@
     "title": "Điểm mới trong Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Vị trí phát",
+    "resetSetting": "Đặt lại {{setting}} về mặc định",
     "loading": "Đang tải...",
     "delete": "Xóa",
     "close": "Đóng",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "Không tìm thấy micrô",
     "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
-    "recordingFailed": "Không thể bắt đầu ghi âm: {{error}}",
-    "modelLoadFailed": "Không thể tải mô hình: {{model}}",
-    "modelLoadFailedUnknown": "mô hình không xác định",
+    "microphoneSilentTitle": "Micrô không có âm thanh",
+    "microphoneSilent": "Micrô chỉ gửi về khoảng lặng. Hãy kiểm tra xem micrô có bị tắt tiếng không, hoặc chọn micrô khác trong Cài đặt.",
+    "recordingFailedTitle": "Không thể bắt đầu ghi âm",
+    "modelLoadFailed": "Handy không thể tải mô hình này. Hãy thử lại hoặc chọn mô hình khác.",
+    "modelLoadFailedTitle": "Không thể tải mô hình",
+    "noModelSelected": "Tải xuống hoặc chọn một mô hình trong Cài đặt > Mô hình.",
+    "noModelSelectedTitle": "Chưa chọn mô hình",
+    "modelDownloadFailed": "Tải xuống thất bại",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
+    "postProcessFailedTitle": "Đã dán không qua xử lý sau",
+    "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
+    "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
+    "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
+    "fileTranscriptionFailedTitle": "Phiên âm tệp thất bại",
     "transcriptionFailedTitle": "Phiên âm thất bại"
+  },
+  "notices": {
+    "errorOne": "{{n}} lỗi",
+    "errorMany": "{{n}} lỗi",
+    "warningOne": "{{n}} cảnh báo",
+    "warningMany": "{{n}} cảnh báo",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

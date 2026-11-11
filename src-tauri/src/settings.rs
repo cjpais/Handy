@@ -233,6 +233,9 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    /// No built-in global shortcuts; trigger Handy via CLI flags or signals
+    /// (e.g. from a Wayland compositor keybinding).
+    None,
 }
 
 impl Default for KeyboardImplementation {
@@ -503,6 +506,11 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub lazy_stream_close: bool,
+    /// Experimental, macOS only: move a Bluetooth headset (AirPods) to this
+    /// Mac while recording, so its microphone does not return silence while
+    /// another Apple device is playing through it.
+    #[serde(default)]
+    pub airpods_mode: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
@@ -945,7 +953,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_shortcut = "option+space";
     #[cfg(target_os = "linux")]
-    let default_shortcut = "ctrl+space";
+    let default_shortcut = "ctrl+alt+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_shortcut = "alt+space";
 
@@ -965,7 +973,7 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "macos")]
     let default_post_process_shortcut = "option+shift+space";
     #[cfg(target_os = "linux")]
-    let default_post_process_shortcut = "ctrl+shift+space";
+    let default_post_process_shortcut = "ctrl+alt+shift+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_post_process_shortcut = "alt+shift+space";
 
@@ -1039,6 +1047,7 @@ pub fn get_default_settings() -> AppSettings {
         theme: default_theme(),
         experimental_enabled: false,
         lazy_stream_close: false,
+        airpods_mode: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
@@ -1372,13 +1381,73 @@ fn os_languages() -> &'static [String] {
     }
 }
 
+/// How this build was packaged, as far as the updater is concerned. Mirrors
+/// the Linux cases of `tauri::utils::platform::BundleType`; `Other` covers
+/// every other stamped type and `None` (at the call site) a binary the bundler
+/// did not stamp, such as a source, AUR or other distro build.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+enum BundleKind {
+    AppImage,
+    Deb,
+    Rpm,
+    Other,
+}
+
+/// Whether the updater plugin can install an update on Linux. It runs
+/// `dpkg -i` for a deb build, `rpm -U` for an rpm build, and otherwise swaps
+/// the running AppImage. A build with no bundle type, or one whose tool is
+/// missing (the deb repacked for Arch), would only fail after a password
+/// prompt. Pure so it can be tested on any OS.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn linux_self_update_possible(kind: Option<BundleKind>, has_tool: impl Fn(&str) -> bool) -> bool {
+    match kind {
+        Some(BundleKind::AppImage) => true,
+        Some(BundleKind::Deb) => has_tool("dpkg"),
+        Some(BundleKind::Rpm) => has_tool("rpm"),
+        Some(BundleKind::Other) | None => false,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn self_update_possible() -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    use tauri::utils::config::BundleType;
+    use tauri::utils::platform::bundle_type;
+
+    let kind = bundle_type().map(|b| match b {
+        BundleType::AppImage => BundleKind::AppImage,
+        BundleType::Deb => BundleKind::Deb,
+        BundleType::Rpm => BundleKind::Rpm,
+        _ => BundleKind::Other,
+    });
+    let has_tool = |name: &str| {
+        let path = std::env::var_os("PATH").unwrap_or_default();
+        std::env::split_paths(&path)
+            .chain(["/usr/bin", "/bin", "/usr/sbin", "/sbin"].map(std::path::PathBuf::from))
+            .any(|dir| {
+                std::fs::metadata(dir.join(name))
+                    .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+                    .unwrap_or(false)
+            })
+    };
+    linux_self_update_possible(kind, has_tool)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn self_update_possible() -> bool {
+    true
+}
+
 /// Update checks are forced off (without touching the persisted setting) when
 /// `HANDY_DISABLE_UPDATER` is set — e.g. by the Nix package, since self-update
-/// can't work against an immutable /nix/store install.
+/// can't work against an immutable /nix/store install — or when this build
+/// cannot install its own update (see `linux_self_update_possible`).
 pub fn update_checks_forced_disabled() -> bool {
     use std::sync::OnceLock;
     static IS_UPDATER_DISABLED: OnceLock<bool> = OnceLock::new();
-    *IS_UPDATER_DISABLED.get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER"))
+    *IS_UPDATER_DISABLED
+        .get_or_init(|| utils::env_flag_enabled("HANDY_DISABLE_UPDATER") || !self_update_possible())
 }
 
 /// Effective updater state: the user's stored preference, overridden to `false`
@@ -1641,6 +1710,20 @@ mod tests {
         assert_eq!(salvaged.paste_delay_ms, default_paste_delay_ms());
         assert_eq!(salvaged.sound_theme, default_sound_theme());
         assert_eq!(salvaged.custom_words, vec!["handy".to_string()]);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn default_shortcuts_do_not_conflict_with_ibus_input_method_switch() {
+        let defaults = get_default_settings();
+        assert_eq!(
+            defaults.bindings["transcribe"].current_binding,
+            "ctrl+alt+space"
+        );
+        assert_eq!(
+            defaults.bindings["transcribe_with_post_process"].current_binding,
+            "ctrl+alt+shift+space",
+        );
     }
 
     #[test]
@@ -2031,5 +2114,35 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn linux_self_update_possible_depends_on_bundle_and_tool() {
+        let all = |_: &str| true;
+        let none = |_: &str| false;
+        let only = |want: &'static str| move |name: &str| name == want;
+
+        assert!(linux_self_update_possible(Some(BundleKind::AppImage), none));
+        assert!(linux_self_update_possible(Some(BundleKind::Deb), all));
+        assert!(linux_self_update_possible(
+            Some(BundleKind::Deb),
+            only("dpkg")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Deb), none));
+        assert!(!linux_self_update_possible(
+            Some(BundleKind::Deb),
+            only("rpm")
+        ));
+        assert!(linux_self_update_possible(
+            Some(BundleKind::Rpm),
+            only("rpm")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Rpm), none));
+        assert!(!linux_self_update_possible(
+            Some(BundleKind::Rpm),
+            only("dpkg")
+        ));
+        assert!(!linux_self_update_possible(Some(BundleKind::Other), all));
+        assert!(!linux_self_update_possible(None, all));
     }
 }

@@ -7,7 +7,10 @@
     "model": "Modello",
     "quit": "Esci",
     "cancel": "Annulla",
-    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input"
+    "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
+    "language": "Lingua",
+    "autoLanguage": "Automatico",
+    "otherLanguages": "Altre lingue"
   },
   "sidebar": {
     "general": "Generale",
@@ -423,7 +426,6 @@
         "title": "I modelli precedenti non funzionano più con Handy",
         "description": "Occupano {{size}} sul tuo computer.",
         "delete": "Elimina modelli",
-        "deleted": "Modelli precedenti eliminati",
         "deleteFailed": "Non è stato possibile eliminare alcuni modelli precedenti. Controlla il log per i dettagli."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "Mantieni il microfono aperto tra le trascrizioni",
         "description": "Mantiene lo stream del microfono aperto per 30 secondi dopo l'arresto della registrazione, riducendo la latenza per trascrizioni consecutive. Potrebbe degradare la qualità audio Bluetooth."
+      },
+      "airpodsMode": {
+        "label": "Modalità AirPods",
+        "description": "Passa automaticamente gli AirPods al Mac per la trascrizione quando un iPhone sta riproducendo audio. Senza questa opzione le registrazioni possono risultare mute."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "Trascrivi file",
       "mediaFiles": "Audio e video",
       "fileUnsupported": "Impossibile leggere l'audio da {{name}}.",
-      "readingFile": "Lettura di {{name}}...",
       "transcribeFailed": "Trascrizione non riuscita. Riprova.",
       "waiting": "In attesa di trascrizione",
       "transcribingPercent": "Trascrizione, {{percent}}%",
+      "readingFile": "Lettura del file in corso...",
       "showMore": "Mostra di più",
       "showLess": "Mostra di meno",
       "dropTitle": "Rilascia per trascrivere",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "Anteprima delle novità",
         "description": "Apri le note di rilascio incluse più recenti senza segnarle come viste",
-        "button": "Anteprima",
-        "noNotes": "Nessuna nota di rilascio inclusa trovata",
-        "error": "Impossibile mostrare l'anteprima delle note di rilascio"
+        "button": "Anteprima"
       },
       "onboardingPreview": {
         "title": "Anteprima della configurazione iniziale",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "Migrazione dei modelli",
         "description": "Apri davvero la schermata di aggiornamento dei modelli in formato precedente: scarica le sostituzioni, cambia modello ed elimina i vecchi file",
-        "button": "Apri",
-        "noRetired": "Nessun modello in formato precedente su disco"
+        "button": "Apri"
       },
       "soundTheme": {
         "label": "Tema Sonoro",
@@ -916,6 +919,8 @@
     "title": "Novità in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Posizione di riproduzione",
+    "resetSetting": "Ripristina il valore predefinito di {{setting}}",
     "loading": "Caricamento...",
     "delete": "Elimina",
     "close": "Chiudi",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "Nessun microfono trovato",
     "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
-    "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
-    "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
-    "modelLoadFailedUnknown": "modello sconosciuto",
+    "microphoneSilentTitle": "Il microfono è muto",
+    "microphoneSilent": "Il microfono ha inviato solo silenzio. Verifica che non sia disattivato o scegli un altro microfono in Impostazioni.",
+    "recordingFailedTitle": "Impossibile avviare la registrazione",
+    "modelLoadFailed": "Handy non è riuscito a caricare questo modello. Riprova o scegline un altro.",
+    "modelLoadFailedTitle": "Impossibile caricare il modello",
+    "noModelSelected": "Scarica o scegli un modello in Impostazioni > Modelli.",
+    "noModelSelectedTitle": "Nessun modello selezionato",
+    "modelDownloadFailed": "Download non riuscito",
     "pasteFailedTitle": "Impossibile incollare il testo",
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
+    "postProcessFailedTitle": "Incollato senza post-elaborazione",
+    "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
+    "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
+    "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
+    "fileTranscriptionFailedTitle": "Trascrizione del file non riuscita",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
+  },
+  "notices": {
+    "errorOne": "{{n}} errore",
+    "errorMany": "{{n}} errori",
+    "warningOne": "{{n}} avviso",
+    "warningMany": "{{n}} avvisi",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Lingua Applicazione",

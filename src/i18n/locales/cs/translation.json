@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Ukončit",
     "cancel": "Zrušit",
-    "secureInputWarning": "⚠ Zkratky blokuje Secure Input"
+    "secureInputWarning": "⚠ Zkratky blokuje Secure Input",
+    "language": "Jazyk",
+    "autoLanguage": "Automaticky",
+    "otherLanguages": "Další jazyky"
   },
   "sidebar": {
     "general": "Obecné",
@@ -423,7 +426,6 @@
         "title": "Staré modely už s Handy nefungují",
         "description": "Zabírají {{size}} na vašem počítači.",
         "delete": "Smazat modely",
-        "deleted": "Staré modely byly smazány",
         "deleteFailed": "Některé staré modely se nepodařilo smazat. Podrobnosti najdete v protokolu."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "Ponechat mikrofon zapnutý mezi přepisy",
         "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
+      },
+      "airpodsMode": {
+        "label": "Režim AirPods",
+        "description": "Automaticky přepne AirPods na Mac kvůli přepisu, když iPhone přehrává zvuk. Bez toho mohou nahrávky zůstat tiché."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "Přepsat soubor",
       "mediaFiles": "Zvuk a video",
       "fileUnsupported": "Ze souboru {{name}} se nepodařilo načíst zvuk.",
-      "readingFile": "Načítání {{name}}...",
       "transcribeFailed": "Přepis se nezdařil. Zkuste to prosím znovu.",
       "waiting": "Čeká na přepis",
       "transcribingPercent": "Přepisuji, {{percent}} %",
+      "readingFile": "Načítám soubor...",
       "showMore": "Zobrazit více",
       "showLess": "Zobrazit méně",
       "dropTitle": "Pusťte pro přepis",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "Náhled novinek",
         "description": "Otevřít nejnovější přibalené poznámky k vydání bez označení jako zobrazené",
-        "button": "Náhled",
-        "noNotes": "Nebyly nalezeny žádné přibalené poznámky k vydání",
-        "error": "Nepodařilo se zobrazit náhled poznámek k vydání"
+        "button": "Náhled"
       },
       "onboardingPreview": {
         "title": "Náhled úvodního nastavení",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "Migrace modelů",
         "description": "Doopravdy otevře obrazovku aktualizace modelů starého formátu: stáhne náhrady, přepne modely a smaže staré soubory",
-        "button": "Otevřít",
-        "noRetired": "Na disku nejsou žádné modely starého formátu"
+        "button": "Otevřít"
       },
       "soundTheme": {
         "label": "Zvukový motiv",
@@ -916,6 +919,8 @@
     "title": "Novinky v Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Pozice přehrávání",
+    "resetSetting": "Obnovit výchozí hodnotu: {{setting}}",
     "loading": "Načítání...",
     "delete": "Smazat",
     "close": "Zavřít",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "Mikrofon nebyl nalezen",
     "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
-    "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
-    "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
-    "modelLoadFailedUnknown": "neznámý model",
+    "microphoneSilentTitle": "Mikrofon je tichý",
+    "microphoneSilent": "Mikrofon posílá jen ticho. Zkontrolujte, že není ztlumený, nebo vyberte jiný mikrofon v Nastavení.",
+    "recordingFailedTitle": "Nepodařilo se spustit nahrávání",
+    "modelLoadFailed": "Handy nemohl načíst tento model. Zkuste to znovu nebo vyberte jiný.",
+    "modelLoadFailedTitle": "Nepodařilo se načíst model",
+    "noModelSelected": "Stáhněte nebo vyberte model v Nastavení > Modely.",
+    "noModelSelectedTitle": "Není vybrán žádný model",
+    "modelDownloadFailed": "Stahování selhalo",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "postProcessFailedTitle": "Vloženo bez následného zpracování",
+    "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
+    "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",
+    "filePostProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis uložen beze změn.",
+    "fileTranscriptionFailedTitle": "Přepis souboru selhal",
     "transcriptionFailedTitle": "Přepis selhal"
+  },
+  "notices": {
+    "errorOne": "{{n}} chyba",
+    "errorMany": "{{n}} chyby",
+    "warningOne": "{{n}} upozornění",
+    "warningMany": "{{n}} upozornění",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Jazyk aplikace",

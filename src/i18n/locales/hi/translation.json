@@ -7,7 +7,10 @@
     "model": "मॉडल",
     "quit": "बाहर निकलें",
     "cancel": "रद्द करें",
-    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं"
+    "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं",
+    "language": "भाषा",
+    "autoLanguage": "ऑटो",
+    "otherLanguages": "अन्य भाषाएँ"
   },
   "sidebar": {
     "general": "सामान्य",
@@ -423,7 +426,6 @@
         "title": "पुराने मॉडल अब Handy के साथ काम नहीं करते",
         "description": "ये आपके कंप्यूटर पर {{size}} जगह घेर रहे हैं.",
         "delete": "मॉडल हटाएं",
-        "deleted": "पुराने मॉडल हटा दिए गए",
         "deleteFailed": "कुछ पुराने मॉडल हटाए नहीं जा सके. विवरण के लिए लॉग देखें."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "ट्रांसक्रिप्शन के बीच माइक खुला रखें",
         "description": "रिकॉर्डिंग रुकने के बाद माइक्रोफ़ोन स्ट्रीम को 30 सेकंड तक खुला रखता है, जिससे लगातार ट्रांसक्रिप्शन के बीच देरी कम होती है. चालू रहने के दौरान Bluetooth ऑडियो की क्वालिटी पर असर पड़ सकता है."
+      },
+      "airpodsMode": {
+        "label": "AirPods मोड",
+        "description": "जब कोई iPhone ऑडियो चला रहा हो, तो ट्रांसक्रिप्शन के लिए AirPods को अपने आप Mac पर स्विच कर देता है। इसके बिना रिकॉर्डिंग खामोश रह सकती है।"
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "फ़ाइल ट्रांसक्राइब करें",
       "mediaFiles": "ऑडियो और वीडियो",
       "fileUnsupported": "{{name}} से ऑडियो नहीं पढ़ा जा सका।",
-      "readingFile": "{{name}} पढ़ा जा रहा है...",
       "transcribeFailed": "ट्रांसक्रिप्शन विफल रहा। कृपया फिर से प्रयास करें।",
       "waiting": "ट्रांसक्राइब होने की प्रतीक्षा में",
       "transcribingPercent": "ट्रांसक्राइब हो रहा है, {{percent}}%",
+      "readingFile": "फ़ाइल पढ़ी जा रही है...",
       "showMore": "और दिखाएँ",
       "showLess": "कम दिखाएँ",
       "dropTitle": "ट्रांसक्राइब करने के लिए छोड़ें",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "'नया क्या है' की झलक देखें",
         "description": "बंडल की गई सबसे नई रिलीज़ नोट को 'देखा गया' मार्क किए बिना खोलें",
-        "button": "झलक देखें",
-        "noNotes": "बंडल की गई कोई रिलीज़ नोट नहीं मिली",
-        "error": "रिलीज़ नोट की झलक नहीं दिखाई जा सकी"
+        "button": "झलक देखें"
       },
       "onboardingPreview": {
         "title": "शुरुआती सेटअप की झलक",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "मॉडल माइग्रेशन",
         "description": "पुराने फ़ॉर्मेट वाले मॉडल की अपडेट स्क्रीन असली तरह खोलें: यह बदले हुए मॉडल डाउनलोड करती है, मॉडल बदलती है और पुरानी फ़ाइलें हटाती है",
-        "button": "खोलें",
-        "noRetired": "डिस्क पर पुराने फ़ॉर्मेट वाले कोई मॉडल नहीं हैं"
+        "button": "खोलें"
       },
       "soundTheme": {
         "label": "साउंड थीम",
@@ -916,6 +919,8 @@
     "title": "Handy v{{version}} में नया क्या है"
   },
   "common": {
+    "playbackPosition": "प्लेबैक का स्थान",
+    "resetSetting": "{{setting}}: डिफ़ॉल्ट मान पर रीसेट करें",
     "loading": "लोड हो रहा है...",
     "delete": "हटाएं",
     "close": "बंद करें",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "कोई माइक्रोफ़ोन नहीं मिला",
     "noInputDevice": "कोई ऑडियो इनपुट डिवाइस नहीं मिला. कृपया माइक्रोफ़ोन या हेडसेट कनेक्ट करके फिर से कोशिश करें.",
-    "recordingFailed": "रिकॉर्डिंग शुरू नहीं हो सकी: {{error}}",
-    "modelLoadFailed": "मॉडल लोड नहीं हो सका: {{model}}",
-    "modelLoadFailedUnknown": "अज्ञात मॉडल",
+    "microphoneSilentTitle": "माइक्रोफ़ोन शांत है",
+    "microphoneSilent": "आपके माइक्रोफ़ोन से केवल खामोशी आई। देखें कि वह म्यूट तो नहीं है, या सेटिंग में कोई दूसरा माइक्रोफ़ोन चुनें।",
+    "recordingFailedTitle": "रिकॉर्डिंग शुरू नहीं हो सकी",
+    "modelLoadFailed": "Handy इस मॉडल को लोड नहीं कर सका। फिर से कोशिश करें या कोई दूसरा मॉडल चुनें।",
+    "modelLoadFailedTitle": "मॉडल लोड नहीं हो सका",
+    "noModelSelected": "सेटिंग > मॉडल में कोई मॉडल डाउनलोड करें या चुनें।",
+    "noModelSelectedTitle": "कोई मॉडल नहीं चुना गया",
+    "modelDownloadFailed": "डाउनलोड विफल रहा",
     "pasteFailedTitle": "टेक्स्ट पेस्ट नहीं हो सका",
     "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",
+    "postProcessFailedTitle": "पोस्ट प्रोसेस के बिना पेस्ट किया गया",
+    "postProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही पेस्ट किया गया।",
+    "filePostProcessFailedTitle": "पोस्ट प्रोसेस के बिना ट्रांसक्राइब किया गया",
+    "filePostProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही सहेजा गया।",
+    "fileTranscriptionFailedTitle": "फ़ाइल का ट्रांसक्रिप्शन नहीं हो सका",
     "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
+  },
+  "notices": {
+    "errorOne": "{{n}} त्रुटि",
+    "errorMany": "{{n}} त्रुटियां",
+    "warningOne": "{{n}} चेतावनी",
+    "warningMany": "{{n}} चेतावनियां",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "ऐप्लिकेशन की भाषा",

@@ -6,7 +6,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import type { RetiredModel } from "@/bindings";
 import { Button } from "../ui/Button";
 import { Radio } from "../ui/Radio";
@@ -178,7 +178,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
 
   const download = async (p: ModelMigrationPair) => {
     setOutcome(p.retired.id);
-    // Failure toasts come from the store's model-download-failed listener.
+    // Failure notices come from the store's model-download-failed listener.
     if (!(await downloadModel(p.replacement.id))) {
       setOutcome(p.retired.id, "failed");
     }
@@ -225,7 +225,7 @@ const ModelMigration: React.FC<ModelMigrationProps> = ({
       const replacementId = p.replacement.id;
       (async () => {
         if (retiredId === targetId && !(await selectModel(replacementId))) {
-          toast.error(t("onboarding.errors.selectModel"));
+          notify({ title: t("onboarding.errors.selectModel") });
           finalizing.current.delete(retiredId);
           setOutcome(retiredId, "failed");
           return;

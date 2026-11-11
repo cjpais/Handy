@@ -9,8 +9,6 @@ use tempfile::TempDir;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-mod hf_fallback;
-
 // ── SHA256 verification tests ─────────────────────────────────────────────
 
 /// Helper: write `data` to a temp file and return (TempDir, path).

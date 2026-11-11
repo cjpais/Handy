@@ -7,7 +7,10 @@
     "model": "模型",
     "quit": "結束",
     "cancel": "取消",
-    "secureInputWarning": "⚠ 快捷鍵被 Secure Input 阻擋"
+    "secureInputWarning": "⚠ 快捷鍵被 Secure Input 阻擋",
+    "language": "語言",
+    "autoLanguage": "自動",
+    "otherLanguages": "其他語言"
   },
   "sidebar": {
     "general": "一般",
@@ -423,7 +426,6 @@
         "title": "舊模型已無法在 Handy 中使用",
         "description": "它們佔用了您電腦上 {{size}} 的空間。",
         "delete": "刪除模型",
-        "deleted": "已刪除舊模型",
         "deleteFailed": "部分舊模型無法刪除。請查看記錄檔以了解詳情。"
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "在轉錄之間保持麥克風開啟",
         "description": "錄音停止後保持麥克風串流開啟30秒，減少連續轉錄時的延遲。啟用時可能會降低藍牙音訊品質。"
+      },
+      "airpodsMode": {
+        "label": "AirPods 模式",
+        "description": "當 iPhone 正在播放音訊時，自動將 AirPods 切換到 Mac 進行轉錄。否則錄音可能會是靜音的。"
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "轉錄檔案",
       "mediaFiles": "音訊和影片",
       "fileUnsupported": "無法讀取 {{name}} 中的音訊。",
-      "readingFile": "正在讀取 {{name}}...",
       "transcribeFailed": "轉錄失敗，請重試。",
       "waiting": "等待轉錄",
       "transcribingPercent": "正在轉錄，{{percent}}%",
+      "readingFile": "正在讀取檔案...",
       "showMore": "顯示更多",
       "showLess": "收合",
       "dropTitle": "拖放到此處進行轉錄",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "預覽新功能",
         "description": "開啟最新內建版本資訊，且不標記為已看過",
-        "button": "預覽",
-        "noNotes": "找不到內建版本資訊",
-        "error": "無法預覽版本資訊"
+        "button": "預覽"
       },
       "onboardingPreview": {
         "title": "預覽新手引導",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "模型遷移",
         "description": "實際開啟舊格式模型更新畫面：會下載替代模型、切換模型並刪除舊檔案",
-        "button": "開啟",
-        "noRetired": "磁碟上沒有舊格式模型"
+        "button": "開啟"
       },
       "soundTheme": {
         "label": "聲音主題",
@@ -916,6 +919,8 @@
     "title": "Handy v{{version}} 新功能"
   },
   "common": {
+    "playbackPosition": "播放位置",
+    "resetSetting": "將{{setting}}重設為預設值",
     "loading": "載入中...",
     "delete": "刪除",
     "close": "關閉",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "找不到麥克風",
     "noInputDevice": "未偵測到音訊輸入裝置。請連接麥克風或耳機後重試。",
-    "recordingFailed": "錄音啟動失敗: {{error}}",
-    "modelLoadFailed": "載入模型失敗: {{model}}",
-    "modelLoadFailedUnknown": "未知模型",
+    "microphoneSilentTitle": "麥克風沒有聲音",
+    "microphoneSilent": "麥克風只傳來靜音。請檢查是否已靜音，或在 設定 中選擇其他麥克風。",
+    "recordingFailedTitle": "錄音啟動失敗",
+    "modelLoadFailed": "Handy 無法載入此模型。請再試一次或選擇其他模型。",
+    "modelLoadFailedTitle": "載入模型失敗",
+    "noModelSelected": "請在 設定 > 模型 中下載或選擇模型。",
+    "noModelSelectedTitle": "未選擇模型",
+    "modelDownloadFailed": "下載失敗",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
+    "postProcessFailedTitle": "已貼上，未經後處理",
+    "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
+    "filePostProcessFailedTitle": "已轉錄，未經後處理",
+    "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
+    "fileTranscriptionFailedTitle": "檔案轉錄失敗",
     "transcriptionFailedTitle": "轉錄失敗"
+  },
+  "notices": {
+    "errorOne": "{{n}} 個錯誤",
+    "errorMany": "{{n}} 個錯誤",
+    "warningOne": "{{n}} 個警告",
+    "warningMany": "{{n}} 個警告",
+    "errorsAndWarnings": "{{errors}}，{{warnings}}"
   },
   "appLanguage": {
     "title": "應用程式語言",

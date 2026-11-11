@@ -4,8 +4,3 @@ export interface ModelStateEvent {
   model_name?: string;
   error?: string;
 }
-
-export interface RecordingErrorEvent {
-  error_type: string;
-  detail?: string;
-}

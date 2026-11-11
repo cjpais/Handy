@@ -7,7 +7,10 @@
     "model": "Model",
     "quit": "Afsluiten",
     "cancel": "Annuleren",
-    "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input"
+    "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input",
+    "language": "Taal",
+    "autoLanguage": "Automatisch",
+    "otherLanguages": "Andere talen"
   },
   "sidebar": {
     "general": "Algemeen",
@@ -423,7 +426,6 @@
         "title": "Oude modellen werken niet meer met Handy",
         "description": "Ze nemen {{size}} in beslag op je computer.",
         "delete": "Modellen verwijderen",
-        "deleted": "Oude modellen verwijderd",
         "deleteFailed": "Sommige oude modellen konden niet worden verwijderd. Bekijk het logboek voor details."
       },
       "rescan": {
@@ -478,6 +480,10 @@
       "lazyStreamClose": {
         "label": "Microfoon openhouden tussen transcripties",
         "description": "Houdt de microfoonstream tot 30 seconden open nadat een opname stopt. Dit vermindert de vertraging bij opeenvolgende opnames, maar kan de Bluetooth-audiokwaliteit tijdelijk verminderen."
+      },
+      "airpodsMode": {
+        "label": "AirPods-modus",
+        "description": "Schakelt AirPods automatisch over naar de Mac voor transcriptie wanneer een iPhone audio afspeelt. Zonder dit kunnen opnamen stil blijven."
       },
       "acceleration": {
         "transcribe": {
@@ -703,10 +709,10 @@
       "transcribeFile": "Bestand transcriberen",
       "mediaFiles": "Audio en video",
       "fileUnsupported": "Kon geen audio lezen uit {{name}}.",
-      "readingFile": "{{name}} wordt gelezen...",
       "transcribeFailed": "Transcriptie mislukt. Probeer het opnieuw.",
       "waiting": "Wacht op transcriptie",
       "transcribingPercent": "Transcriberen, {{percent}}%",
+      "readingFile": "Bestand lezen...",
       "showMore": "Meer tonen",
       "showLess": "Minder tonen",
       "dropTitle": "Loslaten om te transcriberen",
@@ -741,9 +747,7 @@
       "whatsNewPreview": {
         "title": "Voorbeeld van release-notes",
         "description": "Open de nieuwste meegeleverde release-notes zonder deze als gelezen te markeren",
-        "button": "Voorbeeld",
-        "noNotes": "Geen meegeleverde release-notes gevonden",
-        "error": "Voorbeeld van release-notes laden mislukt"
+        "button": "Voorbeeld"
       },
       "onboardingPreview": {
         "title": "Voorbeeld van onboarding",
@@ -767,8 +771,7 @@
       "modelMigration": {
         "title": "Modelmigratie",
         "description": "Open het updatescherm voor modellen in het oude formaat echt: het downloadt vervangers, wisselt van model en verwijdert oude bestanden",
-        "button": "Openen",
-        "noRetired": "Geen modellen in het oude formaat op schijf"
+        "button": "Openen"
       },
       "soundTheme": {
         "label": "Geluidsthema",
@@ -916,6 +919,8 @@
     "title": "Nieuw in Handy v{{version}}"
   },
   "common": {
+    "playbackPosition": "Afspeelpositie",
+    "resetSetting": "{{setting}} terugzetten naar de standaardwaarde",
     "loading": "Laden...",
     "delete": "Verwijderen",
     "close": "Sluiten",
@@ -935,12 +940,29 @@
     },
     "noInputDeviceTitle": "Geen microfoon gevonden",
     "noInputDevice": "Er is geen audio-invoerapparaat gedetecteerd. Sluit een microfoon of headset aan en probeer het opnieuw.",
-    "recordingFailed": "Opname starten mislukt: {{error}}",
-    "modelLoadFailed": "Model laden mislukt: {{model}}",
-    "modelLoadFailedUnknown": "onbekend model",
+    "microphoneSilentTitle": "Microfoon is stil",
+    "microphoneSilent": "Je microfoon stuurde alleen stilte. Controleer of hij niet gedempt is, of kies een andere microfoon via Instellingen.",
+    "recordingFailedTitle": "Opname starten mislukt",
+    "modelLoadFailed": "Handy kon dit model niet laden. Probeer het opnieuw of kies een ander model.",
+    "modelLoadFailedTitle": "Model laden mislukt",
+    "noModelSelected": "Download of kies een model via Instellingen > Modellen.",
+    "noModelSelectedTitle": "Geen model geselecteerd",
+    "modelDownloadFailed": "Downloaden mislukt",
     "pasteFailedTitle": "Tekst plakken mislukt",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
+    "postProcessFailedTitle": "Geplakt zonder naverwerking",
+    "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
+    "filePostProcessFailedTitle": "Getranscribeerd zonder naverwerking",
+    "filePostProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd opgeslagen.",
+    "fileTranscriptionFailedTitle": "Transcriptie van bestand mislukt",
     "transcriptionFailedTitle": "Transcriptie mislukt"
+  },
+  "notices": {
+    "errorOne": "{{n}} fout",
+    "errorMany": "{{n}} fouten",
+    "warningOne": "{{n}} waarschuwing",
+    "warningMany": "{{n}} waarschuwingen",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
   },
   "appLanguage": {
     "title": "Interfacetaal",
