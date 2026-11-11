@@ -59,6 +59,10 @@ rodio = { version = "0.23.0", default-features = false, features = ["playback", 
 # Decodes files for transcription. rodio's version, plus the M4A/MP4 (AAC,
 # ALAC) and AIFF support rodio leaves out.
 symphonia = { version = "0.5.5", features = ["aac", "alac", "isomp4", "mp3", "aiff"] }
+# Opus (most .ogg/.opus/.webm voice notes), which symphonia can't decode.
+# Builds libopus from source with cmake. 0.2 is the last for symphonia 0.5;
+# 0.2.3 and older drop 120 ms stereo packets (too small a buffer).
+symphonia-adapter-libopus = "0.2.9"
 # Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
 rubato = "5"
 handy-recorder = "0.1"
