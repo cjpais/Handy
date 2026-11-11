@@ -76,7 +76,34 @@ fn empty_outcome(input_silent: bool) -> TranscriptionOutcome {
     }
 }
 
+/// Ends a dictation that has nothing to type. A microphone that sent only
+/// digital silence (muted, or the wrong default device) gets a notice, so it
+/// doesn't look like the model missed the speech (#1899).
+fn finish_without_text(
+    app: &AppHandle,
+    input_silent: bool,
+    sample_count: usize,
+    stop_time: Instant,
+) {
+    if input_silent {
+        warn!("The microphone sent only digital silence; nothing was transcribed");
+        notices::raise(
+            app,
+            Notice::new(NoticeCode::MicrophoneSilent, NoticeSource::Dictation),
+        );
+    } else {
+        utils::hide_recording_overlay(app);
+    }
+    set_tray_state(app, TrayIconState::Idle);
+    emit_transcription_complete(app, empty_outcome(input_silent), sample_count, stop_time);
+}
+
 const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
+
+/// Deadline for the whole post-processing step, retries included. The HTTP
+/// client only bounds connecting, so an endpoint that accepts the request and
+/// never answers would otherwise hold the dictation until a proxy gives up.
+const POST_PROCESS_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Bumped per recording session, so a late paste from an earlier session
 /// doesn't reset the tray or hide the overlay of a newer one.
@@ -441,10 +468,22 @@ pub(crate) async fn process_transcription_output(
 
     if post_process {
         // A reply that's blank once cleaned is no better than none.
-        let outcome = match post_process_transcription(&settings, &final_text).await {
-            PostProcessOutcome::Done(text) => non_blank_post_processed_text(text)
+        let outcome = match tokio::time::timeout(
+            POST_PROCESS_TIMEOUT,
+            post_process_transcription(&settings, &final_text),
+        )
+        .await
+        {
+            Ok(PostProcessOutcome::Done(text)) => non_blank_post_processed_text(text)
                 .map_or(PostProcessOutcome::Failed, PostProcessOutcome::Done),
-            outcome => outcome,
+            Ok(outcome) => outcome,
+            Err(_) => {
+                warn!(
+                    "Post-processing timed out after {:?}; pasting the original transcription",
+                    POST_PROCESS_TIMEOUT
+                );
+                PostProcessOutcome::Failed
+            }
         };
         match outcome {
             PostProcessOutcome::Skipped => {}
@@ -485,7 +524,9 @@ impl ShortcutAction for TranscribeAction {
 
         // Load ASR model and VAD model in parallel
         let kickoff_started = Instant::now();
-        let load_started = tm.initiate_model_load(true);
+        // An empty selection has nothing to load; the check below says so.
+        let selected_model = get_settings(app).selected_model;
+        let load_started = !selected_model.is_empty() && tm.initiate_model_load(true);
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
@@ -497,7 +538,11 @@ impl ShortcutAction for TranscribeAction {
         // Don't open the mic if nothing can transcribe the recording. A load
         // started above reports its own failure; one already running doesn't.
         if !tm.is_model_loaded() {
-            let selected_model = get_settings(app).selected_model;
+            if selected_model.is_empty() {
+                warn!("Not starting recording: no model is selected");
+                tm.raise_no_model_selected();
+                return;
+            }
             if let Err(e) = app
                 .state::<Arc<ModelManager>>()
                 .get_model_path(&selected_model)
@@ -725,9 +770,7 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
-                    set_tray_state(&ah, TrayIconState::Idle);
-                    emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
+                    finish_without_text(&ah, input_silent, 0, stop_time);
                 } else {
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
@@ -843,14 +886,7 @@ impl ShortcutAction for TranscribeAction {
                             };
 
                             if final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
-                                set_tray_state(&ah, TrayIconState::Idle);
-                                emit_transcription_complete(
-                                    &ah,
-                                    empty_outcome(input_silent),
-                                    sample_count,
-                                    stop_time,
-                                );
+                                finish_without_text(&ah, input_silent, sample_count, stop_time);
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
