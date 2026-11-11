@@ -78,6 +78,11 @@ fn empty_outcome(input_silent: bool) -> TranscriptionOutcome {
 
 const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 
+/// Deadline for the whole post-processing step, retries included. The HTTP
+/// client only bounds connecting, so an endpoint that accepts the request and
+/// never answers would otherwise hold the dictation until a proxy gives up.
+const POST_PROCESS_TIMEOUT: Duration = Duration::from_secs(60);
+
 /// Bumped per recording session, so a late paste from an earlier session
 /// doesn't reset the tray or hide the overlay of a newer one.
 static RECORDING_SESSION: AtomicU64 = AtomicU64::new(0);
@@ -441,10 +446,22 @@ pub(crate) async fn process_transcription_output(
 
     if post_process {
         // A reply that's blank once cleaned is no better than none.
-        let outcome = match post_process_transcription(&settings, &final_text).await {
-            PostProcessOutcome::Done(text) => non_blank_post_processed_text(text)
+        let outcome = match tokio::time::timeout(
+            POST_PROCESS_TIMEOUT,
+            post_process_transcription(&settings, &final_text),
+        )
+        .await
+        {
+            Ok(PostProcessOutcome::Done(text)) => non_blank_post_processed_text(text)
                 .map_or(PostProcessOutcome::Failed, PostProcessOutcome::Done),
-            outcome => outcome,
+            Ok(outcome) => outcome,
+            Err(_) => {
+                warn!(
+                    "Post-processing timed out after {:?}; pasting the original transcription",
+                    POST_PROCESS_TIMEOUT
+                );
+                PostProcessOutcome::Failed
+            }
         };
         match outcome {
             PostProcessOutcome::Skipped => {}
