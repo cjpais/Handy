@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automático",
           "pushToTalk": "Mantener",
+          "holdOrDoubleTap": "Mantener o doble toque",
           "toggle": "Alternar"
         },
         "descriptions": {
           "hold_or_toggle": "Mantén pulsado para grabar o toca para alternar",
           "push_to_talk": "Graba mientras mantienes pulsado el atajo",
+          "hold_or_double_tap": "Mantén pulsado para decir algo corto; toca dos veces para grabar sin manos hasta la siguiente pulsación",
           "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
         }
       }

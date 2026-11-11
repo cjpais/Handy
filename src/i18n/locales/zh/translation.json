@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "自动",
           "pushToTalk": "按住",
+          "holdOrDoubleTap": "长按或双击",
           "toggle": "切换"
         },
         "descriptions": {
           "hold_or_toggle": "按住录音，或轻按切换",
           "push_to_talk": "按住快捷键期间录音",
+          "hold_or_double_tap": "长按说一句短话；双击进入免提录音，直到下次按下",
           "toggle": "轻按快捷键开始录音，再次轻按停止"
         }
       }

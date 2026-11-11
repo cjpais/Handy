@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Otomatis",
           "pushToTalk": "Tahan",
+          "holdOrDoubleTap": "Tahan atau ketuk dua kali",
           "toggle": "Tekan"
         },
         "descriptions": {
           "hold_or_toggle": "Tahan untuk merekam atau tekan untuk mulai/berhenti",
           "push_to_talk": "Merekam selama Anda menahan pintasan",
+          "hold_or_double_tap": "Tahan untuk mengucapkan sesuatu yang singkat; ketuk dua kali untuk merekam bebas tangan hingga penekanan berikutnya",
           "toggle": "Ketuk pintasan untuk mulai merekam, lalu ketuk lagi untuk berhenti"
         }
       }

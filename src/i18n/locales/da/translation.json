@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatisk",
           "pushToTalk": "Hold",
+          "holdOrDoubleTap": "Hold eller dobbelttryk",
           "toggle": "Skift"
         },
         "descriptions": {
           "hold_or_toggle": "Hold nede for at optage, eller tryk kort for at slå til/fra",
           "push_to_talk": "Optager, mens du holder genvejen nede",
+          "hold_or_double_tap": "Hold nede for at sige noget kort; dobbelttryk for håndfri optagelse indtil næste tryk",
           "toggle": "Tryk på genvejen for at starte optagelsen, tryk igen for at stoppe"
         }
       }

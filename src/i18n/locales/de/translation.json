@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatisch",
           "pushToTalk": "Halten",
+          "holdOrDoubleTap": "Halten oder Doppeltippen",
           "toggle": "Umschalten"
         },
         "descriptions": {
           "hold_or_toggle": "Gedrückt halten zum Aufnehmen oder antippen zum Umschalten",
           "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
+          "hold_or_double_tap": "Halten für kurze Aufnahmen; doppelt tippen für freihändiges Aufnehmen bis zum nächsten Tastendruck",
           "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
         }
       }

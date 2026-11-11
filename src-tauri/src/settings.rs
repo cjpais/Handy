@@ -183,6 +183,10 @@ pub enum ShortcutActivation {
     /// (`hold_threshold_ms`).
     #[default]
     HoldOrToggle,
+    /// Hold to record and release to stop, or double-tap to keep recording
+    /// until the next press. A lone tap records nothing: the take is
+    /// discarded once no second tap arrives.
+    HoldOrDoubleTap,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]

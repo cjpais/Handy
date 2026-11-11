@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automatycznie",
           "pushToTalk": "Przytrzymaj",
+          "holdOrDoubleTap": "Przytrzymaj lub stuknij dwukrotnie",
           "toggle": "Przełączaj"
         },
         "descriptions": {
           "hold_or_toggle": "Przytrzymaj, aby nagrywać, lub dotknij, aby przełączyć",
           "push_to_talk": "Nagrywa, dopóki trzymasz skrót",
+          "hold_or_double_tap": "Przytrzymaj, aby powiedzieć coś krótkiego; stuknij dwukrotnie, aby nagrywać bez użycia rąk do następnego naciśnięcia",
           "toggle": "Dotknij skrótu, aby rozpocząć nagrywanie, dotknij ponownie, aby zatrzymać"
         }
       }

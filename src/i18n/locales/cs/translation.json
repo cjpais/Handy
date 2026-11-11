@@ -382,11 +382,13 @@
         "options": {
           "holdOrToggle": "Automaticky",
           "pushToTalk": "Podržet",
+          "holdOrDoubleTap": "Podržet nebo dvakrát klepnout",
           "toggle": "Přepínat"
         },
         "descriptions": {
           "hold_or_toggle": "Podržte pro nahrávání nebo klepněte pro přepnutí",
           "push_to_talk": "Nahrává, dokud držíte zkratku",
+          "hold_or_double_tap": "Podržte pro krátké sdělení; dvakrát klepněte pro nahrávání bez rukou až do dalšího stisknutí",
           "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
         }
       }
