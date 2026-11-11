@@ -145,17 +145,6 @@ fn is_blank_transcription(transcription: &str) -> bool {
     transcription.trim().is_empty()
 }
 
-/// A transcript that is only ".".
-///
-/// A hold shorter than one second is zero-padded to 1.25s before Whisper
-/// runs (`stop_recording`). On noise, the model often returns a single
-/// period. That is not speech. A sentence that ends with a period still
-/// has words and is left alone. The trailing space, when enabled, is added
-/// later inside `paste`, so ". " shows up here as ".".
-fn is_lone_period(text: &str) -> bool {
-    text.trim() == "."
-}
-
 fn non_blank_post_processed_text(text: String) -> Option<String> {
     if is_blank_transcription(&text) {
         warn!(
@@ -853,10 +842,7 @@ impl ShortcutAction for TranscribeAction {
                                 return;
                             };
 
-                            if final_text.is_empty() || is_lone_period(&final_text) {
-                                if is_lone_period(&final_text) {
-                                    debug!("Skipping paste of a lone period");
-                                }
+                            if final_text.is_empty() {
                                 utils::hide_recording_overlay(&ah);
                                 set_tray_state(&ah, TrayIconState::Idle);
                                 emit_transcription_complete(
@@ -1084,9 +1070,9 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
 #[cfg(test)]
 mod tests {
     use super::{
-        complete_unless_cancelled, is_blank_transcription, is_lone_period,
-        non_blank_post_processed_text, post_process_transcription, should_use_streaming_overlay,
-        strip_invisible_chars, strip_think_block, PostProcessOutcome,
+        complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
+        post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
+        strip_think_block, PostProcessOutcome,
     };
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
@@ -1183,16 +1169,6 @@ mod tests {
     fn non_blank_transcription_is_kept() {
         assert!(!is_blank_transcription("hello"));
         assert!(!is_blank_transcription("  hello  "));
-    }
-
-    #[test]
-    fn lone_period_is_not_speech() {
-        for text in [".", " . ", ".\n", "\t.\t", ". "] {
-            assert!(is_lone_period(text), "{text:?}");
-        }
-        for text in ["", "   ", "Hello.", "Hello. ", "...", "1.", ".5"] {
-            assert!(!is_lone_period(text), "{text:?}");
-        }
     }
 
     #[test]

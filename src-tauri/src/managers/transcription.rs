@@ -1695,7 +1695,13 @@ fn post_process_transcription_text(
             settings.filler_word_removal_enabled,
         );
 
-        normalize_transcription_output(&without_fillers)
+        let text = normalize_transcription_output(&without_fillers);
+        // Short, wordless clips often come back as just "." or "?".
+        if text.chars().any(char::is_alphanumeric) {
+            text
+        } else {
+            String::new()
+        }
     })
 }
 
