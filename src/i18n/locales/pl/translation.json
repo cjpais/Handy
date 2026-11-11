@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "Nie znaleziono mikrofonu",
     "noInputDevice": "Nie wykryto żadnego urządzenia wejściowego audio. Podłącz mikrofon lub słuchawki i spróbuj ponownie.",
+    "microphoneSilentTitle": "Mikrofon milczy",
+    "microphoneSilent": "Mikrofon przesyła tylko ciszę. Sprawdź, czy nie jest wyciszony, lub wybierz inny mikrofon w Ustawieniach.",
     "recordingFailedTitle": "Nie udało się rozpocząć nagrywania",
     "modelLoadFailed": "Handy nie mógł załadować tego modelu. Spróbuj ponownie lub wybierz inny.",
     "modelLoadFailedTitle": "Nie udało się załadować modelu",

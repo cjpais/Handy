@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "Aucun microphone trouvé",
     "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
+    "microphoneSilentTitle": "Le microphone est muet",
+    "microphoneSilent": "Votre microphone n'envoie que du silence. Vérifiez qu'il n'est pas coupé, ou choisissez un autre microphone dans Paramètres.",
     "recordingFailedTitle": "Échec de l'enregistrement",
     "modelLoadFailed": "Handy n'a pas pu charger ce modèle. Réessayez ou choisissez-en un autre.",
     "modelLoadFailedTitle": "Échec du chargement du modèle",
