@@ -172,6 +172,7 @@ gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 # version against the release that introduced damage-based compositing.
 webkit2gtk-sys = "2.0"
 gtk = "0.18"
+wl-clipboard-rs = "0.9"
 transcribe-cpp = { version = "0.4.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
