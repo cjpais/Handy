@@ -767,6 +767,7 @@ pub fn run(cli_args: CliArgs) {
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
+            commands::reset_macos_permission,
             commands::complete_onboarding,
             commands::models::get_available_models,
             commands::models::get_model_info,
