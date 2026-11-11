@@ -281,3 +281,36 @@ fn stale_lazy_close_cannot_undo_switch_to_always_on() {
         "stale lazy close shut the AlwaysOn microphone stream"
     );
 }
+
+#[test]
+fn device_change_mid_take_preserves_captured_audio() {
+    let fixture = Fixture::new(false);
+    let mut manager = fixture.manager();
+    let expected = fixture.capture(&mut manager);
+    let _change = fixture.with_callbacks(|| manager.update_selected_device());
+    let samples = fixture
+        .with_callbacks(|| manager.stop_recording(BINDING, 0))
+        .expect("device change must not cancel the take");
+    assert!(
+        samples.starts_with(&expected),
+        "device change discarded captured audio: expected prefix of {} samples, got {} samples",
+        expected.len(),
+        samples.len()
+    );
+}
+
+#[test]
+fn device_change_mid_take_keeps_output_muted() {
+    let fixture = Fixture::new(false);
+    let mut manager = fixture.manager();
+    fixture.capture(&mut manager);
+    manager.apply_mute();
+    assert!(fixture.muted(), "recording must apply output mute first");
+    let _change = fixture.with_callbacks(|| manager.update_selected_device());
+    let muted_during_take = fixture.muted();
+    fixture.with_callbacks(|| manager.stop_recording(BINDING, 0));
+    assert!(
+        muted_during_take,
+        "device change restored output mute during an active take"
+    );
+}

@@ -528,6 +528,7 @@ pub struct AudioRecordingManager<R: tauri::Runtime = tauri::Wry> {
     /// retry re-enumerates. The system-default case is never cached — the
     /// recorder resolves the current default itself.
     cached_device: Arc<Mutex<Option<(String, String)>>>,
+    device_change_pending: Arc<AtomicBool>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
     #[cfg(all(test, target_os = "linux"))]
@@ -573,6 +574,7 @@ impl<R: tauri::Runtime> AudioRecordingManager<R> {
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
+            device_change_pending: Arc::new(AtomicBool::new(false)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
             #[cfg(all(test, target_os = "linux"))]
             lazy_close_hooks: None,
@@ -1085,6 +1087,10 @@ impl<R: tauri::Runtime> AudioRecordingManager<R> {
         // closes are never scheduled).
         self.close_generation.fetch_add(1, Ordering::SeqCst);
 
+        if self.device_change_pending.load(Ordering::Relaxed) {
+            self.stop_microphone_stream();
+        }
+
         // A recorder can fail just before this start, ahead of its failure
         // handler; the start then reports it. Reopen and try once more.
         let mut reopened = false;
@@ -1097,6 +1103,7 @@ impl<R: tauri::Runtime> AudioRecordingManager<R> {
                 error!("Failed to open microphone stream: {e}");
                 return Err(e);
             }
+            self.device_change_pending.store(false, Ordering::Relaxed);
 
             let (ready_tx, receiver) = mpsc::channel();
             let sink = CaptureSink::new(
@@ -1185,15 +1192,23 @@ impl<R: tauri::Runtime> AudioRecordingManager<R> {
         Ok(())
     }
 
+    /// Accept the saved selection, applying it on the next take if capture is active.
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
-        // Device settings changed; re-enumerate the device and restart capture.
+        let state = self.state.lock().unwrap();
         self.invalidate_device_cache();
+        self.device_change_pending.store(true, Ordering::Relaxed);
+        if !matches!(*state, RecordingState::Idle) {
+            return Ok(());
+        }
+
         let was_open = *self.is_open.lock().unwrap();
         if was_open {
             self.close_generation.fetch_add(1, Ordering::SeqCst);
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
+            self.device_change_pending.store(false, Ordering::Relaxed);
         }
+        drop(state);
         Ok(())
     }
 
