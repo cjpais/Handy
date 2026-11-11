@@ -1412,7 +1412,8 @@ fn linux_self_update_possible(kind: Option<BundleKind>, has_tool: impl Fn(&str) 
 #[cfg(target_os = "linux")]
 fn self_update_possible() -> bool {
     use std::os::unix::fs::PermissionsExt;
-    use tauri::utils::platform::{bundle_type, BundleType};
+    use tauri::utils::config::BundleType;
+    use tauri::utils::platform::bundle_type;
 
     let kind = bundle_type().map(|b| match b {
         BundleType::AppImage => BundleKind::AppImage,
