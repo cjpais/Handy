@@ -3,7 +3,7 @@ use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
 };
-use crate::chinese_script::{chinese_variety_for_text, convert_chinese_script, ChineseVariety};
+use crate::chinese_script::{chinese_variety_for_text, convert_chinese_script};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     Unloading,
@@ -1657,7 +1657,6 @@ fn post_process_transcription_text(
     output_language: &OutputLanguageEvidence,
     supported_languages: &[String],
 ) -> String {
-    let converts_script = settings.chinese_script != ChineseScript::AsTranscribed;
     fail_open_text_transform(raw, |raw| {
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
@@ -1681,12 +1680,9 @@ fn post_process_transcription_text(
         // Convert the script before custom words so they match in the script
         // the user writes in. Decided from the text, since mixed Mandarin/English
         // is often detected as English; Japanese is never rewritten.
-        let variety = chinese_variety_for_text(&raw, &output_language);
-        let raw = match variety {
-            Some(variety) if converts_script => {
-                convert_chinese_script(&raw, variety, settings.chinese_script)
-            }
-            _ => raw,
+        let raw = match chinese_variety_for_text(&raw, &output_language) {
+            Some(variety) => convert_chinese_script(&raw, variety, settings.chinese_script),
+            None => raw,
         };
 
         let corrected = if !settings.custom_words.is_empty() && !custom_words_already_prompted {
@@ -1716,20 +1712,11 @@ fn post_process_transcription_text(
     })
 }
 
-/// Characters to wait for before converting a preview whose language isn't
-/// pinned to Chinese. Japanese often opens with kanji before any kana; waiting a
-/// few characters keeps those from flashing converted.
-const PREVIEW_DETECTION_MIN_CHARS: usize = 6;
-
-/// Converts live-preview text into the configured Chinese script as it streams.
-///
-/// The preview is cosmetic: the final paste re-resolves the language and
-/// converts on its own. Both use [`chinese_variety_for_text`] so they agree.
+/// Converts live-preview text into the configured Chinese script as it
+/// streams, by the same rule as the final paste so the two agree.
 struct PreviewScript {
     script: ChineseScript,
     output_language: OutputLanguageEvidence,
-    /// The run is pinned to Chinese, so conversion needn't wait for text.
-    known_chinese: bool,
 }
 
 impl PreviewScript {
@@ -1737,31 +1724,19 @@ impl PreviewScript {
         Self {
             script,
             output_language: output_language.clone(),
-            known_chinese: output_language
-                .language()
-                .and_then(ChineseVariety::from_language)
-                .is_some(),
         }
     }
 
     /// Converts the model's raw committed/tentative text. Always fed the raw
-    /// text, never a previous conversion, so it stays consistent with the
-    /// final conversion.
+    /// text, never a previous conversion.
     fn convert(&self, committed: &str, tentative: &str) -> (String, String) {
-        let unchanged = || (committed.to_string(), tentative.to_string());
-        if self.script == ChineseScript::AsTranscribed {
-            return unchanged();
-        }
         let text = format!("{committed}{tentative}");
-        if !self.known_chinese && text.chars().count() < PREVIEW_DETECTION_MIN_CHARS {
-            return unchanged();
-        }
         match chinese_variety_for_text(&text, &self.output_language) {
             Some(variety) => (
                 convert_chinese_script(committed, variety, self.script),
                 convert_chinese_script(tentative, variety, self.script),
             ),
-            None => unchanged(),
+            None => (committed.to_string(), tentative.to_string()),
         }
     }
 }
@@ -2110,11 +2085,6 @@ mod tests {
         assert_eq!(
             preview.convert("学校に", "行きます"),
             ("学校に".to_string(), "行きます".to_string())
-        );
-        // Too short to rule out Japanese yet.
-        assert_eq!(
-            preview.convert("学校", ""),
-            ("学校".to_string(), String::new())
         );
     }
 
