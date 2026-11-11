@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "Nessun microfono trovato",
     "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
+    "microphoneSilentTitle": "Il microfono è muto",
+    "microphoneSilent": "Il microfono ha inviato solo silenzio. Verifica che non sia disattivato o scegli un altro microfono in Impostazioni.",
     "recordingFailedTitle": "Impossibile avviare la registrazione",
     "modelLoadFailed": "Handy non è riuscito a caricare questo modello. Riprova o scegline un altro.",
     "modelLoadFailedTitle": "Impossibile caricare il modello",

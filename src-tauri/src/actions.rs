@@ -76,6 +76,28 @@ fn empty_outcome(input_silent: bool) -> TranscriptionOutcome {
     }
 }
 
+/// Ends a dictation that has nothing to type. A microphone that sent only
+/// digital silence (muted, or the wrong default device) gets a notice, so it
+/// doesn't look like the model missed the speech (#1899).
+fn finish_without_text(
+    app: &AppHandle,
+    input_silent: bool,
+    sample_count: usize,
+    stop_time: Instant,
+) {
+    if input_silent {
+        warn!("The microphone sent only digital silence; nothing was transcribed");
+        notices::raise(
+            app,
+            Notice::new(NoticeCode::MicrophoneSilent, NoticeSource::Dictation),
+        );
+    } else {
+        utils::hide_recording_overlay(app);
+    }
+    set_tray_state(app, TrayIconState::Idle);
+    emit_transcription_complete(app, empty_outcome(input_silent), sample_count, stop_time);
+}
+
 const CANCELLATION_POLL_INTERVAL: Duration = Duration::from_millis(25);
 
 /// Deadline for the whole post-processing step, retries included. The HTTP
@@ -748,9 +770,7 @@ impl ShortcutAction for TranscribeAction {
                     // Tear down any streaming worker so its channel doesn't leak
                     // and block the next start_stream.
                     tm.cancel_stream();
-                    utils::hide_recording_overlay(&ah);
-                    set_tray_state(&ah, TrayIconState::Idle);
-                    emit_transcription_complete(&ah, empty_outcome(input_silent), 0, stop_time);
+                    finish_without_text(&ah, input_silent, 0, stop_time);
                 } else {
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
@@ -866,14 +886,7 @@ impl ShortcutAction for TranscribeAction {
                             };
 
                             if final_text.is_empty() {
-                                utils::hide_recording_overlay(&ah);
-                                set_tray_state(&ah, TrayIconState::Idle);
-                                emit_transcription_complete(
-                                    &ah,
-                                    empty_outcome(input_silent),
-                                    sample_count,
-                                    stop_time,
-                                );
+                                finish_without_text(&ah, input_silent, sample_count, stop_time);
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();

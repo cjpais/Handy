@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "לא נמצא מיקרופון",
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
+    "microphoneSilentTitle": "המיקרופון שקט",
+    "microphoneSilent": "המיקרופון שלח רק שקט. ודאו שהוא לא מושתק, או בחרו מיקרופון אחר בהגדרות.",
     "recordingFailedTitle": "הפעלת ההקלטה נכשלה",
     "modelLoadFailed": "Handy לא הצליח לטעון את המודל הזה. נסו שוב או בחרו מודל אחר.",
     "modelLoadFailedTitle": "טעינת המודל נכשלה",

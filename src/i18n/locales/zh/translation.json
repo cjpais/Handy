@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "未找到麦克风",
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
+    "microphoneSilentTitle": "麦克风没有声音",
+    "microphoneSilent": "麦克风只传来了静音。请检查它是否已静音，或在 设置 中选择其他麦克风。",
     "recordingFailedTitle": "录音启动失败",
     "modelLoadFailed": "Handy 无法加载此模型。请重试或选择其他模型。",
     "modelLoadFailedTitle": "加载模型失败",

@@ -42,6 +42,7 @@ pub enum NoticeCode {
     TranscriptionFailed,
     PasteFailed,
     NoMicrophone,
+    MicrophoneSilent,
     MicPermissionDenied,
     RecordingFailed,
     ModelLoadFailed,
@@ -57,6 +58,7 @@ impl NoticeCode {
             Self::TranscriptionFailed
             | Self::PasteFailed
             | Self::NoMicrophone
+            | Self::MicrophoneSilent
             | Self::MicPermissionDenied
             | Self::RecordingFailed
             | Self::ModelLoadFailed
@@ -72,6 +74,7 @@ impl NoticeCode {
             Self::TranscriptionFailed => &strings.transcription_failed_title,
             Self::PasteFailed => &strings.paste_failed_title,
             Self::NoMicrophone => &strings.no_input_device_title,
+            Self::MicrophoneSilent => &strings.microphone_silent_title,
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,
             Self::RecordingFailed => &strings.recording_failed_title,
             Self::ModelLoadFailed => &strings.model_load_failed_title,

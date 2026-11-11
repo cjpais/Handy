@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "No s'ha trobat cap micròfon",
     "noInputDevice": "No s'ha detectat cap dispositiu d'entrada d'àudio. Connecteu un micròfon o uns auriculars amb micròfon i torneu-ho a provar.",
+    "microphoneSilentTitle": "El micròfon està en silenci",
+    "microphoneSilent": "El micròfon només ha enviat silenci. Comprova que no estigui silenciat o tria un altre micròfon a Configuració.",
     "recordingFailedTitle": "No s'ha pogut iniciar l'enregistrament",
     "modelLoadFailed": "Handy no ha pogut carregar aquest model. Torna-ho a provar o tria'n un altre.",
     "modelLoadFailedTitle": "No s'ha pogut carregar el model",

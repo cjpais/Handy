@@ -940,6 +940,8 @@
     },
     "noInputDeviceTitle": "Ingen mikrofon hittades",
     "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
+    "microphoneSilentTitle": "Mikrofonen är tyst",
+    "microphoneSilent": "Mikrofonen skickade bara tystnad. Kontrollera att den inte är avstängd, eller välj en annan mikrofon under Inställningar.",
     "recordingFailedTitle": "Inspelningen kunde inte starta",
     "modelLoadFailed": "Handy kunde inte läsa in den här modellen. Försök igen eller välj en annan.",
     "modelLoadFailedTitle": "Misslyckades med att ladda modell",
