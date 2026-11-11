@@ -396,8 +396,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     }
 
     // Apply the autostart preference (SMAppService login item on macOS 13+,
-    // tauri-plugin-autostart elsewhere)
-    autostart::apply_autostart(app_handle, settings.autostart_enabled);
+    // tauri-plugin-autostart elsewhere). Not when the settings couldn't be
+    // loaded: the default would remove a login item the user turned on.
+    if !settings::using_fallback_defaults(app_handle) {
+        autostart::apply_autostart(app_handle, settings.autostart_enabled);
+    }
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);

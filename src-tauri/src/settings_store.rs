@@ -49,6 +49,8 @@ struct SettingsStore {
     path: Option<PathBuf>,
     /// The file exists but couldn't be read: nothing is ever written.
     read_only: bool,
+    /// See [`using_fallback_defaults`].
+    fallback_defaults: bool,
     settings: RwLock<AppSettings>,
     save: Mutex<SaveState>,
     /// Wakes the writer when there's a change, and `flush` when it's written.
@@ -90,6 +92,15 @@ pub fn get(app: &AppHandle) -> AppSettings {
         .read()
         .unwrap_or_else(PoisonError::into_inner)
         .clone()
+}
+
+/// Whether this run's settings are defaults standing in for settings the user
+/// had: the file couldn't be read, or none of it could be made sense of.
+/// Nothing should delete or undo something of the user's on the strength of
+/// these settings alone (pruning history, removing the login item); a setting
+/// the user changes during the run is still theirs to apply.
+pub fn using_fallback_defaults(app: &AppHandle) -> bool {
+    store(app).fallback_defaults
 }
 
 /// Changes the settings in one step: nothing else can change them between
@@ -171,6 +182,7 @@ impl SettingsStore {
                 settings: restore_settings(None).settings,
                 save: false,
                 read_only: true,
+                fallback_defaults: true,
                 notice: Some(Notice::new(
                     NoticeCode::SettingsUnreadable,
                     NoticeSource::Settings,
@@ -182,6 +194,7 @@ impl SettingsStore {
             app: app.clone(),
             path,
             read_only: loaded.read_only,
+            fallback_defaults: loaded.fallback_defaults,
             settings: RwLock::new(loaded.settings),
             save: Mutex::new(SaveState::default()),
             save_changed: Condvar::new(),
@@ -305,6 +318,8 @@ struct Loaded {
     save: bool,
     /// Never write: the file is there but couldn't be read.
     read_only: bool,
+    /// The user had settings, and these are the defaults instead.
+    fallback_defaults: bool,
     notice: Option<Notice>,
 }
 
@@ -317,6 +332,7 @@ fn load_file(path: &Path) -> Loaded {
                 settings: restore_settings(None).settings,
                 save: true,
                 read_only: false,
+                fallback_defaults: false,
                 notice: None,
             };
         }
@@ -329,6 +345,7 @@ fn load_file(path: &Path) -> Loaded {
                 settings: restore_settings(None).settings,
                 save: false,
                 read_only: true,
+                fallback_defaults: true,
                 notice: Some(
                     Notice::new(NoticeCode::SettingsUnreadable, NoticeSource::Settings)
                         .with_detail(format!("{} ({e})", path.display())),
@@ -346,6 +363,8 @@ fn load_file(path: &Path) -> Loaded {
         repaired.push("settings".to_string());
     }
     repaired.extend(restored.reset_fields);
+    // Nothing of the user's settings survived, not just a field or two.
+    let fallback_defaults = repaired.iter().any(|field| field == "settings");
 
     if repaired.is_empty() {
         if parsed.settings.is_some() {
@@ -355,6 +374,7 @@ fn load_file(path: &Path) -> Loaded {
             settings: restored.settings,
             save: restored.changed,
             read_only: false,
+            fallback_defaults: false,
             notice: None,
         };
     }
@@ -372,6 +392,7 @@ fn load_file(path: &Path) -> Loaded {
                 settings: restored.settings,
                 save: true,
                 read_only: false,
+                fallback_defaults,
                 notice: Some(
                     Notice::new(NoticeCode::SettingsReset, NoticeSource::Settings).with_detail(
                         format!("{}. Backup: {}", repaired.join(", "), backup.display()),
@@ -386,6 +407,7 @@ fn load_file(path: &Path) -> Loaded {
                 settings: restored.settings,
                 save: false,
                 read_only: true,
+                fallback_defaults,
                 notice: Some(
                     Notice::new(NoticeCode::SettingsUnreadable, NoticeSource::Settings)
                         .with_detail(format!("{} ({e})", path.display())),
@@ -564,6 +586,10 @@ mod tests {
         assert!(!loaded.settings.onboarding_completed);
         assert!(loaded.save);
         assert!(!loaded.read_only);
+        assert!(
+            !loaded.fallback_defaults,
+            "a fresh install has nothing to protect"
+        );
         assert!(loaded.notice.is_none());
     }
 
@@ -598,6 +624,7 @@ mod tests {
 
         assert!(loaded.read_only);
         assert!(!loaded.save);
+        assert!(loaded.fallback_defaults);
         assert_eq!(loaded.notice.unwrap().code, NoticeCode::SettingsUnreadable);
         assert!(path.is_dir(), "the original is left alone");
     }
@@ -613,6 +640,7 @@ mod tests {
 
         assert!(loaded.save);
         assert!(!loaded.read_only);
+        assert!(loaded.fallback_defaults);
         assert_eq!(loaded.notice.unwrap().code, NoticeCode::SettingsReset);
         let backups = backups(dir.path());
         assert_eq!(backups.len(), 1);
@@ -635,6 +663,10 @@ mod tests {
         assert!(notice.detail.unwrap().starts_with("sound_theme. Backup: "));
         assert_eq!(backups(dir.path()).len(), 1);
         assert!(loaded.save);
+        assert!(
+            !loaded.fallback_defaults,
+            "one reset field leaves the rest the user's"
+        );
     }
 
     #[test]

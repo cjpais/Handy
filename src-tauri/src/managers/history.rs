@@ -306,7 +306,15 @@ impl HistoryManager {
             language_source,
         })?;
 
-        self.cleanup_old_entries()?;
+        // Not on defaults standing in for settings that couldn't be loaded:
+        // their limit of a few entries would delete history the user chose
+        // to keep. A limit the user sets meanwhile still applies at once
+        // (`settings_commands::apply_change`).
+        if crate::settings::using_fallback_defaults(&self.app_handle) {
+            debug!("Settings weren't loaded; leaving older history entries alone");
+        } else {
+            self.cleanup_old_entries()?;
+        }
 
         Ok(entry)
     }

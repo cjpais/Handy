@@ -1128,6 +1128,12 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     crate::settings_store::get(app)
 }
 
+/// Whether the settings are defaults standing in for ones that couldn't be
+/// loaded; see `settings_store::using_fallback_defaults`.
+pub fn using_fallback_defaults(app: &AppHandle) -> bool {
+    crate::settings_store::using_fallback_defaults(app)
+}
+
 /// Writes everything not yet on disk. Call before the process exits.
 pub fn flush_settings() {
     crate::settings_store::flush();
