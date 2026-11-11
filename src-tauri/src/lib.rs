@@ -1076,12 +1076,7 @@ pub fn run(cli_args: CliArgs) {
             // Only forward logs to the webview while debug mode is on (the live log
             // viewer is the sole consumer and only exists in debug mode). This also
             // honors the runtime `--debug` override applied to `settings` above.
-            //
-            // Build tauri's async runtime first. The webview log target hands every
-            // record to `tauri::async_runtime::spawn`; if that spawn is what builds
-            // the runtime, tokio's own Trace logs during the build come back to the
-            // same target and spawn again inside the runtime's one-time init, and
-            // startup deadlocks (debug mode at Trace level, e.g. `--debug`).
+            // Build the runtime first: its Trace logs would re-enter spawn() mid-init and deadlock.
             let _ = tauri::async_runtime::handle();
             WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
