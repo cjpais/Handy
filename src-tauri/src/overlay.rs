@@ -421,6 +421,17 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         }
     }
 
+    // On X11 the overlay must stay resizable. tao turns resizing off on the
+    // first map, and GTK then sizes a non-resizable window to its content's
+    // natural size, which WebKitWebView reports as 200px tall. The window
+    // grew past the 50px its position was computed for, and the card, anchored
+    // to the window's bottom edge, was drawn below the screen (#1950). The
+    // window has no decorations, so this offers the user nothing new.
+    #[cfg(target_os = "linux")]
+    let resizable = !utils::is_wayland();
+    #[cfg(not(target_os = "linux"))]
+    let resizable = false;
+
     // Position starts unset — update_overlay_position() sets the correct
     // LogicalPosition before the overlay is shown.
     let mut builder = WebviewWindowBuilder::new(
@@ -429,7 +440,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         tauri::WebviewUrl::App("src/overlay/index.html".into()),
     )
     .title("Recording")
-    .resizable(false)
+    .resizable(resizable)
     .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
     .shadow(false)
     .maximizable(false)
