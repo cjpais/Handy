@@ -77,7 +77,3 @@ Each route has an immutable `Arc<()>` identity. `audio_callback` captures that
 identity when the sink is created. `feed` compares the captured identity with the
 active route and sends under the same route lock. An old callback retains its
 old identity when it resumes. Capturing no route produces an inactive callback.
-
-The original failing output and exit status are saved locally under
-`.audit/stale-stream-callback/`. Fixed verification output and a scratch mutation
-that removes the identity check are saved under `.audit/publish-formal/`.
