@@ -2,10 +2,15 @@
 //!
 //! Recognition language (Mandarin vs Cantonese) and output script are separate
 //! choices: the language picks what the model listens for, and the
-//! [`ChineseScript`] setting picks how the resulting text is written. Conversion
-//! is keyed off the language the output is known to be in, so mixed-language
-//! users on auto-detect only get Chinese output rewritten.
+//! [`ChineseScript`] setting picks how the resulting text is written.
+//!
+//! Whether to convert is decided from the text itself, not the run's detected
+//! language: models tag a whole run with one language, and mixed
+//! Mandarin/English speech is often tagged English. OpenCC only rewrites Han
+//! characters, so English in the same text is left alone. Japanese and Korean
+//! text is never converted: it's recognised by its kana or its language.
 
+use crate::audio_toolkit::OutputLanguageEvidence;
 use crate::settings::ChineseScript;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::error;
@@ -29,6 +34,57 @@ impl ChineseVariety {
             _ => None,
         }
     }
+}
+
+/// CJK ideographs (Han characters), the only characters OpenCC rewrites.
+fn is_han(c: char) -> bool {
+    matches!(c,
+        '\u{3400}'..='\u{4DBF}'
+        | '\u{4E00}'..='\u{9FFF}'
+        | '\u{F900}'..='\u{FAFF}'
+        | '\u{20000}'..='\u{3134F}')
+}
+
+/// Hiragana and katakana, which Chinese never uses. Excludes the katakana
+/// middle dot (・), which can turn up as punctuation in Chinese text.
+fn is_kana(c: char) -> bool {
+    matches!(c,
+        '\u{3040}'..='\u{309F}'
+        | '\u{30A0}'..='\u{30FA}'
+        | '\u{30FC}'..='\u{30FF}'
+        | '\u{31F0}'..='\u{31FF}'
+        | '\u{FF66}'..='\u{FF9F}')
+}
+
+/// Languages other than Chinese that write Han characters natively.
+fn writes_han_natively(language: &str) -> bool {
+    let base = language.split(&['-', '_'][..]).next().unwrap_or("");
+    base.eq_ignore_ascii_case("ja") || base.eq_ignore_ascii_case("ko")
+}
+
+/// The variety to convert `text` as, or `None` when it must be left alone.
+///
+/// Text with Han characters is treated as Chinese unless it contains kana or
+/// the language is Japanese or Korean. Any other language is ignored: it
+/// describes the whole run, and mixed Mandarin/English is often detected as
+/// English. Cantonese tables are used when the language says `yue`, else
+/// Mandarin's.
+pub fn chinese_variety_for_text(
+    text: &str,
+    output_language: &OutputLanguageEvidence,
+) -> Option<ChineseVariety> {
+    let language = output_language.language();
+    if language.is_some_and(writes_han_natively)
+        || !text.chars().any(is_han)
+        || text.chars().any(is_kana)
+    {
+        return None;
+    }
+    Some(
+        language
+            .and_then(ChineseVariety::from_language)
+            .unwrap_or(ChineseVariety::Mandarin),
+    )
 }
 
 /// The script a locale writes Chinese in, or `None` for non-Chinese locales.
@@ -113,6 +169,49 @@ pub fn convert_chinese_script(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn variety_comes_from_the_text_not_the_detected_language() {
+        let mixed = "欸我跟你说，结果一打开电脑就发现，Oh my god, I forgot to charge my laptop.";
+        for evidence in [
+            OutputLanguageEvidence::ModelDetected("en".to_string()),
+            OutputLanguageEvidence::TextDetected("en".to_string()),
+            OutputLanguageEvidence::UserSelected("en".to_string()),
+            OutputLanguageEvidence::Unknown,
+        ] {
+            assert_eq!(
+                chinese_variety_for_text(mixed, &evidence),
+                Some(ChineseVariety::Mandarin),
+                "{evidence:?}"
+            );
+        }
+        assert_eq!(
+            chinese_variety_for_text(
+                "佢哋喺度",
+                &OutputLanguageEvidence::ModelDetected("yue".to_string())
+            ),
+            Some(ChineseVariety::Cantonese)
+        );
+    }
+
+    #[test]
+    fn japanese_and_han_free_text_are_left_alone() {
+        let unknown = OutputLanguageEvidence::Unknown;
+        assert_eq!(chinese_variety_for_text("学校に行きます", &unknown), None);
+        assert_eq!(chinese_variety_for_text("コーヒー", &unknown), None);
+        assert_eq!(chinese_variety_for_text("Hello, world.", &unknown), None);
+        assert_eq!(chinese_variety_for_text("", &unknown), None);
+        // Kanji-only text, but the language is Japanese or Korean.
+        for evidence in [
+            OutputLanguageEvidence::UserSelected("ja".to_string()),
+            OutputLanguageEvidence::ModelDetected("ja".to_string()),
+            OutputLanguageEvidence::ModelDetected("ko".to_string()),
+        ] {
+            assert_eq!(chinese_variety_for_text("東京大学", &evidence), None);
+        }
+        // The katakana middle dot alone doesn't make text Japanese.
+        assert!(chinese_variety_for_text("马克・吐温", &unknown).is_some());
+    }
 
     #[test]
     fn cantonese_uses_hong_kong_tables() {

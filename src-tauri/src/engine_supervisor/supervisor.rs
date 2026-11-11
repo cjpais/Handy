@@ -349,6 +349,7 @@ impl EngineSupervisor {
             spec: None,
             stream: None,
             unloads_done: 0,
+            gpu_backend_error: false,
         };
         thread::Builder::new()
             .name("transcribe-engine".into())
@@ -576,13 +577,19 @@ enum Failure {
     Crashed(String),
     /// The worker did not answer within the deadline and was killed.
     Hung(Duration),
+    /// transcribe.cpp returned a backend error (e.g. a lost GPU device). The
+    /// worker answered, but its backend may fail every later run.
+    Backend(String),
     Cancelled,
 }
 
 impl Failure {
-    /// Whether the worker is gone.
+    /// Whether the worker is gone, or can't be trusted with another run.
     fn worker_lost(&self) -> bool {
-        matches!(self, Failure::Crashed(_) | Failure::Hung(_))
+        matches!(
+            self,
+            Failure::Crashed(_) | Failure::Hung(_) | Failure::Backend(_)
+        )
     }
 }
 
@@ -593,6 +600,7 @@ impl fmt::Display for Failure {
             Failure::Remote(message) => f.write_str(message),
             Failure::Crashed(detail) => write!(f, "transcription worker crashed ({detail})"),
             Failure::Hung(t) => write!(f, "transcription worker did not respond within {t:?}"),
+            Failure::Backend(message) => write!(f, "transcription backend failed ({message})"),
             Failure::Cancelled => f.write_str("cancelled"),
         }
     }
@@ -637,6 +645,11 @@ struct Owner {
     stream: Option<ActiveStream>,
     /// Unload commands processed, against [`Shared::unloads_requested`].
     unloads_done: u64,
+    /// A backend error on the GPU since its last successful run. The first
+    /// one only restarts the worker on the GPU: a lost device is often a
+    /// one-off driver reset that a fresh process doesn't see. A second one
+    /// marks the GPU unavailable, like a crash.
+    gpu_backend_error: bool,
 }
 
 impl Owner {
@@ -801,16 +814,24 @@ impl Owner {
         Ok(())
     }
 
-    /// Drop a worker that crashed or hung (its handle already logged the
-    /// details and native output). If it was on a GPU, mark the GPU
-    /// unavailable so the next worker uses CPU. Returns whether it was.
+    /// Drop a worker that crashed, hung or hit a backend error (its handle
+    /// already logged the details and native output). If it was on a GPU,
+    /// mark the GPU unavailable so the next worker uses CPU, except after a
+    /// first backend error (see [`Owner::gpu_backend_error`]). Returns
+    /// whether it was on a GPU.
     fn worker_lost(&mut self, during: &str, failure: &Failure) -> bool {
         // Dropping the handle reaps the process.
         let info = self.worker.take().and_then(|worker| worker.info.clone());
         let pinned = self.spec.as_ref().is_some_and(LoadSpec::pinned);
         match info {
             Some(info) if info.on_gpu => {
-                if !pinned {
+                if matches!(failure, Failure::Backend(_)) && !self.gpu_backend_error {
+                    self.gpu_backend_error = true;
+                    warn!(
+                        "{failure} during {during} on GPU '{}' ({}); restarting the worker",
+                        info.device, info.backend
+                    );
+                } else if !pinned {
                     self.shared.mark_gpu_unavailable(format!(
                         "{failure} during {during} on GPU '{}' ({})",
                         info.device, info.backend
@@ -824,12 +845,14 @@ impl Owner {
 
     /// Deadlines for the device the current worker's model runs on.
     fn deadlines(&self) -> Deadlines {
-        let on_gpu = self
-            .worker
+        Deadlines::for_device(self.worker_on_gpu())
+    }
+
+    fn worker_on_gpu(&self) -> bool {
+        self.worker
             .as_ref()
             .and_then(|worker| worker.info.as_ref())
-            .is_some_and(|info| info.on_gpu);
-        Deadlines::for_device(on_gpu)
+            .is_some_and(|info| info.on_gpu)
     }
 
     /// A call that [`EngineSupervisor::cancel`] can stop. Returns
@@ -876,8 +899,17 @@ impl Owner {
         result
     }
 
-    /// Retry once after a crash or hang, on CPU if it happened on the GPU.
-    /// Not after a hang on CPU, and never for an explicitly chosen device.
+    /// A run succeeded; a later backend error on the GPU is a new one.
+    fn run_succeeded(&mut self) {
+        if self.worker_on_gpu() {
+            self.gpu_backend_error = false;
+        }
+    }
+
+    /// Retry once after a crash, hang or backend error, on CPU if it happened
+    /// on the GPU. A first backend error on the GPU retries on a fresh GPU
+    /// worker first, without using up that retry. Not after a hang or backend
+    /// error on CPU, and never for an explicitly chosen device.
     fn transcribe(
         &mut self,
         pcm: &[f32],
@@ -899,17 +931,27 @@ impl Owner {
             self.ensure_worker()?;
             let deadline = self.deadlines().run(pcm.len());
             match self.call_work(&request, Some(pcm), deadline, epoch) {
-                Ok(Response::Transcript(transcript)) => return Ok(transcript),
+                Ok(Response::Transcript(transcript)) => {
+                    self.run_succeeded();
+                    return Ok(transcript);
+                }
                 Ok(other) => return Err(unexpected(&other).into()),
                 Err(failure) if failure.worker_lost() => {
                     let on_gpu = self.worker_lost("transcription", &failure);
                     let pinned = self.spec.as_ref().is_some_and(LoadSpec::pinned);
-                    let hung_on_cpu = matches!(failure, Failure::Hung(_)) && !on_gpu;
-                    if retried || pinned || hung_on_cpu {
+                    let failed_on_cpu =
+                        !on_gpu && matches!(failure, Failure::Hung(_) | Failure::Backend(_));
+                    // Still allowed after a first backend error on the GPU.
+                    let fresh_gpu = on_gpu && !self.shared.gpu_unavailable();
+                    if pinned || failed_on_cpu || (retried && !fresh_gpu) {
                         return Err(failure.into());
                     }
-                    warn!("Retrying the transcription in a fresh worker");
-                    retried = true;
+                    if fresh_gpu {
+                        warn!("Retrying the transcription in a fresh GPU worker");
+                    } else {
+                        warn!("Retrying the transcription in a fresh worker");
+                        retried = true;
+                    }
                 }
                 Err(failure) => return Err(failure.into()),
             }
@@ -1021,12 +1063,15 @@ impl Owner {
                 update,
                 text,
                 language,
-            }) => Ok(Some(Finalized {
-                update,
-                text,
-                language,
-                elapsed: started.elapsed(),
-            })),
+            }) => {
+                self.run_succeeded();
+                Ok(Some(Finalized {
+                    update,
+                    text,
+                    language,
+                    elapsed: started.elapsed(),
+                }))
+            }
             Ok(other) => {
                 error!("Stream finalize failed: {}", unexpected(&other));
                 Ok(None)
@@ -1245,6 +1290,7 @@ impl Worker {
     fn wait(&mut self, request: &Request, deadline: Duration) -> Result<Response, Failure> {
         match self.responses.recv_timeout(deadline) {
             Ok(Response::Error(message)) => Err(Failure::Remote(message)),
+            Ok(Response::BackendError(message)) => Err(Failure::Backend(message)),
             Ok(response) => Ok(response),
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 self.control.kill();
@@ -1805,6 +1851,42 @@ mod tests {
             "loads stay on CPU while the GPU is marked unavailable"
         );
         engine.transcribe(pcm, RunOptions::default()).unwrap();
+        set_fault(None, false);
+    }
+
+    /// A one-off backend error on the GPU (a lost device the driver then
+    /// resets): the run is retried in a fresh worker on the same GPU, and the
+    /// GPU stays available.
+    #[test]
+    #[ignore]
+    fn one_off_gpu_backend_error_retries_on_gpu() {
+        let pcm = test_pcm();
+        set_fault(Some("backend@run"), false);
+        let engine = EngineSupervisor::new(true);
+        let info = engine.load(spec()).unwrap();
+        assert!(info.on_gpu, "needs a GPU to test GPU backend errors");
+        let transcript = engine.transcribe(pcm, RunOptions::default()).unwrap();
+        println!("recovered on a fresh GPU worker: {}", transcript.text);
+        assert!(!engine.shared.gpu_unavailable());
+        assert!(engine.loaded().unwrap().on_gpu);
+        set_fault(None, false);
+    }
+
+    /// A backend error on every GPU run (a broken device or driver): the
+    /// fresh GPU worker fails too, so the dictation succeeds on CPU and the
+    /// GPU is marked unavailable.
+    #[test]
+    #[ignore]
+    fn persistent_gpu_backend_error_recovers_on_cpu() {
+        let pcm = test_pcm();
+        set_fault(Some("backend@run"), true);
+        let engine = EngineSupervisor::new(true);
+        let info = engine.load(spec()).unwrap();
+        assert!(info.on_gpu, "needs a GPU to test GPU backend errors");
+        let transcript = engine.transcribe(pcm, RunOptions::default()).unwrap();
+        println!("recovered on CPU: {}", transcript.text);
+        assert!(engine.shared.gpu_unavailable());
+        assert!(!engine.loaded().unwrap().on_gpu);
         set_fault(None, false);
     }
 

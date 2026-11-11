@@ -2501,6 +2501,7 @@ dependencies = [
  "specta-typescript",
  "strsim",
  "symphonia",
+ "symphonia-adapter-libopus",
  "sys-locale",
  "tauri",
  "tauri-build",
@@ -2584,9 +2585,9 @@ dependencies = [
 
 [[package]]
 name = "handy-recorder"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a734d6d16eb8eb485548d75f383fa0c09d65b037a20e648c19730860f7a8a3f"
+checksum = "29602f3465cb080cc437b08903ea7ef395c55a41120264a897acdd25ff9b255a"
 dependencies = [
  "dasp_sample",
  "futures",
@@ -2672,7 +2673,7 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 [[package]]
 name = "hf-hub"
 version = "0.5.0"
-source = "git+https://github.com/cjpais/hf-hub?branch=cancellable-downloads#9918f11ab3473135eb7865aa4a5d79d597e6e810"
+source = "git+https://github.com/cjpais/hf-hub?branch=cancellable-downloads#fc273554a88ce5f5372c84386a9adf535ba71a1c"
 dependencies = [
  "dirs 6.0.0",
  "futures",
@@ -4220,6 +4221,15 @@ name = "option-ext"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+
+[[package]]
+name = "opusic-sys"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "986d749e9dc12035f11bf3ecc83a2a696ff7534d4143be9469a4a0faa25b9fd1"
+dependencies = [
+ "cmake",
+]
 
 [[package]]
 name = "ordered-stream"
@@ -6086,6 +6096,17 @@ dependencies = [
  "symphonia-format-ogg",
  "symphonia-format-riff",
  "symphonia-metadata",
+]
+
+[[package]]
+name = "symphonia-adapter-libopus"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bfc8e95f95c23ed1b5328eb66920ad28d9968c797f9c7aa755d4b45a5f47a41"
+dependencies = [
+ "log",
+ "opusic-sys",
+ "symphonia-core",
 ]
 
 [[package]]
