@@ -14,6 +14,10 @@
 //!
 //! Each of these raises a [`NoticeSource::Settings`] notice and logs the path.
 //!
+//! Changes go through [`update`], which holds the lock for the whole change so
+//! two changes at once can't undo each other, and then sends every window the
+//! new settings ([`SETTINGS_CHANGED`]).
+//!
 //! A save writes a temporary file and renames it over the old one, so a crash
 //! or power loss mid-save leaves the old file or the new one, never a
 //! truncated one.
@@ -25,7 +29,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Condvar, Mutex, MutexGuard, OnceLock, PoisonError, RwLock};
 use std::time::Duration;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
+
+/// Sent with the whole `AppSettings` after every change.
+pub const SETTINGS_CHANGED: &str = "settings-changed";
 
 /// Attempts at reading a file that exists, for locks that clear quickly
 /// (antivirus scans, a sync client, another process mid-write).
@@ -49,6 +56,8 @@ struct SettingsStore {
     /// Raised by `init`, once the store is in place (raising refreshes the
     /// tray, which reads the settings).
     pending_notices: Mutex<Vec<Notice>>,
+    /// Keeps `settings-changed` events in order (see `publish`).
+    publish: Mutex<()>,
 }
 
 #[derive(Default)]
@@ -83,13 +92,38 @@ pub fn get(app: &AppHandle) -> AppSettings {
         .clone()
 }
 
-pub fn set(app: &AppHandle, settings: AppSettings) {
+/// Changes the settings in one step: nothing else can change them between
+/// reading and writing. Don't call anything that reads the settings from inside
+/// `change`; it would deadlock. Saves the result and tells every window.
+pub fn update<T>(app: &AppHandle, change: impl FnOnce(&mut AppSettings) -> T) -> T {
+    match try_update(app, |settings| {
+        Ok::<T, std::convert::Infallible>(change(settings))
+    }) {
+        Ok(result) => result,
+        Err(never) => match never {},
+    }
+}
+
+/// [`update`] for a change that can be refused: on `Err` the settings are left
+/// exactly as they were, and nothing is saved or sent.
+pub fn try_update<T, E>(
+    app: &AppHandle,
+    change: impl FnOnce(&mut AppSettings) -> Result<T, E>,
+) -> Result<T, E> {
     let store = store(app);
-    *store
-        .settings
-        .write()
-        .unwrap_or_else(PoisonError::into_inner) = settings;
+    let result = {
+        let mut settings = store
+            .settings
+            .write()
+            .unwrap_or_else(PoisonError::into_inner);
+        let mut changed = settings.clone();
+        let result = change(&mut changed)?;
+        *settings = changed;
+        result
+    };
     store.schedule_save();
+    store.publish();
+    Ok(result)
 }
 
 /// Waits until every change made so far has been written (or failed to be).
@@ -152,8 +186,24 @@ impl SettingsStore {
             save: Mutex::new(SaveState::default()),
             save_changed: Condvar::new(),
             pending_notices: Mutex::new(loaded.notice.into_iter().collect()),
+            publish: Mutex::new(()),
         };
         (store, loaded.save)
+    }
+
+    /// Sends every window the current settings. Each event reads them
+    /// under the same lock, so the last one sent is always the latest, even
+    /// when two changes race to publish.
+    fn publish(&self) {
+        let _publishing = lock(&self.publish);
+        let settings = self
+            .settings
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        if let Err(e) = self.app.emit(SETTINGS_CHANGED, settings) {
+            warn!("Failed to send {SETTINGS_CHANGED}: {e}");
+        }
     }
 
     fn schedule_save(&'static self) {

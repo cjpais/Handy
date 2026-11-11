@@ -1092,6 +1092,7 @@ impl AppSettings {
             .find(|provider| provider.id == self.post_process_provider_id)
     }
 
+    #[cfg(test)]
     pub fn post_process_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()
@@ -1487,10 +1488,19 @@ pub fn update_checks_effectively_enabled(settings: &AppSettings) -> bool {
     settings.update_checks_enabled && !update_checks_forced_disabled()
 }
 
-/// Replaces the settings. They're saved to disk in the background, right
-/// away; see `settings_store`.
-pub fn write_settings(app: &AppHandle, settings: AppSettings) {
-    crate::settings_store::set(app, settings);
+/// Changes the settings in one step; see `settings_store::update`. They're
+/// saved to disk in the background, right away.
+pub fn update_settings<T>(app: &AppHandle, change: impl FnOnce(&mut AppSettings) -> T) -> T {
+    crate::settings_store::update(app, change)
+}
+
+/// [`update_settings`] for a change that can be refused: on `Err` nothing
+/// changes.
+pub fn try_update_settings<T, E>(
+    app: &AppHandle,
+    change: impl FnOnce(&mut AppSettings) -> Result<T, E>,
+) -> Result<T, E> {
+    crate::settings_store::try_update(app, change)
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {

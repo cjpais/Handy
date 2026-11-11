@@ -1,7 +1,7 @@
 use crate::managers::model::{ModelInfo, ModelManager, RetiredModel, LANGUAGE_DETECTOR_ID};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::notices::{self, NoticeSource};
-use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use crate::settings::{get_settings, update_settings, ModelUnloadTimeout};
 use log::error;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -130,9 +130,7 @@ pub async fn delete_model(
             .map_err(|e| format!("Failed to unload model: {}", e))?
             .map_err(|e| format!("Failed to unload model: {}", e))?;
 
-        let mut settings = get_settings(&app_handle);
-        settings.selected_model = String::new();
-        write_settings(&app_handle, settings);
+        update_settings(&app_handle, |s| s.selected_model.clear());
     }
 
     model_manager.delete_model(&model_id).map_err(|e| {
@@ -175,10 +173,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
-    let mut settings = settings;
-    settings.selected_model = model_id.to_string();
-
-    write_settings(app, settings);
+    update_settings(app, |s| s.selected_model = model_id.to_string());
 
     // Skip eager loading if unload is set to "Immediately" — the model
     // will be loaded on-demand during the next transcription.
@@ -207,9 +202,12 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
             app,
             transcription_manager.model_load_notice(model_id, &e, NoticeSource::Model),
         );
-        let mut settings = get_settings(app);
-        settings.selected_model = old_model;
-        write_settings(app, settings);
+        // Unless another switch replaced it meanwhile.
+        update_settings(app, |s| {
+            if s.selected_model == model_id {
+                s.selected_model = old_model;
+            }
+        });
         return Err(e.to_string());
     }
 

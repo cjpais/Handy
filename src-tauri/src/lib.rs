@@ -23,6 +23,7 @@ mod paste_tx;
 pub mod portable;
 mod secure_input;
 mod settings;
+mod settings_commands;
 mod settings_store;
 mod shortcut;
 mod signal_handle;
@@ -354,9 +355,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             id if id.starts_with("language_select:") => {
                 let language = id.strip_prefix("language_select:").unwrap().to_string();
-                if let Err(e) =
-                    shortcut::change_selected_language_setting(app.clone(), language.clone())
-                {
+                if let Err(e) = settings_commands::set_setting(
+                    app.clone(),
+                    "selected_language".into(),
+                    language.clone().into(),
+                ) {
                     log::error!("Failed to switch language via tray: {}", e);
                     return;
                 }
@@ -685,38 +688,10 @@ pub fn run(cli_args: CliArgs) {
 
     let specta_builder = Builder::<tauri::Wry>::new()
         .commands(collect_commands![
+            settings_commands::set_setting,
             shortcut::change_binding,
             shortcut::reset_binding,
-            shortcut::change_shortcut_activation_setting,
-            shortcut::change_hold_threshold_ms_setting,
-            shortcut::change_audio_feedback_setting,
-            shortcut::change_audio_feedback_volume_setting,
-            shortcut::change_sound_theme_setting,
-            shortcut::change_theme_setting,
-            shortcut::change_start_hidden_setting,
-            shortcut::change_autostart_setting,
-            shortcut::change_translate_to_english_setting,
-            shortcut::change_selected_language_setting,
-            shortcut::change_spoken_languages_setting,
-            shortcut::change_overlay_position_setting,
-            shortcut::change_overlay_style_setting,
-            shortcut::change_debug_mode_setting,
-            shortcut::change_word_correction_threshold_setting,
-            shortcut::change_extra_recording_buffer_setting,
-            shortcut::change_language_detection_setting,
-            shortcut::change_language_detection_window_setting,
-            shortcut::change_paste_delay_ms_setting,
-            shortcut::change_paste_delay_after_ms_setting,
-            shortcut::change_reliable_paste_setting,
-            shortcut::change_paste_method_setting,
             shortcut::get_available_typing_tools,
-            shortcut::change_typing_tool_setting,
-            shortcut::change_external_script_path_setting,
-            shortcut::change_clipboard_handling_setting,
-            shortcut::change_auto_submit_setting,
-            shortcut::change_auto_submit_key_setting,
-            shortcut::change_post_process_enabled_setting,
-            shortcut::change_experimental_enabled_setting,
             shortcut::change_post_process_base_url_setting,
             shortcut::change_post_process_api_format_setting,
             shortcut::change_post_process_api_key_setting,
@@ -727,26 +702,11 @@ pub fn run(cli_args: CliArgs) {
             shortcut::update_post_process_prompt,
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
-            shortcut::update_custom_words,
             shortcut::suspend_all_bindings,
             shortcut::resume_all_bindings,
-            shortcut::change_mute_while_recording_setting,
-            shortcut::change_append_trailing_space_setting,
-            shortcut::change_lazy_stream_close_setting,
-            shortcut::change_vad_enabled_setting,
-            shortcut::change_long_form_chunking_setting,
             shortcut::change_vad_backend_setting,
-            shortcut::change_filler_word_removal_enabled_setting,
-            shortcut::change_chinese_script_setting,
-            shortcut::change_app_language_setting,
-            shortcut::change_update_checks_setting,
-            shortcut::change_show_whats_new_on_update_setting,
-            shortcut::change_whats_new_last_seen_version_setting,
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
-            shortcut::change_show_tray_icon_setting,
-            shortcut::change_transcribe_accelerator_setting,
-            shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,
             shortcut::handy_keys::start_handy_keys_recording,
             shortcut::handy_keys::stop_handy_keys_recording,
@@ -761,7 +721,6 @@ pub fn run(cli_args: CliArgs) {
             commands::get_app_settings,
             commands::get_default_settings,
             commands::get_log_dir_path,
-            commands::set_log_level,
             commands::open_recordings_folder,
             commands::open_log_dir,
             commands::open_app_data_dir,
@@ -792,17 +751,14 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::set_selected_microphone,
             commands::audio::get_selected_microphone,
             commands::audio::get_available_output_devices,
-            commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
             commands::audio::check_custom_sounds,
-            commands::audio::set_clamshell_microphone,
             commands::audio::get_clamshell_microphone,
             commands::audio::is_recording,
             commands::audio::get_microphone_channels,
             commands::audio::set_selected_channel,
             commands::audio::change_airpods_mode_setting,
-            commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::get_language_status,
             commands::transcription::unload_model_manually,
@@ -813,8 +769,6 @@ pub fn run(cli_args: CliArgs) {
             commands::history::retry_history_entry_transcription,
             commands::history::cancel_history_entry_transcription,
             commands::history::transcribe_file,
-            commands::history::update_history_limit,
-            commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
             notices::get_active_notices,
             notices::dismiss_notice,
@@ -947,10 +901,6 @@ pub fn run(cli_args: CliArgs) {
         .manage(cli_args.clone())
         .manage(notices::NoticeStore::default())
         .setup(move |app| {
-            // Before anything reads them, so problems with the file are logged
-            // and raised in one place.
-            settings::init(app.handle());
-
             #[cfg(target_os = "windows")]
             log::info!(
                 "Vulkan layer policy: VK_LOADER_LAYERS_DISABLE={:?}, HANDY_KEEP_VULKAN_IMPLICIT_LAYERS={}",
@@ -967,6 +917,11 @@ pub fn run(cli_args: CliArgs) {
             system_languages::log_system_languages();
 
             specta_builder.mount_events(app);
+
+            // Before anything reads them, so problems with the file are logged
+            // and raised in one place. After `mount_events`: raising a notice
+            // emits one.
+            settings::init(app.handle());
 
             // Headless one-shot path (`--transcribe-file` / `--list-devices` /
             // `--list-models`): initialize only what transcription needs — the

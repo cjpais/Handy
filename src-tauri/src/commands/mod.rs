@@ -3,9 +3,7 @@ pub mod history;
 pub mod models;
 pub mod transcription;
 
-use crate::settings::{
-    get_settings, update_checks_forced_disabled, write_settings, AppSettings, LogLevel,
-};
+use crate::settings::{get_settings, update_checks_forced_disabled, AppSettings};
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
@@ -56,24 +54,6 @@ pub fn get_log_dir_path(app: AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to get log directory: {}", e))?;
 
     Ok(log_dir.to_string_lossy().to_string())
-}
-
-#[specta::specta]
-#[tauri::command]
-pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
-    let tauri_log_level: tauri_plugin_log::LogLevel = level.into();
-    let log_level: log::Level = tauri_log_level.into();
-    // Update the file log level atomic so the filter picks up the new level
-    crate::FILE_LOG_LEVEL.store(
-        log_level.to_level_filter() as u8,
-        std::sync::atomic::Ordering::Relaxed,
-    );
-
-    let mut settings = get_settings(&app);
-    settings.log_level = level;
-    write_settings(&app, settings);
-
-    Ok(())
 }
 
 #[specta::specta]
@@ -200,9 +180,7 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
 #[specta::specta]
 #[tauri::command]
 pub fn complete_onboarding(app: AppHandle) -> Result<(), String> {
-    let mut settings = crate::settings::get_settings(&app);
-    settings.onboarding_completed = true;
-    crate::settings::write_settings(&app, settings);
+    crate::settings::update_settings(&app, |s| s.onboarding_completed = true);
     Ok(())
 }
 

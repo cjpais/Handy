@@ -1,7 +1,7 @@
 use crate::language_detection::LanguageStatus;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use crate::settings::get_settings;
 use serde::Serialize;
 use specta::Type;
 use std::sync::Arc;
@@ -11,14 +11,6 @@ use tauri::{AppHandle, State};
 pub struct ModelLoadStatus {
     is_loaded: bool,
     current_model: Option<String>,
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn set_model_unload_timeout(app: AppHandle, timeout: ModelUnloadTimeout) {
-    let mut settings = get_settings(&app);
-    settings.model_unload_timeout = timeout;
-    write_settings(&app, settings);
 }
 
 /// The language transcription on `model_id` will use, for the picker.

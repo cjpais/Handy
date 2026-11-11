@@ -100,7 +100,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 **Pipeline Processing:** Audio → VAD → Whisper/Parakeet → Text output → Clipboard/Paste
 
-**State Flow:** Zustand → Tauri Command → Rust State → Persistence (tauri-plugin-store)
+**State Flow:** Zustand → `set_setting` → Rust settings in memory → `settings_store.json` (see [Settings System](#settings-system))
 
 ### Technology Stack
 
@@ -122,7 +122,11 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 
 ### Settings System
 
-Settings are stored using Tauri's store plugin with reactive updates:
+Settings live in memory in Rust (`settings_store.rs`) and are saved to `settings_store.json` in the background after every change. Read them with `settings::get_settings`; change them with `settings::update_settings(app, |s| ...)`, which holds the lock for the whole change and sends every window the new settings (`settings-changed`).
+
+**Adding a setting:** add the field and its default to `AppSettings` in `settings.rs`, then use `updateSetting("key", value)` in the UI. It goes through the one `set_setting` command. If the running app has to react when it changes, add that to `apply_change` in `settings_commands.rs`. Only a setting that must be applied before it's saved, and can be refused, gets its own command.
+
+What's in them:
 
 - Keyboard shortcuts (configurable, supports push-to-talk)
 - Audio devices (microphone/output selection)

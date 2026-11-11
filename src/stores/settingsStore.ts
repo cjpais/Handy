@@ -3,13 +3,10 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
+  JsonValue,
   AudioDevice,
   PostProcessApiFormat,
-  ChineseScript,
-  TranscribeAcceleratorSetting,
-  ShortcutActivation,
   VadBackend,
-  LanguageDetectionMode,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { notify } from "@/stores/noticeStore";
@@ -85,31 +82,13 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   is_default: true,
 };
 
+// Settings with a command of their own: they're applied before they're saved,
+// and can be refused. Every other setting goes through `setSetting`.
 const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
   always_on_microphone: (value) =>
     commands.updateMicrophoneMode(value as boolean),
-  audio_feedback: (value) =>
-    commands.changeAudioFeedbackSetting(value as boolean),
-  audio_feedback_volume: (value) =>
-    commands.changeAudioFeedbackVolumeSetting(value as number),
-  sound_theme: (value) => commands.changeSoundThemeSetting(value as string),
-  start_hidden: (value) => commands.changeStartHiddenSetting(value as boolean),
-  autostart_enabled: (value) =>
-    commands.changeAutostartSetting(value as boolean),
-  spoken_languages: (value) =>
-    commands.changeSpokenLanguagesSetting(value as string[]),
-  update_checks_enabled: (value) =>
-    commands.changeUpdateChecksSetting(value as boolean),
-  show_whats_new_on_update: (value) =>
-    commands.changeShowWhatsNewOnUpdateSetting(value as boolean),
-  whats_new_last_seen_version: (value) =>
-    commands.changeWhatsNewLastSeenVersionSetting(value as string),
-  shortcut_activation: (value) =>
-    commands.changeShortcutActivationSetting(value as ShortcutActivation),
-  hold_threshold_ms: (value) =>
-    commands.changeHoldThresholdMsSetting(value as number),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
       (value as string) === "Default" || value === null
@@ -124,59 +103,8 @@ const settingUpdaters: {
       throw new Error(result.error);
     }
   },
-  clamshell_microphone: (value) =>
-    commands.setClamshellMicrophone(
-      (value as string) === "Default" ? "default" : (value as string),
-    ),
-  selected_output_device: (value) =>
-    commands.setSelectedOutputDevice(
-      (value as string) === "Default" || value === null
-        ? "default"
-        : (value as string),
-    ),
-  recording_retention_period: (value) =>
-    commands.updateRecordingRetentionPeriod(value as string),
-  translate_to_english: (value) =>
-    commands.changeTranslateToEnglishSetting(value as boolean),
-  selected_language: (value) =>
-    commands.changeSelectedLanguageSetting(value as string),
-  overlay_position: (value) =>
-    commands.changeOverlayPositionSetting(value as string),
-  debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
-  custom_words: (value) => commands.updateCustomWords(value as string[]),
-  word_correction_threshold: (value) =>
-    commands.changeWordCorrectionThresholdSetting(value as number),
-  paste_delay_ms: (value) =>
-    commands.changePasteDelayMsSetting(value as number),
-  paste_delay_after_ms: (value) =>
-    commands.changePasteDelayAfterMsSetting(value as number),
-  reliable_paste: (value) =>
-    commands.changeReliablePasteSetting(value as boolean),
-  paste_method: (value) => commands.changePasteMethodSetting(value as string),
-  typing_tool: (value) => commands.changeTypingToolSetting(value as string),
-  external_script_path: (value) =>
-    commands.changeExternalScriptPathSetting(value as string | null),
-  clipboard_handling: (value) =>
-    commands.changeClipboardHandlingSetting(value as string),
-  auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
-  auto_submit_key: (value) =>
-    commands.changeAutoSubmitKeySetting(value as string),
-  history_limit: (value) => commands.updateHistoryLimit(value as number),
-  post_process_enabled: (value) =>
-    commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
-  mute_while_recording: (value) =>
-    commands.changeMuteWhileRecordingSetting(value as boolean),
-  append_trailing_space: (value) =>
-    commands.changeAppendTrailingSpaceSetting(value as boolean),
-  log_level: (value) => commands.setLogLevel(value as any),
-  app_language: (value) => commands.changeAppLanguageSetting(value as string),
-  theme: (value) => commands.changeThemeSetting(value as string),
-  experimental_enabled: (value) =>
-    commands.changeExperimentalEnabledSetting(value as boolean),
-  lazy_stream_close: (value) =>
-    commands.changeLazyStreamCloseSetting(value as boolean),
   airpods_mode: async (value) => {
     const result = await commands.changeAirpodsModeSetting(value as boolean);
     if (result.status === "error") {
@@ -186,10 +114,6 @@ const settingUpdaters: {
       throw new Error(result.error);
     }
   },
-  overlay_style: (value) => commands.changeOverlayStyleSetting(value as string),
-  vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
-  long_form_chunking: (value) =>
-    commands.changeLongFormChunkingSetting(value as boolean),
   vad_backend: async (value) => {
     const result = await commands.changeVadBackendSetting(value as VadBackend);
     if (result.status === "error") {
@@ -199,25 +123,27 @@ const settingUpdaters: {
       throw new Error(result.error);
     }
   },
-  filler_word_removal_enabled: (value) =>
-    commands.changeFillerWordRemovalEnabledSetting(value as boolean),
-  chinese_script: (value) =>
-    commands.changeChineseScriptSetting(value as ChineseScript),
-  show_tray_icon: (value) =>
-    commands.changeShowTrayIconSetting(value as boolean),
-  transcribe_accelerator: (value) =>
-    commands.changeTranscribeAcceleratorSetting(
-      value as TranscribeAcceleratorSetting,
-    ),
-  transcribe_gpu_device: (value) =>
-    commands.changeTranscribeGpuDevice(value as string | null),
-  extra_recording_buffer_ms: (value) =>
-    commands.changeExtraRecordingBufferSetting(value as number),
-  language_detection: (value) =>
-    commands.changeLanguageDetectionSetting(value as LanguageDetectionMode),
-  language_detection_window_secs: (value) =>
-    commands.changeLanguageDetectionWindowSetting(value as number),
 };
+
+// Device pickers show "Default"; the settings store no device for it.
+const DEVICE_SETTINGS = new Set<keyof Settings>([
+  "selected_output_device",
+  "clamshell_microphone",
+]);
+
+const storedValue = (key: keyof Settings, value: unknown): JsonValue =>
+  DEVICE_SETTINGS.has(key) && (value === "Default" || value === "default")
+    ? null
+    : ((value ?? null) as JsonValue);
+
+// The UI shows "Default" where the settings store no device.
+const normalizeSettings = (settings: Settings): Settings => ({
+  ...settings,
+  always_on_microphone: settings.always_on_microphone ?? false,
+  selected_microphone: settings.selected_microphone ?? "Default",
+  clamshell_microphone: settings.clamshell_microphone ?? "Default",
+  selected_output_device: settings.selected_output_device ?? "Default",
+});
 
 export const useSettingsStore = create<SettingsStore>()(
   subscribeWithSelector((set, get) => ({
@@ -252,16 +178,7 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         const result = await commands.getAppSettings();
         if (result.status === "ok") {
-          const settings = result.data;
-          const normalizedSettings: Settings = {
-            ...settings,
-            always_on_microphone: settings.always_on_microphone ?? false,
-            selected_microphone: settings.selected_microphone ?? "Default",
-            clamshell_microphone: settings.clamshell_microphone ?? "Default",
-            selected_output_device:
-              settings.selected_output_device ?? "Default",
-          };
-          set({ settings: normalizedSettings, isLoading: false });
+          set({ settings: normalizeSettings(result.data), isLoading: false });
         } else {
           console.error("Failed to load settings:", result.error);
           set({ isLoading: false });
@@ -351,8 +268,14 @@ export const useSettingsStore = create<SettingsStore>()(
         const updater = settingUpdaters[key];
         if (updater) {
           await updater(value);
-        } else if (key !== "bindings" && key !== "selected_model") {
-          console.warn(`No handler for setting: ${String(key)}`);
+        } else {
+          const result = await commands.setSetting(
+            updateKey,
+            storedValue(key, value),
+          );
+          if (result.status === "error") {
+            throw new Error(result.error);
+          }
         }
       } catch (error) {
         console.error(`Failed to update setting ${String(key)}:`, error);
@@ -700,16 +623,15 @@ export const useSettingsStore = create<SettingsStore>()(
         loadUpdateChecksLocked(),
       ]);
 
-      // Re-fetch settings when the backend changes them (e.g. language
-      // reset during model switch). The backend is the source of truth.
-      listen("model-state-changed", () => {
-        get().refreshSettings();
+      // The backend sends the whole settings after every change, wherever
+      // it came from (this window, the tray, a fallback). It's the source of
+      // truth.
+      listen<Settings>("settings-changed", (event) => {
+        set({ settings: normalizeSettings(event.payload) });
       });
-      listen<{ setting?: string }>("settings-changed", (event) => {
-        get().refreshSettings();
-        if (event.payload.setting === "selected_microphone") {
-          get().refreshAudioDevices();
-        }
+      // A microphone that went away was replaced by the default.
+      listen("microphone-fallback", () => {
+        get().refreshAudioDevices();
       });
     },
   })),

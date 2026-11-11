@@ -1,7 +1,7 @@
 use super::model_capabilities::{
     CapabilityProbe, CapabilityProber, Compatibility, GgufHeaderProber,
 };
-use crate::settings::{get_settings, write_settings};
+use crate::settings::{get_settings, update_settings};
 use anyhow::Result;
 use hf_hub::api::tokio::{ApiBuilder, CancellationToken, Progress};
 use hf_hub::{Cache, Repo, RepoType};
@@ -1468,8 +1468,13 @@ impl ModelManager {
                     "Selected model '{}' is not available on disk; clearing selection",
                     settings.selected_model
                 );
-                settings.selected_model = String::new();
-                write_settings(&self.app_handle, settings.clone());
+                let missing = std::mem::take(&mut settings.selected_model);
+                // Only if it's still the one that's missing.
+                update_settings(&self.app_handle, |s| {
+                    if s.selected_model == missing {
+                        s.selected_model.clear();
+                    }
+                });
             }
         }
 
@@ -1494,10 +1499,12 @@ impl ModelManager {
                     available_model.id, available_model.name
                 );
 
-                // Update settings with the selected model
-                let mut updated_settings = settings;
-                updated_settings.selected_model = available_model.id.clone();
-                write_settings(&self.app_handle, updated_settings);
+                // Only if nothing was picked meanwhile.
+                update_settings(&self.app_handle, |s| {
+                    if s.selected_model.is_empty() {
+                        s.selected_model = available_model.id.clone();
+                    }
+                });
 
                 info!("Successfully auto-selected model: {}", available_model.id);
             }
