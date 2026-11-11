@@ -673,6 +673,21 @@ async initializeShortcuts() : Promise<Result<null, string>> {
 }
 },
 /**
+ * Clears Handy's macOS grant for `permission` before asking for it. A grant is
+ * tied to the app's code signature, so after an update the old entry stays in
+ * System Settings without matching the new build: macOS neither honors it nor
+ * asks again, and onboarding waits forever (#1618). Only called while the
+ * permission reads as not granted, so there is no working grant to lose.
+ */
+async resetMacosPermission(permission: MacPermission) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("reset_macos_permission", { permission }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Mark onboarding as finished; called when its last screen closes, so quitting
  * midway resumes the flow.
  */
@@ -1302,6 +1317,10 @@ export type LanguageStatus =
  */
 { kind: "auto_unavailable"; language: string; reason: AutoUnavailableReason }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+/**
+ * A macOS privacy permission Handy asks for during onboarding.
+ */
+export type MacPermission = "accessibility" | "microphone"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
