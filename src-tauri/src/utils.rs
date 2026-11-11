@@ -192,7 +192,7 @@ fn requested_gdk_backend(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|v| !v.is_empty())
 }
 
-/// Copy `HANDY_GDK_BACKEND` into `GDK_BACKEND` and report whether it did.
+/// Copy `HANDY_GDK_BACKEND` into `GDK_BACKEND` when it is set.
 ///
 /// The AppImage's `apprun-hooks/linuxdeploy-plugin-gtk.sh` unconditionally
 /// runs `export GDK_BACKEND=x11` (a workaround for tauri-apps/tauri#8541) after
@@ -201,14 +201,10 @@ fn requested_gdk_backend(value: Option<&str>) -> Option<&str> {
 /// so `HANDY_GDK_BACKEND=wayland ./Handy.AppImage` is the opt-in to native
 /// Wayland (cjpais/Handy#1729, #2034). Must run before GTK initializes.
 #[cfg(target_os = "linux")]
-pub fn apply_handy_gdk_backend() -> bool {
+pub fn apply_handy_gdk_backend() {
     let requested = std::env::var("HANDY_GDK_BACKEND").ok();
-    match requested_gdk_backend(requested.as_deref()) {
-        Some(backend) => {
-            std::env::set_var("GDK_BACKEND", backend);
-            true
-        }
-        None => false,
+    if let Some(backend) = requested_gdk_backend(requested.as_deref()) {
+        std::env::set_var("GDK_BACKEND", backend);
     }
 }
 
