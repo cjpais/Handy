@@ -3,7 +3,7 @@ use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
 };
-use crate::chinese_script::{convert_chinese_script, ChineseVariety};
+use crate::chinese_script::{chinese_variety_for_text, convert_chinese_script, ChineseVariety};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     Unloading,
@@ -1661,13 +1661,11 @@ fn post_process_transcription_text(
     fail_open_text_transform(raw, |raw| {
         // Last-resort language evidence: confidence-gated detection from the
         // transcribed text itself, constrained to the model's languages. Only
-        // consulted when it can change the outcome (built-in gated fillers or
-        // Chinese script conversion).
+        // consulted when it can change the outcome (built-in gated fillers).
         let output_language = match output_language {
             OutputLanguageEvidence::Unknown
-                if converts_script
-                    || (settings.filler_word_removal_enabled
-                        && settings.custom_filler_words.is_none()) =>
+                if settings.filler_word_removal_enabled
+                    && settings.custom_filler_words.is_none() =>
             {
                 match detect_output_language(&raw, supported_languages) {
                     Some(language) => {
@@ -1681,11 +1679,9 @@ fn post_process_transcription_text(
         };
 
         // Convert the script before custom words so they match in the script
-        // the user writes in. Only output known to be Chinese is touched, so
-        // e.g. Japanese kanji are never rewritten.
-        let variety = output_language
-            .language()
-            .and_then(ChineseVariety::from_language);
+        // the user writes in. Decided from the text, since mixed Mandarin/English
+        // is often detected as English; Japanese is never rewritten.
+        let variety = chinese_variety_for_text(&raw, &output_language);
         let raw = match variety {
             Some(variety) if converts_script => {
                 convert_chinese_script(&raw, variety, settings.chinese_script)
@@ -1720,61 +1716,52 @@ fn post_process_transcription_text(
     })
 }
 
-/// Characters to wait for before detecting the preview's language. A lone
-/// Chinese character reads as Mandarin, but Japanese often opens with kanji
-/// before any kana; waiting a few characters keeps those from locking in.
+/// Characters to wait for before converting a preview whose language isn't
+/// pinned to Chinese. Japanese often opens with kanji before any kana; waiting a
+/// few characters keeps those from flashing converted.
 const PREVIEW_DETECTION_MIN_CHARS: usize = 6;
 
 /// Converts live-preview text into the configured Chinese script as it streams.
 ///
 /// The preview is cosmetic: the final paste re-resolves the language and
-/// converts on its own, so this only has to look right while speaking.
+/// converts on its own. Both use [`chinese_variety_for_text`] so they agree.
 struct PreviewScript {
     script: ChineseScript,
-    variety: Option<ChineseVariety>,
-    /// The language wasn't known when the stream started (auto-detect), so it
-    /// is detected from the streamed text until it turns out to be Chinese.
-    detect: bool,
+    output_language: OutputLanguageEvidence,
+    /// The run is pinned to Chinese, so conversion needn't wait for text.
+    known_chinese: bool,
 }
 
 impl PreviewScript {
     fn new(script: ChineseScript, output_language: &OutputLanguageEvidence) -> Self {
-        let enabled = script != ChineseScript::AsTranscribed;
         Self {
             script,
-            variety: output_language
+            output_language: output_language.clone(),
+            known_chinese: output_language
                 .language()
                 .and_then(ChineseVariety::from_language)
-                .filter(|_| enabled),
-            detect: enabled && *output_language == OutputLanguageEvidence::Unknown,
+                .is_some(),
         }
     }
 
     /// Converts the model's raw committed/tentative text. Always fed the raw
     /// text, never a previous conversion, so it stays consistent with the
-    /// final conversion. Once Chinese is detected it sticks for the rest of
-    /// the stream so the preview doesn't flip back and forth.
-    fn convert(
-        &mut self,
-        committed: &str,
-        tentative: &str,
-        supported_languages: &[String],
-    ) -> (String, String) {
-        if self.variety.is_none() && self.detect {
-            let text = format!("{committed}{tentative}");
-            if text.chars().count() >= PREVIEW_DETECTION_MIN_CHARS {
-                self.variety = detect_output_language(&text, supported_languages)
-                    .as_deref()
-                    .and_then(ChineseVariety::from_language);
-            }
+    /// final conversion.
+    fn convert(&self, committed: &str, tentative: &str) -> (String, String) {
+        let unchanged = || (committed.to_string(), tentative.to_string());
+        if self.script == ChineseScript::AsTranscribed {
+            return unchanged();
         }
-
-        match self.variety {
+        let text = format!("{committed}{tentative}");
+        if !self.known_chinese && text.chars().count() < PREVIEW_DETECTION_MIN_CHARS {
+            return unchanged();
+        }
+        match chinese_variety_for_text(&text, &self.output_language) {
             Some(variety) => (
                 convert_chinese_script(committed, variety, self.script),
                 convert_chinese_script(tentative, variety, self.script),
             ),
-            None => (committed.to_string(), tentative.to_string()),
+            None => unchanged(),
         }
     }
 }
@@ -2086,6 +2073,49 @@ mod tests {
 
             assert_eq!(result, "学校に行きます", "{evidence:?}");
         }
+    }
+
+    #[test]
+    fn mixed_chinese_english_detected_as_english_is_converted() {
+        // #2239: Whisper tags mixed Mandarin/English runs as English.
+        let settings = AppSettings {
+            chinese_script: ChineseScript::TraditionalTw,
+            filler_word_removal_enabled: false,
+            ..Default::default()
+        };
+        let result = post_process_transcription_text(
+            "欸我跟你说，我今天早上本来想要去咖啡厅工作，结果一打开电脑就发现，Oh my god, I forgot to charge my laptop last night.".to_string(),
+            &settings,
+            false,
+            &OutputLanguageEvidence::ModelDetected("en".to_string()),
+            &languages(&["zh", "en", "ja"]),
+        );
+
+        assert_eq!(
+            result,
+            "欸我跟你說，我今天早上本來想要去咖啡廳工作，結果一打開電腦就發現，Oh my god, I forgot to charge my laptop last night."
+        );
+    }
+
+    #[test]
+    fn preview_converts_mixed_text_but_not_japanese() {
+        let preview = PreviewScript::new(
+            ChineseScript::TraditionalTw,
+            &OutputLanguageEvidence::Unknown,
+        );
+        assert_eq!(
+            preview.convert("我跟你说，", "I forgot my laptop"),
+            ("我跟你說，".to_string(), "I forgot my laptop".to_string())
+        );
+        assert_eq!(
+            preview.convert("学校に", "行きます"),
+            ("学校に".to_string(), "行きます".to_string())
+        );
+        // Too short to rule out Japanese yet.
+        assert_eq!(
+            preview.convert("学校", ""),
+            ("学校".to_string(), String::new())
+        );
     }
 
     #[test]
