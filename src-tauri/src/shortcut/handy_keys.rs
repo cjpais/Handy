@@ -51,6 +51,7 @@ enum ManagerCommand {
     },
     Unregister {
         binding_id: String,
+        hotkey_string: String,
         response: Sender<Result<(), String>>,
     },
     Shutdown,
@@ -115,8 +116,10 @@ impl HandyKeysState {
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle, manager: HotkeyManager) {
         info!("handy-keys manager thread started");
 
-        // Maps binding IDs to HotkeyIds and hotkey strings
-        let mut binding_to_hotkey: HashMap<String, HotkeyId> = HashMap::new();
+        // Maps binding IDs to every HotkeyId registered for them. An action can
+        // have more than one hotkey (e.g. extra bindings from power_settings.json),
+        // so this must be a list rather than a single id.
+        let mut binding_to_hotkeys: HashMap<String, Vec<HotkeyId>> = HashMap::new();
         let mut hotkey_to_binding: HashMap<HotkeyId, (String, String)> = HashMap::new(); // (binding_id, hotkey_string)
 
         loop {
@@ -142,7 +145,7 @@ impl HandyKeysState {
                     } => {
                         let result = Self::do_register(
                             &manager,
-                            &mut binding_to_hotkey,
+                            &mut binding_to_hotkeys,
                             &mut hotkey_to_binding,
                             &binding_id,
                             &hotkey_string,
@@ -151,13 +154,15 @@ impl HandyKeysState {
                     }
                     ManagerCommand::Unregister {
                         binding_id,
+                        hotkey_string,
                         response,
                     } => {
                         let result = Self::do_unregister(
                             &manager,
-                            &mut binding_to_hotkey,
+                            &mut binding_to_hotkeys,
                             &mut hotkey_to_binding,
                             &binding_id,
+                            &hotkey_string,
                         );
                         let _ = response.send(result);
                     }
@@ -182,7 +187,7 @@ impl HandyKeysState {
     /// Register a hotkey
     fn do_register(
         manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+        binding_to_hotkeys: &mut HashMap<String, Vec<HotkeyId>>,
         hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
         binding_id: &str,
         hotkey_string: &str,
@@ -195,7 +200,10 @@ impl HandyKeysState {
             .register(hotkey)
             .map_err(|e| format!("Failed to register hotkey: {}", e))?;
 
-        binding_to_hotkey.insert(binding_id.to_string(), id);
+        binding_to_hotkeys
+            .entry(binding_id.to_string())
+            .or_default()
+            .push(id);
         hotkey_to_binding.insert(id, (binding_id.to_string(), hotkey_string.to_string()));
 
         debug!(
@@ -205,20 +213,42 @@ impl HandyKeysState {
         Ok(())
     }
 
-    /// Unregister a hotkey
+    /// Unregister the hotkey registered for `binding_id` with `hotkey_string`.
+    ///
+    /// Other hotkeys registered for the same action are left alone, so
+    /// changing an action's shortcut in Settings doesn't drop its extra
+    /// bindings.
     fn do_unregister(
         manager: &HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+        binding_to_hotkeys: &mut HashMap<String, Vec<HotkeyId>>,
         hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
         binding_id: &str,
+        hotkey_string: &str,
     ) -> Result<(), String> {
-        if let Some(id) = binding_to_hotkey.remove(binding_id) {
-            manager
-                .unregister(id)
-                .map_err(|e| format!("Failed to unregister hotkey: {}", e))?;
-            hotkey_to_binding.remove(&id);
-            debug!("Unregistered handy-keys shortcut: {}", binding_id);
+        let Some(ids) = binding_to_hotkeys.get_mut(binding_id) else {
+            return Ok(());
+        };
+        let Some(pos) = ids.iter().position(|id| {
+            hotkey_to_binding
+                .get(id)
+                .is_some_and(|(_, registered)| registered == hotkey_string)
+        }) else {
+            return Ok(());
+        };
+
+        let id = ids[pos];
+        manager
+            .unregister(id)
+            .map_err(|e| format!("Failed to unregister hotkey: {}", e))?;
+        ids.remove(pos);
+        if ids.is_empty() {
+            binding_to_hotkeys.remove(binding_id);
         }
+        hotkey_to_binding.remove(&id);
+        debug!(
+            "Unregistered handy-keys shortcut: {} ({})",
+            binding_id, hotkey_string
+        );
         Ok(())
     }
 
@@ -247,6 +277,7 @@ impl HandyKeysState {
             .map_err(|_| "Failed to lock command_sender")?
             .send(ManagerCommand::Unregister {
                 binding_id: binding.id.clone(),
+                hotkey_string: binding.current_binding.clone(),
                 response: tx,
             })
             .map_err(|_| "Failed to send unregister command")?;
