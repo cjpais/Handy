@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "後処理なしで文字起こししました",
     "filePostProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま保存しました。",
     "fileTranscriptionFailedTitle": "ファイルの文字起こしに失敗しました",
-    "transcriptionFailedTitle": "文字起こしに失敗しました"
+    "transcriptionFailedTitle": "文字起こしに失敗しました",
+    "settingsUnreadableTitle": "設定を読み込めません",
+    "settingsUnreadable": "Handy は一時的にデフォルト設定を使用し、設定ファイルは変更しません。Handy を再起動してもう一度お試しください。",
+    "settingsResetTitle": "一部の設定がリセットされました",
+    "settingsReset": "設定ファイルの一部を読み込めなかったため、その設定はデフォルトに戻りました。元のファイルはバックアップとして保存されています。",
+    "settingsSaveFailedTitle": "設定を保存できません",
+    "settingsSaveFailed": "変更は現在は反映されていますが、Handy を終了すると失われます。"
   },
   "notices": {
     "errorOne": "エラー {{n}} 件",

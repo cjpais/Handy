@@ -37,7 +37,6 @@ tauri = { version = "2.11.5", features = [
 ] }
 tauri-plugin-log = "2.7.1"
 tauri-plugin-opener = "2.5.2"
-tauri-plugin-store = "2.4.1"
 tauri-plugin-os = "2.3.2"
 tauri-plugin-clipboard-manager = "2.3.2"
 tauri-plugin-macos-permissions = "2.3.0"

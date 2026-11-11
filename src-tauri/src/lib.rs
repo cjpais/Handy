@@ -23,6 +23,7 @@ mod paste_tx;
 pub mod portable;
 mod secure_input;
 mod settings;
+mod settings_store;
 mod shortcut;
 mod signal_handle;
 mod system_languages;
@@ -938,7 +939,6 @@ pub fn run(cli_args: CliArgs) {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -947,6 +947,10 @@ pub fn run(cli_args: CliArgs) {
         .manage(cli_args.clone())
         .manage(notices::NoticeStore::default())
         .setup(move |app| {
+            // Before anything reads them, so problems with the file are logged
+            // and raised in one place.
+            settings::init(app.handle());
+
             #[cfg(target_os = "windows")]
             log::info!(
                 "Vulkan layer policy: VK_LOADER_LAYERS_DISABLE={:?}, HANDY_KEEP_VULKAN_IMPLICIT_LAYERS={}",
@@ -996,6 +1000,7 @@ pub fn run(cli_args: CliArgs) {
                     // process::exit (not app.exit, which exits 0 regardless) so the
                     // exit code propagates to the shell for CI gating. Flush first
                     // since process::exit runs no destructors / buffer flushes.
+                    settings::flush_settings();
                     use std::io::Write;
                     let _ = std::io::stdout().flush();
                     let _ = std::io::stderr().flush();
@@ -1201,6 +1206,8 @@ pub fn run(cli_args: CliArgs) {
             }
             show_main_window(app);
         }
+        // Settings are saved in the background; finish before the process ends.
+        tauri::RunEvent::Exit => settings::flush_settings(),
         // No transcription teardown on exit: transcribe.cpp runs only in the
         // worker process, which exits by itself as soon as this process's end
         // of its stdin closes, even if it is hung. Waiting on an unload here

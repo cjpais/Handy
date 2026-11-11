@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
     "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
     "fileTranscriptionFailedTitle": "תמלול הקובץ נכשל",
-    "transcriptionFailedTitle": "התמלול נכשל"
+    "transcriptionFailedTitle": "התמלול נכשל",
+    "settingsUnreadableTitle": "לא ניתן לקרוא את ההגדרות",
+    "settingsUnreadable": "Handy משתמש כרגע בהגדרות ברירת המחדל ולא ישנה את קובץ ההגדרות שלך. הפעל מחדש את Handy כדי לנסות שוב.",
+    "settingsResetTitle": "חלק מההגדרות אופסו",
+    "settingsReset": "לא ניתן היה לקרוא חלק מקובץ ההגדרות, ולכן ההגדרות האלה חזרו לברירת המחדל. הקובץ הישן נשמר כגיבוי.",
+    "settingsSaveFailedTitle": "לא ניתן לשמור את ההגדרות",
+    "settingsSaveFailed": "השינויים שלך חלים כרגע, אך יאבדו כשתסגור את Handy."
   },
   "notices": {
     "errorOne": "{{n}} שגיאה",

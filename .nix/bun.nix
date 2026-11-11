@@ -597,10 +597,6 @@
     url = "https://registry.npmjs.org/@tauri-apps/plugin-sql/-/plugin-sql-2.3.1.tgz";
     hash = "sha512-iNgHnFIR+jRkx9INKVKepzMlxXtNkJUaWuhagFjT4dOttPaNyRnVHgwTjpqZhyVjiklDh2UdEPAJkQKiCPAekw==";
   };
-  "@tauri-apps/plugin-store@2.4.1" = fetchurl {
-    url = "https://registry.npmjs.org/@tauri-apps/plugin-store/-/plugin-store-2.4.1.tgz";
-    hash = "sha512-ckGSEzZ5Ii4Hf2D5x25Oqnm2Zf9MfDWAzR+volY0z/OOBz6aucPKEY0F649JvQ0Vupku6UJo7ugpGRDOFOunkA==";
-  };
   "@tauri-apps/plugin-updater@2.10.1" = fetchurl {
     url = "https://registry.npmjs.org/@tauri-apps/plugin-updater/-/plugin-updater-2.10.1.tgz";
     hash = "sha512-NFYMg+tWOZPJdzE/PpFj2qfqwAWwNS3kXrb1tm1gnBJ9mYzZ4WDRrwy8udzWoAnfGCHLuePNLY1WVCNHnh3eRA==";

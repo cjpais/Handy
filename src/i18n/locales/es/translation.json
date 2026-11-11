@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transcrito sin post proceso",
     "filePostProcessFailed": "El post proceso no terminó, así que la transcripción se guardó tal cual.",
     "fileTranscriptionFailedTitle": "Error al transcribir el archivo",
-    "transcriptionFailedTitle": "Error de transcripción"
+    "transcriptionFailedTitle": "Error de transcripción",
+    "settingsUnreadableTitle": "No se pudieron leer los ajustes",
+    "settingsUnreadable": "Handy usa los ajustes predeterminados por ahora y no modificará tu archivo de ajustes. Reinicia Handy para volver a intentarlo.",
+    "settingsResetTitle": "Se restablecieron algunos ajustes",
+    "settingsReset": "No se pudo leer parte de tu archivo de ajustes, así que esos ajustes volvieron a sus valores predeterminados. Se guardó una copia de tu archivo anterior.",
+    "settingsSaveFailedTitle": "No se pudieron guardar los ajustes",
+    "settingsSaveFailed": "Tus cambios se aplican por ahora, pero se perderán al cerrar Handy."
   },
   "notices": {
     "errorOne": "{{n}} error",

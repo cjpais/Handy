@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transcrit sans post-traitement",
     "filePostProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été enregistrée telle quelle.",
     "fileTranscriptionFailedTitle": "Échec de la transcription du fichier",
-    "transcriptionFailedTitle": "Échec de la transcription"
+    "transcriptionFailedTitle": "Échec de la transcription",
+    "settingsUnreadableTitle": "Impossible de lire les paramètres",
+    "settingsUnreadable": "Handy utilise les paramètres par défaut pour l'instant et ne modifiera pas votre fichier de paramètres. Redémarrez Handy pour réessayer.",
+    "settingsResetTitle": "Certains paramètres ont été réinitialisés",
+    "settingsReset": "Une partie de votre fichier de paramètres était illisible : ces paramètres ont repris leur valeur par défaut. Votre ancien fichier a été conservé en sauvegarde.",
+    "settingsSaveFailedTitle": "Impossible d'enregistrer les paramètres",
+    "settingsSaveFailed": "Vos modifications s'appliquent pour l'instant, mais seront perdues à la fermeture de Handy."
   },
   "notices": {
     "errorOne": "{{n}} erreur",

@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transcrit sense postprocessament",
     "filePostProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha desat tal qual.",
     "fileTranscriptionFailedTitle": "La transcripció del fitxer ha fallat",
-    "transcriptionFailedTitle": "La transcripció ha fallat"
+    "transcriptionFailedTitle": "La transcripció ha fallat",
+    "settingsUnreadableTitle": "No s'han pogut llegir els ajustos",
+    "settingsUnreadable": "Handy fa servir els ajustos per defecte de moment i no modificarà el fitxer d'ajustos. Reinicia Handy per tornar-ho a provar.",
+    "settingsResetTitle": "S'han restablert alguns ajustos",
+    "settingsReset": "No s'ha pogut llegir part del fitxer d'ajustos, així que aquests ajustos tornen als valors per defecte. S'ha conservat una còpia del fitxer antic.",
+    "settingsSaveFailedTitle": "No s'han pogut desar els ajustos",
+    "settingsSaveFailed": "Els canvis s'apliquen de moment, però es perdran quan tanquis Handy."
   },
   "notices": {
     "errorOne": "{{n}} error",

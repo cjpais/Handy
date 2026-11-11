@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
     "filePostProcessFailed": "Pascaproses tidak selesai, jadi transkrip disimpan apa adanya.",
     "fileTranscriptionFailedTitle": "Transkripsi File Gagal",
-    "transcriptionFailedTitle": "Transkripsi Gagal"
+    "transcriptionFailedTitle": "Transkripsi Gagal",
+    "settingsUnreadableTitle": "Gagal Membaca Pengaturan",
+    "settingsUnreadable": "Handy memakai pengaturan bawaan untuk sementara dan tidak akan mengubah file pengaturan Anda. Mulai ulang Handy untuk mencoba lagi.",
+    "settingsResetTitle": "Beberapa Pengaturan Direset",
+    "settingsReset": "Sebagian file pengaturan Anda tidak dapat dibaca, jadi pengaturan tersebut kembali ke bawaan. File lama Anda disimpan sebagai cadangan.",
+    "settingsSaveFailedTitle": "Gagal Menyimpan Pengaturan",
+    "settingsSaveFailed": "Perubahan Anda berlaku untuk saat ini, tetapi akan hilang saat Handy ditutup."
   },
   "notices": {
     "errorOne": "{{n}} kesalahan",

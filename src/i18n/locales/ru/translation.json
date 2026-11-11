@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Расшифровано без постобработки",
     "filePostProcessFailed": "Постобработка не завершилась, поэтому расшифровка сохранена как есть.",
     "fileTranscriptionFailedTitle": "Ошибка транскрипции файла",
-    "transcriptionFailedTitle": "Ошибка транскрипции"
+    "transcriptionFailedTitle": "Ошибка транскрипции",
+    "settingsUnreadableTitle": "Не удалось прочитать настройки",
+    "settingsUnreadable": "Пока Handy использует настройки по умолчанию и не изменит ваш файл настроек. Перезапустите Handy, чтобы попробовать снова.",
+    "settingsResetTitle": "Некоторые настройки сброшены",
+    "settingsReset": "Часть файла настроек не удалось прочитать, поэтому эти настройки вернулись к значениям по умолчанию. Старый файл сохранён как резервная копия.",
+    "settingsSaveFailedTitle": "Не удалось сохранить настройки",
+    "settingsSaveFailed": "Изменения действуют сейчас, но будут потеряны при закрытии Handy."
   },
   "notices": {
     "errorOne": "{{n}} ошибка",

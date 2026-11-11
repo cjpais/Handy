@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "store:default",
     "updater:default",
     "process:default",
     "dialog:default",

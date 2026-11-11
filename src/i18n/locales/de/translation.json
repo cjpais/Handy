@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",
     "filePostProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert gespeichert.",
     "fileTranscriptionFailedTitle": "Dateitranskription fehlgeschlagen",
-    "transcriptionFailedTitle": "Transkription fehlgeschlagen"
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen",
+    "settingsUnreadableTitle": "Einstellungen nicht lesbar",
+    "settingsUnreadable": "Handy verwendet vorerst die Standardeinstellungen und ändert deine Einstellungsdatei nicht. Starte Handy neu, um es erneut zu versuchen.",
+    "settingsResetTitle": "Einige Einstellungen zurückgesetzt",
+    "settingsReset": "Ein Teil deiner Einstellungsdatei war nicht lesbar, daher wurden diese Einstellungen auf die Standardwerte zurückgesetzt. Die alte Datei wurde als Sicherung aufbewahrt.",
+    "settingsSaveFailedTitle": "Einstellungen nicht gespeichert",
+    "settingsSaveFailed": "Deine Änderungen gelten vorerst, gehen aber verloren, wenn Handy beendet wird."
   },
   "notices": {
     "errorOne": "{{n}} Fehler",

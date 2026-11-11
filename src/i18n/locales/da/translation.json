@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transskriberet uden efterbehandling",
     "filePostProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev gemt, som den er.",
     "fileTranscriptionFailedTitle": "Transskription af fil mislykkedes",
-    "transcriptionFailedTitle": "Transskription mislykkedes"
+    "transcriptionFailedTitle": "Transskription mislykkedes",
+    "settingsUnreadableTitle": "Kunne ikke læse indstillinger",
+    "settingsUnreadable": "Handy bruger standardindstillinger indtil videre og ændrer ikke din indstillingsfil. Genstart Handy for at prøve igen.",
+    "settingsResetTitle": "Nogle indstillinger blev nulstillet",
+    "settingsReset": "En del af din indstillingsfil kunne ikke læses, så de indstillinger er tilbage til standard. Din gamle fil er gemt som sikkerhedskopi.",
+    "settingsSaveFailedTitle": "Kunne ikke gemme indstillinger",
+    "settingsSaveFailed": "Dine ændringer gælder indtil videre, men går tabt, når Handy lukkes."
   },
   "notices": {
     "errorOne": "{{n}} fejl",

@@ -46,6 +46,18 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.filePostProcessFailedTitle",
     explanation: (t) => t("errors.filePostProcessFailed"),
   },
+  SettingsUnreadable: {
+    title: "errors.settingsUnreadableTitle",
+    explanation: (t) => t("errors.settingsUnreadable"),
+  },
+  SettingsReset: {
+    title: "errors.settingsResetTitle",
+    explanation: (t) => t("errors.settingsReset"),
+  },
+  SettingsSaveFailed: {
+    title: "errors.settingsSaveFailedTitle",
+    explanation: (t) => t("errors.settingsSaveFailed"),
+  },
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];

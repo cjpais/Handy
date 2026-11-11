@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Son işlem olmadan yazıya döküldü",
     "filePostProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi kaydedildi.",
     "fileTranscriptionFailedTitle": "Dosya transkripsiyonu başarısız oldu",
-    "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
+    "transcriptionFailedTitle": "Transkripsiyon başarısız oldu",
+    "settingsUnreadableTitle": "Ayarlar Okunamadı",
+    "settingsUnreadable": "Handy şimdilik varsayılan ayarları kullanıyor ve ayar dosyanızı değiştirmeyecek. Yeniden denemek için Handy'yi yeniden başlatın.",
+    "settingsResetTitle": "Bazı Ayarlar Sıfırlandı",
+    "settingsReset": "Ayar dosyanızın bir kısmı okunamadığı için bu ayarlar varsayılana döndü. Eski dosyanız yedek olarak saklandı.",
+    "settingsSaveFailedTitle": "Ayarlar Kaydedilemedi",
+    "settingsSaveFailed": "Değişiklikleriniz şimdilik geçerli, ancak Handy kapandığında kaybolacak."
   },
   "notices": {
     "errorOne": "{{n}} hata",

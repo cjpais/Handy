@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "已转录，未经后处理",
     "filePostProcessFailed": "后处理未完成，因此按原样保存转录内容。",
     "fileTranscriptionFailedTitle": "文件转录失败",
-    "transcriptionFailedTitle": "转录失败"
+    "transcriptionFailedTitle": "转录失败",
+    "settingsUnreadableTitle": "无法读取设置",
+    "settingsUnreadable": "Handy 暂时使用默认设置，不会修改你的设置文件。请重启 Handy 再试。",
+    "settingsResetTitle": "部分设置已重置",
+    "settingsReset": "设置文件中有部分内容无法读取，因此这些设置已恢复为默认值。旧文件已保留为备份。",
+    "settingsSaveFailedTitle": "无法保存设置",
+    "settingsSaveFailed": "你的更改暂时生效，但退出 Handy 后会丢失。"
   },
   "notices": {
     "errorOne": "{{n}} 个错误",

@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",
     "filePostProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis uložen beze změn.",
     "fileTranscriptionFailedTitle": "Přepis souboru selhal",
-    "transcriptionFailedTitle": "Přepis selhal"
+    "transcriptionFailedTitle": "Přepis selhal",
+    "settingsUnreadableTitle": "Nastavení nelze načíst",
+    "settingsUnreadable": "Handy zatím používá výchozí nastavení a soubor s nastavením nezmění. Zkuste to znovu po restartu Handy.",
+    "settingsResetTitle": "Některá nastavení byla obnovena",
+    "settingsReset": "Část souboru s nastavením nešla přečíst, takže tato nastavení jsou zpět na výchozích hodnotách. Původní soubor byl zálohován.",
+    "settingsSaveFailedTitle": "Nastavení nelze uložit",
+    "settingsSaveFailed": "Změny zatím platí, ale po ukončení Handy se ztratí."
   },
   "notices": {
     "errorOne": "{{n}} chyba",
