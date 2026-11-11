@@ -943,6 +943,8 @@
     "recordingFailedTitle": "録音の開始に失敗しました",
     "modelLoadFailed": "このモデルを読み込めませんでした。もう一度試すか、別のモデルを選択してください。",
     "modelLoadFailedTitle": "モデルの読み込みに失敗しました",
+    "noModelSelected": "設定 > モデルでモデルをダウンロードまたは選択してください。",
+    "noModelSelectedTitle": "モデルが選択されていません",
     "modelDownloadFailed": "ダウンロードに失敗しました",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
