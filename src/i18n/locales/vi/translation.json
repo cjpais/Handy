@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
     "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
     "fileTranscriptionFailedTitle": "Phiên âm tệp thất bại",
-    "transcriptionFailedTitle": "Phiên âm thất bại"
+    "transcriptionFailedTitle": "Phiên âm thất bại",
+    "settingsUnreadableTitle": "Không thể đọc cài đặt",
+    "settingsUnreadable": "Handy tạm thời dùng cài đặt mặc định và sẽ không thay đổi tệp cài đặt của bạn. Khởi động lại Handy để thử lại.",
+    "settingsResetTitle": "Một số cài đặt đã được đặt lại",
+    "settingsReset": "Không thể đọc một phần tệp cài đặt, nên các cài đặt đó đã trở về mặc định. Tệp cũ của bạn được giữ lại làm bản sao lưu.",
+    "settingsSaveFailedTitle": "Không thể lưu cài đặt",
+    "settingsSaveFailed": "Thay đổi của bạn có hiệu lực tạm thời, nhưng sẽ mất khi Handy thoát."
   },
   "notices": {
     "errorOne": "{{n}} lỗi",

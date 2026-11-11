@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "نُسخ بدون معالجة لاحقة",
     "filePostProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا حُفظ النص المنسوخ كما هو.",
     "fileTranscriptionFailedTitle": "فشل التفريغ النصي للملف",
-    "transcriptionFailedTitle": "فشل التفريغ النصي"
+    "transcriptionFailedTitle": "فشل التفريغ النصي",
+    "settingsUnreadableTitle": "تعذّرت قراءة الإعدادات",
+    "settingsUnreadable": "يستخدم Handy الإعدادات الافتراضية حاليًا ولن يغيّر ملف إعداداتك. أعد تشغيل Handy للمحاولة مجددًا.",
+    "settingsResetTitle": "تمت إعادة تعيين بعض الإعدادات",
+    "settingsReset": "تعذّرت قراءة جزء من ملف إعداداتك، لذا عادت تلك الإعدادات إلى قيمها الافتراضية. تم الاحتفاظ بملفك القديم كنسخة احتياطية.",
+    "settingsSaveFailedTitle": "تعذّر حفظ الإعدادات",
+    "settingsSaveFailed": "تسري تغييراتك الآن، لكنها ستُفقد عند إغلاق Handy."
   },
   "notices": {
     "errorOne": "{{n}} خطأ",

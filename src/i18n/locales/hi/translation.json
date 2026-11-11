@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "पोस्ट प्रोसेस के बिना ट्रांसक्राइब किया गया",
     "filePostProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही सहेजा गया।",
     "fileTranscriptionFailedTitle": "फ़ाइल का ट्रांसक्रिप्शन नहीं हो सका",
-    "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका"
+    "transcriptionFailedTitle": "ट्रांसक्रिप्शन नहीं हो सका",
+    "settingsUnreadableTitle": "सेटिंग्स पढ़ी नहीं जा सकीं",
+    "settingsUnreadable": "Handy अभी डिफ़ॉल्ट सेटिंग्स का उपयोग कर रहा है और आपकी सेटिंग्स फ़ाइल नहीं बदलेगा। फिर से कोशिश करने के लिए Handy को पुनः आरंभ करें।",
+    "settingsResetTitle": "कुछ सेटिंग्स रीसेट हो गईं",
+    "settingsReset": "आपकी सेटिंग्स फ़ाइल का कुछ हिस्सा पढ़ा नहीं जा सका, इसलिए वे सेटिंग्स डिफ़ॉल्ट पर लौट आई हैं। आपकी पुरानी फ़ाइल बैकअप के रूप में रखी गई है।",
+    "settingsSaveFailedTitle": "सेटिंग्स सहेजी नहीं जा सकीं",
+    "settingsSaveFailed": "आपके बदलाव अभी लागू हैं, लेकिन Handy बंद होने पर खो जाएँगे।"
   },
   "notices": {
     "errorOne": "{{n}} त्रुटि",

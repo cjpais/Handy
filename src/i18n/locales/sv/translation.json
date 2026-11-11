@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",
     "filePostProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen sparades som den är.",
     "fileTranscriptionFailedTitle": "Transkriptionen av filen misslyckades",
-    "transcriptionFailedTitle": "Transkriptionen misslyckades"
+    "transcriptionFailedTitle": "Transkriptionen misslyckades",
+    "settingsUnreadableTitle": "Kunde inte läsa inställningar",
+    "settingsUnreadable": "Handy använder standardinställningar tills vidare och ändrar inte din inställningsfil. Starta om Handy för att försöka igen.",
+    "settingsResetTitle": "Vissa inställningar återställdes",
+    "settingsReset": "En del av din inställningsfil kunde inte läsas, så de inställningarna är tillbaka till standard. Din gamla fil har sparats som säkerhetskopia.",
+    "settingsSaveFailedTitle": "Kunde inte spara inställningar",
+    "settingsSaveFailed": "Dina ändringar gäller tills vidare men försvinner när Handy avslutas."
   },
   "notices": {
     "errorOne": "{{n}} fel",

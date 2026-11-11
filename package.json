@@ -38,7 +38,6 @@
     "@tauri-apps/plugin-os": "~2.3.2",
     "@tauri-apps/plugin-process": "~2.3.1",
     "@tauri-apps/plugin-sql": "~2.3.1",
-    "@tauri-apps/plugin-store": "~2.4.1",
     "@tauri-apps/plugin-updater": "~2.10.1",
     "i18next": "^25.7.2",
     "immer": "^11.1.3",

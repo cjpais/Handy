@@ -26,14 +26,16 @@ pub enum NoticeLevel {
 }
 
 /// Each source has one slot in the store. Only dictation notices use the
-/// overlay: a file job finishes while the user is doing something else, and
-/// `Model` is a switch the user made in Settings or the tray.
+/// overlay: a file job finishes while the user is doing something else,
+/// `Model` is a switch the user made in Settings or the tray, and `Settings` is
+/// the settings file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum NoticeSource {
     Dictation,
     File,
     Model,
+    Settings,
 }
 
 /// The frontend maps each code to its text in `src/lib/notices.ts`.
@@ -48,6 +50,9 @@ pub enum NoticeCode {
     PostProcessFailed,
     FileTranscriptionFailed,
     FilePostProcessFailed,
+    SettingsUnreadable,
+    SettingsReset,
+    SettingsSaveFailed,
 }
 
 impl NoticeCode {
@@ -59,8 +64,12 @@ impl NoticeCode {
             | Self::MicPermissionDenied
             | Self::RecordingFailed
             | Self::ModelLoadFailed
-            | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            | Self::FileTranscriptionFailed
+            | Self::SettingsUnreadable
+            | Self::SettingsSaveFailed => NoticeLevel::Error,
+            Self::PostProcessFailed | Self::FilePostProcessFailed | Self::SettingsReset => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -76,6 +85,9 @@ impl NoticeCode {
             Self::PostProcessFailed => &strings.post_process_failed_title,
             Self::FileTranscriptionFailed => &strings.file_transcription_failed_title,
             Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
+            Self::SettingsUnreadable => &strings.settings_unreadable_title,
+            Self::SettingsReset => &strings.settings_reset_title,
+            Self::SettingsSaveFailed => &strings.settings_save_failed_title,
         }
     }
 }

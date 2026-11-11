@@ -1356,7 +1356,7 @@ detail: string | null }
 /**
  * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | "SettingsUnreadable" | "SettingsReset" | "SettingsSaveFailed"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Handy can't do its job.
@@ -1368,10 +1368,11 @@ export type NoticeLevel =
 "warning"
 /**
  * Each source has one slot in the store. Only dictation notices use the
- * overlay: a file job finishes while the user is doing something else, and
- * `Model` is a switch the user made in Settings or the tray.
+ * overlay: a file job finishes while the user is doing something else,
+ * `Model` is a switch the user made in Settings or the tray, and `Settings` is
+ * the settings file.
  */
-export type NoticeSource = "dictation" | "file" | "model"
+export type NoticeSource = "dictation" | "file" | "model" | "settings"
 export type NoticesChanged = { 
 /**
  * Every active notice, newest first.

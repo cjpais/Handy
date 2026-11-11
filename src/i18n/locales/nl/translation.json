@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Getranscribeerd zonder naverwerking",
     "filePostProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd opgeslagen.",
     "fileTranscriptionFailedTitle": "Transcriptie van bestand mislukt",
-    "transcriptionFailedTitle": "Transcriptie mislukt"
+    "transcriptionFailedTitle": "Transcriptie mislukt",
+    "settingsUnreadableTitle": "Instellingen niet leesbaar",
+    "settingsUnreadable": "Handy gebruikt voorlopig de standaardinstellingen en wijzigt je instellingenbestand niet. Start Handy opnieuw om het nog eens te proberen.",
+    "settingsResetTitle": "Sommige instellingen zijn hersteld",
+    "settingsReset": "Een deel van je instellingenbestand was niet leesbaar, dus die instellingen staan weer op standaard. Je oude bestand is als back-up bewaard.",
+    "settingsSaveFailedTitle": "Instellingen niet opgeslagen",
+    "settingsSaveFailed": "Je wijzigingen gelden voorlopig, maar gaan verloren als Handy afsluit."
   },
   "notices": {
     "errorOne": "{{n}} fout",

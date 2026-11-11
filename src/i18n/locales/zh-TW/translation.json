@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "已轉錄，未經後處理",
     "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
     "fileTranscriptionFailedTitle": "檔案轉錄失敗",
-    "transcriptionFailedTitle": "轉錄失敗"
+    "transcriptionFailedTitle": "轉錄失敗",
+    "settingsUnreadableTitle": "無法讀取設定",
+    "settingsUnreadable": "Handy 暫時使用預設設定，不會變更你的設定檔。請重新啟動 Handy 再試一次。",
+    "settingsResetTitle": "部分設定已重設",
+    "settingsReset": "設定檔中有部分內容無法讀取，因此這些設定已恢復為預設值。舊檔案已保留為備份。",
+    "settingsSaveFailedTitle": "無法儲存設定",
+    "settingsSaveFailed": "你的變更暫時有效，但結束 Handy 後會遺失。"
   },
   "notices": {
     "errorOne": "{{n}} 個錯誤",

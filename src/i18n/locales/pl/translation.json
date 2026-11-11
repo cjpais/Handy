@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
     "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
     "fileTranscriptionFailedTitle": "Transkrypcja pliku nie powiodła się",
-    "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
+    "transcriptionFailedTitle": "Transkrypcja nie powiodła się",
+    "settingsUnreadableTitle": "Nie można odczytać ustawień",
+    "settingsUnreadable": "Handy na razie używa ustawień domyślnych i nie zmieni pliku ustawień. Uruchom Handy ponownie, aby spróbować jeszcze raz.",
+    "settingsResetTitle": "Niektóre ustawienia zostały zresetowane",
+    "settingsReset": "Części pliku ustawień nie udało się odczytać, więc te ustawienia wróciły do wartości domyślnych. Stary plik zachowano jako kopię zapasową.",
+    "settingsSaveFailedTitle": "Nie można zapisać ustawień",
+    "settingsSaveFailed": "Zmiany działają na razie, ale zostaną utracone po zamknięciu Handy."
   },
   "notices": {
     "errorOne": "{{n}} błąd",

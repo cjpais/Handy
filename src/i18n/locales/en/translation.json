@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transcribed Without Post-Processing",
     "filePostProcessFailed": "Post Process didn't finish, so the transcript was saved as is.",
     "fileTranscriptionFailedTitle": "File Transcription Failed",
-    "transcriptionFailedTitle": "Transcription Failed"
+    "transcriptionFailedTitle": "Transcription Failed",
+    "settingsUnreadableTitle": "Failed to Read Settings",
+    "settingsUnreadable": "Handy is using default settings for now and won't change your settings file. Restart Handy to try again.",
+    "settingsResetTitle": "Some Settings Were Reset",
+    "settingsReset": "Part of your settings file couldn't be read, so those settings are back to their defaults. Your old file was kept as a backup.",
+    "settingsSaveFailedTitle": "Failed to Save Settings",
+    "settingsSaveFailed": "Your changes apply for now, but will be lost when Handy quits."
   },
   "notices": {
     "errorOne": "{{n}} error",

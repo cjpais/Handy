@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Transcrito sem pós-processamento",
     "filePostProcessFailed": "O pós-processamento não terminou, então a transcrição foi salva como está.",
     "fileTranscriptionFailedTitle": "Falha na transcrição do arquivo",
-    "transcriptionFailedTitle": "Falha na transcrição"
+    "transcriptionFailedTitle": "Falha na transcrição",
+    "settingsUnreadableTitle": "Não foi possível ler as configurações",
+    "settingsUnreadable": "O Handy está usando as configurações padrão por enquanto e não vai alterar seu arquivo de configurações. Reinicie o Handy para tentar novamente.",
+    "settingsResetTitle": "Algumas configurações foram redefinidas",
+    "settingsReset": "Parte do seu arquivo de configurações não pôde ser lida, então essas configurações voltaram ao padrão. Seu arquivo antigo foi mantido como backup.",
+    "settingsSaveFailedTitle": "Não foi possível salvar as configurações",
+    "settingsSaveFailed": "Suas alterações valem por enquanto, mas serão perdidas quando o Handy for fechado."
   },
   "notices": {
     "errorOne": "{{n}} erro",

@@ -951,7 +951,13 @@
     "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
     "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
     "fileTranscriptionFailedTitle": "Trascrizione del file non riuscita",
-    "transcriptionFailedTitle": "Trascrizione non riuscita"
+    "transcriptionFailedTitle": "Trascrizione non riuscita",
+    "settingsUnreadableTitle": "Impossibile leggere le impostazioni",
+    "settingsUnreadable": "Per ora Handy usa le impostazioni predefinite e non modificherà il file delle impostazioni. Riavvia Handy per riprovare.",
+    "settingsResetTitle": "Alcune impostazioni sono state ripristinate",
+    "settingsReset": "Una parte del file delle impostazioni non era leggibile, quindi quelle impostazioni sono tornate ai valori predefiniti. Il vecchio file è stato conservato come backup.",
+    "settingsSaveFailedTitle": "Impossibile salvare le impostazioni",
+    "settingsSaveFailed": "Le modifiche valgono per ora, ma andranno perse alla chiusura di Handy."
   },
   "notices": {
     "errorOne": "{{n}} errore",
