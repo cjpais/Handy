@@ -176,10 +176,10 @@ const RecordingOverlay: React.FC = () => {
         if (payload.kind) setWorkKind(payload.kind);
       });
 
-      // The backend ends every `loading_started` with exactly one of completed
-      // or failed, so only those end a load. Other events (e.g. `unloaded` from
-      // the idle watcher) aren't ordered against an in-flight load and must not
-      // clear it.
+      // The backend ends every `loading_started` with exactly one of completed,
+      // failed or cancelled, so only those end a load. Other events (e.g.
+      // `unloaded` from the idle watcher) can arrive during a load and must
+      // not clear it.
       const unlistenModel = await listen<ModelStateEvent>(
         "model-state-changed",
         (event) => {
@@ -194,7 +194,8 @@ const RecordingOverlay: React.FC = () => {
             );
           } else if (
             type === "loading_completed" ||
-            type === "loading_failed"
+            type === "loading_failed" ||
+            type === "loading_cancelled"
           ) {
             clearTimeout(modelLoadTimerRef.current);
             setModelLoading(false);

@@ -3,6 +3,7 @@
 // `Mutex`, `MutexGuard`, `AtomicU64`, `Ordering`, `mpsc`, `thread`, `PauseSlot`,
 // `pause` and `report_exit` in scope.
 
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::time::SystemTime;
@@ -271,11 +272,13 @@ mod notices {
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/manager_types.rs"));
+
 struct TranscriptionManager {
     engine: EngineSupervisor,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
-    current_model_id: Arc<Mutex<Option<String>>>,
+    model_state: Arc<Mutex<ModelState>>,
     last_activity: AtomicU64,
     language_detector: LanguageDetector,
 }
@@ -312,7 +315,7 @@ impl World {
             engine: EngineSupervisor { commands, shared },
             model_manager: Arc::new(ModelManager::default()),
             app_handle: AppHandle(Arc::new(app)),
-            current_model_id: Arc::new(Mutex::new(None)),
+            model_state: Arc::new(Mutex::new(ModelState::default())),
             last_activity: AtomicU64::new(0),
             language_detector: LanguageDetector,
         });

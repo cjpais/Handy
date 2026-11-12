@@ -26,6 +26,7 @@ use log::{debug, error, info, warn};
 use policy::{batch_decode, live_decode, BatchDecode, ModelTraits};
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::collections::VecDeque;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard};
@@ -241,6 +242,18 @@ impl Drop for StreamWorkerGuard {
     }
 }
 
+/// What the manager has told the rest of the app about the engine's model:
+/// the id other code reads and the events the frontend replays. One lock
+/// covers both, so the events go out in the order the id changed.
+#[derive(Default)]
+struct ModelState {
+    current_model_id: Option<String>,
+    /// `model-state-changed` events not emitted yet, oldest first.
+    outbox: VecDeque<ModelStateEvent>,
+    /// A thread is emitting the outbox, and takes what is queued meanwhile.
+    emitting: bool,
+}
+
 #[derive(Clone)]
 pub struct TranscriptionManager {
     /// The transcribe-cpp engine: owns the worker process, its model, and
@@ -248,7 +261,7 @@ pub struct TranscriptionManager {
     engine: EngineSupervisor,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
-    current_model_id: Arc<Mutex<Option<String>>>,
+    model_state: Arc<Mutex<ModelState>>,
     last_activity: Arc<AtomicU64>,
     shutdown_signal: Arc<AtomicBool>,
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
@@ -286,7 +299,7 @@ impl TranscriptionManager {
             engine: EngineSupervisor::new(!transcribe_gpu_disabled_for_host()),
             model_manager,
             app_handle: app_handle.clone(),
-            current_model_id: Arc::new(Mutex::new(None)),
+            model_state: Arc::new(Mutex::new(ModelState::default())),
             last_activity: Arc::new(AtomicU64::new(Self::now_ms())),
             shutdown_signal: Arc::new(AtomicBool::new(false)),
             watcher_handle: Arc::new(Mutex::new(None)),
@@ -403,26 +416,42 @@ impl TranscriptionManager {
         if self.engine.loaded().is_some() {
             return;
         }
-        {
-            let mut current_model = self.current_model_id.lock().unwrap();
-            if current_model.as_deref() != Some(model_id) {
+        self.publish(|state| {
+            if state.current_model_id.as_deref() != Some(model_id) {
                 return;
             }
-            *current_model = None;
-        }
-        warn!(
-            "Transcription model '{}' is no longer loaded: {}",
-            model_id, error
-        );
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
+            state.current_model_id = None;
+            warn!(
+                "Transcription model '{}' is no longer loaded: {}",
+                model_id, error
+            );
+            state.outbox.push_back(ModelStateEvent {
                 event_type: "unloaded".to_string(),
                 model_id: None,
                 model_name: None,
                 error: Some(error.to_string()),
-            },
-        );
+            });
+        });
+    }
+
+    /// Apply `change` to the published model state as one step, then emit
+    /// the events it queued. They are emitted after the lock is released, by
+    /// one thread at a time: the frontend gets them in the order the state
+    /// changed, and a listener that waits on the main thread can't hold up
+    /// an unload called from it.
+    fn publish<T>(&self, change: impl FnOnce(&mut ModelState) -> T) -> T {
+        let mut state = self.model_state.lock().unwrap();
+        let result = change(&mut state);
+        if state.outbox.is_empty() || std::mem::replace(&mut state.emitting, true) {
+            return result;
+        }
+        while let Some(event) = state.outbox.pop_front() {
+            drop(state);
+            let _ = self.app_handle.emit("model-state-changed", event);
+            state = self.model_state.lock().unwrap();
+        }
+        state.emitting = false;
+        result
     }
 
     /// Atomically check whether a model load is in progress and, if not, mark
@@ -466,23 +495,21 @@ impl TranscriptionManager {
     /// its load is queued behind this unload, so the unload can never affect
     /// it. Only the worker's exit is left to wait for.
     fn begin_unload(&self) -> Unloading {
-        let unloading = self.engine.unload();
-        self.language_detector.unload();
-        {
-            let mut current_model = self.current_model_id.lock().unwrap();
-            *current_model = None;
-        }
-
-        // Emit unloaded event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
+        // The engine and the published state change in one step. Done apart,
+        // a load queued behind this unload could publish its model before
+        // the id is cleared here, and lose it.
+        let unloading = self.publish(|state| {
+            let unloading = self.engine.unload();
+            state.current_model_id = None;
+            state.outbox.push_back(ModelStateEvent {
                 event_type: "unloaded".to_string(),
                 model_id: None,
                 model_name: None,
                 error: None,
-            },
-        );
+            });
+            unloading
+        });
+        self.language_detector.unload();
         unloading
     }
 
@@ -533,30 +560,27 @@ impl TranscriptionManager {
         let load_start = std::time::Instant::now();
         debug!("Starting to load model: {}", model_id);
 
-        // Emit loading started event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
+        self.publish(|state| {
+            state.outbox.push_back(ModelStateEvent {
                 event_type: "loading_started".to_string(),
                 model_id: Some(model_id.to_string()),
                 model_name: None,
                 error: None,
-            },
-        );
+            })
+        });
 
         let model_info = match self.model_manager.get_model_info(model_id) {
             Some(model_info) => model_info,
             None => {
                 let error_msg = format!("Model not found: {}", model_id);
-                let _ = self.app_handle.emit(
-                    "model-state-changed",
-                    ModelStateEvent {
+                self.publish(|state| {
+                    state.outbox.push_back(ModelStateEvent {
                         event_type: "loading_failed".to_string(),
                         model_id: Some(model_id.to_string()),
                         model_name: None,
                         error: Some(error_msg.clone()),
-                    },
-                );
+                    })
+                });
                 return Err(anyhow::anyhow!(error_msg));
             }
         };
@@ -564,15 +588,14 @@ impl TranscriptionManager {
         // Every failure after loading starts must emit a terminal event so the
         // frontend can never remain in its loading state.
         let emit_loading_failed = |error_msg: &str| {
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
+            self.publish(|state| {
+                state.outbox.push_back(ModelStateEvent {
                     event_type: "loading_failed".to_string(),
                     model_id: Some(model_id.to_string()),
                     model_name: Some(model_info.name.clone()),
                     error: Some(error_msg.to_string()),
-                },
-            );
+                })
+            });
         };
 
         if !model_info.is_downloaded {
@@ -588,10 +611,7 @@ impl TranscriptionManager {
 
         // Clear the id before loading: if the new load fails, status should
         // read "no loaded model", not the model the worker is replacing.
-        {
-            let mut current_model = self.current_model_id.lock().unwrap();
-            *current_model = None;
-        }
+        self.model_state.lock().unwrap().current_model_id = None;
 
         // The backend is chosen at load time. With an explicit
         // `device_index` (the --device-index flag) hard-select that
@@ -657,25 +677,35 @@ impl TranscriptionManager {
             caps.supports_language_detect
         );
 
-        // Update the current model ID
-        {
-            let mut current_model = self.current_model_id.lock().unwrap();
-            *current_model = Some(model_id.to_string());
+        // An unload requested while this load ran is queued behind it, and
+        // the engine reads as unloaded from that request on. Report the model
+        // loaded only while the engine still holds it, so a finished load
+        // can't restore what an unload has already cleared.
+        let loaded = self.publish(|state| {
+            let loaded = self.engine.loaded().is_some();
+            if loaded {
+                state.current_model_id = Some(model_id.to_string());
+            }
+            let event_type = if loaded {
+                "loading_completed"
+            } else {
+                "loading_cancelled"
+            };
+            state.outbox.push_back(ModelStateEvent {
+                event_type: event_type.to_string(),
+                model_id: Some(model_id.to_string()),
+                model_name: Some(model_info.name.clone()),
+                error: None,
+            });
+            loaded
+        });
+        if !loaded {
+            debug!("Model '{}' was unloaded while it loaded", model_id);
+            return Ok(());
         }
 
         // Reset idle timer so the watcher doesn't immediately unload a just-loaded model
         self.touch_activity();
-
-        // Emit loading completed event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "loading_completed".to_string(),
-                model_id: Some(model_id.to_string()),
-                model_name: Some(model_info.name.clone()),
-                error: None,
-            },
-        );
         // Only this code: the source's other notices aren't about the model.
         for source in [NoticeSource::Dictation, NoticeSource::Model] {
             for code in [NoticeCode::ModelLoadFailed, NoticeCode::NoModelSelected] {
@@ -767,8 +797,7 @@ impl TranscriptionManager {
     }
 
     pub fn get_current_model(&self) -> Option<String> {
-        let current_model = self.current_model_id.lock().unwrap();
-        current_model.clone()
+        self.model_state.lock().unwrap().current_model_id.clone()
     }
 
     /// The compute backend the currently-loaded engine is bound to, for
@@ -2411,12 +2440,12 @@ impl Drop for TranscriptionManager {
         // Skip shutdown unless this is the very last clone. TranscriptionManager
         // is cloned by initiate_model_load() and the watcher thread — those
         // clones dropping must not kill the watcher. The watcher thread holds
-        // its own clone, so current_model_id's strong_count is always >= 2 while
-        // the watcher is alive. (current_model_id is only ever cloned along with
+        // its own clone, so model_state's strong_count is always >= 2 while
+        // the watcher is alive. (model_state is only ever cloned along with
         // the manager; shutdown_signal is not, since the watcher also holds a
         // standalone clone of it.) When it reaches 1, only this instance
         // remains and we can safely shut down.
-        if Arc::strong_count(&self.current_model_id) > 1 {
+        if Arc::strong_count(&self.model_state) > 1 {
             return;
         }
 

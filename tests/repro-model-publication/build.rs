@@ -12,6 +12,7 @@ fn main() {
         &[
             "pub fn load_model_with_device(&self, model_id: &str, device_index: Option<usize>,) -> Result<()>",
             "fn begin_unload(&self) -> Unloading",
+            "fn publish<T>(&self, change: impl FnOnce(&mut ModelState) -> T) -> T",
             "pub fn request_unload(&self)",
             "fn forget_model_if_engine_dropped(&self, model_id: &str, error: &str)",
             "pub fn get_current_model(&self) -> Option<String>",
@@ -38,6 +39,11 @@ fn main() {
         &["fn publish_loaded(&self, info: &LoadedInfo)"],
     );
     let out = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    fs::write(
+        out.join("manager_types.rs"),
+        extract_struct(MANAGER, "ModelState"),
+    )
+    .unwrap();
     fs::write(out.join("manager_methods.rs"), manager.0).unwrap();
     fs::write(
         out.join("engine_methods.rs"),
@@ -56,6 +62,18 @@ fn parse(relative: &str) -> syn::File {
         .join(relative);
     println!("cargo:rerun-if-changed={}", source.display());
     syn::parse_file(&fs::read_to_string(&source).unwrap()).unwrap()
+}
+
+/// The one top-level struct with this name, as written.
+fn extract_struct(relative: &str, name: &str) -> String {
+    let file = parse(relative);
+    let matches: Vec<_> = file
+        .items
+        .iter()
+        .filter(|item| matches!(item, Item::Struct(item) if item.ident == name))
+        .collect();
+    assert_eq!(matches.len(), 1, "expected one struct {name}");
+    matches[0].to_token_stream().to_string()
 }
 
 /// The inherent methods of `type_name` with exactly these signatures, as one
