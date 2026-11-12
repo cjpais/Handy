@@ -69,10 +69,9 @@
         "why": "Para que tu atajo funcione en cualquier app y Handy pueda escribir el texto donde está tu cursor."
       },
       "remoteDesktop": {
-        "title": "Autorización de escritura",
-        "description": "Permite que Handy inserte automáticamente el texto dictado en la aplicación activa.",
+        "name": "Autorización de escritura",
+        "why": "Permite que Handy inserte automáticamente el texto dictado en la aplicación activa.",
         "note": "Puedes desactivar o activar este permiso en cualquier momento desde los ajustes.",
-        "button": "Permitir escritura automática",
         "skipButton": "Ahora no",
         "warningTooltip": "Autorización de escritura no configurada",
         "configured": "Configurada",
@@ -83,8 +82,9 @@
         "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
       },
       "titleMac": "Dos permisos y listo",
-      "titleWindows": "Un permiso y listo",
+      "titleSingle": "Un permiso y listo",
       "subtitleMac": "macOS pregunta antes de que una app pueda escuchar o escribir.",
+      "subtitleWayland": "Wayland pide permiso antes de que Handy pueda escribir en otras aplicaciones.",
       "subtitleWindows": "Windows pregunta antes de que una app pueda escuchar.",
       "allow": "Permitir",
       "openSettings": "Abrir configuración",

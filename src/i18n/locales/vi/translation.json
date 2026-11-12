@@ -69,10 +69,9 @@
         "why": "Để phím tắt của bạn hoạt động trong mọi ứng dụng, và Handy có thể gõ văn bản vào nơi con trỏ của bạn đang đứng."
       },
       "remoteDesktop": {
-        "title": "Quyền nhập",
-        "description": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
+        "name": "Quyền nhập",
+        "why": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
         "note": "Bạn có thể tắt hoặc bật quyền này bất cứ lúc nào trong phần cài đặt.",
-        "button": "Cho phép nhập tự động",
         "skipButton": "Để sau",
         "warningTooltip": "Quyền nhập chưa được cấu hình",
         "configured": "Đã cấu hình",
@@ -83,8 +82,9 @@
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
       },
       "titleMac": "Hai quyền, rồi là xong",
-      "titleWindows": "Một quyền, rồi là xong",
+      "titleSingle": "Một quyền, rồi là xong",
       "subtitleMac": "macOS sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe hoặc gõ.",
+      "subtitleWayland": "Wayland yêu cầu quyền trước khi Handy có thể nhập văn bản vào ứng dụng khác.",
       "subtitleWindows": "Windows sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe.",
       "allow": "Cho phép",
       "openSettings": "Mở cài đặt",

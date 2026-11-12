@@ -69,10 +69,9 @@
         "why": "Aby vaše zkratka fungovala v každé aplikaci a Handy mohl psát text tam, kde máte kurzor."
       },
       "remoteDesktop": {
-        "title": "Oprávnění pro psaní",
-        "description": "Povolte Handy automaticky vkládat diktovaný text do aktivní aplikace.",
+        "name": "Oprávnění pro psaní",
+        "why": "Povolte Handy automaticky vkládat diktovaný text do aktivní aplikace.",
         "note": "Toto oprávnění můžete kdykoli vypnout nebo zapnout v nastavení.",
-        "button": "Povolit automatické psaní",
         "skipButton": "Teď ne",
         "warningTooltip": "Oprávnění pro psaní není nastavené",
         "configured": "Nastavené",
@@ -83,8 +82,9 @@
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
       },
       "titleMac": "Dvě oprávnění a máte hotovo",
-      "titleWindows": "Jedno oprávnění a máte hotovo",
+      "titleSingle": "Jedno oprávnění a máte hotovo",
       "subtitleMac": "macOS se zeptá, než jakákoli aplikace smí poslouchat nebo psát.",
+      "subtitleWayland": "Wayland vyžaduje povolení, než bude Handy moci psát do jiných aplikací.",
       "subtitleWindows": "Windows se zeptá, než jakákoli aplikace smí poslouchat.",
       "allow": "Povolit",
       "openSettings": "Otevřít nastavení",

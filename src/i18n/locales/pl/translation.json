@@ -69,10 +69,9 @@
         "why": "Żeby Twój skrót działał w każdej aplikacji, a Handy mogło wpisywać tekst tam, gdzie jest kursor."
       },
       "remoteDesktop": {
-        "title": "Uprawnienie do pisania",
-        "description": "Pozwól Handy automatycznie wstawiać podyktowany tekst do aktywnej aplikacji.",
+        "name": "Uprawnienie do pisania",
+        "why": "Pozwól Handy automatycznie wstawiać podyktowany tekst do aktywnej aplikacji.",
         "note": "Możesz w każdej chwili wyłączyć lub włączyć to uprawnienie w ustawieniach.",
-        "button": "Zezwól na automatyczne pisanie",
         "skipButton": "Nie teraz",
         "warningTooltip": "Uprawnienie do pisania nie jest skonfigurowane",
         "configured": "Skonfigurowane",
@@ -83,8 +82,9 @@
         "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
       },
       "titleMac": "Dwa uprawnienia i gotowe",
-      "titleWindows": "Jedno uprawnienie i gotowe",
+      "titleSingle": "Jedno uprawnienie i gotowe",
       "subtitleMac": "macOS pyta, zanim jakakolwiek aplikacja będzie mogła słuchać lub pisać.",
+      "subtitleWayland": "Wayland prosi o pozwolenie, zanim Handy będzie mógł pisać w innych aplikacjach.",
       "subtitleWindows": "Windows pyta, zanim jakakolwiek aplikacja będzie mogła słuchać.",
       "allow": "Zezwól",
       "openSettings": "Otwórz ustawienia",

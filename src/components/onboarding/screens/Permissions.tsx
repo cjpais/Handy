@@ -87,6 +87,12 @@ interface PermissionsProps {
   onContinue: () => void;
 }
 
+const PERMISSION_ICONS = {
+  microphone: Mic,
+  accessibility: Keyboard,
+  remoteDesktop: ScreenShare,
+};
+
 /** Permission rows for the current platform, with optional Wayland typing. */
 export const Permissions: React.FC<PermissionsProps> = ({
   permissions,
@@ -98,9 +104,11 @@ export const Permissions: React.FC<PermissionsProps> = ({
   const { welcomeBack, preview, set } = useOnboardingStore();
   const isMac = permissions.platform === "macos";
   const isWayland = permissions.platform === "linux-wayland";
-  const rows = isMac
-    ? (["microphone", "accessibility"] as const)
-    : (["microphone"] as const);
+  const rows = isWayland
+    ? (["remoteDesktop"] as const)
+    : isMac
+      ? (["microphone", "accessibility"] as const)
+      : (["microphone"] as const);
   const next = rows.find((r) => permissions[r] !== "granted");
   // Asking for the microphone opens the OS settings on Windows, and on macOS
   // once it has asked: then the row says what to turn on there.
@@ -168,15 +176,13 @@ export const Permissions: React.FC<PermissionsProps> = ({
               )
             }
             title={t(
-              isWayland
-                ? "onboarding.permissions.remoteDesktop.title"
-                : isMac
-                  ? "onboarding.permissions.titleMac"
-                  : "onboarding.permissions.titleWindows",
+              isMac
+                ? "onboarding.permissions.titleMac"
+                : "onboarding.permissions.titleSingle",
             )}
             sub={t(
               isWayland
-                ? "onboarding.permissions.remoteDesktop.note"
+                ? "onboarding.permissions.subtitleWayland"
                 : isMac
                   ? "onboarding.permissions.subtitleMac"
                   : "onboarding.permissions.subtitleWindows",
@@ -185,47 +191,41 @@ export const Permissions: React.FC<PermissionsProps> = ({
         }
       >
         <div className="flex w-full flex-col rounded-panel border border-line-strong px-[22px] py-[4px] text-start">
-          {isWayland ? (
-            <PermissionRow
-              icon={<ScreenShare size={20} aria-hidden="true" />}
-              title={t("onboarding.permissions.remoteDesktop.title")}
-              why={t("onboarding.permissions.remoteDesktop.description")}
-              status={permissions.remoteDesktop}
-              next
-              action={t("onboarding.permissions.remoteDesktop.button")}
-              onRequest={permissions.requestRemoteDesktop}
-            />
-          ) : (
-            <PermissionRow
-              icon={<Mic size={20} aria-hidden="true" />}
-              title={t("onboarding.permissions.microphone.name")}
-              why={t("onboarding.permissions.microphone.why")}
-              status={permissions.microphone}
-              next={next === "microphone"}
-              action={t(
-                permissions.microphoneAsked && isMac
-                  ? "onboarding.permissions.openSettings"
-                  : "onboarding.permissions.allow",
-              )}
-              instruction={micInSettings ? turnOn : undefined}
-              onRequest={() => {
-                setMicInSettings(!isMac || permissions.microphoneAsked);
-                permissions.requestMicrophone();
-              }}
-            />
-          )}
-          {isMac && (
-            <PermissionRow
-              icon={<Keyboard size={20} aria-hidden="true" />}
-              title={t("onboarding.permissions.accessibility.name")}
-              why={t("onboarding.permissions.accessibility.why")}
-              status={permissions.accessibility}
-              next={next === "accessibility"}
-              action={t("onboarding.permissions.allow")}
-              instruction={turnOn}
-              onRequest={permissions.requestAccessibility}
-            />
-          )}
+          {rows.map((permission) => {
+            const Icon = PERMISSION_ICONS[permission];
+            const isMicrophone = permission === "microphone";
+            return (
+              <PermissionRow
+                key={permission}
+                icon={<Icon size={20} aria-hidden="true" />}
+                title={t(`onboarding.permissions.${permission}.name`)}
+                why={t(`onboarding.permissions.${permission}.why`)}
+                status={permissions[permission]}
+                next={next === permission}
+                action={t(
+                  isMicrophone && permissions.microphoneAsked && isMac
+                    ? "onboarding.permissions.openSettings"
+                    : "onboarding.permissions.allow",
+                )}
+                instruction={
+                  permission === "accessibility" ||
+                  (isMicrophone && micInSettings)
+                    ? turnOn
+                    : undefined
+                }
+                onRequest={() => {
+                  if (isMicrophone) {
+                    setMicInSettings(!isMac || permissions.microphoneAsked);
+                    permissions.requestMicrophone();
+                  } else if (permission === "accessibility") {
+                    permissions.requestAccessibility();
+                  } else {
+                    permissions.requestRemoteDesktop();
+                  }
+                }}
+              />
+            );
+          })}
         </div>
         <p
           className={`mt-[18px] mb-0 text-small text-ink-3 ${

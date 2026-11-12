@@ -73,18 +73,18 @@
         "requestFailed": "Kunne ikke anmode om tilladelse. Prøv igen."
       },
       "remoteDesktop": {
-        "title": "Skrivetilladelse",
-        "description": "Tillad Handy at indsætte dikteret tekst automatisk i den aktive app.",
+        "name": "Skrivetilladelse",
+        "why": "Tillad Handy at indsætte dikteret tekst automatisk i den aktive app.",
         "note": "Du kan til enhver tid slå denne tilladelse til eller fra i indstillingerne.",
-        "button": "Tillad automatisk indtastning",
         "skipButton": "Ikke nu",
         "warningTooltip": "Skrivetilladelse er ikke konfigureret",
         "configured": "Konfigureret",
         "notConfigured": "Konfiguration er påkrævet"
       },
       "titleMac": "To tilladelser, så er du klar",
-      "titleWindows": "Én tilladelse, så er du klar",
+      "titleSingle": "Én tilladelse, så er du klar",
       "subtitleMac": "macOS spørger, før en app må lytte eller skrive.",
+      "subtitleWayland": "Wayland beder om tilladelse, før Handy kan skrive i andre apps.",
       "subtitleWindows": "Windows spørger, før en app må lytte.",
       "allow": "Tillad",
       "openSettings": "Åbn indstillinger",

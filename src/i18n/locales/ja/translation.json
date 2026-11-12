@@ -69,10 +69,9 @@
         "why": "どのアプリでもショートカットが使え、Handy がカーソル位置にテキストを入力できるようにします。"
       },
       "remoteDesktop": {
-        "title": "入力の許可",
-        "description": "Handy が音声入力したテキストをアクティブなアプリへ自動的に挿入できるようにします。",
+        "name": "入力の許可",
+        "why": "Handy が音声入力したテキストをアクティブなアプリへ自動的に挿入できるようにします。",
         "note": "この権限は設定からいつでも無効化または有効化できます。",
-        "button": "自動入力を許可",
         "skipButton": "今はしない",
         "warningTooltip": "入力の許可が設定されていません",
         "configured": "設定済み",
@@ -83,8 +82,9 @@
         "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
       },
       "titleMac": "許可は2つだけで準備完了です",
-      "titleWindows": "許可は1つだけで準備完了です",
+      "titleSingle": "許可は1つだけで準備完了です",
       "subtitleMac": "macOS では、アプリが音声を聞いたり入力したりする前に許可が求められます。",
+      "subtitleWayland": "Wayland では、Handy が他のアプリに入力する前に許可が必要です。",
       "subtitleWindows": "Windows では、アプリが音声を聞く前に許可が求められます。",
       "allow": "許可",
       "openSettings": "設定を開く",

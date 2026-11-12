@@ -73,18 +73,18 @@
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
       },
       "remoteDesktop": {
-        "title": "Autorització d’escriptura",
-        "description": "Permeteu que Handy insereixi automàticament el text dictat a l’aplicació activa.",
+        "name": "Autorització d’escriptura",
+        "why": "Permeteu que Handy insereixi automàticament el text dictat a l’aplicació activa.",
         "note": "Podeu activar o desactivar aquest permís en qualsevol moment a la configuració.",
-        "button": "Permet l’escriptura automàtica",
         "skipButton": "Ara no",
         "warningTooltip": "L’autorització d’escriptura no està configurada",
         "configured": "Configurada",
         "notConfigured": "Cal configurar-la"
       },
       "titleMac": "Dos permisos i ja està",
-      "titleWindows": "Un permís i ja està",
+      "titleSingle": "Un permís i ja està",
       "subtitleMac": "El macOS pregunta abans que qualsevol aplicació pugui escoltar o escriure.",
+      "subtitleWayland": "Wayland demana permís abans que Handy pugui escriure en altres aplicacions.",
       "subtitleWindows": "El Windows pregunta abans que qualsevol aplicació pugui escoltar.",
       "allow": "Permet",
       "openSettings": "Obre la configuració",

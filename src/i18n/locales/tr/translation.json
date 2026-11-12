@@ -69,10 +69,9 @@
         "why": "Kısayolunuz her uygulamada çalışsın ve Handy metni imlecinizin bulunduğu yere yazabilsin diye."
       },
       "remoteDesktop": {
-        "title": "Yazma izni",
-        "description": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
+        "name": "Yazma izni",
+        "why": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
         "note": "Bu izni ayarlardan istediğiniz zaman devre dışı bırakabilir veya etkinleştirebilirsiniz.",
-        "button": "Otomatik yazmaya izin ver",
         "skipButton": "Şimdi değil",
         "warningTooltip": "Yazma izni yapılandırılmadı",
         "configured": "Yapılandırıldı",
@@ -83,8 +82,9 @@
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."
       },
       "titleMac": "İki izin, sonra hazırsınız",
-      "titleWindows": "Bir izin, sonra hazırsınız",
+      "titleSingle": "Bir izin, sonra hazırsınız",
       "subtitleMac": "macOS, bir uygulamanın dinlemesine veya yazmasına izin vermeden önce sorar.",
+      "subtitleWayland": "Wayland, Handy'nin diğer uygulamalarda yazabilmesi için izin ister.",
       "subtitleWindows": "Windows, bir uygulamanın dinlemesine izin vermeden önce sorar.",
       "allow": "İzin ver",
       "openSettings": "Ayarları aç",

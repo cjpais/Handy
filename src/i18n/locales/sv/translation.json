@@ -69,10 +69,9 @@
         "why": "Så att din genväg fungerar i alla appar och Handy kan skriva texten där markören står."
       },
       "remoteDesktop": {
-        "title": "Skrivbehörighet",
-        "description": "Tillåt Handy att automatiskt infoga dikterad text i den aktiva appen.",
+        "name": "Skrivbehörighet",
+        "why": "Tillåt Handy att automatiskt infoga dikterad text i den aktiva appen.",
         "note": "Du kan inaktivera eller aktivera den här behörigheten när som helst i inställningarna.",
-        "button": "Tillåt automatisk skrivning",
         "skipButton": "Inte nu",
         "warningTooltip": "Skrivbehörighet är inte konfigurerad",
         "configured": "Konfigurerad",
@@ -83,8 +82,9 @@
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
       },
       "titleMac": "Två behörigheter, sedan är du klar",
-      "titleWindows": "En behörighet, sedan är du klar",
+      "titleSingle": "En behörighet, sedan är du klar",
       "subtitleMac": "macOS frågar innan en app får lyssna eller skriva.",
+      "subtitleWayland": "Wayland ber om tillåtelse innan Handy kan skriva i andra appar.",
       "subtitleWindows": "Windows frågar innan en app får lyssna.",
       "allow": "Tillåt",
       "openSettings": "Öppna inställningar",

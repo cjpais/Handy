@@ -105,8 +105,8 @@ export const RemoteDesktopAuthorizationCard: React.FC<RemoteDesktopAuthorization
 
       return (
         <SettingContainer
-          title={t("onboarding.permissions.remoteDesktop.title")}
-          description={`${t("onboarding.permissions.remoteDesktop.description")} ${t(
+          title={t("onboarding.permissions.remoteDesktop.name")}
+          description={`${t("onboarding.permissions.remoteDesktop.why")} ${t(
             "onboarding.permissions.remoteDesktop.note",
           )}`}
           descriptionMode={descriptionMode}
@@ -140,7 +140,7 @@ export const RemoteDesktopAuthorizationCard: React.FC<RemoteDesktopAuthorization
                 className="sr-only peer"
                 checked={isAuthorized}
                 disabled={pendingAction !== null}
-                aria-label={t("onboarding.permissions.remoteDesktop.title")}
+                aria-label={t("onboarding.permissions.remoteDesktop.name")}
                 onChange={(event) =>
                   handleAuthorizationToggle(event.target.checked)
                 }

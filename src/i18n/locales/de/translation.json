@@ -69,10 +69,9 @@
         "why": "Damit dein Tastenkürzel in jeder App funktioniert und Handy den Text dort eintippen kann, wo dein Cursor steht."
       },
       "remoteDesktop": {
-        "title": "Eingabeautorisierung",
-        "description": "Erlauben Sie Handy, diktierten Text automatisch in die aktive App einzufügen.",
+        "name": "Eingabeautorisierung",
+        "why": "Erlauben Sie Handy, diktierten Text automatisch in die aktive App einzufügen.",
         "note": "Sie können diese Berechtigung jederzeit in den Einstellungen deaktivieren oder aktivieren.",
-        "button": "Automatische Eingabe erlauben",
         "skipButton": "Nicht jetzt",
         "warningTooltip": "Eingabeautorisierung nicht konfiguriert",
         "configured": "Konfiguriert",
@@ -83,8 +82,9 @@
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
       },
       "titleMac": "Zwei Berechtigungen, dann bist du startklar",
-      "titleWindows": "Eine Berechtigung, dann bist du startklar",
+      "titleSingle": "Eine Berechtigung, dann bist du startklar",
       "subtitleMac": "macOS fragt nach, bevor eine App zuhören oder tippen darf.",
+      "subtitleWayland": "Wayland fragt nach deiner Erlaubnis, bevor Handy in anderen Apps tippen kann.",
       "subtitleWindows": "Windows fragt nach, bevor eine App zuhören darf.",
       "allow": "Erlauben",
       "openSettings": "Einstellungen öffnen",

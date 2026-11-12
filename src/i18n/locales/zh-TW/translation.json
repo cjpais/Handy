@@ -69,10 +69,9 @@
         "why": "讓快捷鍵在每個應用程式中都能使用，也讓 Handy 能把文字打在游標所在的位置。"
       },
       "remoteDesktop": {
-        "title": "輸入授權",
-        "description": "允許 Handy 將聽寫文字自動插入目前作用中的應用程式。",
+        "name": "輸入授權",
+        "why": "允許 Handy 將聽寫文字自動插入目前作用中的應用程式。",
         "note": "你可以隨時在設定中停用或啟用此權限。",
-        "button": "允許自動輸入",
         "skipButton": "暫時不要",
         "warningTooltip": "輸入授權尚未設定",
         "configured": "已設定",
@@ -83,8 +82,9 @@
         "requestFailed": "請求權限失敗，請重試"
       },
       "titleMac": "兩項權限，然後就大功告成",
-      "titleWindows": "一項權限，然後就大功告成",
+      "titleSingle": "一項權限，然後就大功告成",
       "subtitleMac": "macOS 會先詢問，才允許應用程式聆聽或輸入。",
+      "subtitleWayland": "Wayland 會先要求權限，Handy 才能在其他應用程式中輸入文字。",
       "subtitleWindows": "Windows 會先詢問，才允許應用程式聆聽。",
       "allow": "允許",
       "openSettings": "開啟設定",

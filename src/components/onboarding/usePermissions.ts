@@ -265,7 +265,7 @@ export const usePermissions = (preview: boolean): Permissions => {
       ) {
         setRemoteDesktop("needed");
         notify({
-          title: t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+          title: t("onboarding.permissions.errors.requestFailed"),
         });
         return;
       }
@@ -275,7 +275,7 @@ export const usePermissions = (preview: boolean): Permissions => {
       console.error("Failed to request Remote Desktop permission:", error);
       setRemoteDesktop("needed");
       notify({
-        title: t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+        title: t("onboarding.permissions.errors.requestFailed"),
       });
     }
   };

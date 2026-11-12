@@ -69,10 +69,9 @@
         "why": "Pour que votre raccourci fonctionne dans toutes les apps et que Handy puisse saisir le texte là où se trouve votre curseur."
       },
       "remoteDesktop": {
-        "title": "Autorisation de saisie",
-        "description": "Autorisez Handy à insérer automatiquement le texte dicté dans l’application active.",
+        "name": "Autorisation de saisie",
+        "why": "Autorisez Handy à insérer automatiquement le texte dicté dans l’application active.",
         "note": "Vous pourrez désactiver ou réactiver cette autorisation à tout moment dans les paramètres.",
-        "button": "Autoriser la saisie automatique",
         "skipButton": "Pas maintenant",
         "warningTooltip": "Autorisation de saisie non configurée",
         "configured": "Configurée",
@@ -83,8 +82,9 @@
         "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
       },
       "titleMac": "Deux autorisations, et c'est prêt",
-      "titleWindows": "Une autorisation, et c'est prêt",
+      "titleSingle": "Une autorisation, et c'est prêt",
       "subtitleMac": "macOS demande votre accord avant qu'une app puisse écouter ou saisir du texte.",
+      "subtitleWayland": "Wayland demande une autorisation avant de permettre à Handy de saisir du texte dans d'autres applications.",
       "subtitleWindows": "Windows demande votre accord avant qu'une app puisse écouter.",
       "allow": "Autoriser",
       "openSettings": "Ouvrir les réglages",

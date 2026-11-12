@@ -69,10 +69,9 @@
         "why": "So your shortcut works in every app, and Handy can type the text where your cursor is."
       },
       "remoteDesktop": {
-        "title": "Typing authorization",
-        "description": "Allow Handy to insert dictated text automatically into the active app.",
+        "name": "Typing authorization",
+        "why": "Allow Handy to insert dictated text automatically into the active app.",
         "note": "You can disable or enable this permission at any time in settings.",
-        "button": "Allow automatic typing",
         "skipButton": "Not now",
         "warningTooltip": "Typing authorization not configured",
         "configured": "Configured",
@@ -83,8 +82,9 @@
         "requestFailed": "Failed to request permission. Please try again."
       },
       "titleMac": "Two permissions, then you're set",
-      "titleWindows": "One permission, then you're set",
+      "titleSingle": "One permission, then you're set",
       "subtitleMac": "macOS asks before any app can listen or type.",
+      "subtitleWayland": "Wayland asks before Handy can type in other apps.",
       "subtitleWindows": "Windows asks before any app can listen.",
       "allow": "Allow",
       "openSettings": "Open settings",

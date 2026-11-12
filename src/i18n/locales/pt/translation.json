@@ -69,10 +69,9 @@
         "why": "Para o seu atalho funcionar em todos os apps e o Handy digitar o texto onde está o cursor."
       },
       "remoteDesktop": {
-        "title": "Autorização de digitação",
-        "description": "Permita que o Handy insira automaticamente o texto ditado no aplicativo ativo.",
+        "name": "Autorização de digitação",
+        "why": "Permita que o Handy insira automaticamente o texto ditado no aplicativo ativo.",
         "note": "Você pode desativar ou ativar esta permissão a qualquer momento nas configurações.",
-        "button": "Permitir digitação automática",
         "skipButton": "Agora não",
         "warningTooltip": "Autorização de digitação não configurada",
         "configured": "Configurada",
@@ -83,8 +82,9 @@
         "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."
       },
       "titleMac": "Duas permissões e pronto",
-      "titleWindows": "Uma permissão e pronto",
+      "titleSingle": "Uma permissão e pronto",
       "subtitleMac": "O macOS pergunta antes de qualquer app poder ouvir ou digitar.",
+      "subtitleWayland": "O Wayland pede permissão antes de o Handy poder escrever em outros aplicativos.",
       "subtitleWindows": "O Windows pergunta antes de qualquer app poder ouvir.",
       "allow": "Permitir",
       "openSettings": "Abrir ajustes",

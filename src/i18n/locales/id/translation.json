@@ -73,18 +73,18 @@
         "requestFailed": "Gagal meminta izin. Silakan coba lagi."
       },
       "remoteDesktop": {
-        "title": "Izin pengetikan",
-        "description": "Izinkan Handy menyisipkan teks yang didiktekan secara otomatis ke aplikasi aktif.",
+        "name": "Izin pengetikan",
+        "why": "Izinkan Handy menyisipkan teks yang didiktekan secara otomatis ke aplikasi aktif.",
         "note": "Anda dapat menonaktifkan atau mengaktifkan izin ini kapan saja di pengaturan.",
-        "button": "Izinkan pengetikan otomatis",
         "skipButton": "Tidak sekarang",
         "warningTooltip": "Izin pengetikan belum dikonfigurasi",
         "configured": "Dikonfigurasi",
         "notConfigured": "Konfigurasi diperlukan"
       },
       "titleMac": "Dua izin, lalu selesai",
-      "titleWindows": "Satu izin, lalu selesai",
+      "titleSingle": "Satu izin, lalu selesai",
       "subtitleMac": "macOS meminta persetujuan sebelum aplikasi apa pun dapat mendengar atau mengetik.",
+      "subtitleWayland": "Wayland meminta izin sebelum Handy dapat mengetik di aplikasi lain.",
       "subtitleWindows": "Windows meminta persetujuan sebelum aplikasi apa pun dapat mendengar.",
       "allow": "Izinkan",
       "openSettings": "Buka pengaturan",

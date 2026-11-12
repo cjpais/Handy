@@ -73,18 +73,18 @@
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
       },
       "remoteDesktop": {
-        "title": "Typemachtiging",
-        "description": "Sta Handy toe om gedicteerde tekst automatisch in de actieve app in te voegen.",
+        "name": "Typemachtiging",
+        "why": "Sta Handy toe om gedicteerde tekst automatisch in de actieve app in te voegen.",
         "note": "Je kunt deze toestemming op elk moment in de instellingen in- of uitschakelen.",
-        "button": "Automatisch typen toestaan",
         "skipButton": "Niet nu",
         "warningTooltip": "Typemachtiging niet ingesteld",
         "configured": "Ingesteld",
         "notConfigured": "Configuratie vereist"
       },
       "titleMac": "Twee machtigingen, en klaar",
-      "titleWindows": "Eén machtiging, en klaar",
+      "titleSingle": "Eén machtiging, en klaar",
       "subtitleMac": "macOS vraagt eerst toestemming voordat een app kan luisteren of typen.",
+      "subtitleWayland": "Wayland vraagt om toestemming voordat Handy in andere apps kan typen.",
       "subtitleWindows": "Windows vraagt eerst toestemming voordat een app kan luisteren.",
       "allow": "Toestaan",
       "openSettings": "Instellingen openen",

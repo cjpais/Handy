@@ -69,10 +69,9 @@
         "why": "Così la tua scorciatoia funziona in ogni app e Handy può scrivere il testo dove si trova il cursore."
       },
       "remoteDesktop": {
-        "title": "Autorizzazione alla digitazione",
-        "description": "Consenti a Handy di inserire automaticamente il testo dettato nell’app attiva.",
+        "name": "Autorizzazione alla digitazione",
+        "why": "Consenti a Handy di inserire automaticamente il testo dettato nell’app attiva.",
         "note": "Puoi disattivare o attivare questa autorizzazione in qualsiasi momento dalle impostazioni.",
-        "button": "Consenti digitazione automatica",
         "skipButton": "Non ora",
         "warningTooltip": "Autorizzazione alla digitazione non configurata",
         "configured": "Configurata",
@@ -83,8 +82,9 @@
         "requestFailed": "Impossibile richiedere il permesso. Riprova."
       },
       "titleMac": "Due permessi e sei pronto",
-      "titleWindows": "Un permesso e sei pronto",
+      "titleSingle": "Un permesso e sei pronto",
       "subtitleMac": "macOS chiede il consenso prima che un'app possa ascoltare o scrivere.",
+      "subtitleWayland": "Wayland richiede l'autorizzazione prima che Handy possa digitare in altre app.",
       "subtitleWindows": "Windows chiede il consenso prima che un'app possa ascoltare.",
       "allow": "Consenti",
       "openSettings": "Apri le impostazioni",
