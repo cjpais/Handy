@@ -149,9 +149,10 @@ transcribe-cpp = { version = "0.4.2", default-features = false, features = [
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
 transcribe-cpp = { version = "0.4.2", default-features = false }
 # libopus's ARM runtime CPU probe (celt/arm/armcpu.c) sees clang-cl's _MSC_VER
-# and calls MSVC's __emit, which clang lacks. Every aarch64 CPU has NEON, so
-# skip the probe and let opusic-sys presume it from the target features.
-opusic-sys = { version = "0.7", features = ["no-runtime-feature-detection"] }
+# and calls MSVC's __emit, which clang lacks; presuming NEON instead trips a
+# libopus CMake bug (celt_inner_prod_neon left undeclared). Build plain C:
+# decoding Opus files is cheap.
+opusic-sys = { version = "0.7", features = ["no-simd"] }
 
 # Whisper backend per macOS arch. Apple Silicon links the static Metal build.
 # Intel Macs are CPU-only: ggml-metal compiles its embedded shader library at
