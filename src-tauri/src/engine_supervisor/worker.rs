@@ -315,8 +315,15 @@ fn load(
     };
 
     inject_fault("load", backend != Backend::Cpu);
-    let model = Model::load_with(path, &ModelOptions { backend, device })
-        .map_err(|e| format!("Failed to load model: {e}"))?;
+    let model = Model::load_with(
+        path,
+        &ModelOptions {
+            backend,
+            device,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| format!("Failed to load model: {e}"))?;
     let session = model
         .session()
         .map_err(|e| format!("Failed to create session: {e}"))?;

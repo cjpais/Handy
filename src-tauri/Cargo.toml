@@ -83,7 +83,7 @@ libc = "0.2"
 # Every model runs through transcribe-cpp (GGUF/ggml, native backends).
 # Per-platform backend features are added in the target tables (Cargo unifies
 # features, so `serde` here applies to every platform).
-transcribe-cpp = { version = "0.4.0", default-features = false, features = [
+transcribe-cpp = { version = "0.4.2", default-features = false, features = [
   "serde",
 ] }
 handy-keys = "0.3.4"
@@ -141,13 +141,13 @@ winreg = "0.55"
 # signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
 # static build targets a portable ARM baseline, not the build runner's CPU.
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
-transcribe-cpp = { version = "0.4.0", default-features = false, features = [
+transcribe-cpp = { version = "0.4.2", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
 
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.4.0", default-features = false }
+transcribe-cpp = { version = "0.4.2", default-features = false }
 
 # Whisper backend per macOS arch. Apple Silicon links the static Metal build.
 # Intel Macs are CPU-only: ggml-metal compiles its embedded shader library at
@@ -156,10 +156,10 @@ transcribe-cpp = { version = "0.4.0", default-features = false }
 # Metal on Intel/AMD buys little at these model sizes anyway. With no features,
 # transcribe-cpp-sys sets TRANSCRIBE_METAL=OFF and pins a portable x86 CPU floor.
 [target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.4.0", default-features = false, features = ["metal"] }
+transcribe-cpp = { version = "0.4.2", default-features = false, features = ["metal"] }
 
 [target.'cfg(all(target_os = "macos", target_arch = "x86_64"))'.dependencies]
-transcribe-cpp = { version = "0.4.0", default-features = false }
+transcribe-cpp = { version = "0.4.2", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
@@ -176,7 +176,7 @@ gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 # version against the release that introduced damage-based compositing.
 webkit2gtk-sys = "2.0"
 gtk = "0.18"
-transcribe-cpp = { version = "0.4.0", default-features = false, features = [
+transcribe-cpp = { version = "0.4.2", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
