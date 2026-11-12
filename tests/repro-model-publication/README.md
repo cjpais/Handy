@@ -11,10 +11,9 @@ Run from the repository root:
 cargo test --release --locked --manifest-path tests/repro-model-publication/Cargo.toml -- --test-threads=1 --nocapture
 ```
 
-Eight of the nine tests pass on the repaired source.
-`lost_worker_report_races_reload` fails, because the third race below is not
-repaired yet. No model file is required, and the crate's own workspace and
-lockfile keep the full Tauri build out of this run.
+All nine tests pass on the repaired source in about 30 seconds. No model file is
+required, and the crate's own workspace and lockfile keep the full Tauri build
+out of this run.
 
 ## The defect
 
@@ -51,8 +50,7 @@ same step, so the events leave in the order the id changed.
   `loading_cancelled` and publishes nothing.
 - An unload sends its request to the engine inside the same step that clears
   the id.
-- A lost-worker report queues its `unloaded` in the same step that clears the
-  id. It still reads the engine before that step.
+- A lost-worker report reads the engine inside the step.
 
 `publish` emits after it releases the lock, and only one thread emits at a time.
 The lock is never held across an emit. Listeners run inside `emit`, and the tray
@@ -88,6 +86,7 @@ owner thread is one of them.
 | --------------------------------- | ------- | ------------- | ----------------- |
 | `unload_races_one_load`           | 3       | 3,600         | none              |
 | `unload_races_two_loads_in_a_row` | 3       | 115,370       | none              |
+| `lost_worker_report_races_reload` | 4       | 2,669         | none              |
 | `two_unloads_race_one_load`       | 4       | 971,544       | 4 forced switches |
 
 The last scenario is too large to exhaust. With `LOOM_MAX_PREEMPTIONS=5` it
@@ -127,6 +126,7 @@ Each part of the repair was removed in a scratch copy. Every mutant fails.
 | -------------------------------------------------- | -------------------------------------------- |
 | The load asks the engine before it publishes       | The id names a model the engine doesn't hold |
 | The unload reaches the engine inside the step      | The id is empty while the engine holds one   |
+| The lost-worker report reads the engine inside it  | The id is empty while the engine holds one   |
 | The lock is released before each emit              | Loom reports a deadlock                      |
 | One thread emits the outbox in order               | The selector ends on the wrong state         |
 | A superseded load emits `loading_cancelled`        | The selector stays on "loading"              |

@@ -413,11 +413,11 @@ impl TranscriptionManager {
     /// loaded model id and the UI in step, so the next use loads the model
     /// again and reports why it can't.
     fn forget_model_if_engine_dropped(&self, model_id: &str, error: &str) {
-        if self.engine.loaded().is_some() {
-            return;
-        }
         self.publish(|state| {
-            if state.current_model_id.as_deref() != Some(model_id) {
+            // The engine is read under the lock: a load that finished first
+            // has published its model, and that must not be cleared.
+            let published = state.current_model_id.as_deref() == Some(model_id);
+            if !published || self.engine.loaded().is_some() {
                 return;
             }
             state.current_model_id = None;
