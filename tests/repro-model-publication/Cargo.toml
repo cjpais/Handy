@@ -1,0 +1,15 @@
+[package]
+name = "repro-model-publication"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+loom = "=0.7.2"
+
+[build-dependencies]
+syn = { version = "=2.0.119", features = ["full"] }
+quote = "=1.0.47"
+proc-macro2 = "1"
