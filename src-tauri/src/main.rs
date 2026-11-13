@@ -25,6 +25,9 @@ fn main() {
         }
     }
 
+    #[cfg(target_os = "linux")]
+    handy_app_lib::disable_gamescope_wsi_layer();
+
     // Transcription worker: runs transcribe.cpp in isolation and never touches
     // Tauri, the CLI, or single-instance handling. Checked after the env setup
     // above so the worker inherits it (e.g. the Vulkan layer opt-out).

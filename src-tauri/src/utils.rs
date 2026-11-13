@@ -185,6 +185,33 @@ pub fn env_flag_enabled(name: &str) -> bool {
     }
 }
 
+#[cfg(target_os = "linux")]
+static GAMESCOPE_WSI_DISABLED_BY_HANDY: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Only set `DISABLE_GAMESCOPE_WSI` when the user hasn't set it (even to empty).
+#[cfg(target_os = "linux")]
+fn should_disable_gamescope_wsi(existing: Option<&std::ffi::OsStr>) -> bool {
+    existing.is_none()
+}
+
+/// Disable the Gamescope WSI layer, which aborts during Vulkan device creation
+/// on SteamOS (#2264). Handy only uses Vulkan for compute, so it isn't needed.
+#[cfg(target_os = "linux")]
+pub fn disable_gamescope_wsi_layer() {
+    let existing = std::env::var_os("DISABLE_GAMESCOPE_WSI");
+    if should_disable_gamescope_wsi(existing.as_deref()) {
+        std::env::set_var("DISABLE_GAMESCOPE_WSI", "1");
+        GAMESCOPE_WSI_DISABLED_BY_HANDY.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// True when [`disable_gamescope_wsi_layer`] set the variable itself.
+#[cfg(target_os = "linux")]
+pub fn gamescope_wsi_disabled_by_handy() -> bool {
+    GAMESCOPE_WSI_DISABLED_BY_HANDY.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 /// The `GDK_BACKEND` value requested through `HANDY_GDK_BACKEND`, if any.
 /// Empty or whitespace-only values count as unset.
 #[cfg(target_os = "linux")]
@@ -211,6 +238,16 @@ pub fn apply_handy_gdk_backend() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn gamescope_wsi_is_disabled_only_when_the_user_set_nothing() {
+        use std::ffi::OsStr;
+        assert!(should_disable_gamescope_wsi(None));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new("1"))));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new("0"))));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new(""))));
+    }
 
     #[cfg(target_os = "linux")]
     #[test]
