@@ -85,6 +85,9 @@ pub enum Response {
     },
     Ok,
     Error(String),
+    /// A run, feed or finalize failed in the compute backend (e.g. a lost
+    /// GPU device). The worker answered, but its backend may be unusable.
+    BackendError(String),
 }
 
 /// Serializable mirror of `transcribe_cpp::Device` (which holds a

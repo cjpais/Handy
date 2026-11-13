@@ -21,6 +21,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.noInputDeviceTitle",
     explanation: (t) => t("errors.noInputDevice"),
   },
+  MicrophoneSilent: {
+    title: "errors.microphoneSilentTitle",
+    explanation: (t) => t("errors.microphoneSilent"),
+  },
   MicPermissionDenied: {
     title: "errors.micPermissionDeniedTitle",
     explanation: (t) =>
@@ -34,6 +38,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
   ModelLoadFailed: {
     title: "errors.modelLoadFailedTitle",
     explanation: (t) => t("errors.modelLoadFailed"),
+  },
+  NoModelSelected: {
+    title: "errors.noModelSelectedTitle",
+    explanation: (t) => t("errors.noModelSelected"),
   },
   PostProcessFailed: {
     title: "errors.postProcessFailedTitle",
