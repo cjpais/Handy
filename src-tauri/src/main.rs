@@ -26,12 +26,7 @@ fn main() {
     }
 
     #[cfg(target_os = "linux")]
-    {
-        // Handy only uses Vulkan for compute, never to present, so skip the
-        // Gamescope WSI layer that aborts during device creation on SteamOS
-        // (#2264, ValveSoftware/gamescope#2261). A user-set value wins.
-        handy_app_lib::disable_gamescope_wsi_layer();
-    }
+    handy_app_lib::disable_gamescope_wsi_layer();
 
     // Transcription worker: runs transcribe.cpp in isolation and never touches
     // Tauri, the CLI, or single-instance handling. Checked after the env setup

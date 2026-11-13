@@ -189,23 +189,14 @@ pub fn env_flag_enabled(name: &str) -> bool {
 static GAMESCOPE_WSI_DISABLED_BY_HANDY: std::sync::atomic::AtomicBool =
     std::sync::atomic::AtomicBool::new(false);
 
-/// Whether `DISABLE_GAMESCOPE_WSI` should be set for Handy: only when the
-/// user has not set it at all (an empty value is the user's choice too).
+/// Only set `DISABLE_GAMESCOPE_WSI` when the user hasn't set it (even to empty).
 #[cfg(target_os = "linux")]
 fn should_disable_gamescope_wsi(existing: Option<&std::ffi::OsStr>) -> bool {
     existing.is_none()
 }
 
-/// Turn off the Gamescope Vulkan WSI layer for Handy's own processes.
-///
-/// Handy uses Vulkan only for ggml compute and never presents a swapchain, so
-/// the layer adds nothing, and on SteamOS it aborts in vkroots while the
-/// device is created (cjpais/Handy#2264, ValveSoftware/gamescope#2261). The
-/// layer's manifest lists `DISABLE_GAMESCOPE_WSI` as its `disable_environment`,
-/// which the Vulkan loader honours when it is defined to any non-empty value.
-/// A value the user already set, including an empty one, is left alone. Must
-/// run before the Vulkan loader starts and before the engine worker is spawned,
-/// so the worker inherits it.
+/// Disable the Gamescope WSI layer, which aborts during Vulkan device creation
+/// on SteamOS (#2264). Handy only uses Vulkan for compute, so it isn't needed.
 #[cfg(target_os = "linux")]
 pub fn disable_gamescope_wsi_layer() {
     let existing = std::env::var_os("DISABLE_GAMESCOPE_WSI");

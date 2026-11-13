@@ -492,12 +492,6 @@ $env:HANDY_KEEP_VULKAN_IMPLICIT_LAYERS = "1"
 
 Adjust the executable path if needed. This override only applies to apps launched from that PowerShell session, not the Start menu. Handy also preserves any existing `VK_LOADER_LAYERS_DISABLE` value.
 
-### SteamOS and Gamescope (`DISABLE_GAMESCOPE_WSI`)
-
-On Linux, Handy sets `DISABLE_GAMESCOPE_WSI=1` for itself when the variable is not already set. Handy uses Vulkan only for model compute and never shows a Vulkan window, so Gamescope's Vulkan WSI layer adds nothing, and on SteamOS it can abort while the GPU device is created ([#2264](https://github.com/cjpais/Handy/issues/2264), [gamescope#2261](https://github.com/ValveSoftware/gamescope/issues/2261)). Other programs are unaffected.
-
-A value you set yourself is never changed. Per the Vulkan loader documentation, the layer is disabled when the variable is defined to any non-empty value, so `DISABLE_GAMESCOPE_WSI=0` still disables it. To keep the layer for Handy, define the variable as empty (`DISABLE_GAMESCOPE_WSI= handy`).
-
 ### How to Contribute
 
 1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)
