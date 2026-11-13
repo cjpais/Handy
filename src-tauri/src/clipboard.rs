@@ -78,6 +78,46 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
 ) -> Result<(), String> {
+    let paste_method = *paste_method;
+    with_text_on_clipboard(
+        app_handle,
+        text,
+        paste_delay_ms,
+        paste_delay_after_ms,
+        || {
+            // Send paste key combo
+            #[cfg(target_os = "linux")]
+            let key_combo_sent = try_send_key_combo_linux(&paste_method);
+
+            #[cfg(not(target_os = "linux"))]
+            let key_combo_sent = false;
+
+            // Fall back to enigo if no native tool handled it
+            if !key_combo_sent {
+                with_enigo(app_handle, move |enigo| match paste_method {
+                    // The legacy path cannot detect a mistimed chord, so it keeps the
+                    // conservative 100ms modifier hold.
+                    PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
+                    PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
+                    PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
+                    _ => Err("Invalid paste method for clipboard paste".into()),
+                })?;
+            }
+
+            Ok(())
+        },
+    )
+}
+
+/// Puts `text` on the clipboard for `send_paste` to paste, then restores what
+/// was there, even when `send_paste` fails.
+pub(crate) fn with_text_on_clipboard(
+    app_handle: &AppHandle,
+    text: &str,
+    paste_delay_ms: u64,
+    paste_delay_after_ms: u64,
+    send_paste: impl FnOnce() -> Result<(), String>,
+) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
     // Only probe for an image when there is no text to restore. Text is by far the
@@ -96,29 +136,7 @@ fn paste_via_clipboard(
 
     // Capture key injection errors so the original clipboard is restored before
     // propagating them to the caller.
-    let paste_result = (|| -> Result<(), String> {
-        // Send paste key combo
-        #[cfg(target_os = "linux")]
-        let key_combo_sent = try_send_key_combo_linux(paste_method);
-
-        #[cfg(not(target_os = "linux"))]
-        let key_combo_sent = false;
-
-        // Fall back to enigo if no native tool handled it
-        if !key_combo_sent {
-            let paste_method = *paste_method;
-            with_enigo(app_handle, move |enigo| match paste_method {
-                // The legacy path cannot detect a mistimed chord, so it keeps the
-                // conservative 100ms modifier hold.
-                PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
-                PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo, 100),
-                PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo, 100),
-                _ => Err("Invalid paste method for clipboard paste".into()),
-            })?;
-        }
-
-        Ok(())
-    })();
+    let paste_result = send_paste();
 
     finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
         // Restore original clipboard content even when key injection failed.
