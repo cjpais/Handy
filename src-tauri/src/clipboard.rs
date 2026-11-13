@@ -350,7 +350,13 @@ fn ydotool_command() -> Command {
             "/tmp/.ydotool_socket".to_string(),
             "/run/ydotoold/socket".to_string(),
         ];
-        if let Some(socket) = candidates.iter().find(|p| std::path::Path::new(p).exists()) {
+        // Only trust sockets owned by root or by us: /tmp is world-writable.
+        use std::os::unix::fs::MetadataExt;
+        let uid = unsafe { libc::getuid() };
+        if let Some(socket) = candidates
+            .iter()
+            .find(|p| std::fs::metadata(p).is_ok_and(|m| m.uid() == 0 || m.uid() == uid))
+        {
             command.env("YDOTOOL_SOCKET", socket);
         }
     }
