@@ -130,19 +130,26 @@ mod macos {
         Ok(keycode)
     }
 
-    pub(super) fn command_v_key() -> Key {
+    /// The keycode Cmd+V needs under the active layout, for callers that
+    /// post their own key events. Main thread only, like the rest of this
+    /// module.
+    pub(crate) fn command_v_keycode() -> u16 {
         match resolve_command_v_keycode() {
             Ok(keycode) => {
                 debug!("Resolved Cmd+V for the active macOS layout to keycode {keycode}");
-                Key::Other(u32::from(keycode))
+                keycode
             }
             Err(error) => {
                 warn!(
                     "Could not resolve Cmd+V for the active macOS layout ({error}); using ANSI V keycode {ANSI_V_KEYCODE}"
                 );
-                Key::Other(u32::from(ANSI_V_KEYCODE))
+                ANSI_V_KEYCODE
             }
         }
+    }
+
+    pub(super) fn command_v_key() -> Key {
+        Key::Other(u32::from(command_v_keycode()))
     }
 }
 
