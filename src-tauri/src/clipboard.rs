@@ -4,7 +4,6 @@ use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
-use std::path::{Path, PathBuf};
 use std::process::Command;
 #[cfg(target_os = "linux")]
 use std::sync::OnceLock;
@@ -338,95 +337,24 @@ fn classify_ydotool_key_syntax(help: &str) -> Option<YdotoolKeySyntax> {
     }
 }
 
-/// Picks the ydotoold socket to hand to the ydotool client. An explicit `YDOTOOL_SOCKET` value
-/// always wins untouched (even if the file is missing); otherwise the first candidate that
-/// exists. `None` means "leave the client's own default alone".
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub(crate) fn choose_ydotool_socket(
-    env_value: Option<&str>,
-    candidates: &[PathBuf],
-    exists: impl Fn(&Path) -> bool,
-) -> Option<PathBuf> {
-    if let Some(value) = env_value.filter(|v| !v.is_empty()) {
-        return Some(PathBuf::from(value));
-    }
-    candidates.iter().find(|c| exists(c)).cloned()
-}
-
-/// Where distro packages put the ydotoold socket, most specific first. The client defaults to
-/// the per-user runtime dir, but Fedora's daemon uses /tmp and NixOS uses /run/ydotoold.
-#[cfg(target_os = "linux")]
-fn ydotool_socket_candidates() -> Vec<PathBuf> {
-    let mut candidates = Vec::new();
-    if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR").filter(|d| !d.is_empty()) {
-        candidates.push(PathBuf::from(dir).join(".ydotool_socket"));
-    }
-    // SAFETY: getuid has no preconditions and cannot fail.
-    let uid = unsafe { libc::getuid() };
-    let per_user = PathBuf::from(format!("/run/user/{}/.ydotool_socket", uid));
-    if !candidates.contains(&per_user) {
-        candidates.push(per_user);
-    }
-    candidates.push(PathBuf::from("/tmp/.ydotool_socket"));
-    candidates.push(PathBuf::from("/run/ydotoold/socket"));
-    candidates
-}
-
-/// The socket we pass to ydotool (`None` when the client's default applies), computed once.
-#[cfg(target_os = "linux")]
-fn ydotool_socket() -> Option<&'static PathBuf> {
-    static SOCKET: OnceLock<Option<PathBuf>> = OnceLock::new();
-    SOCKET
-        .get_or_init(|| {
-            let env_value = std::env::var("YDOTOOL_SOCKET").ok();
-            if env_value.as_deref().is_some_and(|v| !v.is_empty()) {
-                return None; // explicit setting: the child inherits it unchanged
-            }
-            let candidates = ydotool_socket_candidates();
-            let chosen = choose_ydotool_socket(None, &candidates, |p| std::fs::metadata(p).is_ok());
-            match &chosen {
-                Some(path) => info!("ydotool: using socket {}", path.display()),
-                None => log::warn!(
-                    "ydotool: no socket found at {}; is ydotoold running?",
-                    candidates
-                        .iter()
-                        .map(|c| c.display().to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                ),
-            }
-            chosen
-        })
-        .as_ref()
-}
-
-/// Builds a `ydotool` command that can reach the daemon even when `YDOTOOL_SOCKET` was not
-/// set in the environment Handy was started from (autostart, desktop launcher).
+/// A `ydotool` command that can reach ydotoold when `YDOTOOL_SOCKET` is not set
+/// (autostart, desktop launcher): distro packages put the socket in different
+/// places, such as /tmp on Fedora and /run/ydotoold on NixOS.
 #[cfg(target_os = "linux")]
 fn ydotool_command() -> Command {
     let mut command = Command::new("ydotool");
-    if let Some(socket) = ydotool_socket() {
-        command.env("YDOTOOL_SOCKET", socket);
+    if std::env::var_os("YDOTOOL_SOCKET").is_none_or(|v| v.is_empty()) {
+        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_default();
+        let candidates = [
+            format!("{runtime_dir}/.ydotool_socket"),
+            "/tmp/.ydotool_socket".to_string(),
+            "/run/ydotoold/socket".to_string(),
+        ];
+        if let Some(socket) = candidates.iter().find(|p| std::path::Path::new(p).exists()) {
+            command.env("YDOTOOL_SOCKET", socket);
+        }
     }
     command
-}
-
-/// Error text for a failed ydotool run. The client prints its connection error on stdout, so
-/// include both streams, and name the socket we pointed it at.
-#[cfg(target_os = "linux")]
-fn ydotool_failure_message(output: &std::process::Output) -> String {
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let socket = match ydotool_socket() {
-        Some(path) => path.display().to_string(),
-        None => std::env::var("YDOTOOL_SOCKET").unwrap_or_else(|_| "client default".to_string()),
-    };
-    format!(
-        "ydotool failed: {} {} (socket: {})",
-        stderr.trim(),
-        stdout.trim(),
-        socket
-    )
 }
 
 /// Detects and caches a recognized ydotool key syntax. Unknown or failed probes are not cached,
@@ -649,7 +577,8 @@ fn type_text_via_ydotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        return Err(ydotool_failure_message(&output));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ydotool failed: {}", stderr));
     }
 
     Ok(())
@@ -779,7 +708,8 @@ fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> 
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        return Err(ydotool_failure_message(&output));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ydotool failed: {}", stderr));
     }
 
     Ok(())
@@ -1014,38 +944,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::cell::Cell;
-
-    #[test]
-    fn ydotool_socket_env_value_wins_even_if_missing() {
-        let candidates = vec![PathBuf::from("/tmp/.ydotool_socket")];
-        let chosen = choose_ydotool_socket(Some("/custom/sock"), &candidates, |_| true);
-        assert_eq!(chosen, Some(PathBuf::from("/custom/sock")));
-        let chosen = choose_ydotool_socket(Some("/custom/sock"), &candidates, |_| false);
-        assert_eq!(chosen, Some(PathBuf::from("/custom/sock")));
-    }
-
-    #[test]
-    fn ydotool_socket_first_existing_candidate_wins() {
-        let candidates = vec![
-            PathBuf::from("/run/user/1000/.ydotool_socket"),
-            PathBuf::from("/tmp/.ydotool_socket"),
-            PathBuf::from("/run/ydotoold/socket"),
-        ];
-        let chosen = choose_ydotool_socket(None, &candidates, |p| {
-            p != Path::new("/run/user/1000/.ydotool_socket")
-        });
-        assert_eq!(chosen, Some(PathBuf::from("/tmp/.ydotool_socket")));
-    }
-
-    #[test]
-    fn ydotool_socket_none_when_nothing_exists() {
-        let candidates = vec![PathBuf::from("/tmp/.ydotool_socket")];
-        assert_eq!(choose_ydotool_socket(None, &candidates, |_| false), None);
-        assert_eq!(
-            choose_ydotool_socket(Some(""), &candidates, |_| false),
-            None
-        );
-    }
 
     #[cfg(target_os = "linux")]
     const YDOTOOL_0_1_8_HELP: &str = r#"
