@@ -42,13 +42,19 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
       return null;
     }
 
-    // Only show if paste method is "direct"
     const pasteMethod = getSetting("paste_method");
-    if (pasteMethod !== "direct") {
+    if (
+      pasteMethod !== "direct" &&
+      pasteMethod !== "ctrl_v" &&
+      pasteMethod !== "ctrl_shift_v" &&
+      pasteMethod !== "shift_insert"
+    ) {
       return null;
     }
 
-    const tools = availableTools ?? ["auto"];
+    const tools = (availableTools ?? ["auto"]).filter(
+      (tool) => pasteMethod === "direct" || tool !== "kwtype",
+    );
     const typingToolOptions = tools.map((tool) =>
       tool === "auto"
         ? {
@@ -58,7 +64,9 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         : { value: tool, label: allToolLabels[tool] ?? tool },
     );
 
-    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    const typingTool = getSetting("typing_tool") || "auto";
+    const selectedTool =
+      pasteMethod !== "direct" && typingTool === "kwtype" ? "auto" : typingTool;
 
     return (
       <SettingContainer
