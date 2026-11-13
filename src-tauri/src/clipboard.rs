@@ -47,30 +47,18 @@ fn with_enigo<T: Send + 'static>(
         .map_err(|_| "Main thread dropped the input request".to_string())?
 }
 
-/// Why text is being put on the clipboard.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ClipboardWrite {
-    /// Put there only so it can be pasted, or to restore what the user had
-    /// before. Clipboard-history tools should not record it.
-    Transit,
-    /// The user asked to keep the transcript on the clipboard
-    /// (`ClipboardHandling::CopyToClipboard`), so it is an ordinary copy.
-    Keep,
-}
-
+/// `sensitive` marks text that only passes through the clipboard, so that
+/// clipboard-history tools can skip it (wl-copy only).
+#[cfg_attr(not(target_os = "linux"), allow(unused_variables))]
 fn write_text_to_clipboard(
     app_handle: &AppHandle,
     text: &str,
-    kind: ClipboardWrite,
+    sensitive: bool,
 ) -> Result<(), String> {
-    // `kind` only matters to wl-copy; the other backends have no equivalent hint.
-    #[cfg(not(target_os = "linux"))]
-    let _ = kind;
-
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
-        return write_clipboard_via_wl_copy(text, kind);
+        return write_clipboard_via_wl_copy(text, sensitive);
     }
 
     app_handle
@@ -109,7 +97,7 @@ fn paste_via_clipboard(
     };
 
     // Write text to clipboard first
-    write_text_to_clipboard(app_handle, text, ClipboardWrite::Transit)?;
+    write_text_to_clipboard(app_handle, text, true)?;
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -145,8 +133,7 @@ fn paste_via_clipboard(
         // an image is only restored when the clipboard held no text at all, which is
         // the case that used to silently wipe screenshots.
         if let Some(clipboard_content) = saved_text {
-            let _ =
-                write_text_to_clipboard(app_handle, &clipboard_content, ClipboardWrite::Transit);
+            let _ = write_text_to_clipboard(app_handle, &clipboard_content, true);
         } else if let Some(image) = saved_image {
             info!("Restoring image to clipboard");
             let _ = clipboard.write_image(&image);
@@ -601,65 +588,30 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Whether the installed wl-copy understands `--sensitive` (wl-clipboard 2.3.0
-/// and later). The option makes wl-copy offer the `x-kde-passwordManagerHint`
-/// MIME type, which clipboard-history tools such as Klipper, cliphist and
-/// CopyQ treat as "do not record this". Probed once per process.
-#[cfg(target_os = "linux")]
-fn wl_copy_supports_sensitive() -> bool {
-    use std::sync::OnceLock;
-    static SUPPORTED: OnceLock<bool> = OnceLock::new();
-    *SUPPORTED.get_or_init(|| {
-        let supported = Command::new("wl-copy")
-            .arg("--help")
-            .output()
-            .map(|output| {
-                wl_copy_help_mentions_sensitive(&String::from_utf8_lossy(&output.stdout))
-                    || wl_copy_help_mentions_sensitive(&String::from_utf8_lossy(&output.stderr))
-            })
-            .unwrap_or(false);
-        info!(
-            "wl-copy --sensitive {}",
-            if supported {
-                "is supported; dictation text will be hidden from clipboard history"
-            } else {
-                "is not supported (needs wl-clipboard 2.3.0 or newer); clipboard history tools may record dictation text"
-            }
-        );
-        supported
-    })
-}
-
-#[cfg(target_os = "linux")]
-fn wl_copy_help_mentions_sensitive(help: &str) -> bool {
-    help.contains("--sensitive")
-}
-
-/// Arguments for wl-copy. `--sensitive` goes only on transit writes, and only
-/// when this wl-copy has it, because older versions reject unknown options.
-#[cfg(target_os = "linux")]
-fn wl_copy_args<'a>(
-    text: &'a str,
-    kind: ClipboardWrite,
-    sensitive_supported: bool,
-) -> Vec<&'a str> {
-    let mut args = Vec::with_capacity(3);
-    if sensitive_supported && kind == ClipboardWrite::Transit {
-        args.push("--sensitive");
-    }
-    args.push("--");
-    args.push(text);
-    args
-}
-
 /// Write text to clipboard via wl-copy (Wayland clipboard tool).
 /// Uses Stdio::null() to avoid blocking on repeated calls — wl-copy forks a
 /// daemon that inherits piped fds, causing read_to_end to hang indefinitely.
 #[cfg(target_os = "linux")]
-fn write_clipboard_via_wl_copy(text: &str, kind: ClipboardWrite) -> Result<(), String> {
+fn write_clipboard_via_wl_copy(text: &str, sensitive: bool) -> Result<(), String> {
     use std::process::Stdio;
-    let status = Command::new("wl-copy")
-        .args(wl_copy_args(text, kind, wl_copy_supports_sensitive()))
+    // wl-clipboard 2.3.0 added --sensitive; older versions reject unknown options.
+    static HAS_SENSITIVE: OnceLock<bool> = OnceLock::new();
+    let has_sensitive = *HAS_SENSITIVE.get_or_init(|| {
+        Command::new("wl-copy")
+            .arg("--help")
+            .output()
+            .map(|o| {
+                String::from_utf8_lossy(&[o.stdout, o.stderr].concat()).contains("--sensitive")
+            })
+            .unwrap_or(false)
+    });
+    let mut command = Command::new("wl-copy");
+    if sensitive && has_sensitive {
+        command.arg("--sensitive");
+    }
+    let status = command
+        .arg("--")
+        .arg(text)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
@@ -984,7 +936,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
-        write_text_to_clipboard(&app_handle, &text, ClipboardWrite::Keep)?;
+        write_text_to_clipboard(&app_handle, &text, false)?;
     }
 
     Ok(())
@@ -1010,59 +962,6 @@ we're using raw keycodes now.
 Syntax: <keycode>:<pressed>
 e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
 "#;
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn wl_copy_transit_write_is_sensitive_when_supported() {
-        assert_eq!(
-            wl_copy_args("hello", ClipboardWrite::Transit, true),
-            ["--sensitive", "--", "hello"]
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn wl_copy_transit_write_omits_flag_when_unsupported() {
-        assert_eq!(
-            wl_copy_args("hello", ClipboardWrite::Transit, false),
-            ["--", "hello"]
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn wl_copy_kept_copy_is_never_sensitive() {
-        assert_eq!(
-            wl_copy_args("hello", ClipboardWrite::Keep, true),
-            ["--", "hello"]
-        );
-        assert_eq!(
-            wl_copy_args("hello", ClipboardWrite::Keep, false),
-            ["--", "hello"]
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn wl_copy_text_starting_with_dash_stays_an_operand() {
-        assert_eq!(
-            wl_copy_args("--sensitive", ClipboardWrite::Transit, true),
-            ["--sensitive", "--", "--sensitive"]
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn detects_sensitive_option_in_wl_copy_help() {
-        assert!(wl_copy_help_mentions_sensitive(
-            "    --sensitive		Hint that the content is sensitive."
-        ));
-        assert!(!wl_copy_help_mentions_sensitive(
-            "Usage:
-	wl-copy [OPTION]... [TEXT TO COPY]
-  -o, --paste-once"
-        ));
-    }
 
     #[cfg(target_os = "linux")]
     #[test]
