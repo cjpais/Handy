@@ -337,6 +337,32 @@ fn classify_ydotool_key_syntax(help: &str) -> Option<YdotoolKeySyntax> {
     }
 }
 
+/// A `ydotool` command that can reach ydotoold when `YDOTOOL_SOCKET` is not set
+/// (autostart, desktop launcher): distro packages put the socket in different
+/// places, such as /tmp on Fedora and /run/ydotoold on NixOS.
+#[cfg(target_os = "linux")]
+fn ydotool_command() -> Command {
+    let mut command = Command::new("ydotool");
+    if std::env::var_os("YDOTOOL_SOCKET").is_none_or(|v| v.is_empty()) {
+        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_default();
+        let candidates = [
+            format!("{runtime_dir}/.ydotool_socket"),
+            "/tmp/.ydotool_socket".to_string(),
+            "/run/ydotoold/socket".to_string(),
+        ];
+        // Only trust sockets owned by root or by us: /tmp is world-writable.
+        use std::os::unix::fs::MetadataExt;
+        let uid = unsafe { libc::getuid() };
+        if let Some(socket) = candidates
+            .iter()
+            .find(|p| std::fs::metadata(p).is_ok_and(|m| m.uid() == 0 || m.uid() == uid))
+        {
+            command.env("YDOTOOL_SOCKET", socket);
+        }
+    }
+    command
+}
+
 /// Detects and caches a recognized ydotool key syntax. Unknown or failed probes are not cached,
 /// allowing a transient daemon or PATH problem to recover on a later paste attempt.
 #[cfg(target_os = "linux")]
@@ -345,7 +371,7 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
         return *syntax;
     }
 
-    match Command::new("ydotool").args(["key", "--help"]).output() {
+    match ydotool_command().args(["key", "--help"]).output() {
         Ok(output) => {
             // ydotool 0.x writes help to stderr and its exit status varies by build.
             let mut help = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -549,7 +575,7 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
 #[cfg(target_os = "linux")]
 fn type_text_via_ydotool(text: &str) -> Result<(), String> {
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .arg("type")
         .arg("--")
         .arg(text)
@@ -682,7 +708,7 @@ fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> 
     let syntax = detect_ydotool_key_syntax();
     let args = ydotool_key_args(paste_method, syntax)?;
 
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .args(args)
         .output()
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
