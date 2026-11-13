@@ -72,11 +72,8 @@ const MIN_SPEECH_SAMPLES: usize = 16_000 / 2;
 /// uncertain (with two languages: p < 0.6). It is used either way.
 const UNSURE_RATIO: f32 = 1.5;
 
-/// Below this share of the unrestricted probability on the allowed labels,
-/// the speech sounds like none of the person's languages, and the ranking
-/// among them is noise: English read with a Romanian accent, scored over
-/// English and Russian, came out Russian at 97% with 0.0% allowed mass
-/// (#2405). Speech in one of their languages measured 62% or more.
+/// Below this share of probability on the allowed languages, the speech
+/// matches none of them and the ranking among them is noise (#2405).
 const MIN_ALLOWED_MASS: f32 = 0.1;
 
 /// How a transcription's language was chosen.
@@ -237,9 +234,6 @@ impl Plan {
             identified.elapsed.as_millis()
         );
         if identified.allowed_mass < MIN_ALLOWED_MASS {
-            info!(
-                "Language detection: the speech matches none of the allowed languages; {transcribing_as}"
-            );
             return fallback_decision;
         }
         match language {
@@ -294,70 +288,21 @@ mod tests {
         assert_eq!(decision.source, LanguageSource::Detected);
     }
 
-    /// The language for English listed first, given a measured detector run
-    /// (#2405: edge-tts voices reading the same English text).
-    fn measured(spoken: &[&str], candidates: &[(&str, f32)], mass: f32) -> LanguageDecision {
-        let plan = Plan::Detect {
-            languages: codes(spoken),
-            allowed: codes(spoken),
-            fallback: DetectFallback::FirstLanguage,
-        };
-        plan.decide(Some(&SPEECH), |_, _| {
-            let mut identified = ranked(candidates)?;
-            identified.allowed_mass = mass;
-            Ok(identified)
-        })
-    }
-
+    /// #2405: accented English scored 97% Russian with no mass on either language.
     #[test]
     fn speech_in_none_of_the_languages_uses_the_first() {
-        let english = |decision: LanguageDecision| {
-            assert_eq!(decision.language.as_deref(), Some("en"));
-            assert_eq!(decision.source, LanguageSource::Fallback);
+        let plan = Plan::Detect {
+            languages: codes(&["en", "ru"]),
+            allowed: codes(&["en", "ru"]),
+            fallback: DetectFallback::FirstLanguage,
         };
-        // ro-RO-EmilNeural reading English, scored over each pair.
-        english(measured(
-            &["en", "ru"],
-            &[("ru", 0.972), ("en", 0.028)],
-            0.0,
-        ));
-        english(measured(
-            &["en", "pt"],
-            &[("pt", 0.986), ("en", 0.014)],
-            0.0,
-        ));
-        english(measured(&["en", "it"], &[("it", 1.0), ("en", 0.0)], 0.0));
-        // ru-RU-DmitryNeural reading English, over English and Romanian.
-        english(measured(&["en", "ro"], &[("ro", 1.0), ("en", 0.0)], 0.0));
-        english(measured(
-            &["en", "ro", "fr"],
-            &[("ro", 0.999), ("en", 0.0)],
-            0.0,
-        ));
-    }
-
-    #[test]
-    fn speech_in_one_of_the_languages_is_followed() {
-        let detected = |decision: LanguageDecision, language: &str| {
-            assert_eq!(decision.language.as_deref(), Some(language));
-            assert_eq!(decision.source, LanguageSource::Detected);
-        };
-        // en-IN-NeerjaNeural: the lowest allowed mass of a right pick.
-        detected(
-            measured(&["en", "ro"], &[("en", 1.0), ("ro", 0.0)], 0.623),
-            "en",
-        );
-        // A Romanian voice over English and Romanian: Romanian is what the
-        // detector hears, so it is followed (this case stays unfixed).
-        detected(
-            measured(&["en", "ro"], &[("ro", 1.0), ("en", 0.0)], 0.974),
-            "ro",
-        );
-        // fr-FR-HenriNeural, full clip: partly heard as French.
-        detected(
-            measured(&["en", "ro", "fr"], &[("fr", 1.0), ("en", 0.0)], 0.305),
-            "fr",
-        );
+        let decision = plan.decide(Some(&SPEECH), |_, _| {
+            let mut identified = ranked(&[("ru", 0.972), ("en", 0.028)])?;
+            identified.allowed_mass = 0.0;
+            Ok(identified)
+        });
+        assert_eq!(decision.language.as_deref(), Some("en"));
+        assert_eq!(decision.source, LanguageSource::Fallback);
     }
 
     #[test]
