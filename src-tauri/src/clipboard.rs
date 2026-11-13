@@ -99,7 +99,7 @@ fn paste_via_clipboard(
     let paste_result = (|| -> Result<(), String> {
         // Send paste key combo
         #[cfg(target_os = "linux")]
-        let key_combo_sent = try_send_key_combo_linux(paste_method)?;
+        let key_combo_sent = try_send_key_combo_linux(paste_method);
 
         #[cfg(not(target_os = "linux"))]
         let key_combo_sent = false;
@@ -137,45 +137,42 @@ fn paste_via_clipboard(
     })
 }
 
-/// Attempts to send a key combination using Linux-native tools.
-/// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
+/// Sends the paste key combination with the first Linux-native tool that works.
+/// A tool that is installed but fails (ydotool without its daemon, wtype on a
+/// compositor without the virtual-keyboard protocol) hands over to the next one.
+/// Returns `false` when none of them sent it, so the caller falls back to enigo.
 #[cfg(target_os = "linux")]
-fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
+fn try_send_key_combo_linux(paste_method: &PasteMethod) -> bool {
+    type SendKeyCombo = fn(&PasteMethod) -> Result<(), String>;
+    let mut tools: Vec<(&str, SendKeyCombo)> = Vec::new();
     if is_wayland() {
         // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
         // or on GNOME/Mutter (same reason — Mutter deliberately does not implement
         // the virtual-keyboard-v1 protocol).
         if !is_kde_wayland() && !is_gnome_wayland() && is_wtype_available() {
-            info!("Using wtype for key combo");
-            send_key_combo_via_wtype(paste_method)?;
-            return Ok(true);
+            tools.push(("wtype", send_key_combo_via_wtype));
         }
         if is_dotool_available() {
-            info!("Using dotool for key combo");
-            send_key_combo_via_dotool(paste_method)?;
-            return Ok(true);
+            tools.push(("dotool", send_key_combo_via_dotool));
         }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
-            return Ok(true);
-        }
-    } else {
+    } else if is_xdotool_available() {
         // X11: prefer xdotool, then ydotool
-        if is_xdotool_available() {
-            info!("Using xdotool for key combo");
-            send_key_combo_via_xdotool(paste_method)?;
-            return Ok(true);
-        }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
-            return Ok(true);
+        tools.push(("xdotool", send_key_combo_via_xdotool));
+    }
+    if is_ydotool_available() {
+        tools.push(("ydotool", send_key_combo_via_ydotool));
+    }
+
+    for (name, send) in tools {
+        info!("Using {} for key combo", name);
+        match send(paste_method) {
+            Ok(()) => return true,
+            Err(e) => log::warn!("{} could not send the paste keys: {}", name, e),
         }
     }
 
-    Ok(false)
+    false
 }
 
 /// Attempts to type text directly using Linux-native tools.
@@ -404,6 +401,19 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
     }
 }
 
+/// ydotool prints its errors, such as a missing ydotoold, on stdout rather than stderr.
+#[cfg(target_os = "linux")]
+fn ydotool_error(output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let message = [stderr.trim(), stdout.trim()]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!("ydotool failed ({}): {}", output.status, message)
+}
+
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_ydotool_available() -> bool {
@@ -583,8 +593,7 @@ fn type_text_via_ydotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ydotool failed: {}", stderr));
+        return Err(ydotool_error(&output));
     }
 
     Ok(())
@@ -714,8 +723,7 @@ fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> 
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ydotool failed: {}", stderr));
+        return Err(ydotool_error(&output));
     }
 
     Ok(())
