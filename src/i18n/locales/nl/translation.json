@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Sneltoetsen geblokkeerd door Secure Input",
     "language": "Taal",
     "autoLanguage": "Automatisch",
-    "otherLanguages": "Andere talen"
+    "otherLanguages": "Andere talen",
+    "redirectToWindow": "Omleiden naar venster…",
+    "stopRedirect": "Omleiding stoppen"
   },
   "sidebar": {
     "general": "Algemeen",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Geen model geselecteerd",
     "modelDownloadFailed": "Downloaden mislukt",
     "pasteFailedTitle": "Tekst plakken mislukt",
+    "redirectLostTitle": "Geplakt zonder omleiding",
+    "redirectLost": "Handy kon niet in het gekozen venster typen, dus de tekst is geplakt waar de cursor stond.",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
     "postProcessFailedTitle": "Geplakt zonder naverwerking",
     "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
@@ -976,6 +980,10 @@
       "light": "Licht",
       "dark": "Donker"
     }
+  },
+  "picker": {
+    "hint": "Klik op het venster waarin je wilt dicteren. Tab kiest het venster erachter. Esc annuleert.",
+    "noWindow": "Hier is geen venster om te kiezen."
   },
   "overlay": {
     "transcribing": "Transcriberen...",

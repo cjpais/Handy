@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor",
     "language": "Dil",
     "autoLanguage": "Otomatik",
-    "otherLanguages": "Diğer Diller"
+    "otherLanguages": "Diğer Diller",
+    "redirectToWindow": "Pencereye Yönlendir…",
+    "stopRedirect": "Yönlendirmeyi Durdur"
   },
   "sidebar": {
     "general": "Genel",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Model seçilmedi",
     "modelDownloadFailed": "İndirme başarısız oldu",
     "pasteFailedTitle": "Metin yapıştırılamadı",
+    "redirectLostTitle": "Yönlendirme Olmadan Yapıştırıldı",
+    "redirectLost": "Handy seçilen pencereye yazamadı, bu yüzden metin imlecin olduğu yere yapıştırıldı.",
     "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı.",
     "postProcessFailedTitle": "Son işlem olmadan yapıştırıldı",
     "postProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi yapıştırıldı.",
@@ -976,6 +980,10 @@
       "light": "Açık",
       "dark": "Koyu"
     }
+  },
+  "picker": {
+    "hint": "Dikte edeceğiniz pencereye tıklayın. Tab arkadakini seçer. Esc iptal eder.",
+    "noWindow": "Burada seçilecek pencere yok."
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",

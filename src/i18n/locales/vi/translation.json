@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Phím tắt bị Secure Input chặn",
     "language": "Ngôn ngữ",
     "autoLanguage": "Tự động",
-    "otherLanguages": "Ngôn ngữ khác"
+    "otherLanguages": "Ngôn ngữ khác",
+    "redirectToWindow": "Chuyển hướng tới cửa sổ…",
+    "stopRedirect": "Dừng chuyển hướng"
   },
   "sidebar": {
     "general": "Chung",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Chưa chọn mô hình",
     "modelDownloadFailed": "Tải xuống thất bại",
     "pasteFailedTitle": "Không thể dán văn bản",
+    "redirectLostTitle": "Đã dán mà không chuyển hướng",
+    "redirectLost": "Handy không thể nhập vào cửa sổ đã chọn, nên văn bản được dán tại vị trí con trỏ.",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
     "postProcessFailedTitle": "Đã dán không qua xử lý sau",
     "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
@@ -976,6 +980,10 @@
       "light": "Sáng",
       "dark": "Tối"
     }
+  },
+  "picker": {
+    "hint": "Nhấp vào cửa sổ muốn đọc chính tả vào. Tab chọn cửa sổ phía sau. Esc để hủy.",
+    "noWindow": "Không có cửa sổ nào để chọn ở đây."
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",

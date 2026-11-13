@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Secure Input으로 단축키가 차단됨",
     "language": "언어",
     "autoLanguage": "자동",
-    "otherLanguages": "기타 언어"
+    "otherLanguages": "기타 언어",
+    "redirectToWindow": "창으로 리디렉션…",
+    "stopRedirect": "리디렉션 중지"
   },
   "sidebar": {
     "general": "일반",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "선택된 모델이 없습니다",
     "modelDownloadFailed": "다운로드 실패",
     "pasteFailedTitle": "텍스트 붙여넣기 실패",
+    "redirectLostTitle": "리디렉션 없이 붙여넣음",
+    "redirectLost": "선택한 창에 입력할 수 없어 텍스트가 커서가 있던 곳에 붙여넣어졌습니다.",
     "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다.",
     "postProcessFailedTitle": "후처리 없이 붙여넣음",
     "postProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 붙여넣었습니다.",
@@ -976,6 +980,10 @@
       "light": "밝게",
       "dark": "어둡게"
     }
+  },
+  "picker": {
+    "hint": "받아쓸 창을 클릭하세요. Tab은 뒤의 창을 선택합니다. Esc로 취소합니다.",
+    "noWindow": "여기에는 선택할 창이 없습니다."
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",

@@ -1066,6 +1066,24 @@ async dismissNotice(source: NoticeSource, code: NoticeCode) : Promise<void> {
  */
 async dismissOverlayNotice() : Promise<void> {
     await TAURI_INVOKE("dismiss_overlay_notice");
+},
+/**
+ * The windows under the pointer, front to back, so the user can reach one
+ * that another covers.
+ */
+async pickerHover(x: number, y: number) : Promise<PickerHover[]> {
+    return await TAURI_INVOKE("picker_hover", { x, y });
+},
+/**
+ * Picks the window at `depth` under the pointer (0 is the front one) as the
+ * redirect target and takes the picker down. `false` when there's no window
+ * there to pick; the picker stays up for another try.
+ */
+async pickerPick(x: number, y: number, depth: number) : Promise<boolean> {
+    return await TAURI_INVOKE("picker_pick", { x, y, depth });
+},
+async pickerCancel() : Promise<void> {
+    await TAURI_INVOKE("picker_cancel");
 }
 }
 
@@ -1356,7 +1374,12 @@ detail: string | null }
 /**
  * The frontend maps each code to its text in `src/lib/notices.ts`.
  */
-export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed"
+export type NoticeCode = "TranscriptionFailed" | "PasteFailed" | "NoMicrophone" | "MicrophoneSilent" | "MicPermissionDenied" | "RecordingFailed" | "ModelLoadFailed" | "NoModelSelected" | "PostProcessFailed" | "FileTranscriptionFailed" | "FilePostProcessFailed" | 
+/**
+ * The redirect target didn't take the text, so it went where the cursor
+ * was. The redirect is off if the window is gone.
+ */
+"RedirectLost"
 export type NoticeLevel = 
 /**
  * Nothing came out, or Handy can't do its job.
@@ -1392,6 +1415,10 @@ export type OverlayStyle = "none" | "minimal" | "live"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
+/**
+ * A window under the pointer, in the panel's coordinates.
+ */
+export type PickerHover = { x: number; y: number; width: number; height: number; app_name: string }
 /**
  * Request format a post-processing endpoint speaks. Built-in providers have a
  * fixed format; only the custom provider lets the user change it.

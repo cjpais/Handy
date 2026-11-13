@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input",
     "language": "Bahasa",
     "autoLanguage": "Otomatis",
-    "otherLanguages": "Bahasa Lain"
+    "otherLanguages": "Bahasa Lain",
+    "redirectToWindow": "Alihkan ke Jendela…",
+    "stopRedirect": "Hentikan Pengalihan"
   },
   "sidebar": {
     "general": "Umum",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Tidak Ada Model Dipilih",
     "modelDownloadFailed": "Unduhan gagal",
     "pasteFailedTitle": "Gagal Menempelkan Teks",
+    "redirectLostTitle": "Ditempel Tanpa Pengalihan",
+    "redirectLost": "Handy tidak bisa mengetik di jendela yang dipilih, jadi teks ditempel di tempat kursor berada.",
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
     "postProcessFailedTitle": "Ditempel Tanpa Pascaproses",
     "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
@@ -976,6 +980,10 @@
       "light": "Terang",
       "dark": "Gelap"
     }
+  },
+  "picker": {
+    "hint": "Klik jendela tempat Anda ingin mendikte. Tab memilih jendela di belakangnya. Esc membatalkan.",
+    "noWindow": "Tidak ada jendela untuk dipilih di sini."
   },
   "overlay": {
     "transcribing": "Mentranskripsikan...",

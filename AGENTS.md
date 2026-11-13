@@ -71,6 +71,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `notices.rs` - Reports background errors to the user (see [Error notices](#error-notices))
 - `overlay.rs` - Recording overlay window (platform-specific)
 - `signal_handle.rs` - `send_transcription_input()` reusable function
+- `window_redirect/` - Delivers dictation into a window picked on screen (platform-specific)
 - `utils.rs` - Platform detection helpers
 
 ### Frontend Structure (src/)

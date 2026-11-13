@@ -3,6 +3,9 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
 #[cfg(target_os = "macos")]
+pub(crate) use macos::command_v_keycode;
+
+#[cfg(target_os = "macos")]
 mod macos {
     use super::Key;
     use log::{debug, warn};

@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Tastenkürzel durch Secure Input blockiert",
     "language": "Sprache",
     "autoLanguage": "Automatisch",
-    "otherLanguages": "Weitere Sprachen"
+    "otherLanguages": "Weitere Sprachen",
+    "redirectToWindow": "In Fenster umleiten…",
+    "stopRedirect": "Umleitung beenden"
   },
   "sidebar": {
     "general": "Allgemein",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Kein Modell ausgewählt",
     "modelDownloadFailed": "Download fehlgeschlagen",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
+    "redirectLostTitle": "Ohne Umleitung eingefügt",
+    "redirectLost": "Handy konnte nicht in das gewählte Fenster schreiben, daher wurde der Text dort eingefügt, wo der Cursor war.",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
     "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
@@ -976,6 +980,10 @@
       "light": "Hell",
       "dark": "Dunkel"
     }
+  },
+  "picker": {
+    "hint": "Klicken Sie auf das Fenster, in das diktiert werden soll. Tab wählt das dahinter. Esc bricht ab.",
+    "noWindow": "Hier gibt es kein Fenster zum Auswählen."
   },
   "overlay": {
     "transcribing": "Transkribiere...",

@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
     "language": "اللغة",
     "autoLanguage": "تلقائي",
-    "otherLanguages": "لغات أخرى"
+    "otherLanguages": "لغات أخرى",
+    "redirectToWindow": "إعادة التوجيه إلى نافذة…",
+    "stopRedirect": "إيقاف إعادة التوجيه"
   },
   "sidebar": {
     "general": "عام",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "لم يتم اختيار نموذج",
     "modelDownloadFailed": "فشل التنزيل",
     "pasteFailedTitle": "فشل لصق النص",
+    "redirectLostTitle": "تم اللصق بدون إعادة توجيه",
+    "redirectLost": "لم يتمكن Handy من الكتابة في النافذة المختارة، لذا تم لصق النص حيث كان المؤشر.",
     "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
     "postProcessFailedTitle": "لُصق بدون معالجة لاحقة",
     "postProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا لُصق النص المنسوخ كما هو.",
@@ -976,6 +980,10 @@
       "light": "فاتح",
       "dark": "داكن"
     }
+  },
+  "picker": {
+    "hint": "انقر على النافذة التي تريد الإملاء فيها. Tab يختار النافذة خلفها. Esc للإلغاء.",
+    "noWindow": "لا توجد نافذة لاختيارها هنا."
   },
   "overlay": {
     "transcribing": "جاري التفريغ...",

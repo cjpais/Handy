@@ -15,6 +15,7 @@ use crate::tray::{set_tray_state, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
+use crate::window_redirect::{self, Delivery};
 use crate::TranscriptionCoordinator;
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
@@ -913,39 +914,56 @@ impl ShortcutAction for TranscribeAction {
                                         // UI while this paste ran.
                                         let owns_ui =
                                             || RECORDING_SESSION.load(Ordering::SeqCst) == session;
-                                        let (outcome, notice) =
-                                            match utils::paste(final_text, ah_clone.clone()) {
-                                                Ok(()) => {
-                                                    debug!(
-                                                        "Text pasted successfully in {:?}",
-                                                        paste_time.elapsed()
+                                        let delivery =
+                                            window_redirect::deliver(&ah_clone, &final_text);
+                                        let redirect_lost = delivery == Delivery::Lost;
+                                        let pasted = match delivery {
+                                            Delivery::Delivered => Ok(()),
+                                            Delivery::NotRedirected | Delivery::Lost => {
+                                                utils::paste(final_text, ah_clone.clone())
+                                            }
+                                        };
+                                        let (outcome, notice) = match pasted {
+                                            Ok(()) => {
+                                                debug!(
+                                                    "Text pasted successfully in {:?}",
+                                                    paste_time.elapsed()
+                                                );
+                                                // Leave a newer session's notice alone.
+                                                if owns_ui() {
+                                                    notices::clear(
+                                                        &ah_clone,
+                                                        NoticeSource::Dictation,
                                                     );
-                                                    // Leave a newer session's notice alone.
-                                                    if owns_ui() {
-                                                        notices::clear(
-                                                            &ah_clone,
-                                                            NoticeSource::Dictation,
-                                                        );
-                                                    }
-                                                    let notice = post_process_failed.then(|| {
+                                                }
+                                                // The text went somewhere the user didn't
+                                                // set up: that beats a post-processing miss.
+                                                let notice = if redirect_lost {
+                                                    Some(Notice::new(
+                                                        NoticeCode::RedirectLost,
+                                                        NoticeSource::Dictation,
+                                                    ))
+                                                } else {
+                                                    post_process_failed.then(|| {
                                                         Notice::new(
                                                             NoticeCode::PostProcessFailed,
                                                             NoticeSource::Dictation,
                                                         )
-                                                    });
-                                                    (TranscriptionOutcome::Typed, notice)
-                                                }
-                                                Err(e) => {
-                                                    error!("Failed to paste transcription: {}", e);
-                                                    (
-                                                        TranscriptionOutcome::Failed,
-                                                        Some(Notice::new(
-                                                            NoticeCode::PasteFailed,
-                                                            NoticeSource::Dictation,
-                                                        )),
-                                                    )
-                                                }
-                                            };
+                                                    })
+                                                };
+                                                (TranscriptionOutcome::Typed, notice)
+                                            }
+                                            Err(e) => {
+                                                error!("Failed to paste transcription: {}", e);
+                                                (
+                                                    TranscriptionOutcome::Failed,
+                                                    Some(Notice::new(
+                                                        NoticeCode::PasteFailed,
+                                                        NoticeSource::Dictation,
+                                                    )),
+                                                )
+                                            }
+                                        };
                                         match (owns_ui(), notice) {
                                             (true, Some(notice)) => {
                                                 notices::raise(&ah_clone, notice)

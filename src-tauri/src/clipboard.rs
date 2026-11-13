@@ -7,7 +7,7 @@ use log::info;
 use std::process::Command;
 #[cfg(target_os = "linux")]
 use std::sync::OnceLock;
-use std::sync::{mpsc, Mutex, PoisonError};
+use std::sync::{mpsc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -16,7 +16,8 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
 /// Serializes pastes: overlapping ones would restore each other's transcript as
-/// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
+/// the user's clipboard. Taken by `paste` and by a redirected delivery, neither
+/// of which runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
 
 /// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
@@ -47,7 +48,13 @@ fn with_enigo<T: Send + 'static>(
         .map_err(|_| "Main thread dropped the input request".to_string())?
 }
 
-fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+/// One paste at a time, including a redirected one: they all go through the
+/// clipboard.
+pub(crate) fn paste_lock() -> MutexGuard<'static, ()> {
+    PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+pub(crate) fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");

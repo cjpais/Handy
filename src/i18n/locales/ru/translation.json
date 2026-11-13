@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input",
     "language": "Язык",
     "autoLanguage": "Авто",
-    "otherLanguages": "Другие языки"
+    "otherLanguages": "Другие языки",
+    "redirectToWindow": "Направлять в окно…",
+    "stopRedirect": "Остановить перенаправление"
   },
   "sidebar": {
     "general": "Общие",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Модель не выбрана",
     "modelDownloadFailed": "Ошибка загрузки",
     "pasteFailedTitle": "Не удалось вставить текст",
+    "redirectLostTitle": "Вставлено без перенаправления",
+    "redirectLost": "Handy не смог ввести текст в выбранное окно, поэтому текст вставлен туда, где был курсор.",
     "pasteFailed": "Не удалось вставить текст в активное приложение.",
     "postProcessFailedTitle": "Вставлено без постобработки",
     "postProcessFailed": "Постобработка не завершилась, поэтому расшифровка вставлена как есть.",
@@ -976,6 +980,10 @@
       "light": "Светлая",
       "dark": "Тёмная"
     }
+  },
+  "picker": {
+    "hint": "Кликните окно, в которое диктовать. Tab — окно позади. Esc — отмена.",
+    "noWindow": "Здесь нет окна для выбора."
   },
   "overlay": {
     "transcribing": "Расшифровка...",

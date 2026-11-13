@@ -172,7 +172,8 @@ tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.
 # promises. Versions track what Tauri already pulls in.
 objc2 = "0.6"
 objc2-foundation = "0.3"
-objc2-app-kit = "0.3"
+objc2-app-kit = { version = "0.3", features = ["NSRunningApplication", "NSWorkspace"] }
+objc2-core-foundation = "0.3"
 objc2-service-management = "0.3.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]

@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Secure Input ले सर्टकटहरू रोकेको छ",
     "language": "भाषा",
     "autoLanguage": "स्वतः",
-    "otherLanguages": "अन्य भाषाहरू"
+    "otherLanguages": "अन्य भाषाहरू",
+    "redirectToWindow": "विन्डोमा रिडाइरेक्ट गर्नुहोस्…",
+    "stopRedirect": "रिडाइरेक्ट रोक्नुहोस्"
   },
   "sidebar": {
     "general": "सामान्य",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "कुनै मोडेल छानिएको छैन",
     "modelDownloadFailed": "डाउनलोड असफल भयो",
     "pasteFailedTitle": "टेक्स्ट पेस्ट गर्न सकिएन",
+    "redirectLostTitle": "रिडाइरेक्ट बिना पेस्ट गरियो",
+    "redirectLost": "Handy छानिएको विन्डोमा टाइप गर्न सकेन, त्यसैले पाठ कर्सर भएको ठाउँमा पेस्ट भयो।",
     "pasteFailed": "सक्रिय एपमा टेक्स्ट पेस्ट गर्न सकिएन।",
     "postProcessFailedTitle": "पोस्ट प्रोसेस बिना पेस्ट गरियो",
     "postProcessFailed": "पोस्ट प्रोसेस पूरा भएन, त्यसैले ट्रान्सक्रिप्ट जस्तो थियो त्यस्तै पेस्ट गरियो।",
@@ -976,6 +980,10 @@
       "light": "उज्यालो",
       "dark": "अँध्यारो"
     }
+  },
+  "picker": {
+    "hint": "डिक्टेट गर्ने विन्डोमा क्लिक गर्नुहोस्। Tab ले पछाडिको विन्डो छान्छ। Esc ले रद्द गर्छ।",
+    "noWindow": "यहाँ छान्न कुनै विन्डो छैन।"
   },
   "overlay": {
     "transcribing": "ट्रान्सक्राइब गरिँदैछ...",

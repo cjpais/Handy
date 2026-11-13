@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Skróty zablokowane przez Secure Input",
     "language": "Język",
     "autoLanguage": "Automatycznie",
-    "otherLanguages": "Inne języki"
+    "otherLanguages": "Inne języki",
+    "redirectToWindow": "Przekieruj do okna…",
+    "stopRedirect": "Zatrzymaj przekierowanie"
   },
   "sidebar": {
     "general": "Ogólne",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Nie wybrano modelu",
     "modelDownloadFailed": "Pobieranie nie powiodło się",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
+    "redirectLostTitle": "Wklejono bez przekierowania",
+    "redirectLost": "Handy nie mógł wpisać tekstu w wybranym oknie, więc tekst wklejono tam, gdzie był kursor.",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
     "postProcessFailedTitle": "Wklejono bez postprocesu",
     "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
@@ -976,6 +980,10 @@
       "light": "Jasny",
       "dark": "Ciemny"
     }
+  },
+  "picker": {
+    "hint": "Kliknij okno, do którego chcesz dyktować. Tab wybiera to za nim. Esc anuluje.",
+    "noWindow": "Tutaj nie ma okna do wybrania."
   },
   "overlay": {
     "transcribing": "Transkrypcja...",

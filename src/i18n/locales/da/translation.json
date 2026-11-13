@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Genveje blokeret af Secure Input",
     "language": "Sprog",
     "autoLanguage": "Automatisk",
-    "otherLanguages": "Andre sprog"
+    "otherLanguages": "Andre sprog",
+    "redirectToWindow": "Omdiriger til vindue…",
+    "stopRedirect": "Stop omdirigering"
   },
   "sidebar": {
     "general": "Generelt",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Ingen model valgt",
     "modelDownloadFailed": "Download mislykkedes",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
+    "redirectLostTitle": "Indsat uden omdirigering",
+    "redirectLost": "Handy kunne ikke skrive i det valgte vindue, så teksten blev indsat, hvor markøren var.",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
     "postProcessFailedTitle": "Indsat uden efterbehandling",
     "postProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev indsat, som den er.",
@@ -976,6 +980,10 @@
       "light": "Lys",
       "dark": "Mørk"
     }
+  },
+  "picker": {
+    "hint": "Klik på det vindue, du vil diktere i. Tab vælger det bagved. Esc annullerer.",
+    "noWindow": "Der er ikke noget vindue at vælge her."
   },
   "overlay": {
     "transcribing": "Transskriberer...",

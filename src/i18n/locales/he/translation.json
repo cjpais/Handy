@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input",
     "language": "שפה",
     "autoLanguage": "אוטומטי",
-    "otherLanguages": "שפות אחרות"
+    "otherLanguages": "שפות אחרות",
+    "redirectToWindow": "הפניה לחלון…",
+    "stopRedirect": "עצירת ההפניה"
   },
   "sidebar": {
     "general": "כללי",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "לא נבחר מודל",
     "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
+    "redirectLostTitle": "הודבק ללא הפניה",
+    "redirectLost": "Handy לא הצליח להקליד בחלון שנבחר, ולכן הטקסט הודבק במקום שבו היה הסמן.",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
     "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
@@ -976,6 +980,10 @@
       "light": "בהיר",
       "dark": "כהה"
     }
+  },
+  "picker": {
+    "hint": "לחצו על החלון שאליו להקליד. Tab בוחר את החלון שמאחוריו. Esc מבטל.",
+    "noWindow": "אין פה חלון לבחירה."
   },
   "overlay": {
     "transcribing": "מתמלל...",

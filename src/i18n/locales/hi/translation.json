@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं",
     "language": "भाषा",
     "autoLanguage": "ऑटो",
-    "otherLanguages": "अन्य भाषाएँ"
+    "otherLanguages": "अन्य भाषाएँ",
+    "redirectToWindow": "विंडो पर रीडायरेक्ट करें…",
+    "stopRedirect": "रीडायरेक्ट रोकें"
   },
   "sidebar": {
     "general": "सामान्य",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "कोई मॉडल नहीं चुना गया",
     "modelDownloadFailed": "डाउनलोड विफल रहा",
     "pasteFailedTitle": "टेक्स्ट पेस्ट नहीं हो सका",
+    "redirectLostTitle": "रीडायरेक्ट के बिना पेस्ट किया गया",
+    "redirectLost": "Handy चुनी गई विंडो में टाइप नहीं कर सका, इसलिए टेक्स्ट वहीं पेस्ट हुआ जहाँ कर्सर था।",
     "pasteFailed": "खुले हुए ऐप्लिकेशन में टेक्स्ट पेस्ट नहीं किया जा सका.",
     "postProcessFailedTitle": "पोस्ट प्रोसेस के बिना पेस्ट किया गया",
     "postProcessFailed": "पोस्ट प्रोसेस पूरा नहीं हुआ, इसलिए ट्रांसक्रिप्ट जैसा था वैसा ही पेस्ट किया गया।",
@@ -976,6 +980,10 @@
       "light": "लाइट",
       "dark": "डार्क"
     }
+  },
+  "picker": {
+    "hint": "उस विंडो पर क्लिक करें जिसमें डिक्टेट करना है। Tab उसके पीछे की विंडो चुनता है। Esc रद्द करता है।",
+    "noWindow": "यहाँ चुनने के लिए कोई विंडो नहीं है।"
   },
   "overlay": {
     "transcribing": "ट्रांसक्राइब हो रहा है...",

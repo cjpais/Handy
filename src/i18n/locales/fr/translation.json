@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input",
     "language": "Langue",
     "autoLanguage": "Automatique",
-    "otherLanguages": "Autres langues"
+    "otherLanguages": "Autres langues",
+    "redirectToWindow": "Rediriger vers une fenêtre…",
+    "stopRedirect": "Arrêter la redirection"
   },
   "sidebar": {
     "general": "Général",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Aucun modèle sélectionné",
     "modelDownloadFailed": "Échec du téléchargement",
     "pasteFailedTitle": "Échec du collage du texte",
+    "redirectLostTitle": "Collé sans redirection",
+    "redirectLost": "Handy n'a pas pu écrire dans la fenêtre choisie, le texte a donc été collé là où se trouvait le curseur.",
     "pasteFailed": "Le texte n'a pas pu être collé dans l'application active.",
     "postProcessFailedTitle": "Collé sans post-traitement",
     "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
@@ -976,6 +980,10 @@
       "light": "Clair",
       "dark": "Sombre"
     }
+  },
+  "picker": {
+    "hint": "Cliquez sur la fenêtre dans laquelle dicter. Tab choisit celle de derrière. Échap annule.",
+    "noWindow": "Aucune fenêtre à choisir ici."
   },
   "overlay": {
     "transcribing": "Transcription...",

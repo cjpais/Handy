@@ -1,0 +1,52 @@
+.picker {
+  position: fixed;
+  inset: 0;
+  cursor: crosshair;
+  background: rgba(0, 0, 0, 0.18);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+}
+
+.picker-highlight {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.18);
+  pointer-events: none;
+}
+
+.picker-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.picker-hint-missed {
+  background: rgba(180, 40, 40, 0.9);
+}
+
+.picker-hint {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.85);
+  color: #fff;
+  font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+}

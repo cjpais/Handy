@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Zkratky blokuje Secure Input",
     "language": "Jazyk",
     "autoLanguage": "Automaticky",
-    "otherLanguages": "Další jazyky"
+    "otherLanguages": "Další jazyky",
+    "redirectToWindow": "Přesměrovat do okna…",
+    "stopRedirect": "Zastavit přesměrování"
   },
   "sidebar": {
     "general": "Obecné",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Není vybrán žádný model",
     "modelDownloadFailed": "Stahování selhalo",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
+    "redirectLostTitle": "Vloženo bez přesměrování",
+    "redirectLost": "Handy nemohl psát do vybraného okna, takže text byl vložen tam, kde byl kurzor.",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
     "postProcessFailedTitle": "Vloženo bez následného zpracování",
     "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
@@ -976,6 +980,10 @@
       "light": "Světlý",
       "dark": "Tmavý"
     }
+  },
+  "picker": {
+    "hint": "Klikněte na okno, do kterého chcete diktovat. Tab vybere to za ním. Esc zruší.",
+    "noWindow": "Tady není žádné okno k výběru."
   },
   "overlay": {
     "transcribing": "Přepisuji...",

@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input",
     "language": "Idioma",
     "autoLanguage": "Automático",
-    "otherLanguages": "Outros idiomas"
+    "otherLanguages": "Outros idiomas",
+    "redirectToWindow": "Redirecionar para a janela…",
+    "stopRedirect": "Parar o redirecionamento"
   },
   "sidebar": {
     "general": "Geral",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Nenhum modelo selecionado",
     "modelDownloadFailed": "Falha no download",
     "pasteFailedTitle": "Falha ao colar o texto",
+    "redirectLostTitle": "Colado sem redirecionamento",
+    "redirectLost": "O Handy não conseguiu escrever na janela escolhida, então o texto foi colado onde estava o cursor.",
     "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
     "postProcessFailedTitle": "Colado sem pós-processamento",
     "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
@@ -976,6 +980,10 @@
       "light": "Claro",
       "dark": "Escuro"
     }
+  },
+  "picker": {
+    "hint": "Clique na janela em que quer ditar. Tab escolhe a de trás. Esc cancela.",
+    "noWindow": "Não há janela para escolher aqui."
   },
   "overlay": {
     "transcribing": "Transcrevendo...",

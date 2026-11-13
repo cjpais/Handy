@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input",
     "language": "Språk",
     "autoLanguage": "Automatiskt",
-    "otherLanguages": "Andra språk"
+    "otherLanguages": "Andra språk",
+    "redirectToWindow": "Omdirigera till fönster…",
+    "stopRedirect": "Stoppa omdirigering"
   },
   "sidebar": {
     "general": "Allmänt",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Ingen modell vald",
     "modelDownloadFailed": "Nedladdningen misslyckades",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
+    "redirectLostTitle": "Inklistrat utan omdirigering",
+    "redirectLost": "Handy kunde inte skriva i det valda fönstret, så texten klistrades in där markören var.",
     "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
     "postProcessFailedTitle": "Inklistrat utan efterbearbetning",
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
@@ -976,6 +980,10 @@
       "light": "Ljust",
       "dark": "Mörkt"
     }
+  },
+  "picker": {
+    "hint": "Klicka på fönstret att diktera i. Tab väljer det bakom. Esc avbryter.",
+    "noWindow": "Inget fönster att välja här."
   },
   "overlay": {
     "transcribing": "Transkriberar...",

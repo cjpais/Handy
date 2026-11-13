@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ 快捷键被 Secure Input 阻止",
     "language": "语言",
     "autoLanguage": "自动",
-    "otherLanguages": "其他语言"
+    "otherLanguages": "其他语言",
+    "redirectToWindow": "重定向到窗口…",
+    "stopRedirect": "停止重定向"
   },
   "sidebar": {
     "general": "通用",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "未选择模型",
     "modelDownloadFailed": "下载失败",
     "pasteFailedTitle": "粘贴文本失败",
+    "redirectLostTitle": "已粘贴但未重定向",
+    "redirectLost": "Handy 无法在所选窗口中输入，因此文本粘贴到了光标所在位置。",
     "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
     "postProcessFailedTitle": "已粘贴，未经后处理",
     "postProcessFailed": "后处理未完成，因此按原样粘贴转录内容。",
@@ -976,6 +980,10 @@
       "light": "浅色",
       "dark": "深色"
     }
+  },
+  "picker": {
+    "hint": "点击要听写到的窗口。Tab 选择其后面的窗口。按 Esc 取消。",
+    "noWindow": "这里没有可选择的窗口。"
   },
   "overlay": {
     "transcribing": "正在转录...",

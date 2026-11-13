@@ -25,7 +25,8 @@ use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::notices::{self, NoticeCode};
 use crate::settings;
-use crate::tray_i18n::get_tray_translations;
+use crate::tray_i18n::{get_tray_translations, TrayStrings};
+use crate::window_redirect;
 use log::{debug, error, info, trace, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -72,6 +73,15 @@ struct MenuInputs {
     update_checks_enabled: bool,
     /// The language submenu, when the selected model has languages to pick.
     language: Option<LanguageMenu>,
+    /// The window redirect entries; `None` when this build can't redirect.
+    redirect: Option<RedirectMenu>,
+}
+
+/// What the redirect entries show: the window dictation goes to now, if any.
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+struct RedirectMenu {
+    /// The current target's label.
+    target: Option<String>,
 }
 
 /// What the language submenu shows: `(code, name)` entries, with codes as
@@ -381,6 +391,10 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
             })
     };
 
+    let redirect = window_redirect::supported().then(|| RedirectMenu {
+        target: window_redirect::target(app).map(|t| t.label()),
+    });
+
     TrayDesired {
         icon_path: get_icon_path(theme, icon_state, badge),
         menu: MenuInputs {
@@ -394,8 +408,37 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
             locale: settings.app_language,
             update_checks_enabled: settings.update_checks_enabled,
             language,
+            redirect,
         },
     }
+}
+
+/// The redirect entries: a check item that opens the picker and, while
+/// redirecting, names the target and is checked; Stop below it.
+fn redirect_items(
+    app: &AppHandle,
+    strings: &TrayStrings,
+    redirect: &RedirectMenu,
+) -> tauri::Result<(CheckMenuItem<tauri::Wry>, MenuItem<tauri::Wry>)> {
+    let pick = CheckMenuItem::with_id(
+        app,
+        "redirect_pick",
+        redirect
+            .target
+            .as_deref()
+            .unwrap_or(&strings.redirect_to_window),
+        true,
+        redirect.target.is_some(),
+        None::<&str>,
+    )?;
+    let stop = MenuItem::with_id(
+        app,
+        "redirect_stop",
+        &strings.stop_redirect,
+        redirect.target.is_some(),
+        None::<&str>,
+    )?;
+    Ok((pick, stop))
 }
 
 /// The language submenu for `model`, mirroring the settings window's picker:
@@ -755,6 +798,18 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         if let Some(language) = &inputs.language {
             menu.insert(&language_submenu(app, &strings, language)?, 5)?;
         }
+        // Below the model and language entries: output after input.
+        if let Some(redirect) = &inputs.redirect {
+            let (pick, stop) = redirect_items(app, &strings, redirect)?;
+            let position = menu
+                .items()?
+                .iter()
+                .position(|item| item.id() == unload_model_i.id())
+                .map_or(menu.items()?.len(), |index| index + 1);
+            menu.insert(&stop, position)?;
+            menu.insert(&pick, position)?;
+            menu.insert(&separator()?, position)?;
+        }
         menu
     };
 
@@ -783,6 +838,9 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
     }
     if position > 2 {
         menu.insert(&separator()?, position)?;
+    }
+    if let Some(target) = inputs.redirect.as_ref().and_then(|r| r.target.as_deref()) {
+        tooltip = format!("{tooltip} → {target}");
     }
 
     Ok((menu, tooltip))
@@ -989,6 +1047,7 @@ mod tests {
             locale: "en".to_string(),
             update_checks_enabled: true,
             language: None,
+            redirect: None,
         }
     }
 

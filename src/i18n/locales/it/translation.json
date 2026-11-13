@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
     "language": "Lingua",
     "autoLanguage": "Automatico",
-    "otherLanguages": "Altre lingue"
+    "otherLanguages": "Altre lingue",
+    "redirectToWindow": "Reindirizza a una finestra…",
+    "stopRedirect": "Interrompi il reindirizzamento"
   },
   "sidebar": {
     "general": "Generale",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Nessun modello selezionato",
     "modelDownloadFailed": "Download non riuscito",
     "pasteFailedTitle": "Impossibile incollare il testo",
+    "redirectLostTitle": "Incollato senza reindirizzamento",
+    "redirectLost": "Handy non è riuscito a scrivere nella finestra scelta, quindi il testo è stato incollato dove si trovava il cursore.",
     "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva.",
     "postProcessFailedTitle": "Incollato senza post-elaborazione",
     "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
@@ -976,6 +980,10 @@
       "light": "Chiaro",
       "dark": "Scuro"
     }
+  },
+  "picker": {
+    "hint": "Fai clic sulla finestra in cui dettare. Tab sceglie quella dietro. Esc annulla.",
+    "noWindow": "Nessuna finestra da scegliere qui."
   },
   "overlay": {
     "transcribing": "Trascrizione...",

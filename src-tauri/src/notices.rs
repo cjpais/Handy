@@ -50,6 +50,9 @@ pub enum NoticeCode {
     PostProcessFailed,
     FileTranscriptionFailed,
     FilePostProcessFailed,
+    /// The redirect target didn't take the text, so it went where the cursor
+    /// was. The redirect is off if the window is gone.
+    RedirectLost,
 }
 
 impl NoticeCode {
@@ -64,7 +67,9 @@ impl NoticeCode {
             | Self::ModelLoadFailed
             | Self::NoModelSelected
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            Self::PostProcessFailed | Self::FilePostProcessFailed | Self::RedirectLost => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -82,6 +87,7 @@ impl NoticeCode {
             Self::PostProcessFailed => &strings.post_process_failed_title,
             Self::FileTranscriptionFailed => &strings.file_transcription_failed_title,
             Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
+            Self::RedirectLost => &strings.redirect_lost_title,
         }
     }
 }

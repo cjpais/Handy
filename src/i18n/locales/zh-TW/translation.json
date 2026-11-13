@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ 快捷鍵被 Secure Input 阻擋",
     "language": "語言",
     "autoLanguage": "自動",
-    "otherLanguages": "其他語言"
+    "otherLanguages": "其他語言",
+    "redirectToWindow": "重新導向至視窗…",
+    "stopRedirect": "停止重新導向"
   },
   "sidebar": {
     "general": "一般",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "未選擇模型",
     "modelDownloadFailed": "下載失敗",
     "pasteFailedTitle": "貼上文字失敗",
+    "redirectLostTitle": "已貼上但未重新導向",
+    "redirectLost": "Handy 無法在所選視窗中輸入，因此文字貼到了游標所在位置。",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
     "postProcessFailedTitle": "已貼上，未經後處理",
     "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
@@ -976,6 +980,10 @@
       "light": "淺色",
       "dark": "深色"
     }
+  },
+  "picker": {
+    "hint": "點選要聽寫到的視窗。Tab 選擇其後方的視窗。按 Esc 取消。",
+    "noWindow": "這裡沒有可選擇的視窗。"
   },
   "overlay": {
     "transcribing": "正在轉錄...",

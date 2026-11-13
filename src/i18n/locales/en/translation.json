@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input",
     "language": "Language",
     "autoLanguage": "Auto",
-    "otherLanguages": "Other Languages"
+    "otherLanguages": "Other Languages",
+    "redirectToWindow": "Redirect to Window…",
+    "stopRedirect": "Stop Redirect"
   },
   "sidebar": {
     "general": "General",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "No Model Selected",
     "modelDownloadFailed": "Download failed",
     "pasteFailedTitle": "Failed to Paste Text",
+    "redirectLostTitle": "Pasted Without Redirect",
+    "redirectLost": "Handy couldn't type into the window you chose, so the text went where the cursor was.",
     "pasteFailed": "Text could not be pasted into the active application.",
     "postProcessFailedTitle": "Pasted Without Post-Processing",
     "postProcessFailed": "Post Process didn't finish, so the transcript was pasted as is.",
@@ -976,6 +980,10 @@
       "light": "Light",
       "dark": "Dark"
     }
+  },
+  "picker": {
+    "hint": "Click the window to dictate into. Tab picks the one behind it. Esc cancels.",
+    "noWindow": "No window to pick here."
   },
   "overlay": {
     "transcribing": "Transcribing...",

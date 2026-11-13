@@ -32,6 +32,7 @@ mod tray;
 mod tray_i18n;
 mod utils;
 pub mod webkit_renderer;
+mod window_redirect;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -311,6 +312,15 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             "copy_last_transcript" => {
                 tray::copy_last_transcript(app);
+            }
+            "redirect_pick" => {
+                // The click toggled the check item natively; the rebuild puts
+                // it back to what the redirect state says.
+                tray::rebuild_tray_menu(app);
+                window_redirect::picker::open(app);
+            }
+            "redirect_stop" => {
+                window_redirect::stop(app);
             }
             "unload_model" => {
                 let transcription_manager = app.state::<Arc<TranscriptionManager>>();
@@ -820,6 +830,9 @@ pub fn run(cli_args: CliArgs) {
             notices::get_active_notices,
             notices::dismiss_notice,
             notices::dismiss_overlay_notice,
+            window_redirect::picker::picker_hover,
+            window_redirect::picker::picker_pick,
+            window_redirect::picker::picker_cancel,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
@@ -948,6 +961,7 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .manage(notices::NoticeStore::default())
+        .manage(window_redirect::RedirectState::default())
         .setup(move |app| {
             #[cfg(target_os = "windows")]
             log::info!(

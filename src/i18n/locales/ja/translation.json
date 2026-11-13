@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Secure Input でショートカットがブロック中",
     "language": "言語",
     "autoLanguage": "自動",
-    "otherLanguages": "その他の言語"
+    "otherLanguages": "その他の言語",
+    "redirectToWindow": "ウィンドウにリダイレクト…",
+    "stopRedirect": "リダイレクトを停止"
   },
   "sidebar": {
     "general": "一般",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "モデルが選択されていません",
     "modelDownloadFailed": "ダウンロードに失敗しました",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
+    "redirectLostTitle": "リダイレクトなしで貼り付けました",
+    "redirectLost": "選択したウィンドウに入力できなかったため、テキストはカーソルのある場所に貼り付けられました。",
     "pasteFailed": "アクティブなアプリにテキストを貼り付けられませんでした。",
     "postProcessFailedTitle": "後処理なしで貼り付けました",
     "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
@@ -976,6 +980,10 @@
       "light": "ライト",
       "dark": "ダーク"
     }
+  },
+  "picker": {
+    "hint": "入力先のウィンドウをクリックしてください。Tab で後ろのウィンドウを選択。Esc でキャンセル。",
+    "noWindow": "ここには選べるウィンドウがありません。"
   },
   "overlay": {
     "transcribing": "文字起こし中…",

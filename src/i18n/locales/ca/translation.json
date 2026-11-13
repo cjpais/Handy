@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Dreceres blocades per l'entrada segura",
     "language": "Llengua",
     "autoLanguage": "Automàtica",
-    "otherLanguages": "Altres llengües"
+    "otherLanguages": "Altres llengües",
+    "redirectToWindow": "Redirigeix a una finestra…",
+    "stopRedirect": "Atura la redirecció"
   },
   "sidebar": {
     "general": "General",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Cap model seleccionat",
     "modelDownloadFailed": "Ha fallat la baixada",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
+    "redirectLostTitle": "Enganxat sense redirecció",
+    "redirectLost": "Handy no ha pogut escriure a la finestra triada, així que el text s'ha enganxat on era el cursor.",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
     "postProcessFailedTitle": "Enganxat sense postprocessament",
     "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
@@ -976,6 +980,10 @@
       "light": "Clar",
       "dark": "Fosc"
     }
+  },
+  "picker": {
+    "hint": "Fes clic a la finestra on vols dictar. Tab tria la de darrere. Esc cancel·la.",
+    "noWindow": "Aquí no hi ha cap finestra per triar."
   },
   "overlay": {
     "transcribing": "S'està transcrivint...",

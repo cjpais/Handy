@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input",
     "language": "Мова",
     "autoLanguage": "Авто",
-    "otherLanguages": "Інші мови"
+    "otherLanguages": "Інші мови",
+    "redirectToWindow": "Перенаправляти у вікно…",
+    "stopRedirect": "Зупинити перенаправлення"
   },
   "sidebar": {
     "general": "Загальні",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Модель не вибрано",
     "modelDownloadFailed": "Помилка завантаження",
     "pasteFailedTitle": "Не вдалося вставити текст",
+    "redirectLostTitle": "Вставлено без перенаправлення",
+    "redirectLost": "Handy не зміг ввести текст у вибране вікно, тому текст вставлено туди, де був курсор.",
     "pasteFailed": "Не вдалося вставити текст до активної програми.",
     "postProcessFailedTitle": "Вставлено без постобробки",
     "postProcessFailed": "Постобробка не завершилася, тому розшифровку вставлено як є.",
@@ -976,6 +980,10 @@
       "light": "Світла",
       "dark": "Темна"
     }
+  },
+  "picker": {
+    "hint": "Клацніть вікно, у яке диктувати. Tab — вікно позаду. Esc — скасувати.",
+    "noWindow": "Тут немає вікна для вибору."
   },
   "overlay": {
     "transcribing": "Обробка...",

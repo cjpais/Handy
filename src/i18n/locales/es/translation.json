@@ -10,7 +10,9 @@
     "secureInputWarning": "⚠ Atajos bloqueados por Secure Input",
     "language": "Idioma",
     "autoLanguage": "Automático",
-    "otherLanguages": "Otros idiomas"
+    "otherLanguages": "Otros idiomas",
+    "redirectToWindow": "Redirigir a una ventana…",
+    "stopRedirect": "Detener la redirección"
   },
   "sidebar": {
     "general": "General",
@@ -949,6 +951,8 @@
     "noModelSelectedTitle": "Ningún modelo seleccionado",
     "modelDownloadFailed": "Error en la descarga",
     "pasteFailedTitle": "Error al pegar el texto",
+    "redirectLostTitle": "Pegado sin redirección",
+    "redirectLost": "Handy no pudo escribir en la ventana elegida, así que el texto se pegó donde estaba el cursor.",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
     "postProcessFailedTitle": "Pegado sin post proceso",
     "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
@@ -976,6 +980,10 @@
       "light": "Claro",
       "dark": "Oscuro"
     }
+  },
+  "picker": {
+    "hint": "Haz clic en la ventana en la que quieres dictar. Tab elige la de detrás. Esc cancela.",
+    "noWindow": "Aquí no hay ninguna ventana que elegir."
   },
   "overlay": {
     "transcribing": "Transcribiendo...",
