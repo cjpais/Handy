@@ -761,6 +761,29 @@ static OVERLAY_SESSION_SHOWING: AtomicBool = AtomicBool::new(false);
 /// can't say: a model that doesn't stream gets the compact pill under Live too.
 static OVERLAY_SESSION_LIVE: AtomicBool = AtomicBool::new(false);
 
+/// Keep a completed Live transcript readable without delaying the paste or
+/// holding up the transcription pipeline. A new session or notice invalidates
+/// this hide, just as it invalidates the window's delayed unmap below.
+pub fn hide_completed_live_overlay(
+    app_handle: &AppHandle,
+    is_current_session: impl FnOnce() -> bool + Send + 'static,
+) {
+    let generation = OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst);
+    let app = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(800));
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) == generation
+                && OVERLAY_SESSION_SHOWING.load(Ordering::SeqCst)
+                && is_current_session()
+            {
+                hide_recording_overlay(&handle);
+            }
+        });
+    });
+}
+
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
     OVERLAY_SESSION_SHOWING.store(false, Ordering::SeqCst);
