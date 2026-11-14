@@ -167,16 +167,33 @@ Windows doesn't let Handy paste into apps that are running as administrator, so 
 
 For reliable text input on Linux, install the appropriate tool for your display server:
 
-| Display Server | Recommended Tool | Install Command                                    |
-| -------------- | ---------------- | -------------------------------------------------- |
-| X11            | `xdotool`        | `sudo apt install xdotool`                         |
-| Wayland        | `wtype`          | `sudo apt install wtype`                           |
-| Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
+| Display Server | Recommended Tool | Install Command                                       |
+| -------------- | ---------------- | ----------------------------------------------------- |
+| X11            | `xdotool`        | `sudo apt install xdotool`                            |
+| Wayland        | `wtype`          | `sudo apt install wtype`                              |
+| Both           | `dotool`         | Build from source, see below (requires `input` group) |
 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
 - **Ubuntu 26.04**: Has Wayland display server by default. `wtype` does not work, you need to install `ydotool` and configure systemd as described [here](https://github.com/cjpais/Handy/pull/557#issuecomment-3781249267).
 - **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
 - **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
+- **dotool install**: Ubuntu 26.04 does not have a `dotool` package. Build it from [source](https://git.sr.ht/~geb/dotool). You must have Go, `libxkbcommon-dev` and `scdoc`:
+
+  ```bash
+  git clone https://git.sr.ht/~geb/dotool
+  cd dotool
+  ./build.sh
+  sudo ./build.sh install
+  ```
+
+- **Keyboard layouts**: `dotool` and `ydotool` send key positions for a US QWERTY layout. If you use a different layout, such as Dvorak, AZERTY or QWERTZ, the typed text is incorrect. `ydotool` cannot use a different layout, so use `dotool`. Put your layout in `~/.config/environment.d/dotool.conf`, then log out and log in again:
+
+  ```ini
+  DOTOOL_XKB_LAYOUT=us
+  DOTOOL_XKB_VARIANT=dvorak
+  ```
+
+  For AZERTY, use `DOTOOL_XKB_LAYOUT=fr` without a variant. On Wayland, Handy uses `dotool` before `ydotool` when you install both.
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 
