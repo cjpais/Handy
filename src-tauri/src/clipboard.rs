@@ -89,8 +89,31 @@ fn paste_via_clipboard(
         None
     };
 
+    // Shift+Insert reads PRIMARY in many terminals and the clipboard in GUI
+    // apps, so put the transcript on both. Only for Shift+Insert: Ctrl+V never
+    // reads PRIMARY, and writing it replaces the user's highlighted text.
+    #[cfg(target_os = "linux")]
+    let saved_primary = if *paste_method == PasteMethod::ShiftInsert {
+        let saved = crate::primary_selection::read();
+        match crate::primary_selection::write(text) {
+            Ok(()) => Some(saved),
+            Err(e) => {
+                log::warn!("Could not put the transcript on the primary selection: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
     // Write text to clipboard first
-    write_text_to_clipboard(app_handle, text)?;
+    if let Err(e) = write_text_to_clipboard(app_handle, text) {
+        #[cfg(target_os = "linux")]
+        if let Some(saved) = saved_primary {
+            crate::primary_selection::restore(saved);
+        }
+        return Err(e);
+    }
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -133,6 +156,10 @@ fn paste_via_clipboard(
         } else {
             // Nothing was there to begin with — don't leave the transcription behind.
             let _ = clipboard.clear();
+        }
+        #[cfg(target_os = "linux")]
+        if let Some(saved) = saved_primary {
+            crate::primary_selection::restore(saved);
         }
     })
 }

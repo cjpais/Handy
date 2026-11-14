@@ -6,6 +6,10 @@ Add user-facing release notes as Markdown files named by app version:
 src/content/release-notes/0.8.4.md
 ```
 
+To show a note on one platform only, add the platform after the version, for
+example `0.8.4.linux.md` (also `macos` or `windows`). On that platform it is
+shown after the shared `0.8.4.md`, if there is one.
+
 The update modal shows the highest bundled release note newer than the
 persisted `whats_new_last_seen_version` and not newer than the running app
 version.

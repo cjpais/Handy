@@ -249,9 +249,12 @@ impl Default for KeyboardImplementation {
 
 impl Default for PasteMethod {
     fn default() -> Self {
-        // Default to CtrlV for macOS and Windows, Direct for Linux
+        // Default to CtrlV for macOS and Windows. On Linux, Shift+Insert pastes in
+        // terminals and GUI apps alike (Handy also puts the text on the primary
+        // selection, which terminals read), and unlike Direct typing it doesn't
+        // depend on the keyboard layout.
         #[cfg(target_os = "linux")]
-        return PasteMethod::Direct;
+        return PasteMethod::ShiftInsert;
         #[cfg(not(target_os = "linux"))]
         return PasteMethod::CtrlV;
     }
@@ -674,7 +677,13 @@ fn default_paste_delay_ms() -> u64 {
 }
 
 fn default_paste_delay_after_ms() -> u64 {
-    60
+    // Linux apps fetch the pasted text from Handy only when they handle the
+    // key, so restoring the old clipboard too soon pastes the old content
+    // (#502). Only new installs get this; existing settings keep their value.
+    #[cfg(target_os = "linux")]
+    return 500;
+    #[cfg(not(target_os = "linux"))]
+    return 60;
 }
 
 fn default_auto_submit() -> bool {
