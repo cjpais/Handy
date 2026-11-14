@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Downloaden mislukt",
     "pasteFailedTitle": "Tekst plakken mislukt",
     "pasteFailed": "Tekst kon niet worden geplakt in de actieve applicatie.",
+    "pasteBlockedElevatedTitle": "Gekopieerd in plaats van geplakt",
+    "pasteBlockedElevated": "De actieve applicatie draait als administrator, dus Handy kan er niet in plakken. De transcriptie staat op het klembord: druk op Ctrl+V om te plakken.",
     "postProcessFailedTitle": "Geplakt zonder naverwerking",
     "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
     "filePostProcessFailedTitle": "Getranscribeerd zonder naverwerking",

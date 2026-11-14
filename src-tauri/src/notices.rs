@@ -41,6 +41,7 @@ pub enum NoticeSource {
 pub enum NoticeCode {
     TranscriptionFailed,
     PasteFailed,
+    PasteBlockedElevated,
     NoMicrophone,
     MicrophoneSilent,
     MicPermissionDenied,
@@ -64,7 +65,9 @@ impl NoticeCode {
             | Self::ModelLoadFailed
             | Self::NoModelSelected
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            Self::PasteBlockedElevated | Self::PostProcessFailed | Self::FilePostProcessFailed => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -73,6 +76,7 @@ impl NoticeCode {
         match self {
             Self::TranscriptionFailed => &strings.transcription_failed_title,
             Self::PasteFailed => &strings.paste_failed_title,
+            Self::PasteBlockedElevated => &strings.paste_blocked_elevated_title,
             Self::NoMicrophone => &strings.no_input_device_title,
             Self::MicrophoneSilent => &strings.microphone_silent_title,
             Self::MicPermissionDenied => &strings.mic_permission_denied_title,

@@ -851,9 +851,30 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
+/// What [`paste`] did with the text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PasteOutcome {
+    /// Handed to the focused app the way the user set up.
+    Pasted,
+    /// The focused window takes no input from Handy, so the text was left on
+    /// the clipboard for the user to paste.
+    CopiedInstead,
+}
+
+/// Whether `paste_method` works by sending keystrokes to the focused window.
+fn sends_keys(paste_method: PasteMethod) -> bool {
+    match paste_method {
+        PasteMethod::Direct
+        | PasteMethod::CtrlV
+        | PasteMethod::CtrlShiftV
+        | PasteMethod::ShiftInsert => true,
+        PasteMethod::None | PasteMethod::ExternalScript => false,
+    }
+}
+
 /// Pastes `text` into the focused app. Call from a worker thread, never the main
 /// thread: it sleeps between steps (input injection hops via `with_enigo`).
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
@@ -871,6 +892,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
+
+    // Windows drops the keystrokes Handy sends to an elevated window without
+    // saying so, so check up front and hand the text over on the clipboard.
+    if sends_keys(paste_method) && crate::utils::foreground_window_is_elevated() {
+        info!("The focused window is elevated; copying the text instead of pasting");
+        write_text_to_clipboard(&app_handle, &text)?;
+        return Ok(PasteOutcome::CopiedInstead);
+    }
 
     // Perform the paste operation
     match paste_method {
@@ -912,7 +941,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                     )
                 });
                 match reliable_result {
-                    Ok(()) => return Ok(()),
+                    Ok(()) => return Ok(PasteOutcome::Pasted),
                     Err(e) => {
                         log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
                     }
@@ -951,7 +980,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         write_text_to_clipboard(&app_handle, &text)?;
     }
 
-    Ok(())
+    Ok(PasteOutcome::Pasted)
 }
 
 #[cfg(test)]

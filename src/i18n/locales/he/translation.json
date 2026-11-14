@@ -950,6 +950,8 @@
     "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "pasteBlockedElevatedTitle": "הועתק במקום להיות מודבק",
+    "pasteBlockedElevated": "היישום הפעיל רץ כמנהל מערכת, ולכן Handy לא יכול להדביק בו. התמלול נמצא בלוח: לחצו על Ctrl+V כדי להדביק אותו.",
     "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
     "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",

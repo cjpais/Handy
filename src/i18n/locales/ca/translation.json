@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Ha fallat la baixada",
     "pasteFailedTitle": "No s'ha pogut enganxar el text",
     "pasteFailed": "No s'ha pogut enganxar el text a l'aplicació activa.",
+    "pasteBlockedElevatedTitle": "Copiat en lloc d'enganxat",
+    "pasteBlockedElevated": "L'aplicació activa s'executa com a administrador, així que Handy no hi pot enganxar. La transcripció és al porta-retalls: prem Ctrl+V per enganxar-la.",
     "postProcessFailedTitle": "Enganxat sense postprocessament",
     "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
     "filePostProcessFailedTitle": "Transcrit sense postprocessament",

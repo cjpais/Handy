@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Download fehlgeschlagen",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
     "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "pasteBlockedElevatedTitle": "Kopiert statt eingefügt",
+    "pasteBlockedElevated": "Die aktive Anwendung läuft als Administrator, daher kann Handy dort nichts einfügen. Das Transkript liegt in der Zwischenablage: Drücke Strg+V, um es einzufügen.",
     "postProcessFailedTitle": "Ohne Nachbearbeitung eingefügt",
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
     "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",

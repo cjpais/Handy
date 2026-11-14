@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Unduhan gagal",
     "pasteFailedTitle": "Gagal Menempelkan Teks",
     "pasteFailed": "Teks tidak dapat ditempelkan ke aplikasi aktif.",
+    "pasteBlockedElevatedTitle": "Disalin, Bukan Ditempel",
+    "pasteBlockedElevated": "Aplikasi aktif berjalan sebagai administrator, jadi Handy tidak dapat menempel ke dalamnya. Transkrip ada di papan klip: tekan Ctrl+V untuk menempelkannya.",
     "postProcessFailedTitle": "Ditempel Tanpa Pascaproses",
     "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
     "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
