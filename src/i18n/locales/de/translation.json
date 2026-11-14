@@ -68,13 +68,23 @@
         "name": "Bedienungshilfen",
         "why": "Damit dein Tastenkürzel in jeder App funktioniert und Handy den Text dort eintippen kann, wo dein Cursor steht."
       },
+      "remoteDesktop": {
+        "name": "Eingabeautorisierung",
+        "why": "Erlauben Sie Handy, diktierten Text automatisch in die aktive App einzufügen.",
+        "note": "Sie können diese Berechtigung jederzeit in den Einstellungen deaktivieren oder aktivieren.",
+        "skipButton": "Nicht jetzt",
+        "warningTooltip": "Eingabeautorisierung nicht konfiguriert",
+        "configured": "Konfiguriert",
+        "notConfigured": "Einrichtung erforderlich"
+      },
       "errors": {
         "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
       },
       "titleMac": "Zwei Berechtigungen, dann bist du startklar",
-      "titleWindows": "Eine Berechtigung, dann bist du startklar",
+      "titleSingle": "Eine Berechtigung, dann bist du startklar",
       "subtitleMac": "macOS fragt nach, bevor eine App zuhören oder tippen darf.",
+      "subtitleWayland": "Wayland fragt nach deiner Erlaubnis, bevor Handy in anderen Apps tippen kann.",
       "subtitleWindows": "Windows fragt nach, bevor eine App zuhören darf.",
       "allow": "Erlauben",
       "openSettings": "Einstellungen öffnen",
@@ -536,7 +546,14 @@
           "none": "Keine",
           "externalScript": "Externes Skript"
         },
-        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh",
+        "portal": {
+          "buttonRequesting": "Wird angefordert…",
+          "errors": {
+            "requestFailed": "Berechtigungsanfrage fehlgeschlagen.",
+            "revokeFailed": "Entfernen der Berechtigung fehlgeschlagen."
+          }
+        }
       },
       "typingTool": {
         "title": "Eingabetool",
@@ -625,6 +642,11 @@
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Steuert die Geschwindigkeit, mit der Tippereignisse gesendet werden. Erhöhen Sie diesen Wert, wenn Zeichen in falscher Reihenfolge eingegeben werden.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

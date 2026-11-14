@@ -68,13 +68,23 @@
         "name": "Trợ năng",
         "why": "Để phím tắt của bạn hoạt động trong mọi ứng dụng, và Handy có thể gõ văn bản vào nơi con trỏ của bạn đang đứng."
       },
+      "remoteDesktop": {
+        "name": "Quyền nhập",
+        "why": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
+        "note": "Bạn có thể tắt hoặc bật quyền này bất cứ lúc nào trong phần cài đặt.",
+        "skipButton": "Để sau",
+        "warningTooltip": "Quyền nhập chưa được cấu hình",
+        "configured": "Đã cấu hình",
+        "notConfigured": "Cần cấu hình"
+      },
       "errors": {
         "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
       },
       "titleMac": "Hai quyền, rồi là xong",
-      "titleWindows": "Một quyền, rồi là xong",
+      "titleSingle": "Một quyền, rồi là xong",
       "subtitleMac": "macOS sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe hoặc gõ.",
+      "subtitleWayland": "Wayland yêu cầu quyền trước khi Handy có thể nhập văn bản vào ứng dụng khác.",
       "subtitleWindows": "Windows sẽ hỏi trước khi bất kỳ ứng dụng nào được nghe.",
       "allow": "Cho phép",
       "openSettings": "Mở cài đặt",
@@ -536,7 +546,14 @@
           "none": "Không có",
           "externalScript": "Script bên ngoài"
         },
-        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
+        "portal": {
+          "buttonRequesting": "Đang yêu cầu…",
+          "errors": {
+            "requestFailed": "Yêu cầu quyền thất bại.",
+            "revokeFailed": "Xóa quyền thất bại."
+          }
+        }
       },
       "typingTool": {
         "title": "Công cụ gõ",
@@ -625,6 +642,11 @@
           "traditionalTw": "Phồn thể (Đài Loan)",
           "traditionalHk": "Phồn thể (Hồng Kông)"
         }
+      },
+      "typingDelay": {
+        "title": "Độ trễ gõ",
+        "description": "Điều chỉnh tốc độ gửi sự kiện gõ. Tăng giá trị này nếu ký tự được nhập sai thứ tự.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -68,13 +68,23 @@
         "name": "Accessibility",
         "why": "So your shortcut works in every app, and Handy can type the text where your cursor is."
       },
+      "remoteDesktop": {
+        "name": "Typing authorization",
+        "why": "Allow Handy to insert dictated text automatically into the active app.",
+        "note": "You can disable or enable this permission at any time in settings.",
+        "skipButton": "Not now",
+        "warningTooltip": "Typing authorization not configured",
+        "configured": "Configured",
+        "notConfigured": "Configuration is required"
+      },
       "errors": {
         "checkFailed": "Failed to check permissions. Please try again.",
         "requestFailed": "Failed to request permission. Please try again."
       },
       "titleMac": "Two permissions, then you're set",
-      "titleWindows": "One permission, then you're set",
+      "titleSingle": "One permission, then you're set",
       "subtitleMac": "macOS asks before any app can listen or type.",
+      "subtitleWayland": "Wayland asks before Handy can type in other apps.",
       "subtitleWindows": "Windows asks before any app can listen.",
       "allow": "Allow",
       "openSettings": "Open settings",
@@ -536,7 +546,14 @@
           "none": "None",
           "externalScript": "External Script"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Requesting…",
+          "errors": {
+            "requestFailed": "Permission request failed.",
+            "revokeFailed": "Permission removal failed."
+          }
+        }
       },
       "typingTool": {
         "title": "Typing Tool",
@@ -625,6 +642,11 @@
           "traditionalTw": "Traditional (Taiwan)",
           "traditionalHk": "Traditional (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Typing delay",
+        "description": "Control the speed used to send typing events. Increase this value if characters are typed out of order.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

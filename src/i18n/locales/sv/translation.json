@@ -68,13 +68,23 @@
         "name": "Hjälpmedel",
         "why": "Så att din genväg fungerar i alla appar och Handy kan skriva texten där markören står."
       },
+      "remoteDesktop": {
+        "name": "Skrivbehörighet",
+        "why": "Tillåt Handy att automatiskt infoga dikterad text i den aktiva appen.",
+        "note": "Du kan inaktivera eller aktivera den här behörigheten när som helst i inställningarna.",
+        "skipButton": "Inte nu",
+        "warningTooltip": "Skrivbehörighet är inte konfigurerad",
+        "configured": "Konfigurerad",
+        "notConfigured": "Behöver konfigureras"
+      },
       "errors": {
         "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
       },
       "titleMac": "Två behörigheter, sedan är du klar",
-      "titleWindows": "En behörighet, sedan är du klar",
+      "titleSingle": "En behörighet, sedan är du klar",
       "subtitleMac": "macOS frågar innan en app får lyssna eller skriva.",
+      "subtitleWayland": "Wayland ber om tillåtelse innan Handy kan skriva i andra appar.",
       "subtitleWindows": "Windows frågar innan en app får lyssna.",
       "allow": "Tillåt",
       "openSettings": "Öppna inställningar",
@@ -536,7 +546,14 @@
           "none": "Ingen",
           "externalScript": "Externt skript"
         },
-        "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh"
+        "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh",
+        "portal": {
+          "buttonRequesting": "Begär…",
+          "errors": {
+            "requestFailed": "Behörighetsbegäran misslyckades.",
+            "revokeFailed": "Det gick inte att ta bort behörigheten."
+          }
+        }
       },
       "typingTool": {
         "title": "Skrivverktyg",
@@ -625,6 +642,11 @@
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Skrivfördröjning",
+        "description": "Styr hastigheten som används för att skicka skrivhändelser. Öka värdet om tecken skrivs i fel ordning.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -68,13 +68,23 @@
         "name": "Accessibilité",
         "why": "Pour que votre raccourci fonctionne dans toutes les apps et que Handy puisse saisir le texte là où se trouve votre curseur."
       },
+      "remoteDesktop": {
+        "name": "Autorisation de saisie",
+        "why": "Autorisez Handy à insérer automatiquement le texte dicté dans l’application active.",
+        "note": "Vous pourrez désactiver ou réactiver cette autorisation à tout moment dans les paramètres.",
+        "skipButton": "Pas maintenant",
+        "warningTooltip": "Autorisation de saisie non configurée",
+        "configured": "Configurée",
+        "notConfigured": "À configurer"
+      },
       "errors": {
         "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
         "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
       },
       "titleMac": "Deux autorisations, et c'est prêt",
-      "titleWindows": "Une autorisation, et c'est prêt",
+      "titleSingle": "Une autorisation, et c'est prêt",
       "subtitleMac": "macOS demande votre accord avant qu'une app puisse écouter ou saisir du texte.",
+      "subtitleWayland": "Wayland demande une autorisation avant de permettre à Handy de saisir du texte dans d'autres applications.",
       "subtitleWindows": "Windows demande votre accord avant qu'une app puisse écouter.",
       "allow": "Autoriser",
       "openSettings": "Ouvrir les réglages",
@@ -536,7 +546,14 @@
           "none": "Aucun",
           "externalScript": "Script externe"
         },
-        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh"
+        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh",
+        "portal": {
+          "buttonRequesting": "Demande en cours…",
+          "errors": {
+            "requestFailed": "La demande d'autorisation a échoué.",
+            "revokeFailed": "La suppression de l’autorisation a échoué."
+          }
+        }
       },
       "typingTool": {
         "title": "Outil de frappe",
@@ -625,6 +642,11 @@
           "traditionalTw": "Traditionnel (Taïwan)",
           "traditionalHk": "Traditionnel (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Délai de frappe",
+        "description": "Contrôle la vitesse d'envoi des événements de frappe. Augmentez cette valeur si les caractères sont saisis dans le désordre.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

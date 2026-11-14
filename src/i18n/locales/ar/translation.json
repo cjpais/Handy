@@ -68,13 +68,23 @@
         "name": "إمكانية الوصول",
         "why": "ليعمل اختصارك في كل التطبيقات، ويتمكن Handy من كتابة النص حيث يوجد المؤشر."
       },
+      "remoteDesktop": {
+        "name": "إذن الكتابة",
+        "why": "اسمح لـ Handy بإدراج النص المملى تلقائياً في التطبيق النشط.",
+        "note": "يمكنك تعطيل هذا الإذن أو تفعيله في أي وقت من الإعدادات.",
+        "skipButton": "ليس الآن",
+        "warningTooltip": "إذن الكتابة غير مهيأ",
+        "configured": "مهيأ",
+        "notConfigured": "يتطلب الإعداد"
+      },
       "errors": {
         "checkFailed": "فشل التحقق من الأذونات. يرجير المحاولة مرة أخرى.",
         "requestFailed": "فشل طلب الإذن. يرجى المحاولة مرة أخرى."
       },
       "titleMac": "إذنان فقط، وتصبح جاهزًا",
-      "titleWindows": "إذن واحد فقط، وتصبح جاهزًا",
+      "titleSingle": "إذن واحد فقط، وتصبح جاهزًا",
       "subtitleMac": "يسألك macOS قبل أن يتمكن أي تطبيق من الاستماع أو الكتابة.",
+      "subtitleWayland": "يطلب Wayland الإذن قبل أن يتمكن Handy من الكتابة في التطبيقات الأخرى.",
       "subtitleWindows": "يسألك Windows قبل أن يتمكن أي تطبيق من الاستماع.",
       "allow": "سماح",
       "openSettings": "فتح الإعدادات",
@@ -536,7 +546,14 @@
           "none": "بلا",
           "externalScript": "نص برمجي خارجي"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "جارٍ الطلب…",
+          "errors": {
+            "requestFailed": "فشل طلب الإذن.",
+            "revokeFailed": "فشلت إزالة الإذن."
+          }
+        }
       },
       "typingTool": {
         "title": "أداة الكتابة",
@@ -625,6 +642,11 @@
           "traditionalTw": "تقليدية (تايوان)",
           "traditionalHk": "تقليدية (هونغ كونغ)"
         }
+      },
+      "typingDelay": {
+        "title": "تأخير الكتابة",
+        "description": "يتحكم في سرعة إرسال أحداث الكتابة. ارفع هذه القيمة إذا ظهرت الأحرف بترتيب غير صحيح.",
+        "unit": "مللي ثانية"
       }
     },
     "postProcessing": {

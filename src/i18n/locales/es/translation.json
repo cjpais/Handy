@@ -68,13 +68,23 @@
         "name": "Accesibilidad",
         "why": "Para que tu atajo funcione en cualquier app y Handy pueda escribir el texto donde está tu cursor."
       },
+      "remoteDesktop": {
+        "name": "Autorización de escritura",
+        "why": "Permite que Handy inserte automáticamente el texto dictado en la aplicación activa.",
+        "note": "Puedes desactivar o activar este permiso en cualquier momento desde los ajustes.",
+        "skipButton": "Ahora no",
+        "warningTooltip": "Autorización de escritura no configurada",
+        "configured": "Configurada",
+        "notConfigured": "Por configurar"
+      },
       "errors": {
         "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
         "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
       },
       "titleMac": "Dos permisos y listo",
-      "titleWindows": "Un permiso y listo",
+      "titleSingle": "Un permiso y listo",
       "subtitleMac": "macOS pregunta antes de que una app pueda escuchar o escribir.",
+      "subtitleWayland": "Wayland pide permiso antes de que Handy pueda escribir en otras aplicaciones.",
       "subtitleWindows": "Windows pregunta antes de que una app pueda escuchar.",
       "allow": "Permitir",
       "openSettings": "Abrir configuración",
@@ -536,7 +546,14 @@
           "none": "Ninguno",
           "externalScript": "Script externo"
         },
-        "externalScriptPlaceholder": "/ruta/a/su/script.sh"
+        "externalScriptPlaceholder": "/ruta/a/su/script.sh",
+        "portal": {
+          "buttonRequesting": "Solicitando…",
+          "errors": {
+            "requestFailed": "La solicitud de permiso falló.",
+            "revokeFailed": "La eliminación del permiso falló."
+          }
+        }
       },
       "typingTool": {
         "title": "Herramienta de escritura",
@@ -625,6 +642,11 @@
           "traditionalTw": "Tradicional (Taiwán)",
           "traditionalHk": "Tradicional (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Retraso de escritura",
+        "description": "Controla la velocidad con la que se envían los eventos de escritura. Aumenta este valor si los caracteres se escriben en un orden incorrecto.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

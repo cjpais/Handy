@@ -36,6 +36,7 @@ import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
 import { NoticePanel } from "@/components/notices/NoticePanel";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { getRemoteDesktopPermissionState } from "@/lib/remoteDesktopPermission";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
 type OnboardingStep =
@@ -222,6 +223,28 @@ function App() {
           } catch (e) {
             console.warn("Failed to check Windows microphone permissions:", e);
             // If we can't check, proceed to main app and let them fix it there
+          }
+        }
+
+        if (currentPlatform === "linux") {
+          try {
+            const remoteDesktopPermission =
+              await getRemoteDesktopPermissionState();
+
+            if (
+              remoteDesktopPermission.isRelevant &&
+              !remoteDesktopPermission.isAuthorized
+            ) {
+              await revealMainWindowForPermissions();
+              setOnboardingStep("permissions");
+              return;
+            }
+          } catch (e) {
+            console.warn(
+              "Failed to check Remote Desktop permissions for Linux:",
+              e,
+            );
+            // If we can't check, proceed to main app and let settings surface it.
           }
         }
 

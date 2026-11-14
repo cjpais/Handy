@@ -68,13 +68,23 @@
         "name": "辅助功能",
         "why": "这样快捷键在每个应用中都能使用，Handy 也能把文字输入到光标所在的位置。"
       },
+      "remoteDesktop": {
+        "name": "输入授权",
+        "why": "允许 Handy 将听写文本自动插入当前活动的应用程序。",
+        "note": "你可以随时在设置中停用或启用此权限。",
+        "skipButton": "暂时不要",
+        "warningTooltip": "输入授权尚未配置",
+        "configured": "已配置",
+        "notConfigured": "需要配置"
+      },
       "errors": {
         "checkFailed": "检查权限失败。请重试。",
         "requestFailed": "请求权限失败。请重试。"
       },
       "titleMac": "两项权限，马上就好",
-      "titleWindows": "一项权限，马上就好",
+      "titleSingle": "一项权限，马上就好",
       "subtitleMac": "在任何应用收听或输入之前，macOS 都会先征求您的同意。",
+      "subtitleWayland": "Wayland 会先请求权限，然后 Handy 才能在其他应用中输入文字。",
       "subtitleWindows": "在任何应用收听之前，Windows 都会先征求您的同意。",
       "allow": "允许",
       "openSettings": "打开设置",
@@ -536,7 +546,14 @@
           "none": "无",
           "externalScript": "外部脚本"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "正在请求…",
+          "errors": {
+            "requestFailed": "权限请求失败。",
+            "revokeFailed": "移除权限失败。"
+          }
+        }
       },
       "typingTool": {
         "title": "输入工具",
@@ -625,6 +642,11 @@
           "traditionalTw": "繁体（台湾）",
           "traditionalHk": "繁体（香港）"
         }
+      },
+      "typingDelay": {
+        "title": "输入延迟",
+        "description": "控制发送输入事件的速度。如果字符输入顺序错误，请增大此值。",
+        "unit": "毫秒"
       }
     },
     "postProcessing": {

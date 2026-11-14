@@ -68,13 +68,23 @@
         "name": "アクセシビリティ",
         "why": "どのアプリでもショートカットが使え、Handy がカーソル位置にテキストを入力できるようにします。"
       },
+      "remoteDesktop": {
+        "name": "入力の許可",
+        "why": "Handy が音声入力したテキストをアクティブなアプリへ自動的に挿入できるようにします。",
+        "note": "この権限は設定からいつでも無効化または有効化できます。",
+        "skipButton": "今はしない",
+        "warningTooltip": "入力の許可が設定されていません",
+        "configured": "設定済み",
+        "notConfigured": "設定が必要"
+      },
       "errors": {
         "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
         "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
       },
       "titleMac": "許可は2つだけで準備完了です",
-      "titleWindows": "許可は1つだけで準備完了です",
+      "titleSingle": "許可は1つだけで準備完了です",
       "subtitleMac": "macOS では、アプリが音声を聞いたり入力したりする前に許可が求められます。",
+      "subtitleWayland": "Wayland では、Handy が他のアプリに入力する前に許可が必要です。",
       "subtitleWindows": "Windows では、アプリが音声を聞く前に許可が求められます。",
       "allow": "許可",
       "openSettings": "設定を開く",
@@ -536,7 +546,14 @@
           "none": "なし",
           "externalScript": "外部スクリプト"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "リクエスト中…",
+          "errors": {
+            "requestFailed": "権限のリクエストに失敗しました。",
+            "revokeFailed": "権限の削除に失敗しました。"
+          }
+        }
       },
       "typingTool": {
         "title": "タイピングツール",
@@ -625,6 +642,11 @@
           "traditionalTw": "繁体字 (台湾)",
           "traditionalHk": "繁体字 (香港)"
         }
+      },
+      "typingDelay": {
+        "title": "入力遅延",
+        "description": "入力イベントを送信する速度を制御します。文字が順序どおりに入力されない場合は、この値を増やしてください。",
+        "unit": "ミリ秒"
       }
     },
     "postProcessing": {

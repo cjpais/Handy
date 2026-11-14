@@ -68,13 +68,23 @@
         "name": "Zpřístupnění",
         "why": "Aby vaše zkratka fungovala v každé aplikaci a Handy mohl psát text tam, kde máte kurzor."
       },
+      "remoteDesktop": {
+        "name": "Oprávnění pro psaní",
+        "why": "Povolte Handy automaticky vkládat diktovaný text do aktivní aplikace.",
+        "note": "Toto oprávnění můžete kdykoli vypnout nebo zapnout v nastavení.",
+        "skipButton": "Teď ne",
+        "warningTooltip": "Oprávnění pro psaní není nastavené",
+        "configured": "Nastavené",
+        "notConfigured": "K nastavení"
+      },
       "errors": {
         "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
       },
       "titleMac": "Dvě oprávnění a máte hotovo",
-      "titleWindows": "Jedno oprávnění a máte hotovo",
+      "titleSingle": "Jedno oprávnění a máte hotovo",
       "subtitleMac": "macOS se zeptá, než jakákoli aplikace smí poslouchat nebo psát.",
+      "subtitleWayland": "Wayland vyžaduje povolení, než bude Handy moci psát do jiných aplikací.",
       "subtitleWindows": "Windows se zeptá, než jakákoli aplikace smí poslouchat.",
       "allow": "Povolit",
       "openSettings": "Otevřít nastavení",
@@ -536,7 +546,14 @@
           "none": "Žádné",
           "externalScript": "Externí skript"
         },
-        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh"
+        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh",
+        "portal": {
+          "buttonRequesting": "Probíhá žádost…",
+          "errors": {
+            "requestFailed": "Žádost o oprávnění se nezdařila.",
+            "revokeFailed": "Odebrání oprávnění se nezdařilo."
+          }
+        }
       },
       "typingTool": {
         "title": "Nástroj pro psaní",
@@ -625,6 +642,11 @@
           "traditionalTw": "Tradiční (Tchaj-wan)",
           "traditionalHk": "Tradiční (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Zpoždění psaní",
+        "description": "Řídí rychlost odesílání událostí psaní. Zvyšte tuto hodnotu, pokud se znaky zapisují ve špatném pořadí.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

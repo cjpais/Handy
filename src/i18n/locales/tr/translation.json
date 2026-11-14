@@ -68,13 +68,23 @@
         "name": "Erişilebilirlik",
         "why": "Kısayolunuz her uygulamada çalışsın ve Handy metni imlecinizin bulunduğu yere yazabilsin diye."
       },
+      "remoteDesktop": {
+        "name": "Yazma izni",
+        "why": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
+        "note": "Bu izni ayarlardan istediğiniz zaman devre dışı bırakabilir veya etkinleştirebilirsiniz.",
+        "skipButton": "Şimdi değil",
+        "warningTooltip": "Yazma izni yapılandırılmadı",
+        "configured": "Yapılandırıldı",
+        "notConfigured": "Yapılandırılmalı"
+      },
       "errors": {
         "checkFailed": "İzinler kontrol edilemedi. Lütfen tekrar deneyin.",
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."
       },
       "titleMac": "İki izin, sonra hazırsınız",
-      "titleWindows": "Bir izin, sonra hazırsınız",
+      "titleSingle": "Bir izin, sonra hazırsınız",
       "subtitleMac": "macOS, bir uygulamanın dinlemesine veya yazmasına izin vermeden önce sorar.",
+      "subtitleWayland": "Wayland, Handy'nin diğer uygulamalarda yazabilmesi için izin ister.",
       "subtitleWindows": "Windows, bir uygulamanın dinlemesine izin vermeden önce sorar.",
       "allow": "İzin ver",
       "openSettings": "Ayarları aç",
@@ -536,7 +546,14 @@
           "none": "Yok",
           "externalScript": "Harici Betik"
         },
-        "externalScriptPlaceholder": "/dosya/yolu/betik.sh"
+        "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
+        "portal": {
+          "buttonRequesting": "İsteniyor…",
+          "errors": {
+            "requestFailed": "İzin isteği başarısız.",
+            "revokeFailed": "İzin kaldırma başarısız."
+          }
+        }
       },
       "typingTool": {
         "title": "Yazma Aracı",
@@ -625,6 +642,11 @@
           "traditionalTw": "Geleneksel (Tayvan)",
           "traditionalHk": "Geleneksel (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "Yazma olaylarının gönderilme hızını kontrol eder. Karakterler yanlış sırayla yazılıyorsa bu değeri artırın.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

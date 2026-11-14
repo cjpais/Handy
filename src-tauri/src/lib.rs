@@ -21,6 +21,8 @@ mod notices;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+#[cfg(target_os = "linux")]
+mod remote_desktop;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -201,6 +203,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
+
+    #[cfg(target_os = "linux")]
+    {
+        crate::remote_desktop::init_authorization(app_handle);
+    }
 
     // Initialize the managers. The audio recorder receives the streaming router
     // explicitly, so always-on microphone startup can wire live-preview frames
@@ -709,6 +716,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_paste_delay_ms_setting,
             shortcut::change_paste_delay_after_ms_setting,
             shortcut::change_reliable_paste_setting,
+            shortcut::change_remote_desktop_key_event_delay_ms_setting,
             shortcut::change_paste_method_setting,
             shortcut::get_available_typing_tools,
             shortcut::change_typing_tool_setting,
@@ -771,6 +779,10 @@ pub fn run(cli_args: CliArgs) {
             commands::initialize_shortcuts,
             commands::reset_macos_permission,
             commands::complete_onboarding,
+            commands::is_wayland_active,
+            commands::request_remote_desktop_authorization,
+            commands::delete_remote_desktop_authorization,
+            commands::get_remote_desktop_authorization,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,

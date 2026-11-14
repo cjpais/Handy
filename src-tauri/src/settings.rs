@@ -10,6 +10,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS: u64 = 1;
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -322,6 +323,7 @@ pub enum Theme {
 pub enum TypingTool {
     #[default]
     Auto,
+    RemoteDesktop,
     Wtype,
     Kwtype,
     Dotool,
@@ -526,6 +528,8 @@ pub struct AppSettings {
     pub reliable_paste: bool,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default = "default_remote_desktop_key_event_delay_ms")]
+    pub remote_desktop_key_event_delay_ms: u64,
     #[serde(default)]
     pub external_script_path: Option<String>,
     #[serde(default = "default_filler_word_removal_enabled")]
@@ -569,6 +573,8 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    #[serde(default)]
+    pub remote_desktop_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -675,6 +681,10 @@ fn default_paste_delay_ms() -> u64 {
 
 fn default_paste_delay_after_ms() -> u64 {
     60
+}
+
+fn default_remote_desktop_key_event_delay_ms() -> u64 {
+    DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS
 }
 
 fn default_auto_submit() -> bool {
@@ -1054,6 +1064,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_after_ms: default_paste_delay_after_ms(),
         reliable_paste: false,
         typing_tool: default_typing_tool(),
+        remote_desktop_key_event_delay_ms: default_remote_desktop_key_event_delay_ms(),
         external_script_path: None,
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
         custom_filler_words: None,
@@ -1067,6 +1078,7 @@ pub fn get_default_settings() -> AppSettings {
         language_detection: LanguageDetectionMode::default(),
         language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
+        remote_desktop_token: None,
     }
 }
 
@@ -1079,6 +1091,18 @@ impl Default for AppSettings {
 /// The language detector's window bounds: below 2 s it guesses, and it only
 /// scores the first 30 s of what it's given.
 pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
+
+/// Returns the persisted Remote Desktop portal token, if one is stored.
+pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
+    get_settings(app).remote_desktop_token
+}
+
+/// Persists or clears the Remote Desktop portal token in application settings.
+pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
+    let mut settings = get_settings(app);
+    settings.remote_desktop_token = token;
+    write_settings(app, settings);
+}
 
 impl AppSettings {
     /// Samples (16 kHz) of speech the language detector hears.
