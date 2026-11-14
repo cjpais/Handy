@@ -109,6 +109,12 @@ fn build_console_filter() -> env_filter::Filter {
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        #[cfg(target_os = "macos")]
+        {
+            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+                log::error!("Failed to set activation policy to Regular: {}", e);
+            }
+        }
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
         }
@@ -117,12 +123,6 @@ fn show_main_window(app: &AppHandle) {
         }
         if let Err(e) = main_window.set_focus() {
             log::error!("Failed to focus webview window: {}", e);
-        }
-        #[cfg(target_os = "macos")]
-        {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                log::error!("Failed to set activation policy to Regular: {}", e);
-            }
         }
         return;
     }
@@ -1163,6 +1163,9 @@ pub fn run(cli_args: CliArgs) {
                     let tray_visible =
                         settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
+                        // Deactivate the application so macOS cleanly transfers focus
+                        // to the previously active app and drops the Dock tile (#2132).
+                        let _ = window.app_handle().hide();
                         // Tray is available: hide the dock icon, app lives in the tray
                         let res = window
                             .app_handle()
