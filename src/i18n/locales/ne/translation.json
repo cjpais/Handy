@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Secure Input ले सर्टकटहरू रोकेको छ",
     "language": "भाषा",
     "autoLanguage": "स्वतः",
-    "otherLanguages": "अन्य भाषाहरू"
+    "otherLanguages": "अन्य भाषाहरू",
+    "microphone": "माइक्रोफोन"
   },
   "sidebar": {
     "general": "सामान्य",

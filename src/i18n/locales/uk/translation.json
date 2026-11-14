@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Комбінації клавіш заблоковано Secure Input",
     "language": "Мова",
     "autoLanguage": "Авто",
-    "otherLanguages": "Інші мови"
+    "otherLanguages": "Інші мови",
+    "microphone": "Мікрофон"
   },
   "sidebar": {
     "general": "Загальні",

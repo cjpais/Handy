@@ -263,12 +263,19 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Windows notification-area convention: left click opens the app, right click
     // shows the menu. Elsewhere (macOS menu bar, Linux) the menu stays on left click.
-    #[cfg(target_os = "windows")]
-    {
-        tray_builder = tray_builder
-            .show_menu_on_left_click(false)
-            .on_tray_icon_event(|tray, event| {
-                use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
+    tray_builder = tray_builder
+        .show_menu_on_left_click(cfg!(not(target_os = "windows")))
+        .on_tray_icon_event(|icon, event| {
+            use tauri::tray::TrayIconEvent;
+            // The pointer reaching the icon means the menu may be about to open,
+            // so re-list microphones. Linux emits no tray events; there the list
+            // refreshes whenever settings lists microphones.
+            if matches!(event, TrayIconEvent::Enter { .. }) {
+                tray::refresh_microphones(icon.app_handle());
+            }
+            #[cfg(target_os = "windows")]
+            {
+                use tauri::tray::{MouseButton, MouseButtonState};
                 let opens_window = matches!(
                     event,
                     TrayIconEvent::Click {
@@ -281,14 +288,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     }
                 );
                 if opens_window {
-                    show_main_window(tray.app_handle());
+                    show_main_window(icon.app_handle());
                 }
-            });
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        tray_builder = tray_builder.show_menu_on_left_click(true);
-    }
+            }
+        });
 
     let tray = tray_builder
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -364,6 +367,26 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 log::info!("Language switched to {} via tray.", language);
                 tray::rebuild_tray_menu(app);
             }
+            id if id.starts_with(tray::MICROPHONE_SELECT_PREFIX) => {
+                let device_name = id
+                    .strip_prefix(tray::MICROPHONE_SELECT_PREFIX)
+                    .unwrap()
+                    .to_string();
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    match commands::audio::set_selected_microphone(app.clone(), device_name.clone())
+                        .await
+                    {
+                        Ok(()) => log::info!("Microphone switched to {} via tray.", device_name),
+                        Err(e) => log::error!("Failed to switch microphone via tray: {}", e),
+                    }
+                    // Settings are written even if reopening the device failed.
+                    let _ = app.emit(
+                        "settings-changed",
+                        serde_json::json!({ "setting": "selected_microphone" }),
+                    );
+                });
+            }
             _ => {}
         })
         .build(app_handle)
@@ -372,6 +395,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Initialize tray menu with idle state
     tray::update_tray_menu(app_handle);
+    tray::refresh_microphones(app_handle);
 
     // Apply show_tray_icon setting
     let settings = settings::get_settings(app_handle);

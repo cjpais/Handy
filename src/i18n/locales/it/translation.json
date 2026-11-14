@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Scorciatoie bloccate da Secure Input",
     "language": "Lingua",
     "autoLanguage": "Automatico",
-    "otherLanguages": "Altre lingue"
+    "otherLanguages": "Altre lingue",
+    "microphone": "Microfono"
   },
   "sidebar": {
     "general": "Generale",

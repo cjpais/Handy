@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Atajos bloqueados por Secure Input",
     "language": "Idioma",
     "autoLanguage": "Automático",
-    "otherLanguages": "Otros idiomas"
+    "otherLanguages": "Otros idiomas",
+    "microphone": "Micrófono"
   },
   "sidebar": {
     "general": "General",

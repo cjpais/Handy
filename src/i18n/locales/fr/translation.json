@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Raccourcis bloqués par Secure Input",
     "language": "Langue",
     "autoLanguage": "Automatique",
-    "otherLanguages": "Autres langues"
+    "otherLanguages": "Autres langues",
+    "microphone": "Microphone"
   },
   "sidebar": {
     "general": "Général",

@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Secure Input でショートカットがブロック中",
     "language": "言語",
     "autoLanguage": "自動",
-    "otherLanguages": "その他の言語"
+    "otherLanguages": "その他の言語",
+    "microphone": "マイク"
   },
   "sidebar": {
     "general": "一般",
