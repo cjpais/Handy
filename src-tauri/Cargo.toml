@@ -86,7 +86,7 @@ libc = "0.2"
 transcribe-cpp = { version = "0.4.2", default-features = false, features = [
   "serde",
 ] }
-handy-keys = "0.3.4"
+handy-keys = "0.3.5"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
