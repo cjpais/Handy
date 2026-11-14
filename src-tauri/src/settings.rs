@@ -249,9 +249,12 @@ impl Default for KeyboardImplementation {
 
 impl Default for PasteMethod {
     fn default() -> Self {
-        // Default to CtrlV for macOS and Windows, Direct for Linux
+        // Default to CtrlV for macOS and Windows. On Linux, Shift+Insert pastes in
+        // terminals and GUI apps alike (Handy also puts the text on the primary
+        // selection, which terminals read), and unlike Direct typing it doesn't
+        // depend on the keyboard layout.
         #[cfg(target_os = "linux")]
-        return PasteMethod::Direct;
+        return PasteMethod::ShiftInsert;
         #[cfg(not(target_os = "linux"))]
         return PasteMethod::CtrlV;
     }
@@ -575,7 +578,7 @@ fn default_model() -> String {
     "".to_string()
 }
 
-const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 2;
+const CURRENT_SETTINGS_SCHEMA_VERSION: u32 = 3;
 
 fn default_settings_schema_version() -> u32 {
     CURRENT_SETTINGS_SCHEMA_VERSION
@@ -674,7 +677,13 @@ fn default_paste_delay_ms() -> u64 {
 }
 
 fn default_paste_delay_after_ms() -> u64 {
-    60
+    // Linux apps fetch the pasted text from Handy only when they handle the
+    // key, so restoring the old clipboard too soon pastes the old content
+    // (#502). Only new installs get this; existing settings keep their value.
+    #[cfg(target_os = "linux")]
+    return 500;
+    #[cfg(not(target_os = "linux"))]
+    return 60;
 }
 
 fn default_auto_submit() -> bool {
@@ -1314,6 +1323,23 @@ fn apply_settings_migrations(
         // transcribe.cpp 0.2 replaced integer registry indices with opaque
         // process-local handles. Clear every old index once.
         settings.transcribe_gpu_device = default_transcribe_gpu_device();
+        settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
+        updated = true;
+    }
+    if stored_schema_version < 3 {
+        // Linux's default clipboard restore delay went from 60ms to 500ms.
+        // Someone not pasting through the clipboard has never used the delay,
+        // so give them the new default for when they switch to Shift+Insert.
+        // People already pasting through the clipboard keep their value.
+        #[cfg(target_os = "linux")]
+        if settings.paste_delay_after_ms == 60
+            && !matches!(
+                settings.paste_method,
+                PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert
+            )
+        {
+            settings.paste_delay_after_ms = default_paste_delay_after_ms();
+        }
         settings.settings_schema_version = CURRENT_SETTINGS_SCHEMA_VERSION;
         updated = true;
     }

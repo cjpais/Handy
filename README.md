@@ -163,9 +163,13 @@ Windows doesn't let Handy paste into apps that are running as administrator, so 
 
 ### Linux Notes
 
+**Paste Method:**
+
+On Linux, new installs paste with **Shift+Insert** (**Clipboard (Shift+Insert)** in **Advanced → Paste Method**). It puts the transcript on both the clipboard and the primary selection, so the same key pastes in GUI apps (which read the clipboard) and in terminals such as kitty, Ghostty, Alacritty and GNOME Terminal (which read the primary selection), then restores both. **Direct** typing is still available, but it depends on your keyboard layout: it can drop capitals and accented characters or type the wrong characters on non-US layouts.
+
 **Text Input Tools:**
 
-For reliable text input on Linux, install the appropriate tool for your display server:
+Handy needs a tool to send the paste key (or to type, with Direct). Install the appropriate one for your display server:
 
 | Display Server | Recommended Tool | Install Command                                    |
 | -------------- | ---------------- | -------------------------------------------------- |
