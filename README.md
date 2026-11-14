@@ -52,6 +52,24 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+### Nix
+
+Handy ships a [Nix](https://nixos.org) flake (`flake.nix`). The packaged build is **Linux-only** (x86_64-linux and aarch64-linux) — the same platforms covered by the flake's `supportedSystems`.
+
+Prebuilt binaries are published to the **`handy-computer` Cachix cache** (`https://handy-computer.cachix.org`), so most users can skip the ~25 minute local build:
+
+- **Building Handy's own flake** (`nix build` / `nix develop` / `nix shell` against a clone or `github:cjpais/Handy`): the flake declares the cache via `nixConfig`, but Nix only applies flake settings you trust. Accept the one-time prompt, or pass `--accept-flake-config` (or set `accept-flake-config = true`), otherwise Nix silently ignores the setting and compiles everything from source.
+- **NixOS**: enabling `programs.handy.enable` adds the substituter to the system `nix.conf`, so no per-command flag is needed.
+- **Explicit / non-flake use**: to be sure the cache is used (e.g. a non-flake build, or you've disabled flake config), pass it on the command line so the initial build pulls from Cachix instead of compiling the heavy native dependencies from source:
+
+  ```bash
+  nix build .#handy \
+    --extra-substituters https://handy-computer.cachix.org \
+    --extra-trusted-public-keys handy-computer.cachix.org-1:Sihzctn6DC0CJM5QeL+9nBEL3CL8c33m777C+eIv748=
+  ```
+
+  (Replace `nix build` with `nix develop`/`nix shell` as needed.)
+
 ## Sponsors
 
 <div align="center">
