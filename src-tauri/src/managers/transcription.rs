@@ -1222,6 +1222,13 @@ impl TranscriptionManager {
                     self.forget_model_if_engine_dropped(active_model, &e.to_string());
                 }
             })
+            .map(|mut transcript| {
+                if echoes_vocabulary(&transcript.text, &run_options.vocabulary) {
+                    info!("The model returned the custom words, not speech; dropping them");
+                    transcript.text.clear();
+                }
+                transcript
+            })
     }
 }
 
@@ -1612,6 +1619,34 @@ fn vocabulary_for_model(supports_vocabulary: bool, custom_words: &[String]) -> V
     } else {
         Vec::new()
     }
+}
+
+/// Whether `text` is the custom words read back instead of a transcript. A
+/// model that takes them as a prompt can answer audio with no speech in it by
+/// repeating the list, or the end of it, in order.
+fn echoes_vocabulary(text: &str, vocabulary: &[String]) -> bool {
+    let words = |s: &str| -> Vec<String> {
+        s.split(|c: char| !c.is_alphanumeric())
+            .filter(|word| !word.is_empty())
+            .map(str::to_lowercase)
+            .collect()
+    };
+    let said = words(text);
+    // Walk the text once, finding the custom words in the order of the list.
+    let (mut at, mut found, mut covered) = (0, 0, 0);
+    for term in vocabulary.iter().map(|term| words(term)) {
+        if term.is_empty() {
+            continue;
+        }
+        if let Some(offset) = said[at..].windows(term.len()).position(|w| w == term) {
+            at += offset + term.len();
+            found += 1;
+            covered += term.len();
+        }
+    }
+    // A sentence that uses a few custom words is speech. Three or more of
+    // them in list order, with next to nothing else, is the list.
+    found >= 3 && covered * 4 >= said.len() * 3
 }
 
 struct TranscribeCppRunPlan {
@@ -2403,6 +2438,46 @@ mod tests {
             &supported,
         );
         assert_eq!(corrected, "i use Handy every day");
+    }
+
+    #[test]
+    fn custom_words_read_back_are_not_a_transcript() {
+        let words = [
+            "Handy",
+            "Qwen",
+            "VRAM",
+            "Claude",
+            "Opus",
+            "Codex",
+            "GPT-6.1 Sol",
+        ]
+        .map(String::from);
+
+        // The shapes Qwen3-ASR returned for recordings of room noise (#2498).
+        for echo in [
+            "Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
+            "手 Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol.",
+            // Only the end of the list, as with a long one.
+            "Claude Opus Codex GPT-6.1 Sol",
+            // With a word of its own in front.
+            "Ich bin ein Handy Qwen VRAM Claude Opus Codex GPT-6.1 Sol",
+        ] {
+            assert!(echoes_vocabulary(echo, &words), "{echo}");
+        }
+
+        for speech in [
+            "",
+            "Okay.",
+            "I asked Claude to compare Opus and Codex on my Handy fork.",
+            // Too few of them to tell from someone saying them.
+            "Claude Opus",
+            "GPT-6.1 Sol",
+            // Not the order of the list.
+            "Codex, Opus, Claude",
+        ] {
+            assert!(!echoes_vocabulary(speech, &words), "{speech}");
+        }
+        assert!(!echoes_vocabulary("Handy Qwen VRAM", &[]));
     }
 }
 
