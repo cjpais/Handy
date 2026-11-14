@@ -719,6 +719,18 @@
       "dropDescription": "履歴に表示されます。"
     },
     "debug": {
+      "diagnostics": {
+        "title": "診断キャプチャ",
+        "description": "サポートセッション用にタイミング診断を記録します。",
+        "start": "診断を開始",
+        "stopAndSave": "停止して保存",
+        "active": "診断を記録中",
+        "counts": "{{events}} イベント、{{dropped}} 件破棄",
+        "savedTo": "{{path}} に保存しました",
+        "reveal": "表示",
+        "privacyNote": "タイミングデータのみを記録します。音声や文字起こしされたテキストは記録されません。",
+        "error": "診断に失敗しました: {{message}}"
+      },
       "title": "デバッグ",
       "logDirectory": {
         "title": "ログディレクトリ",

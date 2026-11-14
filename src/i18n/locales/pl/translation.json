@@ -719,6 +719,18 @@
       "dropDescription": "Pojawi się w historii."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Przechwytywanie diagnostyki",
+        "description": "Rejestruje diagnostykę czasów dla sesji wsparcia.",
+        "start": "Rozpocznij diagnostykę",
+        "stopAndSave": "Zatrzymaj i zapisz",
+        "active": "Rejestrowanie diagnostyki",
+        "counts": "Zdarzenia: {{events}}, odrzucone: {{dropped}}",
+        "savedTo": "Zapisano w {{path}}",
+        "reveal": "Pokaż",
+        "privacyNote": "Tylko dane o czasach — żaden dźwięk ani przepisany tekst nie jest rejestrowany.",
+        "error": "Diagnostyka nie powiodła się: {{message}}"
+      },
       "title": "Debugowanie",
       "logDirectory": {
         "title": "Katalog logów",

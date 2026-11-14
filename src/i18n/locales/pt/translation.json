@@ -719,6 +719,18 @@
       "dropDescription": "Ele aparecerá no histórico."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Captura de diagnóstico",
+        "description": "Registra diagnósticos de tempo para uma sessão de suporte.",
+        "start": "Iniciar diagnóstico",
+        "stopAndSave": "Parar e salvar",
+        "active": "Gravando diagnóstico",
+        "counts": "{{events}} eventos, {{dropped}} descartados",
+        "savedTo": "Salvo em {{path}}",
+        "reveal": "Mostrar",
+        "privacyNote": "Somente dados de tempo — nenhum áudio ou texto transcrito é gravado.",
+        "error": "Falha no diagnóstico: {{message}}"
+      },
       "title": "Depuração",
       "logDirectory": {
         "title": "Diretório de Logs",

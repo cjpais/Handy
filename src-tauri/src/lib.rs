@@ -9,6 +9,7 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod diagnostics;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
@@ -756,6 +757,9 @@ pub fn run(cli_args: CliArgs) {
             trigger_update_check,
             show_main_window_command,
             commands::cancel_operation,
+            commands::diagnostics::start_diagnostics,
+            commands::diagnostics::stop_diagnostics,
+            commands::diagnostics::diagnostics_status,
             commands::is_portable,
             commands::is_update_checks_locked,
             commands::get_app_dir_path,

@@ -719,6 +719,18 @@
       "dropDescription": "它會出現在歷史記錄中。"
     },
     "debug": {
+      "diagnostics": {
+        "title": "診斷擷取",
+        "description": "為支援階段記錄計時診斷資料。",
+        "start": "開始診斷",
+        "stopAndSave": "停止並儲存",
+        "active": "正在記錄診斷",
+        "counts": "{{events}} 個事件，{{dropped}} 個已捨棄",
+        "savedTo": "已儲存到 {{path}}",
+        "reveal": "顯示",
+        "privacyNote": "僅記錄計時資料——不會記錄音訊或轉錄文字。",
+        "error": "診斷失敗：{{message}}"
+      },
       "title": "偵錯",
       "logDirectory": {
         "title": "日誌目錄",

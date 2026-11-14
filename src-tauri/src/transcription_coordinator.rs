@@ -1,4 +1,5 @@
 use crate::actions::ACTION_MAP;
+use crate::diagnostics::{self, Args, Code, Name};
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutActivation;
 use log::{debug, error, warn};
@@ -175,6 +176,8 @@ struct InputEvent {
     /// still be measured from the real key-up, or a short tap classifies as
     /// a hold and the just-started recording stops with zero samples
     /// (#2089). The loop passes this as the `now` of `on_input`.
+    /// Diagnostics record it too, so the gap to the dequeue instant
+    /// exposes coordinator queue delay.
     received_at: Instant,
 }
 
@@ -619,6 +622,13 @@ impl TranscriptionCoordinator {
                             // effect (first-activation mic init) cannot turn a
                             // tap into a hold (#2089).
                             let now = input.received_at;
+                            diagnostics::instant_at(
+                                now,
+                                None,
+                                Name::InputReceived,
+                                Args::default(),
+                            );
+                            diagnostics::instant(None, Name::InputDequeued, Args::default());
                             if let Some(effect) = state.on_input(input, now) {
                                 run_effect(&app, &mut state, effect);
                             }
@@ -738,6 +748,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             binding_id,
             hotkey_string,
         } => {
+            diagnostics::instant(None, Name::Effect, Args::code(Code::Start));
             let started = start(app, &binding_id, &hotkey_string);
             state.on_start_result(&binding_id, started);
             if started {
@@ -748,6 +759,7 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             binding_id,
             hotkey_string,
         } => {
+            diagnostics::instant(None, Name::Effect, Args::code(Code::Stop));
             stop(app, &binding_id, &hotkey_string);
             emit_recording_phase(app, RecordingPhase::Stopped);
         }

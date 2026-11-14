@@ -719,6 +719,18 @@
       "dropDescription": "Den visas i historiken."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Diagnostikinspelning",
+        "description": "Spela in tidsdiagnostik för en supportsession.",
+        "start": "Starta diagnostik",
+        "stopAndSave": "Stoppa och spara",
+        "active": "Spelar in diagnostik",
+        "counts": "{{events}} händelser, {{dropped}} ignorerade",
+        "savedTo": "Sparad i {{path}}",
+        "reveal": "Visa",
+        "privacyNote": "Endast tidsdata — ingen audio eller transkriberad text spelas in.",
+        "error": "Diagnostiken misslyckades: {{message}}"
+      },
       "title": "Felsökning",
       "logDirectory": {
         "title": "Loggmapp",

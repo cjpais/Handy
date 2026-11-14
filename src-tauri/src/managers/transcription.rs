@@ -4,6 +4,7 @@ use crate::audio_toolkit::{
     remove_filler_words, OutputLanguageEvidence,
 };
 use crate::chinese_script::{chinese_variety_for_text, convert_chinese_script};
+use crate::diagnostics::{self, Args, Code, Name, RunId};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
     Unloading,
@@ -818,7 +819,7 @@ impl TranscriptionManager {
     /// worker idles until finalize/cancel and reports `None` so the caller
     /// falls back to batch transcription. Frames sent before the decode begins
     /// queue on the channel and are not lost.
-    pub fn start_stream(&self) {
+    pub fn start_stream(&self, run: RunId) {
         if self.router.is_open() || self.active_stream_worker.load(Ordering::Acquire) != 0 {
             warn!("start_stream called while a stream worker is already active");
             return;
@@ -836,7 +837,7 @@ impl TranscriptionManager {
         self.stream_active.store(false, Ordering::Release);
 
         let manager = self.clone();
-        thread::spawn(move || manager.run_stream_worker(rx, cancelled, worker_id));
+        thread::spawn(move || manager.run_stream_worker(rx, cancelled, worker_id, run));
     }
 
     fn run_stream_worker(
@@ -844,6 +845,7 @@ impl TranscriptionManager {
         rx: mpsc::Receiver<StreamCmd>,
         cancelled: Arc<AtomicBool>,
         worker_id: u64,
+        run: RunId,
     ) {
         let _worker = StreamWorkerGuard {
             worker_id,
@@ -851,13 +853,13 @@ impl TranscriptionManager {
             stream_active: Arc::clone(&self.stream_active),
         };
 
-        // Wait for any in-progress model load to finish (start_stream races the
-        // background load kicked off when recording starts).
         {
             let mut is_loading = self.is_loading.lock().unwrap();
+            let wait = diagnostics::span((*is_loading).then_some(run), Name::ModelWait);
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
+            wait.end(Args::default());
         }
 
         let model_id = self.get_current_model().unwrap_or_default();
@@ -929,10 +931,19 @@ impl TranscriptionManager {
     /// cancelled. There is no timeout here: waiting behind a model load is a
     /// queue position, not a failure (#1841), and the engine bounds the
     /// finalize itself by the audio it still has to decode.
-    fn finalize_live(&self, recorded_samples: usize) -> Result<Option<RunOutcome>> {
+    fn finalize_live(&self, recorded_samples: usize, run: RunId) -> Result<Option<RunOutcome>> {
         let Some(route) = self.router.take() else {
             return Ok(None);
         };
+        diagnostics::spanned(
+            run,
+            Name::LiveFinalize,
+            |result: &Result<Option<RunOutcome>>| result.as_ref().err().map(span_code),
+            || self.finalize_route(route, recorded_samples),
+        )
+    }
+
+    fn finalize_route(&self, route: Route, recorded_samples: usize) -> Result<Option<RunOutcome>> {
         let (reply_tx, reply_rx) = mpsc::channel();
         let finalize = StreamCmd::Finalize {
             reply: reply_tx,
@@ -978,15 +989,16 @@ impl TranscriptionManager {
     /// Transcribe a whole clip in batch: a re-transcribed history entry, or
     /// a file from the CLI.
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
-        Ok(self.complete(Instant::now(), audio, None)?.text)
+        // File transcription stays uninstrumented: no run id.
+        Ok(self.complete(Instant::now(), audio, None, None)?.text)
     }
 
     /// Transcribe a finished recording: what its live decode produced, or a
     /// batch run of the whole recording when there is no live result.
-    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<Transcription> {
+    pub fn transcribe_recording(&self, samples: Vec<f32>, run: RunId) -> Result<Transcription> {
         let started = Instant::now();
-        let live = self.finalize_live(samples.len())?;
-        self.complete(started, samples, live)
+        let live = self.finalize_live(samples.len(), run)?;
+        self.complete(started, samples, live, Some(run))
     }
 
     /// The final text of one transcription, from its live result or else a
@@ -996,6 +1008,7 @@ impl TranscriptionManager {
         started: Instant,
         audio: Vec<f32>,
         live: Option<RunOutcome>,
+        run: Option<RunId>,
     ) -> Result<Transcription> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
@@ -1017,7 +1030,7 @@ impl TranscriptionManager {
 
         let outcome = match live {
             Some(outcome) => outcome,
-            None => self.decode_batch(audio)?,
+            None => self.decode_batch(audio, run)?,
         };
         let settings = get_settings(&self.app_handle);
         let language = outcome
@@ -1060,24 +1073,35 @@ impl TranscriptionManager {
 
     /// Decode a whole clip with the loaded model, loading it first if a load
     /// is under way.
-    fn decode_batch(&self, audio: Vec<f32>) -> Result<RunOutcome> {
+    fn decode_batch(&self, audio: Vec<f32>, run: Option<RunId>) -> Result<RunOutcome> {
+        diagnostics::spanned(
+            run,
+            Name::BatchDecode,
+            |result: &Result<RunOutcome>| result.as_ref().err().map(span_code),
+            || self.decode_batch_inner(audio, run),
+        )
+    }
+
+    fn decode_batch_inner(&self, audio: Vec<f32>, run: Option<RunId>) -> Result<RunOutcome> {
         // A cancel from here on (during the model-load wait or chunk planning
         // included) stops every run of this transcription.
         let mark = self.engine.cancel_mark();
         self.touch_activity();
-        let batch = self.batch_context(&audio)?;
+        let batch = self.batch_context(&audio, run)?;
         self.transcribe_cpp(mark, batch, audio)
     }
 
     /// Waits out any model load, then reads what a batch transcription of
     /// `audio` runs with: the loaded model, the settings, and the language
     /// resolved for it.
-    fn batch_context(&self, audio: &[f32]) -> Result<BatchContext> {
+    fn batch_context(&self, audio: &[f32], run: Option<RunId>) -> Result<BatchContext> {
         {
             let mut is_loading = self.is_loading.lock().unwrap();
+            let wait = diagnostics::span(run.filter(|_| *is_loading), Name::ModelWait);
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
+            wait.end(Args::default());
         }
         let Some(info) = self.engine.loaded() else {
             return Err(anyhow::anyhow!("Model is not loaded for transcription."));
@@ -1387,6 +1411,15 @@ fn run_setup(info: &LoadedInfo, settings: &AppSettings, language: LanguageDecisi
         languages,
         applied_language_hint,
         output_was_translated,
+    }
+}
+
+/// Span code for a failed decode or finalize: a cancel stays a cancel,
+/// everything else is a transcription failure.
+fn span_code(e: &anyhow::Error) -> Code {
+    match e.downcast_ref::<EngineError>() {
+        Some(EngineError::Cancelled) => Code::Cancelled,
+        _ => Code::TranscriptionFailed,
     }
 }
 

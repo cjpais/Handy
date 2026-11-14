@@ -719,6 +719,18 @@
       "dropDescription": "Aparecerá en el historial."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Captura de diagnóstico",
+        "description": "Registra diagnósticos de tiempos para una sesión de soporte.",
+        "start": "Iniciar diagnóstico",
+        "stopAndSave": "Detener y guardar",
+        "active": "Registrando diagnóstico",
+        "counts": "{{events}} eventos, {{dropped}} descartados",
+        "savedTo": "Guardado en {{path}}",
+        "reveal": "Mostrar",
+        "privacyNote": "Solo datos de tiempos: no se graba audio ni texto transcrito.",
+        "error": "El diagnóstico falló: {{message}}"
+      },
       "title": "Depuración",
       "logDirectory": {
         "title": "Directorio de registros",
