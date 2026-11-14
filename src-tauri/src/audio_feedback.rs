@@ -8,6 +8,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::thread;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
 pub enum SoundType {
@@ -131,7 +132,24 @@ fn play_audio_file(
 
     let player = rodio::play(mixer, buf_reader)?;
     player.set_volume(volume);
-    player.sleep_until_end();
+
+    // Bound the wait: if the output device wedges (e.g. on Linux/ALSA the
+    // hardware keeps a stale open handle), sleep_until_end() parks this thread
+    // forever while the stream keeps the device's output side locked, and
+    // every other consumer (PipeWire's default sink included) gets EBUSY for
+    // as long as the app lives. Poll with a hard cap instead.
+    const FEEDBACK_MAX: Duration = Duration::from_secs(30);
+    let started = Instant::now();
+    while !player.empty() {
+        if started.elapsed() > FEEDBACK_MAX {
+            warn!(
+                "Feedback sound did not finish within {}s (wedged output device?); dropping the output stream",
+                FEEDBACK_MAX.as_secs()
+            );
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
 
     Ok(())
 }
