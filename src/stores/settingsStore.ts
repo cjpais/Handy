@@ -175,6 +175,15 @@ const settingUpdaters: {
   theme: (value) => commands.changeThemeSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  shortcut_passthrough: async (value) => {
+    const result = await commands.changeShortcutPassthroughSetting(
+      value ?? false,
+    );
+    if (result.status === "error") {
+      notify({ title: result.error });
+      throw new Error(result.error);
+    }
+  },
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
   airpods_mode: async (value) => {

@@ -391,6 +391,14 @@ async changeLazyStreamCloseSetting(enabled: boolean) : Promise<Result<null, stri
     else return { status: "error", error: e  as any };
 }
 },
+async changeShortcutPassthroughSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_shortcut_passthrough_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeVadEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_vad_enabled_setting", { enabled }) };
@@ -1147,7 +1155,11 @@ spoken_languages?: string[]; overlay_position?: OverlayPosition; debug_mode?: bo
  * Mac while recording, so its microphone does not return silence while
  * another Apple device is playing through it.
  */
-airpods_mode?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number; 
+airpods_mode?: boolean; keyboard_implementation?: KeyboardImplementation;
+/**
+ * Allow Windows shortcut keys to reach other apps.
+ */
+shortcut_passthrough?: boolean; show_tray_icon?: boolean; paste_delay_ms?: number; paste_delay_after_ms?: number;
 /**
  * Debug-gated ("beta") receipt-sequenced paste: restore the clipboard only
  * after the target app actually reads the transcript, instead of after a
