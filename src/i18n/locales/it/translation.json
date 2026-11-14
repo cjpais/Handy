@@ -715,6 +715,11 @@
       "readingFile": "Lettura del file in corso...",
       "showMore": "Mostra di più",
       "showLess": "Mostra di meno",
+      "postProcess": "Post-elabora la trascrizione",
+      "postProcessError": "Post-elaborazione non riuscita. Controlla le impostazioni di post-elaborazione o i log.",
+      "postProcessedTab": "Post-elaborato",
+      "originalTab": "Originale",
+      "postProcessFailed": "La post-elaborazione non è riuscita, quindi è stata usata la trascrizione originale.",
       "dropTitle": "Rilascia per trascrivere",
       "dropDescription": "Comparirà nella cronologia."
     },

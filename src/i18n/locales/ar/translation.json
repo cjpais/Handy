@@ -715,6 +715,11 @@
       "readingFile": "جارٍ قراءة الملف...",
       "showMore": "عرض المزيد",
       "showLess": "عرض أقل",
+      "postProcess": "المعالجة اللاحقة للنص",
+      "postProcessError": "فشلت المعالجة اللاحقة. تحقق من إعدادات المعالجة اللاحقة أو من السجلات.",
+      "postProcessedTab": "بعد المعالجة",
+      "originalTab": "الأصلي",
+      "postProcessFailed": "فشلت المعالجة اللاحقة، لذا تم استخدام النص الأصلي.",
       "dropTitle": "أفلت الملف لنسخه",
       "dropDescription": "سيظهر في السجل."
     },

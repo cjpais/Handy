@@ -715,6 +715,11 @@
       "readingFile": "Reading file...",
       "showMore": "Show more",
       "showLess": "Show less",
+      "postProcess": "Post-process transcription",
+      "postProcessError": "Post-processing failed. Check your post-processing settings or the logs.",
+      "postProcessedTab": "Post-processed",
+      "originalTab": "Original",
+      "postProcessFailed": "Post-processing failed, so the original transcription was used.",
       "dropTitle": "Drop to transcribe",
       "dropDescription": "It'll show up in History."
     },

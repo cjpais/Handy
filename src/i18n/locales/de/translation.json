@@ -715,6 +715,11 @@
       "readingFile": "Datei wird gelesen...",
       "showMore": "Mehr anzeigen",
       "showLess": "Weniger anzeigen",
+      "postProcess": "Transkription nachbearbeiten",
+      "postProcessError": "Nachbearbeitung fehlgeschlagen. Prüfe die Einstellungen zur Nachbearbeitung oder die Protokolle.",
+      "postProcessedTab": "Nachbearbeitet",
+      "originalTab": "Original",
+      "postProcessFailed": "Die Nachbearbeitung ist fehlgeschlagen, daher wurde die ursprüngliche Transkription verwendet.",
       "dropTitle": "Zum Transkribieren ablegen",
       "dropDescription": "Es erscheint im Verlauf."
     },

@@ -715,6 +715,11 @@
       "readingFile": "Leyendo archivo...",
       "showMore": "Mostrar más",
       "showLess": "Mostrar menos",
+      "postProcess": "Posprocesar transcripción",
+      "postProcessError": "El posprocesamiento falló. Revisa la configuración de posprocesamiento o los registros.",
+      "postProcessedTab": "Posprocesado",
+      "originalTab": "Original",
+      "postProcessFailed": "El posprocesamiento falló, así que se usó la transcripción original.",
       "dropTitle": "Suelta para transcribir",
       "dropDescription": "Aparecerá en el historial."
     },
