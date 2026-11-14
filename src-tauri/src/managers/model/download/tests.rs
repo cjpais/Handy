@@ -4,7 +4,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tempfile::TempDir;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -505,70 +505,107 @@ async fn http_cancel_while_awaiting_headers() {
     // not after the stall timeout, and certainly not never.
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
+    let cancel = CancellationToken::new();
+    let trigger = cancel.clone();
+    let (finished, wait_finished) = tokio::sync::oneshot::channel();
+    let server = tokio::spawn(async move {
         let (mut sock, _) = listener.accept().await.unwrap();
-        let _ = read_request_head(&mut sock).await;
-        tokio::time::sleep(Duration::from_secs(600)).await;
+        let head = read_request_head(&mut sock).await;
+        assert!(
+            head.ends_with("\r\n\r\n"),
+            "request headers must arrive first"
+        );
+        trigger.cancel();
+        // Keep the socket open until cancellation finishes, so an EOF cannot
+        // satisfy the test instead of cancellation while awaiting headers.
+        let _ = wait_finished.await;
+        drop(sock);
     });
     let dir = TempDir::new().unwrap();
     let partial = dir.path().join("m.partial");
 
-    let cancel = CancellationToken::new();
-    let trigger = cancel.clone();
-    tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        trigger.cancel();
-    });
-
-    let started = Instant::now();
-    let out = run_download(
-        &format!("http://{}/file", addr),
-        &partial,
-        Some(10),
-        Some("00"),
-        &cancel,
+    let out = tokio::time::timeout(
+        Duration::from_secs(10),
+        run_download(
+            &format!("http://{}/file", addr),
+            &partial,
+            Some(10),
+            Some("00"),
+            &cancel,
+        ),
     )
     .await
+    .expect("cancellation must not wait for the download stall timeout")
     .unwrap();
+    finished.send(()).unwrap();
+    server.await.unwrap();
 
     assert!(matches!(out, HttpDownloadOutcome::Cancelled));
-    assert!(
-        started.elapsed() < Duration::from_secs(30),
-        "cancel must not wait out the stall timeout"
-    );
+    assert!(!partial.exists(), "no response body was received");
 }
 
-#[tokio::test]
-async fn http_cancel_during_stalled_body_keeps_partial() {
+async fn assert_cancel_during_stalled_body(initial: &[u8], response_delay: Duration) {
+    let resumed = !initial.is_empty();
+    let response = if resumed {
+        http_response(
+            "206 Partial Content",
+            &[
+                "Content-Range: bytes 2-99/100".to_string(),
+                "Content-Length: 98".to_string(),
+            ],
+            b"c",
+        )
+    } else {
+        http_response("200 OK", &["Content-Length: 100".to_string()], b"abc")
+    };
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
+    let (finished, wait_finished) = tokio::sync::oneshot::channel();
+    let server = tokio::spawn(async move {
         let (mut sock, _) = listener.accept().await.unwrap();
-        let _ = read_request_head(&mut sock).await;
-        let _ = sock
-            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nabc")
-            .await;
-        tokio::time::sleep(Duration::from_secs(600)).await;
+        let head = read_request_head(&mut sock).await.to_ascii_lowercase();
+        assert_eq!(head.contains("range: bytes=2-"), resumed);
+        // Inject latency in the regression case; cancellation below still
+        // waits for received bytes, never for this delay to elapse.
+        if !response_delay.is_zero() {
+            tokio::time::sleep(response_delay).await;
+        }
+        sock.write_all(&response).await.unwrap();
+        let _ = wait_finished.await;
+        drop(sock);
     });
     let dir = TempDir::new().unwrap();
     let partial = dir.path().join("m.partial");
+    if resumed {
+        fs::write(&partial, initial).unwrap();
+    }
 
     let cancel = CancellationToken::new();
-    let trigger = cancel.clone();
-    tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(300)).await;
-        trigger.cancel();
-    });
-
-    let out = run_download(
-        &format!("http://{}/file", addr),
-        &partial,
-        Some(100),
-        Some("00"),
-        &cancel,
+    let out = tokio::time::timeout(
+        Duration::from_secs(10),
+        ModelManager::download_http_resumable_with_events(
+            "test/model",
+            &format!("http://{}/file", addr),
+            &partial,
+            Some(100),
+            Some("00"),
+            &cancel,
+            &|event| {
+                // Progress is emitted after writing bytes. The initial event
+                // (zero or the resume offset) must not trigger cancellation.
+                if let HttpDownloadEvent::Progress(progress) = event {
+                    if progress.downloaded == 3 {
+                        cancel.cancel();
+                    }
+                }
+            },
+        ),
     )
     .await
+    .expect("cancellation must not wait for the download stall timeout")
     .unwrap();
+    finished.send(()).unwrap();
+    server.await.unwrap();
 
     assert!(matches!(out, HttpDownloadOutcome::Cancelled));
     assert_eq!(
@@ -576,4 +613,20 @@ async fn http_cancel_during_stalled_body_keeps_partial() {
         b"abc",
         "bytes received before the cancel must be kept for resume"
     );
+}
+
+#[tokio::test]
+async fn http_cancel_during_stalled_body_keeps_partial() {
+    assert_cancel_during_stalled_body(&[], Duration::ZERO).await;
+}
+
+#[tokio::test]
+async fn http_cancel_during_delayed_stalled_body_keeps_partial() {
+    // The old 300ms timer could cancel before these headers arrived.
+    assert_cancel_during_stalled_body(&[], Duration::from_secs(1)).await;
+}
+
+#[tokio::test]
+async fn http_cancel_during_stalled_resumed_body_keeps_all_received_bytes() {
+    assert_cancel_during_stalled_body(b"ab", Duration::ZERO).await;
 }
