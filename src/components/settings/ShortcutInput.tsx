@@ -109,6 +109,7 @@ export const ShortcutInput: React.FC<ShortcutInputProps> = ({
         {capturing ? (
           <div
             ref={shortcutRef}
+            data-keyboard-capture="true"
             className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/20 rounded-md"
           >
             {partial
