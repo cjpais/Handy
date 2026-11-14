@@ -1,8 +1,8 @@
-use crate::audio_toolkit::chunking;
 use crate::audio_toolkit::{
     apply_custom_words, detect_output_language, normalize_transcription_output,
     remove_filler_words, OutputLanguageEvidence,
 };
+use crate::audio_toolkit::{audio::AudioFrameCallback, chunking};
 use crate::chinese_script::{chinese_variety_for_text, convert_chinese_script};
 use crate::engine_supervisor::{
     CancelMark, DeviceInfo, DeviceSelector, EngineError, EngineSupervisor, LoadSpec, LoadedInfo,
@@ -121,9 +121,7 @@ type StreamFinalizeReply = Result<Option<RunOutcome>, EngineError>;
 
 /// Routes real-time audio frames to the active streaming worker. Shared between
 /// the [`TranscriptionManager`] (opens/closes the route) and the audio recorder's
-/// per-frame callback (feeds frames). The recorder holds an `Arc<StreamRouter>`
-/// directly, so a frame with no stream pending costs a single relaxed atomic
-/// load — no Tauri state lookup, no mutex lock.
+/// per-recording callback (feeds frames only to its original route).
 pub struct StreamRouter {
     /// The active streaming worker's route, present from `start_stream`
     /// until `finalize_live`/`cancel_stream`.
@@ -135,6 +133,7 @@ pub struct StreamRouter {
 
 /// One streaming worker's command channel.
 struct Route {
+    identity: Arc<()>,
     tx: mpsc::Sender<StreamCmd>,
     /// Set by `cancel_stream`, so the worker drops audio still queued ahead
     /// of the `Cancel` instead of decoding it.
@@ -156,6 +155,7 @@ impl StreamRouter {
         let (tx, rx) = mpsc::channel::<StreamCmd>();
         let cancelled = Arc::new(AtomicBool::new(false));
         *self.route.lock().unwrap() = Some(Route {
+            identity: Arc::new(()),
             tx,
             cancelled: Arc::clone(&cancelled),
         });
@@ -177,14 +177,31 @@ impl StreamRouter {
         *self.route.lock().unwrap() = None;
     }
 
-    /// Forward a 16 kHz frame to the active streaming worker. Cheap no-op (a
-    /// single relaxed atomic load) when no stream is pending.
-    pub fn feed(&self, frame: &[f32]) {
+    /// Bind a recording's audio to the current route. With no route open,
+    /// the returned callback remains inactive even if a stream opens later.
+    pub fn audio_callback(self: &Arc<Self>) -> AudioFrameCallback {
+        let identity = self
+            .route
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|route| Arc::clone(&route.identity));
+        let router = Arc::clone(self);
+        Arc::new(move |frame| {
+            if let Some(identity) = identity.as_ref() {
+                router.feed(identity, frame);
+            }
+        })
+    }
+
+    fn feed(&self, identity: &Arc<()>, frame: &[f32]) {
         if !self.open.load(Ordering::Relaxed) {
             return;
         }
         if let Some(route) = self.route.lock().unwrap().as_ref() {
-            let _ = route.tx.send(StreamCmd::Feed(frame.to_vec()));
+            if Arc::ptr_eq(identity, &route.identity) {
+                let _ = route.tx.send(StreamCmd::Feed(frame.to_vec()));
+            }
         }
     }
 
