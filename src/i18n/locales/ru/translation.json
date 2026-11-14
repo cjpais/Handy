@@ -633,7 +633,8 @@
         "model": "Модель",
         "apiKey": "Ключ API",
         "apiKeyPlaceholder": "необязательно",
-        "timeout": "Таймаут, сек"
+        "timeout": "Таймаут, сек",
+        "language": "Язык"
       }
     },
     "postProcessing": {

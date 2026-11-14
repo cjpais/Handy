@@ -7,7 +7,9 @@
 //!
 //! Disabled by default: the local pipeline is untouched unless the user opts in.
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+use log::{info, warn};
 
 use crate::managers::transcription::Transcription;
 use crate::settings::SttHttpSettings;
@@ -101,7 +103,18 @@ pub async fn transcribe(
     }
 
     let url = transcriptions_url(&validate_url(&config.base_url)?);
-    let file = reqwest::multipart::Part::bytes(wav_bytes(pcm, sample_rate))
+    let wav = wav_bytes(pcm, sample_rate);
+    info!(
+        "stt_http: sending {:.2} s of audio ({} bytes) to {url} (model: {})",
+        seconds,
+        wav.len(),
+        if config.model.trim().is_empty() {
+            "default"
+        } else {
+            config.model.trim()
+        }
+    );
+    let file = reqwest::multipart::Part::bytes(wav)
         .file_name("audio.wav")
         .mime_str("audio/wav")
         .map_err(|e| format!("Could not build the audio part: {e}"))?;
@@ -131,11 +144,23 @@ pub async fn transcribe(
         request = request.bearer_auth(config.api_key.trim());
     }
 
-    let response = request
-        .send()
-        .await
-        .map_err(|e| format!("STT request to {url} failed: {e}"))?;
+    let started = Instant::now();
+    let response = request.send().await.map_err(|e| {
+        let message = if e.is_timeout() {
+            format!(
+                "STT request to {url} timed out after {} s",
+                config.timeout_secs.max(5)
+            )
+        } else if e.is_connect() {
+            format!("Could not connect to {url}: {e}")
+        } else {
+            format!("STT request to {url} failed: {e}")
+        };
+        warn!("stt_http: {message}");
+        message
+    })?;
     let status = response.status();
+    let elapsed_ms = started.elapsed().as_millis();
     if let Some(length) = response.content_length() {
         if length as usize > MAX_RESPONSE_BYTES {
             return Err(format!(
@@ -150,11 +175,22 @@ pub async fn transcribe(
 
     if !status.is_success() {
         let snippet: String = body.chars().take(500).collect();
+        warn!("stt_http: {url} returned {status} in {elapsed_ms} ms: {snippet}");
         return Err(format!("STT backend returned {status}: {snippet}"));
     }
 
+    let text = parse_transcript(&body);
+    if text.trim().is_empty() {
+        warn!("stt_http: {url} returned {status} in {elapsed_ms} ms with an empty transcript");
+    } else {
+        info!(
+            "stt_http: {url} returned {status} in {elapsed_ms} ms, {} chars",
+            text.chars().count()
+        );
+    }
+
     Ok(Transcription {
-        text: parse_transcript(&body),
+        text,
         language: None,
     })
 }

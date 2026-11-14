@@ -633,7 +633,8 @@
         "model": "Model",
         "apiKey": "API key",
         "apiKeyPlaceholder": "optional",
-        "timeout": "Timeout, seconds"
+        "timeout": "Timeout, seconds",
+        "language": "Taal"
       }
     },
     "postProcessing": {

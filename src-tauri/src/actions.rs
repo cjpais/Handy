@@ -25,7 +25,7 @@ use std::future::Future;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_specta::Event;
 
 /// How a dictation ended.
@@ -793,7 +793,24 @@ impl ShortcutAction for TranscribeAction {
                     // Air-gapped mode: an OpenAI-compatible endpoint replaces the
                     // local engine for this recording. Off by default, so the
                     // local path below is exactly what it always was.
-                    let stt_http = get_settings(&ah).stt_http;
+                    let mut stt_http = get_settings(&ah).stt_http;
+                    // Most endpoints do not guess the language on their own, and a
+                    // wrong guess turns Russian speech into plausible English
+                    // nonsense. Fall back to the language picked for local
+                    // transcription so the two modes behave the same way.
+                    let language_missing = stt_http
+                        .language
+                        .as_deref()
+                        .map(str::trim)
+                        .map(str::is_empty)
+                        .unwrap_or(true);
+                    if language_missing {
+                        let selected = get_settings(&ah).selected_language;
+                        let selected = selected.trim();
+                        if !selected.is_empty() && !selected.eq_ignore_ascii_case("auto") {
+                            stt_http.language = Some(selected.to_string());
+                        }
+                    }
                     // Two mutually exclusive modes. An air-gapped setup has no local
                     // model at all (security does not allow downloading one), so a
                     // failed endpoint is reported as-is: silently switching to a model
@@ -804,6 +821,19 @@ impl ShortcutAction for TranscribeAction {
                         tm.transcribe_recording(samples)
                             .map_err(|error| error.to_string())
                     };
+                    if stt_http.enabled {
+                        // Lets the settings panel show that a recording really went
+                        // to the endpoint instead of the local engine.
+                        let _ = ah.emit(
+                            "stt-http-status",
+                            serde_json::json!({
+                                "ok": transcription_result.is_ok(),
+                                "endpoint": stt_http.base_url,
+                                "language": stt_http.language,
+                                "at": chrono::Utc::now().timestamp_millis(),
+                            }),
+                        );
+                    }
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
