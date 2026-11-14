@@ -58,6 +58,7 @@ impl NoticeCode {
         match self {
             Self::TranscriptionFailed
             | Self::PasteFailed
+            | Self::PasteBlockedElevated
             | Self::NoMicrophone
             | Self::MicrophoneSilent
             | Self::MicPermissionDenied
@@ -65,9 +66,7 @@ impl NoticeCode {
             | Self::ModelLoadFailed
             | Self::NoModelSelected
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PasteBlockedElevated | Self::PostProcessFailed | Self::FilePostProcessFailed => {
-                NoticeLevel::Warning
-            }
+            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
         }
     }
 

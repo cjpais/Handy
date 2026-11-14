@@ -935,7 +935,7 @@ impl ShortcutAction for TranscribeAction {
                                                     });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }
-                                                Ok(utils::PasteOutcome::CopiedInstead) => (
+                                                Ok(utils::PasteOutcome::Blocked) => (
                                                     TranscriptionOutcome::Failed,
                                                     Some(Notice::new(
                                                         NoticeCode::PasteBlockedElevated,

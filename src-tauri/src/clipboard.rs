@@ -1,7 +1,7 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use crate::settings::{get_settings, AppSettings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
@@ -854,11 +854,9 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
 /// What [`paste`] did with the text.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PasteOutcome {
-    /// Handed to the focused app the way the user set up.
     Pasted,
-    /// The focused window takes no input from Handy, so the text was left on
-    /// the clipboard for the user to paste.
-    CopiedInstead,
+    /// The focused window takes no input from Handy, so nothing arrived.
+    Blocked,
 }
 
 /// Whether `paste_method` works by sending keystrokes to the focused window.
@@ -877,6 +875,27 @@ fn sends_keys(paste_method: PasteMethod) -> bool {
 pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
     let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
+
+    // Windows drops the keystrokes Handy sends to an elevated window and may
+    // not say so, so ask before pasting instead of trusting the result. The
+    // paste still runs as usual; only what Handy reports changes.
+    let blocked =
+        sends_keys(settings.paste_method) && crate::utils::foreground_window_is_elevated();
+    let result = paste_as_configured(text, app_handle, settings);
+    if !blocked {
+        return result.map(|()| PasteOutcome::Pasted);
+    }
+    if let Err(e) = result {
+        log::warn!("Paste into an elevated window failed: {e}");
+    }
+    Ok(PasteOutcome::Blocked)
+}
+
+fn paste_as_configured(
+    text: String,
+    app_handle: AppHandle,
+    settings: AppSettings,
+) -> Result<(), String> {
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
@@ -892,14 +911,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
-
-    // Windows drops the keystrokes Handy sends to an elevated window without
-    // saying so, so check up front and hand the text over on the clipboard.
-    if sends_keys(paste_method) && crate::utils::foreground_window_is_elevated() {
-        info!("The focused window is elevated; copying the text instead of pasting");
-        write_text_to_clipboard(&app_handle, &text)?;
-        return Ok(PasteOutcome::CopiedInstead);
-    }
 
     // Perform the paste operation
     match paste_method {
@@ -941,7 +952,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String
                     )
                 });
                 match reliable_result {
-                    Ok(()) => return Ok(PasteOutcome::Pasted),
+                    Ok(()) => return Ok(()),
                     Err(e) => {
                         log::warn!("Reliable paste unavailable ({e}); falling back to legacy paste")
                     }
@@ -980,7 +991,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String
         write_text_to_clipboard(&app_handle, &text)?;
     }
 
-    Ok(PasteOutcome::Pasted)
+    Ok(())
 }
 
 #[cfg(test)]
