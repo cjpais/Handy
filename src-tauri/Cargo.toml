@@ -114,6 +114,7 @@ webview2-com = "0.38"
 windows = { version = "0.61.3", features = [
   "System_UserProfile",
   "Win32_Media_Audio_Endpoints",
+  "Win32_Security",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_DataExchange",
   "Win32_System_LibraryLoader",

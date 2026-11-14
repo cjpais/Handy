@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Tải xuống thất bại",
     "pasteFailedTitle": "Không thể dán văn bản",
     "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động.",
+    "pasteBlockedElevatedTitle": "Không thể dán vào ứng dụng admin",
+    "pasteBlockedElevated": "Ứng dụng đang hoạt động chạy với quyền quản trị viên nên Handy không thể dán vào đó. Bạn có thể sao chép bản chép lời từ Lịch sử.",
     "postProcessFailedTitle": "Đã dán không qua xử lý sau",
     "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
     "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",

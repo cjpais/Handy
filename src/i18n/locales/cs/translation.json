@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Stahování selhalo",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
     "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "pasteBlockedElevatedTitle": "Nelze vložit do aplikace správce",
+    "pasteBlockedElevated": "Aktivní aplikace běží jako správce, takže do ní Handy nemůže vkládat. Přepis můžete zkopírovat z Historie.",
     "postProcessFailedTitle": "Vloženo bez následného zpracování",
     "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
     "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",

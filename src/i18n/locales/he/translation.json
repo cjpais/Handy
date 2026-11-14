@@ -950,6 +950,8 @@
     "modelDownloadFailed": "ההורדה נכשלה",
     "pasteFailedTitle": "ההדבקה נכשלה",
     "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "pasteBlockedElevatedTitle": "לא ניתן להדביק ביישומי מנהל",
+    "pasteBlockedElevated": "היישום הפעיל רץ כמנהל מערכת, ולכן Handy לא יכול להדביק בו. אפשר להעתיק את התמלול מההיסטוריה.",
     "postProcessFailedTitle": "הודבק ללא עיבוד משלים",
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
     "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",

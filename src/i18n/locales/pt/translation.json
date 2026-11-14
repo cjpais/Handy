@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Falha no download",
     "pasteFailedTitle": "Falha ao colar o texto",
     "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
+    "pasteBlockedElevatedTitle": "Colagem bloqueada por app admin",
+    "pasteBlockedElevated": "O aplicativo ativo está sendo executado como administrador, então o Handy não consegue colar nele. Você pode copiar a transcrição do Histórico.",
     "postProcessFailedTitle": "Colado sem pós-processamento",
     "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
     "filePostProcessFailedTitle": "Transcrito sem pós-processamento",

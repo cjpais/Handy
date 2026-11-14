@@ -950,6 +950,8 @@
     "modelDownloadFailed": "下載失敗",
     "pasteFailedTitle": "貼上文字失敗",
     "pasteFailed": "無法將文字貼上至目前作用中的應用程式。",
+    "pasteBlockedElevatedTitle": "無法貼上到系統管理員應用程式",
+    "pasteBlockedElevated": "目前作用中的應用程式以系統管理員身分執行，因此 Handy 無法貼上到其中。可以從歷史紀錄中複製轉錄內容。",
     "postProcessFailedTitle": "已貼上，未經後處理",
     "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
     "filePostProcessFailedTitle": "已轉錄，未經後處理",

@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Error en la descarga",
     "pasteFailedTitle": "Error al pegar el texto",
     "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
+    "pasteBlockedElevatedTitle": "No se puede pegar en apps admin",
+    "pasteBlockedElevated": "La aplicación activa se ejecuta como administrador, así que Handy no puede pegar en ella. Puedes copiar la transcripción desde Historial.",
     "postProcessFailedTitle": "Pegado sin post proceso",
     "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
     "filePostProcessFailedTitle": "Transcrito sin post proceso",

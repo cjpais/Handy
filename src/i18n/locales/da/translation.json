@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Download mislykkedes",
     "pasteFailedTitle": "Kunne ikke indsætte tekst",
     "pasteFailed": "Teksten kunne ikke indsættes i det aktive program.",
+    "pasteBlockedElevatedTitle": "Kan ikke indsætte i admin-apps",
+    "pasteBlockedElevated": "Det aktive program kører som administrator, så Handy kan ikke indsætte i det. Du kan kopiere transskriptionen fra Historik.",
     "postProcessFailedTitle": "Indsat uden efterbehandling",
     "postProcessFailed": "Efterbehandlingen blev ikke færdig, så transskriptionen blev indsat, som den er.",
     "filePostProcessFailedTitle": "Transskriberet uden efterbehandling",

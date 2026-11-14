@@ -950,6 +950,8 @@
     "modelDownloadFailed": "Pobieranie nie powiodło się",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
     "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
+    "pasteBlockedElevatedTitle": "Nie można wkleić do aplikacji admina",
+    "pasteBlockedElevated": "Aktywna aplikacja działa jako administrator, więc Handy nie może do niej wklejać. Transkrypcję możesz skopiować z Historii.",
     "postProcessFailedTitle": "Wklejono bez postprocesu",
     "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
     "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
