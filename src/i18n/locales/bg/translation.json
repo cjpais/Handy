@@ -240,9 +240,6 @@
       },
       "unsupported": "Този модел не разбира {{language}}, затова не може да го пише",
       "unrated": "Този модел разбира {{language}}, но още не сме измерили колко добре",
-      "under": "под {{max}}%",
-      "between": "{{min}} до {{max}}%",
-      "over": "{{min}}% или повече",
       "speedTitle": "Скорост: {{speed}}",
       "speedName": {
         "0": "Много бавен",
@@ -263,6 +260,13 @@
       "underSeconds": "под {{max}} с",
       "betweenSeconds": "{{min}} до {{max}} с",
       "overSeconds": "{{min}} с или повече"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Препоръчан",

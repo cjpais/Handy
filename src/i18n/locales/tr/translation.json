@@ -240,9 +240,6 @@
       },
       "unsupported": "Bu model {{language}} dilini anlamıyor, bu yüzden yazamaz",
       "unrated": "Bu model {{language}} dilini anlıyor, ama ne kadar iyi anladığını henüz ölçmedik",
-      "under": "%{{max}} altı",
-      "between": "%{{min}} ile %{{max}} arası",
-      "over": "%{{min}} veya üzeri",
       "speedTitle": "Hız: {{speed}}",
       "speedName": {
         "0": "Çok yavaş",
@@ -263,6 +260,13 @@
       "underSeconds": "{{max}} sn altı",
       "betweenSeconds": "{{min}} ile {{max}} sn arası",
       "overSeconds": "{{min}} sn veya üzeri"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Önerilen",

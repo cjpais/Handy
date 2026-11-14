@@ -240,9 +240,6 @@
       },
       "unsupported": "Model ini tidak memahami {{language}}, jadi tidak bisa mengetiknya",
       "unrated": "Model ini memahami {{language}}, tetapi kami belum mengukur seberapa baik",
-      "under": "di bawah {{max}}%",
-      "between": "{{min}} hingga {{max}}%",
-      "over": "{{min}}% atau lebih",
       "speedTitle": "Kecepatan: {{speed}}",
       "speedName": {
         "0": "Sangat lambat",
@@ -263,6 +260,13 @@
       "underSeconds": "di bawah {{max}} dtk",
       "betweenSeconds": "{{min}} hingga {{max}} dtk",
       "overSeconds": "{{min}} dtk atau lebih"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Direkomendasikan",

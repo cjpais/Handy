@@ -240,9 +240,6 @@
       },
       "unsupported": "Den här modellen förstår inte {{language}}, så den kan inte skriva det",
       "unrated": "Den här modellen förstår {{language}}, men vi har inte mätt hur bra ännu",
-      "under": "under {{max}} %",
-      "between": "{{min}} till {{max}} %",
-      "over": "{{min}} % eller mer",
       "speedTitle": "Hastighet: {{speed}}",
       "speedName": {
         "0": "Mycket långsam",
@@ -263,6 +260,13 @@
       "underSeconds": "under {{max}} s",
       "betweenSeconds": "{{min}} till {{max}} s",
       "overSeconds": "{{min}} s eller mer"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Rekommenderad",

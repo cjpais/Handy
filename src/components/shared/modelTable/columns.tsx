@@ -2,7 +2,11 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import type { CatalogModel } from "@handy-computer/models";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { GradeChip } from "@/components/shared/GradeChip";
+import {
+  GradeChip,
+  RATING_KEYS,
+  type GradeLetter,
+} from "@/components/shared/GradeChip";
 import { SpeedBars, speedLevel } from "@/components/shared/SpeedBars";
 import { languageName } from "@/lib/constants/languages";
 import { formatModelSize } from "@/lib/utils/format";
@@ -25,8 +29,8 @@ export const columnsClass = (langs: string[]) =>
   gradeMode(langs) === "overall"
     ? "grid-cols-[44px_40px_52px] gap-x-[6px]"
     : isDense(langs)
-      ? "grid-cols-[repeat(var(--n),26px)_36px_50px] gap-x-[3px]"
-      : "grid-cols-[repeat(var(--n),32px)_40px_52px] gap-x-[6px]";
+      ? "grid-cols-[repeat(var(--n),28px)_36px_50px] gap-x-[3px]"
+      : "grid-cols-[repeat(var(--n),36px)_40px_52px] gap-x-[6px]";
 
 export const columnsStyle = (langs: string[]) =>
   ({ "--n": langs.length }) as React.CSSProperties;
@@ -74,7 +78,7 @@ export const Codes: React.FC<{ langs: string[]; vt?: VtName }> = ({
   );
 };
 
-/** Tooltip for a grade chip: what the letter means, or why there's no grade. */
+/** Tooltip for a grade chip: what the stars mean, or why there's no grade. */
 export const GradeTip: React.FC<{
   grading: Grading;
   model: CatalogModel | undefined;
@@ -90,6 +94,8 @@ export const GradeTip: React.FC<{
   const one = langs.length === 1;
   const grade = one ? grading.grade(model, langs[0]) : grading.overall(model);
   const key = (k: string) => `modelTable.rubric.${k}`;
+  const word = (letter: GradeLetter) =>
+    letter === "none" ? "" : t(RATING_KEYS[letter]);
   const miss = langs.filter((l) => grading.grade(model, l).unsupported);
   let text: React.ReactNode;
   if (!model) text = t(key("unrated"), { language: list(langs) });
@@ -97,17 +103,17 @@ export const GradeTip: React.FC<{
   else if (grade.letter === "none")
     text = t(key("unrated"), { language: list(langs) });
   else text = t(key(`meaning.${grade.letter}`));
-  // Per-language breakdown as text (chip greys don't work on the tooltip);
-  // letters and +/− in separate columns so they line up.
+  // Per-language breakdown as words (stars don't show on the tooltip).
   const breakdown = !one && (
-    <span className="mt-[6px] grid grid-cols-[1fr_auto_auto]">
+    <span className="mt-[6px] grid grid-cols-[1fr_auto]">
       {langs.map((l) => {
-        const { label } = grading.grade(model, l);
+        const g = grading.grade(model, l);
         return (
           <React.Fragment key={l}>
             <span className="me-[16px]">{nameOf(l)}</span>
-            <b className="text-center font-semibold">{label.slice(0, 1)}</b>
-            <b className="font-semibold">{label.slice(1)}</b>
+            <b className="font-semibold">
+              {g.letter === "none" ? g.label : word(g.letter)}
+            </b>
           </React.Fragment>
         );
       })}
@@ -119,10 +125,10 @@ export const GradeTip: React.FC<{
         one
           ? t(key(grade.letter !== "none" ? "gradeTitle" : "accuracyTitle"), {
               language: nameOf(langs[0]),
-              grade: grade.label,
+              grade: word(grade.letter),
             })
           : t(key(grade.letter !== "none" ? "overallTitle" : "overall"), {
-              grade: grade.label,
+              grade: word(grade.letter),
             })
       }
       text={
@@ -220,6 +226,7 @@ export const Values: React.FC<{
             <GradeChip
               letter={grading.overall(model).letter}
               label={grading.overall(model).label}
+              large
             />
           </span>
         </GradeTip>

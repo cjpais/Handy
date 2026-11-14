@@ -240,9 +240,6 @@
       },
       "unsupported": "Mô hình này không hiểu {{language}}, nên không thể gõ ngôn ngữ này",
       "unrated": "Mô hình này hiểu {{language}}, nhưng chúng tôi chưa đo mức độ tốt đến đâu",
-      "under": "dưới {{max}}%",
-      "between": "{{min}} đến {{max}}%",
-      "over": "{{min}}% trở lên",
       "speedTitle": "Tốc độ: {{speed}}",
       "speedName": {
         "0": "Rất chậm",
@@ -263,6 +260,13 @@
       "underSeconds": "dưới {{max}} giây",
       "betweenSeconds": "{{min}} đến {{max}} giây",
       "overSeconds": "{{min}} giây trở lên"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Được đề xuất",

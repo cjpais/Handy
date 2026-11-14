@@ -240,9 +240,6 @@
       },
       "unsupported": "Ця модель не розуміє мову «{{language}}», тому не може нею друкувати",
       "unrated": "Ця модель розуміє мову «{{language}}», але ми ще не виміряли, наскільки добре",
-      "under": "менше {{max}}%",
-      "between": "від {{min}} до {{max}}%",
-      "over": "{{min}}% і більше",
       "speedTitle": "Швидкість: {{speed}}",
       "speedName": {
         "0": "Дуже повільно",
@@ -263,6 +260,13 @@
       "underSeconds": "менше {{max}} с",
       "betweenSeconds": "від {{min}} до {{max}} с",
       "overSeconds": "{{min}} с і більше"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Рекомендована",
