@@ -157,6 +157,10 @@ This is a hardware limitation rather than a Handy bug. `fn` is not part of the s
 
 If you switch between a MacBook keyboard and an external one, pick a shortcut built from standard modifiers (`ctrl`, `option`, `shift`, `command`) or a regular key instead.
 
+### Administrator Apps (Windows)
+
+Windows doesn't let Handy paste into apps that are running as administrator, so Handy shows an error and the transcript is saved in History. With the Handy Keys keyboard implementation, the shortcut also won't work while an administrator app is focused. This is expected. To use Handy with these apps, run Handy as administrator too.
+
 ### Linux Notes
 
 **Text Input Tools:**
