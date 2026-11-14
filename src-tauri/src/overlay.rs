@@ -469,6 +469,11 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
                     debug!("GTK layer shell initialized for overlay window");
                 } else {
                     debug!("GTK layer shell not available, falling back to regular window");
+                    // X11 fallback: otherwise the WM activates the overlay on map and steals focus (#2316)
+                    if let Ok(gtk_window) = window.gtk_window() {
+                        use gtk::prelude::GtkWindowExt;
+                        gtk_window.set_focus_on_map(false);
+                    }
                 }
             }
 
