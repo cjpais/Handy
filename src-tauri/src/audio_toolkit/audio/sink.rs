@@ -67,6 +67,16 @@ pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
 /// order. Used to feed live streaming transcription as audio arrives.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
+/// What a recording's sink reports while waiting to be ready.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReadySignal {
+    /// The first chunk arrived, but it was exact digital silence. A Bluetooth
+    /// headset switching profiles sends zeros for a second or so first.
+    Audio,
+    /// The first chunk that wasn't exact digital silence: the mic is live.
+    Sound,
+}
+
 /// What a finished recording hands back.
 pub struct CapturedAudio {
     /// 16 kHz mono samples that passed the VAD policy.
@@ -87,10 +97,12 @@ pub struct CaptureSink {
     visualizer: AudioVisualiser,
     on_levels: LevelCallback,
     on_audio: AudioFrameCallback,
-    /// Signalled on the first chunk: the device is delivering audio. Silence
-    /// counts; readiness is not speech.
-    ready: Option<mpsc::Sender<()>>,
+    /// Sends `Audio` on a silent first chunk, then `Sound` on the first chunk
+    /// that isn't digital silence, and is dropped after that. Sound is not
+    /// speech: any noise floor counts.
+    ready: Option<mpsc::Sender<ReadySignal>>,
     samples: Vec<f32>,
+    received_audio: bool,
     heard_sound: bool,
 }
 
@@ -106,7 +118,7 @@ impl CaptureSink {
         policy: VadPolicy,
         on_levels: LevelCallback,
         on_audio: AudioFrameCallback,
-        ready: mpsc::Sender<()>,
+        ready: mpsc::Sender<ReadySignal>,
     ) -> Self {
         if policy != VadPolicy::Disabled {
             let hangover = vad.hangover_for(policy);
@@ -127,6 +139,7 @@ impl CaptureSink {
             on_audio,
             ready: Some(ready),
             samples: Vec::new(),
+            received_audio: false,
             heard_sound: false,
         }
     }
@@ -157,8 +170,7 @@ impl CaptureSink {
         }
         CapturedAudio {
             samples: self.samples,
-            // `ready` is spent on the first chunk, so `None` means audio came.
-            input_silent: self.ready.is_none() && !self.heard_sound,
+            input_silent: self.received_audio && !self.heard_sound,
             vad: self.vad,
         }
     }
@@ -171,11 +183,17 @@ impl CaptureSink {
 
 impl Sink for CaptureSink {
     fn process_chunk(&mut self, chunk: AudioChunk<'_>) {
-        if let Some(ready) = self.ready.take() {
-            let _ = ready.send(());
-        }
+        let first_chunk = !self.received_audio;
+        self.received_audio = true;
         if !self.heard_sound && !chunk.is_digital_silence() {
             self.heard_sound = true;
+            if let Some(ready) = self.ready.take() {
+                let _ = ready.send(ReadySignal::Sound);
+            }
+        } else if first_chunk {
+            if let Some(ready) = &self.ready {
+                let _ = ready.send(ReadySignal::Audio);
+            }
         }
 
         // Mono by construction: the recorder mixes down or picks one channel.
