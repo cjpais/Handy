@@ -1,6 +1,6 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
-use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_feedback::{play_feedback_sound, play_start_feedback_if_current, SoundType};
 use crate::audio_toolkit::VadPolicy;
 use crate::managers::audio::{recording_notice_code, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
@@ -599,6 +599,7 @@ impl ShortcutAction for TranscribeAction {
         // Sizing the overlay follows the same advertised capability. A model that
         // doesn't stream (or whose capability is not known yet) gets the compact
         // pill instead of an oversized transparent live window.
+        rm.invalidate_recording_readiness();
         let overlay_started = Instant::now();
         match settings.overlay_style {
             OverlayStyle::Live if model_supports_streaming => utils::show_streaming_overlay(app),
@@ -625,6 +626,7 @@ impl ShortcutAction for TranscribeAction {
                     recording_start_time.elapsed()
                 );
                 let generation = readiness.generation();
+                let ownership = readiness.ownership();
                 let app_clone = app.clone();
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
@@ -654,15 +656,13 @@ impl ShortcutAction for TranscribeAction {
                     }
 
                     debug!("Microphone is receiving samples; recording is ready");
-                    utils::emit_recording_ready(&app_clone);
+                    utils::emit_recording_ready(&app_clone, ownership.clone());
 
                     // The start chime is a readiness cue, so it must follow the
                     // first real input callback rather than Stream::play() or a
                     // fixed delay. The helper returns immediately when feedback
                     // is disabled; mute still follows the same readiness point.
-                    if rm_clone.is_recording_readiness_current(generation) {
-                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                    }
+                    play_start_feedback_if_current(&app_clone, &ownership);
                     if rm_clone.is_recording_readiness_current(generation) {
                         rm_clone.apply_mute();
                     }
