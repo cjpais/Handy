@@ -27,6 +27,7 @@ mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod stt_http;
 mod system_languages;
 mod transcription_coordinator;
 mod transcription_hook;

@@ -625,6 +625,15 @@
           "traditionalTw": "Традиционные (Тайвань)",
           "traditionalHk": "Традиционные (Гонконг)"
         }
+      },
+      "airGappedStt": {
+        "label": "Распознавание без интернета (ИБ-режим)",
+        "description": "Отправлять записи на OpenAI-совместимый сервер вместо локальной модели.",
+        "baseUrl": "Адрес сервера",
+        "model": "Модель",
+        "apiKey": "Ключ API",
+        "apiKeyPlaceholder": "необязательно",
+        "timeout": "Таймаут, сек"
       }
     },
     "postProcessing": {

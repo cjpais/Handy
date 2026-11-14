@@ -395,6 +395,62 @@ impl std::ops::DerefMut for SecretMap {
 /// its `get_default_settings()` value when missing from a stored settings
 /// object, so a partial store can never fail the whole load (#1619).
 /// Field-level defaults below take precedence where present.
+/// Optional air-gapped speech-to-text.
+///
+/// When enabled, a recording is sent to an OpenAI-compatible
+/// `/audio/transcriptions` endpoint (vLLM, whisper.cpp server, LM Studio, …)
+/// instead of the local transcribe-cpp engine. Off by default: nothing about
+/// the local pipeline changes until a user turns it on.
+#[derive(Serialize, Deserialize, Clone, Type)]
+pub struct SttHttpSettings {
+    #[serde(default)]
+    pub enabled: bool,
+    /// Base URL, e.g. `http://127.0.0.1:8000/v1`; `/audio/transcriptions` is appended.
+    #[serde(default)]
+    pub base_url: String,
+    /// Model name the endpoint expects (`whisper-1`, `large-v3`, …).
+    #[serde(default)]
+    pub model: String,
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default = "default_stt_http_timeout_secs")]
+    pub timeout_secs: u64,
+    /// Optional ISO language hint; the endpoint may ignore it.
+    #[serde(default)]
+    pub language: Option<String>,
+}
+
+fn default_stt_http_timeout_secs() -> u64 {
+    120
+}
+
+impl std::fmt::Debug for SttHttpSettings {
+    /// Never print the API key: settings dumps end up in logs and bug reports.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SttHttpSettings")
+            .field("enabled", &self.enabled)
+            .field("base_url", &self.base_url)
+            .field("model", &self.model)
+            .field("api_key", &if self.api_key.is_empty() { "" } else { "***" })
+            .field("timeout_secs", &self.timeout_secs)
+            .field("language", &self.language)
+            .finish()
+    }
+}
+
+impl Default for SttHttpSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            base_url: String::new(),
+            model: "whisper-1".to_string(),
+            api_key: String::new(),
+            timeout_secs: default_stt_http_timeout_secs(),
+            language: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(default)]
 pub struct AppSettings {
@@ -507,6 +563,9 @@ pub struct AppSettings {
     pub theme: Theme,
     #[serde(default)]
     pub experimental_enabled: bool,
+    /// Air-gapped STT backend (off by default); see `SttHttpSettings`.
+    #[serde(default)]
+    pub stt_http: SttHttpSettings,
     #[serde(default)]
     pub lazy_stream_close: bool,
     /// Experimental, macOS only: move a Bluetooth headset (AirPods) to this
@@ -1056,6 +1115,7 @@ pub fn get_default_settings() -> AppSettings {
         theme: default_theme(),
         experimental_enabled: false,
         lazy_stream_close: false,
+        stt_http: SttHttpSettings::default(),
         airpods_mode: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),

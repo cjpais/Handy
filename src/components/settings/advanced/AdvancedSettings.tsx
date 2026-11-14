@@ -23,6 +23,7 @@ import { LongFormChunking } from "../LongFormChunking";
 import { LanguageDetection } from "../LanguageDetection";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { AirGappedStt } from "../AirGappedStt";
 import { AirPodsMode } from "../AirPodsMode";
 import { FillerWordRemoval } from "../FillerWordRemoval";
 import { VadBackendSelector } from "../VadBackendSelector";
@@ -78,6 +79,7 @@ export const AdvancedSettings: React.FC = () => {
           <AirPodsMode descriptionMode="tooltip" grouped={true} />
           <VadBackendSelector descriptionMode="tooltip" grouped={true} />
           <LanguageDetection descriptionMode="tooltip" grouped={true} />
+          <AirGappedStt />
         </SettingsGroup>
       )}
     </div>

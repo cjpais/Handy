@@ -625,6 +625,15 @@
           "traditionalTw": "繁体（台湾）",
           "traditionalHk": "繁体（香港）"
         }
+      },
+      "airGappedStt": {
+        "label": "Air-gapped speech-to-text",
+        "description": "Send recordings to an OpenAI-compatible endpoint instead of the local model.",
+        "baseUrl": "Endpoint URL",
+        "model": "Model",
+        "apiKey": "API key",
+        "apiKeyPlaceholder": "optional",
+        "timeout": "Timeout, seconds"
       }
     },
     "postProcessing": {
