@@ -6,7 +6,7 @@ use crate::managers::audio::{recording_notice_code, AudioRecordingManager};
 use crate::managers::history::HistoryManager;
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::policy::{live_decode, LiveDecode, ModelTraits};
-use crate::managers::transcription::StreamWorkKind;
+use crate::managers::transcription::{StreamTextEvent, StreamWorkKind};
 use crate::managers::transcription::{Transcription, TranscriptionManager};
 use crate::notices::{self, Notice, NoticeCode, NoticeSource};
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -831,6 +831,18 @@ impl ShortcutAction for TranscribeAction {
                                 utils::redact_text(&transcription)
                             );
 
+                            // Finalization can resolve words that never appeared in a
+                            // feed update. Replace the preview with the completed
+                            // transcript while the Live panel is still open, including
+                            // when the live decoder fell back to a batch run.
+                            if use_streaming_overlay && !rm.was_cancelled_since(cancel_generation) {
+                                let _ = StreamTextEvent {
+                                    committed: transcription.clone(),
+                                    tentative: String::new(),
+                                }
+                                .emit(&ah);
+                            }
+
                             if post_process {
                                 if use_streaming_overlay {
                                     tm.emit_stream_working(StreamWorkKind::Polishing);
@@ -958,7 +970,17 @@ impl ShortcutAction for TranscribeAction {
                                                 notices::raise(&ah_clone, notice)
                                             }
                                             (true, None) => {
-                                                utils::hide_recording_overlay(&ah_clone)
+                                                if use_streaming_overlay {
+                                                    utils::hide_completed_live_overlay(
+                                                        &ah_clone,
+                                                        move || {
+                                                            RECORDING_SESSION.load(Ordering::SeqCst)
+                                                                == session
+                                                        },
+                                                    )
+                                                } else {
+                                                    utils::hide_recording_overlay(&ah_clone)
+                                                }
                                             }
                                             (false, Some(notice)) => {
                                                 notices::raise_without_overlay(&ah_clone, notice)

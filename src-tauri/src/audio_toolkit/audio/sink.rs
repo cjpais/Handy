@@ -15,7 +15,7 @@ pub enum VadPolicy {
     Disabled,
     /// Current offline-tuned VAD profile.
     Offline,
-    /// VAD profile with a longer post-speech tail for streaming-capable models.
+    /// Gate the start on speech, then keep continuous audio for streaming models.
     Streaming,
 }
 
@@ -63,8 +63,8 @@ impl CaptureVad {
 
 /// Receives spectrum levels for the recording overlay.
 pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
-/// Receives each 16 kHz mono frame that passes the recording's VAD policy, in
-/// order. Used to feed live streaming transcription as audio arrives.
+/// Receives each 16 kHz mono frame kept by the recording's VAD policy, in
+/// order. Streaming keeps silence after speech so the decoder can drain.
 pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
 
 /// What a finished recording hands back.
@@ -184,7 +184,14 @@ impl Sink for CaptureSink {
             (self.on_levels)(levels);
         }
 
-        if self.policy == VadPolicy::Disabled {
+        // Streaming decoders need new audio, including silence, to process
+        // their buffered right context. Once VAD admits the first speech,
+        // preserve the timeline instead of starving the decoder during pauses.
+        // Stop calling VAD here too: its next onset could replay pre-roll that
+        // we've already forwarded. The saved recording and stream stay identical.
+        if self.policy == VadPolicy::Disabled
+            || (self.policy == VadPolicy::Streaming && !self.samples.is_empty())
+        {
             Self::emit(&mut self.samples, &self.on_audio, real);
             return;
         }

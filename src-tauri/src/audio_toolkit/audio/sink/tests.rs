@@ -159,6 +159,41 @@ fn vad_keeps_speech_frames_only() {
 }
 
 #[test]
+fn streaming_keeps_pauses_after_speech_without_replaying_resumed_audio() {
+    let mut h = harness(VadPolicy::Streaming);
+    // Leading silence is still rejected, so an idle microphone does not
+    // start decoding. After speech, pauses must keep advancing the decoder.
+    h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    assert!(h.fed.lock().unwrap().is_empty());
+    h.sink.process_chunk(chunk(&[1.0; FRAME], FRAME));
+    for _ in 0..100 {
+        h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    }
+    h.sink.process_chunk(chunk(&[2.0; FRAME], FRAME));
+    // The recorder's padded final frame must not lengthen the stream.
+    h.sink.process_chunk(chunk(&[3.0, 0.0, 0.0, 0.0], 1));
+
+    let mut expected = vec![1.0; FRAME];
+    expected.extend(vec![0.0; FRAME * 100]);
+    expected.extend([2.0; FRAME]);
+    expected.push(3.0);
+    assert_eq!(*h.fed.lock().unwrap(), expected);
+    assert_eq!(h.sink.finish().samples, expected);
+}
+
+#[test]
+fn streaming_does_not_feed_a_recording_without_speech() {
+    let mut h = harness(VadPolicy::Streaming);
+    for _ in 0..100 {
+        h.sink.process_chunk(chunk(&[0.0; FRAME], FRAME));
+    }
+    assert!(h.fed.lock().unwrap().is_empty());
+    let captured = h.sink.finish();
+    assert!(captured.samples.is_empty());
+    assert!(captured.input_silent);
+}
+
+#[test]
 fn each_recording_resets_the_detector_with_its_policys_hangover() {
     let offline = harness(VadPolicy::Offline);
     assert_eq!(*offline.hangover.lock().unwrap(), Some(10));
