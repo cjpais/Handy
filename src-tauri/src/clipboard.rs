@@ -47,11 +47,18 @@ fn with_enigo<T: Send + 'static>(
         .map_err(|_| "Main thread dropped the input request".to_string())?
 }
 
-fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+/// `sensitive` marks text that only passes through the clipboard, so that
+/// clipboard-history tools can skip it (wl-copy only).
+#[cfg_attr(not(target_os = "linux"), allow(unused_variables))]
+fn write_text_to_clipboard(
+    app_handle: &AppHandle,
+    text: &str,
+    sensitive: bool,
+) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
-        return write_clipboard_via_wl_copy(text);
+        return write_clipboard_via_wl_copy(text, sensitive);
     }
 
     app_handle
@@ -90,7 +97,7 @@ fn paste_via_clipboard(
     };
 
     // Write text to clipboard first
-    write_text_to_clipboard(app_handle, text)?;
+    write_text_to_clipboard(app_handle, text, true)?;
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -126,7 +133,7 @@ fn paste_via_clipboard(
         // an image is only restored when the clipboard held no text at all, which is
         // the case that used to silently wipe screenshots.
         if let Some(clipboard_content) = saved_text {
-            let _ = write_text_to_clipboard(app_handle, &clipboard_content);
+            let _ = write_text_to_clipboard(app_handle, &clipboard_content, true);
         } else if let Some(image) = saved_image {
             info!("Restoring image to clipboard");
             let _ = clipboard.write_image(&image);
@@ -620,9 +627,24 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
 /// Uses Stdio::null() to avoid blocking on repeated calls — wl-copy forks a
 /// daemon that inherits piped fds, causing read_to_end to hang indefinitely.
 #[cfg(target_os = "linux")]
-fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
+fn write_clipboard_via_wl_copy(text: &str, sensitive: bool) -> Result<(), String> {
     use std::process::Stdio;
-    let status = Command::new("wl-copy")
+    // wl-clipboard 2.3.0 added --sensitive; older versions reject unknown options.
+    static HAS_SENSITIVE: OnceLock<bool> = OnceLock::new();
+    let has_sensitive = *HAS_SENSITIVE.get_or_init(|| {
+        Command::new("wl-copy")
+            .arg("--help")
+            .output()
+            .map(|o| {
+                String::from_utf8_lossy(&[o.stdout, o.stderr].concat()).contains("--sensitive")
+            })
+            .unwrap_or(false)
+    });
+    let mut command = Command::new("wl-copy");
+    if sensitive && has_sensitive {
+        command.arg("--sensitive");
+    }
+    let status = command
         .arg("--")
         .arg(text)
         .stdout(Stdio::null())
@@ -988,7 +1010,7 @@ fn paste_as_configured(
 
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
-        write_text_to_clipboard(&app_handle, &text)?;
+        write_text_to_clipboard(&app_handle, &text, false)?;
     }
 
     Ok(())
