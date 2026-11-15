@@ -19,6 +19,10 @@ use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 /// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
 static PASTE_LOCK: Mutex<()> = Mutex::new(());
 
+/// How long a paste waits for the user to release modifier keys before sending
+/// its keystrokes anyway.
+const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_millis(1000);
+
 /// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
 /// and waits for the result. Runs inline if already on the main thread, so no deadlock.
 fn with_enigo<T: Send + 'static>(
@@ -938,6 +942,12 @@ fn paste_as_configured(
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
     );
+
+    // The shortcut's modifiers may still be held when the transcript is ready;
+    // keys sent now would combine with them and paste nothing (#2051).
+    if sends_keys(paste_method) {
+        input::wait_for_modifiers_released(MODIFIER_RELEASE_TIMEOUT);
+    }
 
     // Perform the paste operation
     match paste_method {
