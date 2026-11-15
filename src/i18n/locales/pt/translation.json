@@ -837,6 +837,10 @@
         "title": "Colagem confiável (Beta)",
         "description": "Restaura a área de transferência somente depois que o aplicativo de destino realmente lê a transcrição, em vez de após um atraso fixo. Serve para corrigir a colagem do conteúdo antigo da área de transferência quando o sistema está sobrecarregado. Requer um método de colar via área de transferência; apenas macOS e Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Atraso de restauração da área de transferência",
+        "description": "Por quanto tempo (em milissegundos) a transcrição permanece na área de transferência depois de colada, antes de restaurar a área de transferência anterior. Com a colagem confiável, o tempo conta a partir do momento em que um app lê a transcrição. Aumente se o conteúdo antigo da área de transferência estiver sendo colado em vez da transcrição."
+      },
       "recordingBuffer": {
         "title": "Buffer de gravação extra",
         "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."

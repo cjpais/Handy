@@ -837,6 +837,10 @@
         "title": "Pålidelig indsættelse (Beta)",
         "description": "Gendan først din udklipsholder, når målappen faktisk har læst transskriptionen, i stedet for efter en fast forsinkelse. Skal afhjælpe, at gammelt udklipsholderindhold indsættes, når systemet er belastet. Kræver en indsætningsmetode via udklipsholderen; kun macOS og Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Forsinkelse af gendannelse af udklipsholder",
+        "description": "Hvor længe (i millisekunder) transskriptionen bliver i udklipsholderen, efter den er indsat, før din tidligere udklipsholder gendannes. Med pålidelig indsættelse tælles der fra det tidspunkt, hvor en app læser transskriptionen. Øg, hvis dit gamle udklipsholderindhold bliver indsat i stedet for transskriptionen."
+      },
       "recordingBuffer": {
         "title": "Ekstra optagelsesbuffer",
         "description": "Ekstra tid (i millisekunder) til at fortsætte optagelsen, efter du slipper tasten, for at fange efterfølgende lyd. 0 = ingen ekstra buffer."

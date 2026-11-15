@@ -837,6 +837,10 @@
         "title": "Tillförlitlig inklistring (Beta)",
         "description": "Återställ urklipp först när målappen faktiskt har läst transkriptionen, i stället för efter en fast fördröjning. Avsett att åtgärda att det gamla urklippsinnehållet klistras in när systemet är belastat. Kräver en klistra-in-metod via urklipp; endast macOS och Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Fördröjning för återställning av urklipp",
+        "description": "Hur länge (i millisekunder) transkriptionen ligger kvar i urklipp efter att den har klistrats in, innan ditt tidigare urklipp återställs. Med tillförlitlig inklistring räknas tiden från att en app läser transkriptionen. Öka om det gamla urklippsinnehållet klistras in i stället för transkriptionen."
+      },
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."

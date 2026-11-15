@@ -25,7 +25,7 @@ use windows::Win32::Foundation::{
     SetLastError, ERROR_SUCCESS, HANDLE, HGLOBAL, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM,
 };
 
-use super::{evaluate, send_chord, TxState, WaitDecision};
+use super::{evaluate, send_chord, PasteOptions, Publish, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
@@ -412,24 +412,29 @@ unsafe fn publish_formats() -> Result<(), String> {
 
 fn on_timer(_hwnd: HWND, shared: &WinTxShared) {
     let now = Instant::now();
-    let finish = {
+    let (finish, auto_submit_due) = {
         let mut st = match shared.state.lock() {
             Ok(st) => st,
             Err(_) => return,
         };
         if st.cancelled {
-            true
+            (true, false)
         } else {
             match evaluate(&st, now) {
-                WaitDecision::KeepWaiting => false,
+                WaitDecision::KeepWaiting => (false, st.auto_submit_due(now)),
                 WaitDecision::Finish => {
                     st.cancelled = true;
-                    true
+                    (true, false)
                 }
             }
         }
     };
     if !finish {
+        // The Enter goes out `AUTO_SUBMIT_DELAY` after the read; the restore
+        // waits for the quiet period.
+        if shared.auto_submit && auto_submit_due {
+            send_auto_submit(shared);
+        }
         return;
     }
 
@@ -576,12 +581,17 @@ pub(super) fn run(
     app_handle: &tauri::AppHandle,
     paste_method: &PasteMethod,
     enigo: &mut enigo::Enigo,
-    auto_submit: bool,
-    auto_submit_key: AutoSubmitKey,
-    clipboard_handling: ClipboardHandling,
+    options: PasteOptions,
 ) -> Result<(), String> {
+    let PasteOptions {
+        auto_submit,
+        auto_submit_key,
+        clipboard_handling,
+        quiet_period,
+        ..
+    } = options;
     let shared = Arc::new(WinTxShared {
-        state: Mutex::new(TxState::new()),
+        state: Mutex::new(TxState::new(Publish::Promise, quiet_period)),
         text: text.to_string(),
         snapshot: Mutex::new(Vec::new()),
         saved_bitmap: Mutex::new(None),

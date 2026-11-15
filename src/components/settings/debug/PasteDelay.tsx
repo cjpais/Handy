@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Slider } from "../../ui/Slider";
 import { useSettings } from "../../../hooks/useSettings";
+import { useOsType } from "../../../hooks/useOsType";
 
 type PasteDelayKey = "paste_delay_ms" | "paste_delay_after_ms";
 
@@ -22,6 +23,13 @@ export const PasteDelay: React.FC<PasteDelayProps> = ({
 }) => {
   const { t } = useTranslation();
   const { settings, updateSetting, resetSetting, isUpdating } = useSettings();
+  const osType = useOsType();
+
+  // macOS restores the clipboard in the background, after the clipboard
+  // restore delay; the delay after the paste keystroke is not used there.
+  if (osType === "macos" && settingKey === "paste_delay_after_ms") {
+    return null;
+  }
 
   const handleDelayChange = (value: number) => {
     updateSetting(settingKey, value);

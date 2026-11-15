@@ -527,6 +527,12 @@ pub struct AppSettings {
     /// fixed delay. See `paste_tx`. macOS and Windows only.
     #[serde(default)]
     pub reliable_paste: bool,
+    /// How long the transcript stays on the clipboard before the previous
+    /// clipboard is restored, in the background (see `paste_tx`). On macOS,
+    /// counted from the paste keystroke, or with `reliable_paste` from the
+    /// last read. On Windows it applies to `reliable_paste` only.
+    #[serde(default = "default_clipboard_restore_delay_ms")]
+    pub clipboard_restore_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     #[serde(default)]
@@ -674,6 +680,14 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_clipboard_restore_delay_ms() -> u64 {
+    // Nothing says when the paste target has read the transcript, so this is
+    // all a slow one gets before it pastes the old clipboard instead (#502).
+    // Even a read receipt only says that somebody read it, and a clipboard
+    // manager may come first.
+    1000
 }
 
 fn default_paste_delay_after_ms() -> u64 {
@@ -1062,6 +1076,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         paste_delay_after_ms: default_paste_delay_after_ms(),
         reliable_paste: false,
+        clipboard_restore_delay_ms: default_clipboard_restore_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
@@ -1301,6 +1316,18 @@ fn apply_settings_migrations(
         } else {
             ChineseScript::TraditionalTw
         };
+        updated = true;
+    }
+
+    // One-time clipboard restore delay migration (only while the new key is
+    // absent): on macOS it takes over from the "after" paste delay. Someone
+    // who raised that above the new default did it to stop the old clipboard
+    // from being pasted (#502), so they keep their value.
+    #[cfg(target_os = "macos")]
+    if settings_value.get("clipboard_restore_delay_ms").is_none()
+        && settings.paste_delay_after_ms > settings.clipboard_restore_delay_ms
+    {
+        settings.clipboard_restore_delay_ms = settings.paste_delay_after_ms;
         updated = true;
     }
 
@@ -1822,6 +1849,37 @@ mod tests {
     fn default_overlay_style_is_live_when_overlay_defaults_on() {
         let settings = get_default_settings();
         assert_eq!(settings.overlay_style, OverlayStyle::Live);
+    }
+
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn clipboard_restore_delay_migration_keeps_a_longer_after_delay() {
+        let mut settings = get_default_settings();
+        settings.paste_delay_after_ms = 2500;
+        let raw = serde_json::json!({ "paste_delay_after_ms": 2500 });
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.clipboard_restore_delay_ms, 2500);
+
+        // The old default, or anything below the new one, is not carried over.
+        let mut settings = get_default_settings();
+        settings.paste_delay_after_ms = 60;
+        let raw = serde_json::json!({ "paste_delay_after_ms": 60 });
+        apply_settings_migrations(&mut settings, &raw);
+        assert_eq!(
+            settings.clipboard_restore_delay_ms,
+            default_clipboard_restore_delay_ms()
+        );
+
+        // Once the key exists, the user's choice stands.
+        let mut settings = get_default_settings();
+        settings.paste_delay_after_ms = 2500;
+        settings.clipboard_restore_delay_ms = 500;
+        let raw = serde_json::json!({
+            "paste_delay_after_ms": 2500,
+            "clipboard_restore_delay_ms": 500
+        });
+        apply_settings_migrations(&mut settings, &raw);
+        assert_eq!(settings.clipboard_restore_delay_ms, 500);
     }
 
     #[test]
