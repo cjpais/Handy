@@ -97,6 +97,125 @@ fn native_windows_machine() -> Option<u16> {
     }
 }
 
+/// What Windows said about the integrity level of the focused window's process.
+#[cfg(any(test, target_os = "windows"))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ForegroundIntegrity {
+    Level(u32),
+    /// Windows refused the query. It does that for a process that is elevated
+    /// under another account, which Handy can't send input to either.
+    Denied,
+    /// No focused window, or the query failed for another reason.
+    Unknown,
+}
+
+/// Fail-open: when either level is unknown, Handy pastes as usual.
+#[cfg(any(test, target_os = "windows"))]
+fn integrity_blocks_input(foreground: ForegroundIntegrity, ours: Option<u32>) -> bool {
+    match foreground {
+        ForegroundIntegrity::Level(theirs) => ours.is_some_and(|ours| theirs > ours),
+        ForegroundIntegrity::Denied => true,
+        ForegroundIntegrity::Unknown => false,
+    }
+}
+
+/// Whether the focused window drops the keystrokes Handy sends it.
+///
+/// Windows blocks input sent to a process at a higher integrity level, such as
+/// an app started with "Run as administrator", and `SendInput` isn't documented
+/// to report it. Always `false` on other platforms. See issue #434.
+pub fn foreground_window_is_elevated() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::System::Threading::GetCurrentProcess;
+
+        // SAFETY: the pseudo-handle from GetCurrentProcess is always valid and
+        // needs no closing.
+        let ours = unsafe { process_integrity_level(GetCurrentProcess()) }.ok();
+        let foreground = foreground_integrity();
+        log::debug!("Integrity levels: foreground {foreground:?}, Handy {ours:?}");
+        integrity_blocks_input(foreground, ours)
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        false
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn foreground_integrity() -> ForegroundIntegrity {
+    use windows::Win32::Foundation::{CloseHandle, E_ACCESSDENIED};
+    use windows::Win32::System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
+    // SAFETY: every handle is checked before use, and the process handle is
+    // closed before returning.
+    let level = unsafe {
+        let window = GetForegroundWindow();
+        if window.is_invalid() {
+            return ForegroundIntegrity::Unknown;
+        }
+        let mut process_id = 0u32;
+        if GetWindowThreadProcessId(window, Some(&mut process_id)) == 0 {
+            return ForegroundIntegrity::Unknown;
+        }
+        OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, process_id).and_then(|process| {
+            let level = process_integrity_level(process);
+            let _ = CloseHandle(process);
+            level
+        })
+    };
+
+    match level {
+        Ok(level) => ForegroundIntegrity::Level(level),
+        Err(e) if e.code() == E_ACCESSDENIED => ForegroundIntegrity::Denied,
+        Err(e) => {
+            log::debug!("Couldn't read the focused window's integrity level: {e}");
+            ForegroundIntegrity::Unknown
+        }
+    }
+}
+
+/// The integrity level of `process`, e.g. `0x2000` for a normal app and
+/// `0x3000` for one run as administrator.
+///
+/// # Safety
+/// `process` must be a valid handle with `PROCESS_QUERY_LIMITED_INFORMATION`.
+#[cfg(target_os = "windows")]
+unsafe fn process_integrity_level(
+    process: windows::Win32::Foundation::HANDLE,
+) -> windows::core::Result<u32> {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows::Win32::Security::{
+        GetSidSubAuthority, GetSidSubAuthorityCount, GetTokenInformation, TokenIntegrityLevel,
+        TOKEN_MANDATORY_LABEL, TOKEN_QUERY,
+    };
+    use windows::Win32::System::Threading::OpenProcessToken;
+
+    let mut token = HANDLE::default();
+    OpenProcessToken(process, TOKEN_QUERY, &mut token)?;
+
+    // A TOKEN_MANDATORY_LABEL followed by the SID it points to; a SID is at
+    // most 68 bytes. u64 elements keep the buffer aligned for the struct.
+    let mut buffer = [0u64; 16];
+    let mut written = 0u32;
+    let queried = GetTokenInformation(
+        token,
+        TokenIntegrityLevel,
+        Some(buffer.as_mut_ptr().cast()),
+        std::mem::size_of_val(&buffer) as u32,
+        &mut written,
+    );
+    let _ = CloseHandle(token);
+    queried?;
+
+    // The level is the SID's last sub-authority.
+    let sid = (*buffer.as_ptr().cast::<TOKEN_MANDATORY_LABEL>()).Label.Sid;
+    let count = u32::from(*GetSidSubAuthorityCount(sid));
+    Ok(*GetSidSubAuthority(sid, count.saturating_sub(1)))
+}
+
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
 pub fn cancel_current_operation(app: &AppHandle) {
@@ -185,9 +304,104 @@ pub fn env_flag_enabled(name: &str) -> bool {
     }
 }
 
+#[cfg(target_os = "linux")]
+static GAMESCOPE_WSI_DISABLED_BY_HANDY: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Only set `DISABLE_GAMESCOPE_WSI` when the user hasn't set it (even to empty).
+#[cfg(target_os = "linux")]
+fn should_disable_gamescope_wsi(existing: Option<&std::ffi::OsStr>) -> bool {
+    existing.is_none()
+}
+
+/// Disable the Gamescope WSI layer, which aborts during Vulkan device creation
+/// on SteamOS (#2264). Handy only uses Vulkan for compute, so it isn't needed.
+#[cfg(target_os = "linux")]
+pub fn disable_gamescope_wsi_layer() {
+    let existing = std::env::var_os("DISABLE_GAMESCOPE_WSI");
+    if should_disable_gamescope_wsi(existing.as_deref()) {
+        std::env::set_var("DISABLE_GAMESCOPE_WSI", "1");
+        GAMESCOPE_WSI_DISABLED_BY_HANDY.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// True when [`disable_gamescope_wsi_layer`] set the variable itself.
+#[cfg(target_os = "linux")]
+pub fn gamescope_wsi_disabled_by_handy() -> bool {
+    GAMESCOPE_WSI_DISABLED_BY_HANDY.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// The `GDK_BACKEND` value requested through `HANDY_GDK_BACKEND`, if any.
+/// Empty or whitespace-only values count as unset.
+#[cfg(target_os = "linux")]
+fn requested_gdk_backend(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|v| !v.is_empty())
+}
+
+/// Copy `HANDY_GDK_BACKEND` into `GDK_BACKEND` when it is set.
+///
+/// The AppImage's `apprun-hooks/linuxdeploy-plugin-gtk.sh` unconditionally
+/// runs `export GDK_BACKEND=x11` (a workaround for tauri-apps/tauri#8541) after
+/// the user's environment, so `GDK_BACKEND=wayland ./Handy.AppImage` never
+/// reaches Handy. The hook cannot overwrite a variable it does not know about,
+/// so `HANDY_GDK_BACKEND=wayland ./Handy.AppImage` is the opt-in to native
+/// Wayland (cjpais/Handy#1729, #2034). Must run before GTK initializes.
+#[cfg(target_os = "linux")]
+pub fn apply_handy_gdk_backend() {
+    let requested = std::env::var("HANDY_GDK_BACKEND").ok();
+    if let Some(backend) = requested_gdk_backend(requested.as_deref()) {
+        std::env::set_var("GDK_BACKEND", backend);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_higher_integrity_level_blocks_input() {
+        const MEDIUM: u32 = 0x2000;
+        const HIGH: u32 = 0x3000;
+        use ForegroundIntegrity::*;
+
+        assert!(integrity_blocks_input(Level(HIGH), Some(MEDIUM)));
+        assert!(!integrity_blocks_input(Level(MEDIUM), Some(MEDIUM)));
+        // Handy itself running as administrator can paste anywhere.
+        assert!(!integrity_blocks_input(Level(HIGH), Some(HIGH)));
+        assert!(!integrity_blocks_input(Level(MEDIUM), Some(HIGH)));
+        assert!(integrity_blocks_input(Denied, Some(MEDIUM)));
+        assert!(!integrity_blocks_input(Unknown, Some(MEDIUM)));
+        assert!(!integrity_blocks_input(Level(HIGH), None));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn gamescope_wsi_is_disabled_only_when_the_user_set_nothing() {
+        use std::ffi::OsStr;
+        assert!(should_disable_gamescope_wsi(None));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new("1"))));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new("0"))));
+        assert!(!should_disable_gamescope_wsi(Some(OsStr::new(""))));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn requested_gdk_backend_ignores_unset_and_blank() {
+        assert_eq!(requested_gdk_backend(None), None);
+        assert_eq!(requested_gdk_backend(Some("")), None);
+        assert_eq!(requested_gdk_backend(Some("  ")), None);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn requested_gdk_backend_keeps_the_value() {
+        assert_eq!(requested_gdk_backend(Some("wayland")), Some("wayland"));
+        assert_eq!(requested_gdk_backend(Some(" x11 ")), Some("x11"));
+        assert_eq!(
+            requested_gdk_backend(Some("wayland,x11")),
+            Some("wayland,x11")
+        );
+    }
 
     #[test]
     fn arm64_native_machine_is_the_only_match() {

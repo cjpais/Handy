@@ -168,8 +168,7 @@ impl<'a> StreamSession<'a> {
         let on_progress = {
             let perf = Arc::clone(&perf);
             let app_handle = tm.app_handle.clone();
-            let languages = setup.languages.clone();
-            let mut preview_script = PreviewScript::new(settings.chinese_script, &output_language);
+            let preview_script = PreviewScript::new(settings.chinese_script, &output_language);
             move |progress: StreamProgress| {
                 let mut perf = lock_perf(&perf);
                 perf.record_compute(progress.elapsed);
@@ -177,7 +176,7 @@ impl<'a> StreamSession<'a> {
                 if let Some(text) = progress.text {
                     perf.record_emit();
                     let (committed, tentative) =
-                        preview_script.convert(&text.committed, &text.tentative, &languages);
+                        preview_script.convert(&text.committed, &text.tentative);
                     emit_stream_text(&app_handle, &committed, &tentative);
                 }
                 perf.maybe_log();

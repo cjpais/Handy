@@ -21,6 +21,8 @@ mod notices;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+#[cfg(target_os = "linux")]
+mod primary_selection;
 mod secure_input;
 mod settings;
 mod shortcut;
@@ -37,7 +39,11 @@ pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
+#[cfg(target_os = "linux")]
+pub use utils::apply_handy_gdk_backend;
 pub use utils::env_flag_enabled;
+#[cfg(target_os = "linux")]
+pub use utils::{disable_gamescope_wsi_layer, gamescope_wsi_disabled_by_handy};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -765,6 +771,7 @@ pub fn run(cli_args: CliArgs) {
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
+            commands::reset_macos_permission,
             commands::complete_onboarding,
             commands::models::get_available_models,
             commands::models::get_model_info,
@@ -950,6 +957,19 @@ pub fn run(cli_args: CliArgs) {
                 std::env::var_os("VK_LOADER_LAYERS_DISABLE"),
                 utils::env_flag_enabled("HANDY_KEEP_VULKAN_IMPLICIT_LAYERS"),
             );
+            #[cfg(target_os = "linux")]
+            log::info!(
+                "GTK backend: GDK_BACKEND={:?}, HANDY_GDK_BACKEND={:?} (applied: {})",
+                std::env::var_os("GDK_BACKEND"),
+                std::env::var_os("HANDY_GDK_BACKEND"),
+                std::env::var("HANDY_GDK_BACKEND").is_ok_and(|v| !v.trim().is_empty()),
+            );
+            #[cfg(target_os = "linux")]
+            log::info!(
+                "Gamescope WSI layer policy: DISABLE_GAMESCOPE_WSI={:?} (set by Handy: {})",
+                std::env::var_os("DISABLE_GAMESCOPE_WSI"),
+                utils::gamescope_wsi_disabled_by_handy(),
+            );
             system_languages::log_system_languages();
 
             specta_builder.mount_events(app);
@@ -1076,6 +1096,8 @@ pub fn run(cli_args: CliArgs) {
             // Only forward logs to the webview while debug mode is on (the live log
             // viewer is the sole consumer and only exists in debug mode). This also
             // honors the runtime `--debug` override applied to `settings` above.
+            // Build the runtime first: its Trace logs would re-enter spawn() mid-init and deadlock.
+            let _ = tauri::async_runtime::handle();
             WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));

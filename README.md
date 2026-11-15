@@ -157,11 +157,19 @@ This is a hardware limitation rather than a Handy bug. `fn` is not part of the s
 
 If you switch between a MacBook keyboard and an external one, pick a shortcut built from standard modifiers (`ctrl`, `option`, `shift`, `command`) or a regular key instead.
 
+### Administrator Apps (Windows)
+
+Windows doesn't let Handy paste into apps that are running as administrator, so Handy shows an error and the transcript is saved in History. With the Handy Keys keyboard implementation, the shortcut also won't work while an administrator app is focused. This is expected. To use Handy with these apps, run Handy as administrator too.
+
 ### Linux Notes
+
+**Paste Method:**
+
+On Linux, new installs paste with **Shift+Insert** (**Clipboard (Shift+Insert)** in **Advanced → Paste Method**). It puts the transcript on both the clipboard and the primary selection, so the same key pastes in GUI apps (which read the clipboard) and in terminals such as kitty, Ghostty, Alacritty and GNOME Terminal (which read the primary selection), then restores both. **Direct** typing is still available, but it depends on your keyboard layout: it can drop capitals and accented characters or type the wrong characters on non-US layouts.
 
 **Text Input Tools:**
 
-For reliable text input on Linux, install the appropriate tool for your display server:
+Handy needs a tool to send the paste key (or to type, with Direct). Install the appropriate one for your display server:
 
 | Display Server | Recommended Tool | Install Command                                    |
 | -------------- | ---------------- | -------------------------------------------------- |
@@ -460,8 +468,24 @@ If the recording overlay is empty or bordered, fully quit Handy and launch a
 env -u HANDY_NO_GTK_LAYER_SHELL GDK_BACKEND=wayland handy
 ```
 
-If this works, apply `GDK_BACKEND=wayland` only to Handy's launcher. This
-workaround does not work with the 0.9.6 AppImage, which forces X11.
+If this works, apply `GDK_BACKEND=wayland` only to Handy's launcher.
+
+The AppImage forces `GDK_BACKEND=x11` in its launch script, after your environment, so
+`GDK_BACKEND=wayland ./Handy.AppImage` has no effect. Use `HANDY_GDK_BACKEND` instead; Handy copies it
+into `GDK_BACKEND` before GTK starts:
+
+```bash
+HANDY_GDK_BACKEND=wayland ./Handy_x.y.z_amd64.AppImage
+```
+
+For a launcher, put the variable in the `.desktop` entry, for example
+`Exec=env HANDY_GDK_BACKEND=wayland /path/to/Handy_x.y.z_amd64.AppImage`.
+
+Try native Wayland if the AppImage shows a frozen Language dropdown, a black window after closing
+to the tray and relaunching ([#1729](https://github.com/cjpais/Handy/issues/1729)), or exits with
+`Failed to initialize gtk backend` on a Wayland-only compositor such as Niri without XWayland
+([#2034](https://github.com/cjpais/Handy/issues/2034)). The AppImage defaults to X11 because of
+[tauri#8541](https://github.com/tauri-apps/tauri/issues/8541), so this stays opt-in.
 
 ### Vulkan Overlays and Capture Tools on Windows (`HANDY_KEEP_VULKAN_IMPLICIT_LAYERS`)
 
