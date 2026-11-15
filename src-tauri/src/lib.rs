@@ -8,6 +8,8 @@ mod catalog;
 mod chinese_script;
 pub mod cli;
 mod clipboard;
+#[cfg(target_os = "macos")]
+mod clipboard_restore;
 mod commands;
 pub mod engine_supervisor;
 mod helpers;

@@ -527,10 +527,10 @@ pub struct AppSettings {
     /// fixed delay. See `paste_tx`. macOS and Windows only.
     #[serde(default)]
     pub reliable_paste: bool,
-    /// How long the transcript stays on the clipboard before the previous
-    /// clipboard is restored, in the background (see `paste_tx`). On macOS,
-    /// counted from the paste keystroke, or with `reliable_paste` from the
-    /// last read. On Windows it applies to `reliable_paste` only.
+    /// macOS: how long the transcript stays on the clipboard before the
+    /// previous clipboard is restored in the background (see
+    /// `clipboard_restore`), counted from the paste keystroke, or with
+    /// `reliable_paste` from the read.
     #[serde(default = "default_clipboard_restore_delay_ms")]
     pub clipboard_restore_delay_ms: u64,
     #[serde(default = "default_typing_tool")]

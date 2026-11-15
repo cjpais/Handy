@@ -305,8 +305,8 @@ If the transcription is correct in **History** but Handy inserts text you copied
 
 1. Open Handy's settings window and press `Cmd+Shift+D` (macOS) or `Ctrl+Shift+D` (Windows/Linux) to reveal **Debug**.
 2. On **macOS**, increase **Clipboard Restore Delay** in Debug and test again. Handy restores your previous clipboard in the background this long after pasting (1 second by default), so a longer delay does not slow dictation down.
-3. On **macOS and Windows**, try **Reliable Paste (Beta)** in Debug with a clipboard paste method selected. It uses clipboard read notifications to delay restoration: **Clipboard Restore Delay** then counts from when an application reads the transcription. Test it in the application where the problem occurs; it is still experimental.
-4. On **Windows** without Reliable Paste, and on **Linux**, increase **Paste Delay (After)** in Debug and test again. This controls the wait before restoring your previous clipboard. **Paste Delay (Before)** controls the wait before sending the paste keystroke and addresses a different part of the operation.
+3. On **macOS and Windows**, try **Reliable Paste (Beta)** in Debug with a clipboard paste method selected. It uses clipboard read notifications to delay restoration; on macOS, **Clipboard Restore Delay** then counts from when an application reads the transcription. Test it in the application where the problem occurs; it is still experimental.
+4. On **Windows** and **Linux**, increase **Paste Delay (After)** in Debug and test again. This controls the wait before restoring your previous clipboard. **Paste Delay (Before)** controls the wait before sending the paste keystroke and addresses a different part of the operation.
 
 If the problem persists, add your Handy version, operating system, receiving application, paste method, Reliable Paste setting, and delay settings to the existing issue. Redact private dictated text before sharing logs.
 

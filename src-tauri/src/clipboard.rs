@@ -21,7 +21,7 @@ static PASTE_LOCK: Mutex<()> = Mutex::new(());
 
 /// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
 /// and waits for the result. Runs inline if already on the main thread, so no deadlock.
-pub(crate) fn with_enigo<T: Send + 'static>(
+fn with_enigo<T: Send + 'static>(
     app_handle: &AppHandle,
     f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
@@ -60,8 +60,6 @@ fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), Str
         .map_err(|e| format!("Failed to write to clipboard: {}", e))
 }
 
-// macOS restores in the background instead: see `paste_tx`.
-#[cfg(not(target_os = "macos"))]
 fn finish_clipboard_paste(
     paste_result: Result<(), String>,
     paste_delay_after_ms: u64,
@@ -73,20 +71,25 @@ fn finish_clipboard_paste(
 }
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
-/// macOS pastes through `paste_tx` instead.
-#[cfg(not(target_os = "macos"))]
+/// On macOS the restore comes `restore_delay` later, in the background (see `clipboard_restore`).
 fn paste_via_clipboard(
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
+    #[cfg(target_os = "macos")] restore_delay: Duration,
 ) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let saved = crate::clipboard_restore::take_saved(app_handle);
+    #[cfg(not(target_os = "macos"))]
     let clipboard = app_handle.clipboard();
+    #[cfg(not(target_os = "macos"))]
     let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
     // Only probe for an image when there is no text to restore. Text is by far the
     // common case, and reading an image decodes the full bitmap, so this keeps the
     // text path exactly as cheap as it was before.
+    #[cfg(not(target_os = "macos"))]
     let saved_image = if saved_text.is_none() {
         clipboard.read_image().ok().map(|image| image.to_owned())
     } else {
@@ -116,8 +119,13 @@ fn paste_via_clipboard(
         if let Some(saved) = saved_primary {
             crate::primary_selection::restore(saved);
         }
+        // A previous transcript may still be up, its restore taken over.
+        #[cfg(target_os = "macos")]
+        saved.restore(app_handle);
         return Err(e);
     }
+    #[cfg(target_os = "macos")]
+    let change_count = crate::clipboard_restore::change_count();
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -147,11 +155,20 @@ fn paste_via_clipboard(
         Ok(())
     })();
 
+    #[cfg(target_os = "macos")]
+    let pasted = paste_result.is_ok();
     finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
+        #[cfg(target_os = "macos")]
+        if pasted {
+            crate::clipboard_restore::schedule(app_handle, saved, change_count, restore_delay);
+        } else {
+            saved.restore(app_handle);
+        }
         // Restore original clipboard content even when key injection failed.
         // Text takes priority so this path stays identical to the previous behavior;
         // an image is only restored when the clipboard held no text at all, which is
         // the case that used to silently wipe screenshots.
+        #[cfg(not(target_os = "macos"))]
         if let Some(clipboard_content) = saved_text {
             let _ = write_text_to_clipboard(app_handle, &clipboard_content);
         } else if let Some(image) = saved_image {
@@ -931,6 +948,10 @@ fn paste_as_configured(
     let paste_delay_ms = settings.paste_delay_ms;
     #[cfg(not(target_os = "macos"))]
     let paste_delay_after_ms = settings.paste_delay_after_ms;
+    // macOS restores the clipboard in the background, `clipboard_restore_delay_ms`
+    // after the keystroke; this only keeps the old wait before the auto-submit Enter.
+    #[cfg(target_os = "macos")]
+    let paste_delay_after_ms = 60;
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -939,15 +960,9 @@ fn paste_as_configured(
         text
     };
 
-    #[cfg(not(target_os = "macos"))]
     info!(
         "Using paste method: {:?}, delay before: {}ms, delay after: {}ms",
         paste_method, paste_delay_ms, paste_delay_after_ms
-    );
-    #[cfg(target_os = "macos")]
-    info!(
-        "Using paste method: {:?}, delay before: {}ms, clipboard restore delay: {}ms",
-        paste_method, paste_delay_ms, settings.clipboard_restore_delay_ms
     );
 
     // Perform the paste operation
@@ -964,56 +979,32 @@ fn paste_as_configured(
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            // macOS pastes through `paste_tx`: it returns once the chord is
-            // sent and restores the clipboard in the background, so a restore
-            // delay long enough for a slow target (#502) holds nothing up. It
-            // sends the auto-submit Enter and applies the clipboard handling
-            // itself. Reliable paste (debug-gated) makes the restore wait for
-            // the transcript to be read instead of counting from the chord.
-            #[cfg(target_os = "macos")]
-            {
-                let options = crate::paste_tx::PasteOptions {
-                    publish: if settings.reliable_paste {
-                        crate::paste_tx::Publish::Promise
-                    } else {
-                        crate::paste_tx::Publish::Plain
-                    },
-                    auto_submit: settings.auto_submit,
-                    auto_submit_key: settings.auto_submit_key,
-                    clipboard_handling: settings.clipboard_handling,
-                    quiet_period: Duration::from_millis(settings.clipboard_restore_delay_ms),
-                };
-                return crate::paste_tx::paste(
-                    text,
-                    &app_handle,
-                    paste_method,
-                    options,
-                    Duration::from_millis(paste_delay_ms),
-                );
-            }
             // Debug-gated receipt-sequenced paste (#502): restore the clipboard
             // after the target actually reads the transcript, not on a timer.
             // On success it fully handles the paste (including auto-submit and
             // clipboard handling) asynchronously; on failure fall through to
             // the legacy path untouched.
-            #[cfg(target_os = "windows")]
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
             if settings.reliable_paste {
+                // Runs entirely on the main thread, as it requires.
                 let (text, app) = (text.clone(), app_handle.clone());
-                // The before/after delays logged above belong to the legacy
-                // path; this is the only timing reliable paste takes.
-                let restore_delay_ms = settings.clipboard_restore_delay_ms;
-                info!(
-                    "Reliable paste: restoring the clipboard {restore_delay_ms}ms after it is read"
+                let (auto_submit, auto_submit_key, clipboard_handling) = (
+                    settings.auto_submit,
+                    settings.auto_submit_key,
+                    settings.clipboard_handling,
                 );
-                let options = crate::paste_tx::PasteOptions {
-                    publish: crate::paste_tx::Publish::Promise,
-                    auto_submit: settings.auto_submit,
-                    auto_submit_key: settings.auto_submit_key,
-                    clipboard_handling: settings.clipboard_handling,
-                    quiet_period: Duration::from_millis(restore_delay_ms),
-                };
+                let restore_delay = Duration::from_millis(settings.clipboard_restore_delay_ms);
                 let reliable_result = with_enigo(&app_handle, move |enigo| {
-                    crate::paste_tx::try_reliable_paste(&text, &app, &paste_method, enigo, options)
+                    crate::paste_tx::try_reliable_paste(
+                        &text,
+                        &app,
+                        &paste_method,
+                        enigo,
+                        auto_submit,
+                        auto_submit_key,
+                        clipboard_handling,
+                        restore_delay,
+                    )
                 });
                 match reliable_result {
                     Ok(()) => return Ok(()),
@@ -1022,14 +1013,15 @@ fn paste_as_configured(
                     }
                 }
             }
-            #[cfg(not(target_os = "macos"))]
             paste_via_clipboard(
                 &text,
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
-            )?;
+                #[cfg(target_os = "macos")]
+                Duration::from_millis(settings.clipboard_restore_delay_ms),
+            )?
         }
         PasteMethod::ExternalScript => {
             let script_path = settings
@@ -1062,6 +1054,7 @@ fn paste_as_configured(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
 
     #[cfg(target_os = "linux")]
     const YDOTOOL_0_1_8_HELP: &str = r#"
@@ -1178,10 +1171,7 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
     }
 
     #[test]
-    #[cfg(not(target_os = "macos"))]
     fn clipboard_is_restored_before_key_injection_error_is_returned() {
-        use std::cell::Cell;
-
         let restored = Cell::new(false);
         let result = finish_clipboard_paste(Err("input failed".into()), 0, || {
             restored.set(true);

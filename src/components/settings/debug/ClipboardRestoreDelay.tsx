@@ -11,8 +11,7 @@ interface ClipboardRestoreDelayProps {
 
 /**
  * How long the transcript stays on the clipboard before the previous
- * clipboard is restored. macOS always restores this way; Windows only with
- * reliable paste.
+ * clipboard is restored in the background. macOS only.
  */
 export const ClipboardRestoreDelay: React.FC<ClipboardRestoreDelayProps> = ({
   descriptionMode = "tooltip",
@@ -22,8 +21,8 @@ export const ClipboardRestoreDelay: React.FC<ClipboardRestoreDelayProps> = ({
   const { settings, updateSetting, resetSetting, isUpdating } = useSettings();
   const osType = useOsType();
 
-  // Linux restores inside the paste itself, after "Paste Delay (After)".
-  if (osType !== "macos" && osType !== "windows") {
+  // Windows and Linux restore inside the paste, after "Paste Delay (After)".
+  if (osType !== "macos") {
     return null;
   }
 
@@ -33,7 +32,6 @@ export const ClipboardRestoreDelay: React.FC<ClipboardRestoreDelayProps> = ({
       onChange={(value) => updateSetting("clipboard_restore_delay_ms", value)}
       onReset={() => resetSetting("clipboard_restore_delay_ms")}
       isResetting={isUpdating("clipboard_restore_delay_ms")}
-      disabled={osType === "windows" && !settings?.reliable_paste}
       min={100}
       max={5000}
       step={100}

@@ -1163,10 +1163,10 @@ airpods_mode?: boolean; keyboard_implementation?: KeyboardImplementation; show_t
  */
 reliable_paste?: boolean; 
 /**
- * How long the transcript stays on the clipboard before the previous
- * clipboard is restored, in the background (see `paste_tx`). On macOS,
- * counted from the paste keystroke, or with `reliable_paste` from the
- * last read. On Windows it applies to `reliable_paste` only.
+ * macOS: how long the transcript stays on the clipboard before the
+ * previous clipboard is restored in the background (see
+ * `clipboard_restore`), counted from the paste keystroke, or with
+ * `reliable_paste` from the read.
  */
 clipboard_restore_delay_ms?: number; typing_tool?: TypingTool; external_script_path?: string | null; filler_word_removal_enabled?: boolean; custom_filler_words?: string[] | null; 
 /**
