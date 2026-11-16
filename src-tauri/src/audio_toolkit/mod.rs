@@ -9,7 +9,7 @@ pub mod vad;
 
 pub use audio::{
     decode_audio_file, list_output_devices, read_wav_samples, save_wav_file, verify_wav_file,
-    CaptureSink, CaptureVad, VadPolicy,
+    wav_bytes, CaptureSink, CaptureVad, VadPolicy,
 };
 pub use lang_id::detect_output_language;
 pub use text::{

@@ -471,7 +471,8 @@
         "output": "Sortie",
         "transcription": "Transcription",
         "history": "Historique",
-        "experimental": "Expérimental"
+        "experimental": "Expérimental",
+        "remoteTranscription": "Transcription à distance"
       },
       "experimentalToggle": {
         "label": "Fonctionnalités Expérimentales",
@@ -624,6 +625,137 @@
           "simplified": "Simplifié",
           "traditionalTw": "Traditionnel (Taïwan)",
           "traditionalHk": "Traditionnel (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Utiliser un serveur distant",
+        "description": "Envoie les enregistrements à un serveur de reconnaissance vocale que vous hébergez, au lieu d'un modèle sur cet ordinateur. La dictée, la transcription de fichiers et la re-transcription de l'historique l'utilisent. Il n'y a pas d'aperçu en direct pendant que vous parlez.",
+        "needsServer": "Aucun serveur n'est encore utilisé. Ajoutez-en un, indiquez son URL et choisissez Utiliser ce serveur. D'ici là, Handy continue d'utiliser le modèle local.",
+        "server": {
+          "label": "Serveur",
+          "description": "Vos serveurs. Consulter ou modifier un serveur ne change pas celui qu'utilise la dictée.",
+          "none": "Aucun serveur pour l'instant",
+          "inUse": "{{name}} (utilisé)",
+          "choose": "Choisir un serveur"
+        },
+        "add": "Ajouter un serveur",
+        "presets": {
+          "hints": {
+            "openthai": "Modèle thaï d'iApp, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… dans llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper, etc.",
+            "custom": "Remplissez vous-même tous les champs"
+          },
+          "names": {
+            "custom": "Serveur personnalisé",
+            "whisper-cpp": "Serveur whisper.cpp",
+            "llama-cpp": "Modèle audio llama.cpp",
+            "openai-compatible": "Serveur compatible OpenAI"
+          }
+        },
+        "name": {
+          "label": "Nom",
+          "description": "Affiché dans la liste des serveurs et dans le pied de page.",
+          "placeholder": "Serveur sans nom",
+          "untitled": "Serveur {{n}}"
+        },
+        "url": {
+          "label": "URL de l'endpoint",
+          "description": "L'URL complète à laquelle l'enregistrement est envoyé en POST. Les paramètres de requête peuvent utiliser {language} et {api_key} ; un paramètre sans valeur est omis."
+        },
+        "body": {
+          "label": "Envoyer l'audio comme",
+          "description": "Comment l'enregistrement est envoyé au serveur. Les serveurs vocaux acceptent un envoi de formulaire. Les LLM audio (llama.cpp, vLLM…) acceptent une requête de chat, que Handy construit pour vous. Certains serveurs veulent l'audio comme corps entier, et JSON personnalisé vous permet d'écrire le corps vous-même.",
+          "multipart": "Envoi de formulaire (multipart)",
+          "chat": "Chat avec audio (LLM)",
+          "raw": "Audio brut comme corps",
+          "json": "JSON personnalisé",
+          "rawHint": "Le WAV constitue tout le corps de la requête, envoyé en audio/wav. Ajoutez un en-tête Content-Type si votre serveur en attend un autre."
+        },
+        "apiKey": {
+          "label": "Clé API",
+          "description": "Conservée dans le trousseau de votre système, pas dans le fichier de paramètres de Handy. Utilisée partout où un en-tête ou un champ contient {api_key} ; ceux-ci sont omis s'il n'y a pas de clé.",
+          "saved": "Enregistrée dans votre trousseau. Saisissez-en une autre pour la remplacer",
+          "remove": "Supprimer"
+        },
+        "optional": "Facultatif",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Ce que le modèle doit faire de votre enregistrement, en termes simples. Envoyé comme message système ; {language} fonctionne ici aussi."
+        },
+        "fields": {
+          "label": "Champs de la requête",
+          "description": "Champs de formulaire envoyés avec l'enregistrement. {language} devient la langue de Handy (par exemple th) et le champ est omis en mode Automatique ; {language|auto} envoie auto à la place. Une valeur vide est également omise.",
+          "chatDescription": "Paramètres supplémentaires pour la requête, comme model ou temperature. Les nombres et true/false sont envoyés tels quels ; laissez une valeur vide pour omettre le paramètre.",
+          "nameLabel": "Nom du champ",
+          "valueLabel": "Valeur du champ",
+          "namePlaceholder": "nom",
+          "add": "Ajouter un champ"
+        },
+        "jsonBody": {
+          "label": "Corps JSON",
+          "description": "Le corps entier de la requête, écrit à la main. {audio_base64} correspond à l'enregistrement ; {language} et {api_key} fonctionnent ici aussi. Les valeurs sont échappées pour vous."
+        },
+        "pairs": {
+          "value": "Valeur",
+          "remove": "Supprimer {{name}}"
+        },
+        "moreOptions": "Plus d'options",
+        "headers": {
+          "label": "En-têtes",
+          "description": "En-têtes HTTP envoyés avec chaque requête. {api_key} devient la clé API.",
+          "nameLabel": "Nom de l'en-tête",
+          "valueLabel": "Valeur de l'en-tête",
+          "namePlaceholder": "En-tête",
+          "add": "Ajouter un en-tête"
+        },
+        "fileField": {
+          "label": "Champ audio",
+          "description": "Le champ de formulaire dans lequel l'enregistrement est envoyé, en WAV mono 16 kHz."
+        },
+        "textPaths": {
+          "label": "Texte dans la réponse",
+          "description": "Où se trouve le texte dans la réponse JSON du serveur : chemins à points, séparés par des virgules, le premier présent l'emporte (par exemple display_text, text ou results.0.transcript). * prend tous les éléments et les joint. Une réponse qui n'est pas du JSON est utilisée comme texte."
+        },
+        "timeout": {
+          "label": "Délai d'attente (secondes)",
+          "description": "Combien de temps attendre le serveur avant d'abandonner."
+        },
+        "unencrypted": "Cette URL n'est pas chiffrée (http://) et n'est pas sur votre réseau local : vos enregistrements et la clé API peuvent être lus en chemin. Utilisez https:// si le serveur le propose.",
+        "notInUse": "La dictée n'utilise pas ce serveur.",
+        "use": "Utiliser ce serveur",
+        "test": {
+          "button": "Tester la connexion",
+          "testing": "Test en cours…",
+          "hint": "Envoie une seconde de silence comme le ferait une dictée.",
+          "ok": "Connecté. Le serveur a répondu en {{seconds}} s.",
+          "failed": "Le test a échoué : {{detail}}"
+        },
+        "delete": "Supprimer le serveur",
+        "deleteConfirm": "Cliquez à nouveau pour supprimer",
+        "footer": "Transcription sur {{host}}",
+        "errors": {
+          "missingId": "Ce serveur n'a pas d'identifiant.",
+          "invalidUrl": "« {{detail}} » n'est pas une URL.",
+          "urlScheme": "L'URL doit commencer par http:// ou https://.",
+          "jsonNeedsAudio": "Le corps JSON doit contenir {audio_base64} à l'endroit de l'enregistrement.",
+          "jsonInvalid": "Le corps JSON n'est pas du JSON valide : {{detail}}",
+          "invalidHeader": "L'en-tête « {{detail}} » a un nom ou une valeur que HTTP n'autorise pas.",
+          "keychain": "Impossible d'utiliser le trousseau du système : {{detail}}",
+          "missingServer": "Ce serveur n'existe plus.",
+          "noUrl": "Ajoutez d'abord l'URL du serveur.",
+          "unreachable": "Impossible de se connecter à {{detail}}.",
+          "noAnswer": "Aucune réponse de {{detail}}.",
+          "refused": "Le serveur a répondu {{detail}}",
+          "webPage": "Le serveur a renvoyé une page web, pas une transcription. Vérifiez l'URL.",
+          "stream": "Le serveur a envoyé sa réponse en streaming. Désactivez le streaming dans les champs de la requête.",
+          "tooLarge": "La réponse du serveur est trop volumineuse pour être une transcription.",
+          "noText": "La réponse ne contient pas de texte à {{detail}}. Vérifiez « Texte dans la réponse ».",
+          "keychainMissing": "La clé API n'est plus dans votre trousseau. Saisissez-la à nouveau.",
+          "placeholder": "« {{detail}} » utilise un espace réservé qui n'a pas de valeur ici. Donnez-lui une valeur de repli, par exemple {language|auto}.",
+          "badRequest": "Impossible de construire la requête : {{detail}}"
         }
       }
     },

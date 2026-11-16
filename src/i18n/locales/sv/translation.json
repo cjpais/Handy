@@ -471,7 +471,8 @@
         "output": "Utmatning",
         "transcription": "Transkription",
         "history": "Historik",
-        "experimental": "Experimentellt"
+        "experimental": "Experimentellt",
+        "remoteTranscription": "Fjärrtranskribering"
       },
       "experimentalToggle": {
         "label": "Experimentella funktioner",
@@ -624,6 +625,137 @@
           "simplified": "Förenklad",
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Använd en fjärrserver",
+        "description": "Skicka inspelningar till en tal-till-text-server som du kör själv, i stället för en modell på den här datorn. Diktering, filtranskribering och omtranskribering av historiken använder den. Det finns ingen live-förhandsvisning medan du talar.",
+        "needsServer": "Ingen server används ännu. Lägg till en, ge den en URL och välj Använd den här servern. Tills dess fortsätter Handy att använda den lokala modellen.",
+        "server": {
+          "label": "Server",
+          "description": "Dina servrar. Att visa eller redigera en server ändrar inte vilken som används för diktering.",
+          "none": "Inga servrar ännu",
+          "inUse": "{{name}} (används)",
+          "choose": "Välj en server"
+        },
+        "add": "Lägg till server",
+        "presets": {
+          "hints": {
+            "openthai": "iApps thailändska modell, serve/app.py",
+            "whisper-cpp": "/inference i whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… i llama-server",
+            "mlx-audio": "mlx_audio.server på Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper m.fl.",
+            "custom": "Fyll i alla fält själv"
+          },
+          "names": {
+            "custom": "Anpassad server",
+            "whisper-cpp": "whisper.cpp-server",
+            "llama-cpp": "llama.cpp-ljudmodell",
+            "openai-compatible": "OpenAI-kompatibel server"
+          }
+        },
+        "name": {
+          "label": "Namn",
+          "description": "Visas i serverlistan och i sidfoten.",
+          "placeholder": "Namnlös server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "Endpoint-URL",
+          "description": "Den fullständiga URL som inspelningen skickas till med POST. Frågeparametrar kan använda {language} och {api_key}; en parameter som saknar värde utelämnas."
+        },
+        "body": {
+          "label": "Skicka ljud som",
+          "description": "Hur inspelningen skickas till servern. Talservrar tar emot en formuläruppladdning. Ljud-LLM:er (llama.cpp, vLLM…) tar emot en chattförfrågan, som Handy bygger åt dig. Vissa servrar vill ha ljudet som hela brödtexten, och med Anpassad JSON skriver du brödtexten själv.",
+          "multipart": "Formuläruppladdning (multipart)",
+          "chat": "Chatt med ljud (LLM)",
+          "raw": "Rått ljud som brödtext",
+          "json": "Anpassad JSON",
+          "rawHint": "WAV-filen är hela förfrågans brödtext och skickas som audio/wav. Lägg till en Content-Type-header om din server förväntar sig något annat."
+        },
+        "apiKey": {
+          "label": "API-nyckel",
+          "description": "Sparas i systemets nyckelring, inte i Handys inställningsfil. Används där en header eller ett fält innehåller {api_key}; de utelämnas när det inte finns någon nyckel.",
+          "saved": "Sparad i nyckelringen. Skriv för att ersätta den",
+          "remove": "Ta bort"
+        },
+        "optional": "Valfritt",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Vad modellen ska göra med din inspelning, med enkla ord. Skickas som systemmeddelande; {language} fungerar här också."
+        },
+        "fields": {
+          "label": "Förfrågningsfält",
+          "description": "Formulärfält som skickas med inspelningen. {language} blir Handys språk (till exempel th) och fältet utelämnas vid Automatiskt; {language|auto} skickar då auto. Ett tomt värde utelämnas också.",
+          "chatDescription": "Extra inställningar för förfrågan, till exempel model eller temperature. Tal och true/false skickas som sådana; lämna ett värde tomt för att utelämna inställningen.",
+          "nameLabel": "Fältnamn",
+          "valueLabel": "Fältvärde",
+          "namePlaceholder": "namn",
+          "add": "Lägg till fält"
+        },
+        "jsonBody": {
+          "label": "JSON-brödtext",
+          "description": "Hela förfrågans brödtext, skriven för hand. {audio_base64} är inspelningen; {language} och {api_key} fungerar här också. Värden escapas åt dig."
+        },
+        "pairs": {
+          "value": "Värde",
+          "remove": "Ta bort {{name}}"
+        },
+        "moreOptions": "Fler alternativ",
+        "headers": {
+          "label": "Headers",
+          "description": "HTTP-headers som skickas med varje förfrågan. {api_key} blir API-nyckeln.",
+          "nameLabel": "Headernamn",
+          "valueLabel": "Headervärde",
+          "namePlaceholder": "Header",
+          "add": "Lägg till header"
+        },
+        "fileField": {
+          "label": "Ljudfält",
+          "description": "Formulärfältet som inspelningen skickas i, som mono-WAV i 16 kHz."
+        },
+        "textPaths": {
+          "label": "Text i svaret",
+          "description": "Var texten finns i serverns JSON-svar: punktsökvägar, kommaseparerade; den första som finns gäller (till exempel display_text, text eller results.0.transcript). * tar alla element och slår ihop dem. Ett svar som inte är JSON används som texten."
+        },
+        "timeout": {
+          "label": "Tidsgräns (sekunder)",
+          "description": "Hur länge vi väntar på servern innan vi ger upp."
+        },
+        "unencrypted": "Den här URL:en är inte krypterad (http://) och finns inte på ditt lokala nätverk: dina inspelningar och API-nyckeln kan läsas på vägen. Använd https:// om servern erbjuder det.",
+        "notInUse": "Diktering använder inte den här servern.",
+        "use": "Använd den här servern",
+        "test": {
+          "button": "Testa anslutning",
+          "testing": "Testar…",
+          "hint": "Skickar en sekund tystnad, precis som en diktering skulle göra.",
+          "ok": "Ansluten. Servern svarade på {{seconds}} s.",
+          "failed": "Testet misslyckades: {{detail}}"
+        },
+        "delete": "Ta bort server",
+        "deleteConfirm": "Klicka igen för att ta bort",
+        "footer": "Transkriberar på {{host}}",
+        "errors": {
+          "missingId": "Den här servern saknar id.",
+          "invalidUrl": "”{{detail}}” är inte en URL.",
+          "urlScheme": "URL:en måste börja med http:// eller https://.",
+          "jsonNeedsAudio": "JSON-brödtexten behöver {audio_base64} där inspelningen ska in.",
+          "jsonInvalid": "JSON-brödtexten är inte giltig JSON: {{detail}}",
+          "invalidHeader": "Headern ”{{detail}}” har ett namn eller värde som HTTP inte tillåter.",
+          "keychain": "Kunde inte använda systemets nyckelring: {{detail}}",
+          "missingServer": "Den servern finns inte längre.",
+          "noUrl": "Lägg först till serverns URL.",
+          "unreachable": "Kunde inte ansluta till {{detail}}.",
+          "noAnswer": "Inget svar från {{detail}}.",
+          "refused": "Servern svarade {{detail}}",
+          "webPage": "Servern skickade tillbaka en webbsida, inte en transkription. Kontrollera URL:en.",
+          "stream": "Servern strömmade sitt svar. Stäng av streaming i förfrågningsfälten.",
+          "tooLarge": "Serverns svar är för stort för att vara en transkription.",
+          "noText": "Svaret har ingen text vid {{detail}}. Kontrollera ”Text i svaret”.",
+          "keychainMissing": "API-nyckeln finns inte längre i nyckelringen. Ange den igen.",
+          "placeholder": "”{{detail}}” använder en platshållare som saknar värde här. Ge den ett reservvärde, till exempel {language|auto}.",
+          "badRequest": "Förfrågan kunde inte skapas: {{detail}}"
         }
       }
     },

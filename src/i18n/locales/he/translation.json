@@ -471,7 +471,8 @@
         "output": "פלט",
         "transcription": "תמלול",
         "history": "היסטוריה",
-        "experimental": "ניסיוני"
+        "experimental": "ניסיוני",
+        "remoteTranscription": "תמלול מרוחק"
       },
       "experimentalToggle": {
         "label": "תכונות ניסיוניות",
@@ -624,6 +625,137 @@
           "simplified": "מפושט",
           "traditionalTw": "מסורתית (טייוואן)",
           "traditionalHk": "מסורתית (הונג קונג)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "שימוש בשרת מרוחק",
+        "description": "שולח את ההקלטות לשרת דיבור-לטקסט שאתה מפעיל, במקום למודל במחשב הזה. הכתבה, תמלול קבצים ותמלול מחדש מההיסטוריה משתמשים בו. אין תצוגה מקדימה בזמן אמת בזמן הדיבור.",
+        "needsServer": "עדיין אין שרת בשימוש. הוסף שרת, הזן לו כתובת URL ובחר 'השתמש בשרת הזה'. עד אז Handy ממשיך להשתמש במודל המקומי.",
+        "server": {
+          "label": "שרת",
+          "description": "השרתים שלך. צפייה בשרת או עריכתו לא משנות את השרת שההכתבה משתמשת בו.",
+          "none": "עדיין אין שרתים",
+          "inUse": "{{name}} (בשימוש)",
+          "choose": "בחר שרת"
+        },
+        "add": "הוסף שרת",
+        "presets": {
+          "hints": {
+            "openthai": "המודל התאילנדי של iApp, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… ב-llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper ועוד",
+            "custom": "מלא את כל השדות בעצמך"
+          },
+          "names": {
+            "custom": "שרת מותאם אישית",
+            "whisper-cpp": "שרת whisper.cpp",
+            "llama-cpp": "מודל שמע של llama.cpp",
+            "openai-compatible": "שרת תואם OpenAI"
+          }
+        },
+        "name": {
+          "label": "שם",
+          "description": "מוצג ברשימת השרתים ובשורת המצב התחתונה.",
+          "placeholder": "שרת ללא שם",
+          "untitled": "שרת {{n}}"
+        },
+        "url": {
+          "label": "כתובת URL של נקודת הקצה",
+          "description": "כתובת ה-URL המלאה שאליה נשלחת ההקלטה ב-POST. פרמטרי שאילתה יכולים להשתמש ב-{language} וב-{api_key}; פרמטר שחסר לו ערך מושמט."
+        },
+        "body": {
+          "label": "שליחת השמע בתור",
+          "description": "איך ההקלטה מגיעה לשרת. שרתי דיבור מקבלים העלאת טופס. מודלי LLM לשמע (llama.cpp, vLLM…) מקבלים בקשת צ'אט, ש-Handy בונה בשבילך. חלק מהשרתים רוצים את השמע כגוף הבקשה כולו, ו-JSON מותאם אישית מאפשר לך לכתוב את הגוף בעצמך.",
+          "multipart": "העלאת טופס (multipart)",
+          "chat": "צ'אט עם שמע (LLM)",
+          "raw": "שמע גולמי כגוף הבקשה",
+          "json": "JSON מותאם אישית",
+          "rawHint": "קובץ ה-WAV הוא גוף הבקשה כולו, ונשלח כ-audio/wav. הוסף כותרת Content-Type אם השרת שלך מצפה לסוג אחר."
+        },
+        "apiKey": {
+          "label": "מפתח API",
+          "description": "נשמר במחזיק המפתחות של המערכת, לא בקובץ ההגדרות של Handy. משמש בכל מקום שבו כותרת או שדה מכילים {api_key}; אלה מושמטים כשאין מפתח.",
+          "saved": "נשמר במחזיק המפתחות. הקלד כדי להחליף אותו",
+          "remove": "הסר"
+        },
+        "optional": "אופציונלי",
+        "prompt": {
+          "label": "הנחיה",
+          "description": "מה המודל צריך לעשות עם ההקלטה שלך, במילים פשוטות. נשלח כהודעת מערכת; גם כאן אפשר להשתמש ב-{language}."
+        },
+        "fields": {
+          "label": "שדות הבקשה",
+          "description": "שדות טופס שנשלחים עם ההקלטה. {language} מוחלף בשפה של Handy (למשל th), והשדה מושמט במצב אוטומטי; {language|auto} שולח במקום זאת auto. גם ערך ריק מושמט.",
+          "chatDescription": "הגדרות נוספות לבקשה, כמו model או temperature. מספרים ו-true/false נשלחים כמו שהם; השאר ערך ריק כדי להשמיט את ההגדרה.",
+          "nameLabel": "שם השדה",
+          "valueLabel": "ערך השדה",
+          "namePlaceholder": "שם",
+          "add": "הוסף שדה"
+        },
+        "jsonBody": {
+          "label": "גוף JSON",
+          "description": "גוף הבקשה כולו, בכתיבה ידנית. {audio_base64} הוא ההקלטה; גם {language} ו-{api_key} עובדים כאן. הערכים עוברים escape אוטומטית."
+        },
+        "pairs": {
+          "value": "ערך",
+          "remove": "הסר את {{name}}"
+        },
+        "moreOptions": "אפשרויות נוספות",
+        "headers": {
+          "label": "כותרות",
+          "description": "כותרות HTTP שנשלחות עם כל בקשה. {api_key} מוחלף במפתח ה-API.",
+          "nameLabel": "שם הכותרת",
+          "valueLabel": "ערך הכותרת",
+          "namePlaceholder": "כותרת",
+          "add": "הוסף כותרת"
+        },
+        "fileField": {
+          "label": "שדה השמע",
+          "description": "שדה הטופס שבו נשלחת ההקלטה, כקובץ WAV מונו של 16 kHz."
+        },
+        "textPaths": {
+          "label": "הטקסט בתשובה",
+          "description": "איפה הטקסט נמצא בתשובת ה-JSON של השרת: נתיבים עם נקודות, מופרדים בפסיקים, והראשון שקיים קובע (למשל display_text, text או results.0.transcript). * לוקח את כל הפריטים ומחבר אותם. תשובה שאינה JSON משמשת כטקסט."
+        },
+        "timeout": {
+          "label": "זמן קצוב (שניות)",
+          "description": "כמה זמן לחכות לשרת לפני שמוותרים."
+        },
+        "unencrypted": "כתובת ה-URL הזו לא מוצפנת (http://) ולא נמצאת ברשת המקומית שלך: אפשר לקרוא את ההקלטות ואת מפתח ה-API בדרך. השתמש ב-https:// אם השרת תומך בזה.",
+        "notInUse": "ההכתבה לא משתמשת בשרת הזה.",
+        "use": "השתמש בשרת הזה",
+        "test": {
+          "button": "בדוק חיבור",
+          "testing": "בודק…",
+          "hint": "שולח שנייה אחת של שקט, כמו שהכתבה הייתה שולחת.",
+          "ok": "מחובר. השרת ענה תוך {{seconds}} שניות.",
+          "failed": "הבדיקה נכשלה: {{detail}}"
+        },
+        "delete": "מחק שרת",
+        "deleteConfirm": "לחץ שוב כדי למחוק",
+        "footer": "מתמלל ב-{{host}}",
+        "errors": {
+          "missingId": "לשרת הזה אין מזהה.",
+          "invalidUrl": "„{{detail}}” אינה כתובת URL.",
+          "urlScheme": "כתובת ה-URL חייבת להתחיל ב-http:// או ב-https://.",
+          "jsonNeedsAudio": "גוף ה-JSON צריך לכלול {audio_base64} במקום שבו נמצאת ההקלטה.",
+          "jsonInvalid": "גוף ה-JSON אינו JSON תקין: {{detail}}",
+          "invalidHeader": "לכותרת „{{detail}}” יש שם או ערך ש-HTTP לא מאפשר.",
+          "keychain": "לא ניתן להשתמש במחזיק המפתחות של המערכת: {{detail}}",
+          "missingServer": "השרת הזה כבר לא קיים.",
+          "noUrl": "הוסף קודם את כתובת ה-URL של השרת.",
+          "unreachable": "לא ניתן להתחבר אל {{detail}}.",
+          "noAnswer": "אין תשובה מ-{{detail}}.",
+          "refused": "השרת ענה {{detail}}",
+          "webPage": "השרת החזיר דף אינטרנט ולא תמלול. בדוק את כתובת ה-URL.",
+          "stream": "השרת שלח את התשובה בהזרמה. כבה את ההזרמה בשדות הבקשה.",
+          "tooLarge": "התשובה של השרת גדולה מכדי להיות תמלול.",
+          "noText": "אין טקסט בתשובה ב-{{detail}}. בדוק את „הטקסט בתשובה”.",
+          "keychainMissing": "מפתח ה-API כבר לא נמצא במחזיק המפתחות שלך. הזן אותו שוב.",
+          "placeholder": "ב-{{detail}} יש מציין מיקום שאין לו ערך כאן. תן לו ערך חלופי, כמו {language|auto}.",
+          "badRequest": "לא ניתן לבנות את הבקשה: {{detail}}"
         }
       }
     },

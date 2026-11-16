@@ -234,17 +234,23 @@ impl ProviderClient {
     }
 }
 
-/// Process-wide client. A short idle timeout and TCP keepalive keep the pool
-/// from handing out connections that died during sleep or a network change.
+/// What every client of the app is built from. A short idle timeout and TCP
+/// keepalive keep the pool from handing out connections that died during
+/// sleep or a network change.
+pub(crate) fn client_builder() -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
+        .pool_idle_timeout(Duration::from_secs(30))
+        .tcp_keepalive(Duration::from_secs(15))
+        .connect_timeout(Duration::from_secs(10))
+}
+
+/// Process-wide client.
 fn shared_client() -> Result<&'static reqwest::Client, String> {
     static SHARED: OnceLock<reqwest::Client> = OnceLock::new();
     if let Some(client) = SHARED.get() {
         return Ok(client);
     }
-    let client = reqwest::Client::builder()
-        .pool_idle_timeout(Duration::from_secs(30))
-        .tcp_keepalive(Duration::from_secs(15))
-        .connect_timeout(Duration::from_secs(10))
+    let client = client_builder()
         .build()
         .map_err(|e| report_reqwest_error("Failed to build HTTP client", &e))?;
     Ok(SHARED.get_or_init(|| client))
@@ -331,7 +337,7 @@ fn sanitized_url(url: &reqwest::Url) -> String {
     url.to_string()
 }
 
-fn sanitized_url_for_log(url: &str) -> String {
+pub(crate) fn sanitized_url_for_log(url: &str) -> String {
     reqwest::Url::parse(url)
         .map(|url| sanitized_url(&url))
         // Do not echo an invalid URL: the parse failure might have been caused

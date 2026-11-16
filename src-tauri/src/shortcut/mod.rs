@@ -699,6 +699,130 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_remote_transcription_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.remote_transcription_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Adds `server`, or replaces the saved one with its id. Saving never
+/// changes which server dictation uses: only
+/// [`select_remote_transcription_server`] does.
+#[tauri::command]
+#[specta::specta]
+pub async fn save_remote_transcription_server(
+    app: AppHandle,
+    server: settings::RemoteAsrServer,
+) -> Result<(), String> {
+    let mut server =
+        crate::managers::transcription::clean_remote_server(server).map_err(|e| e.to_string())?;
+    // A key typed in Settings goes to the system keychain and never into the
+    // settings file. The keychain may wait on an unlock prompt, so it runs off
+    // the main thread, and settings are read only once it is done.
+    let typed_key: String = server.api_key.to_string();
+    server.api_key = String::new().into();
+    let typed_key_empty = typed_key.is_empty();
+    if !typed_key_empty {
+        let id = server.id.clone();
+        keychain_call(move || crate::keychain::store(&id, &typed_key)).await?;
+    }
+    let mut settings = settings::get_settings(&app);
+    let servers = &mut settings.remote_transcription_servers;
+    // A key typed now, or the one it already had.
+    let had_key = servers.iter().any(|s| s.id == server.id && s.has_api_key);
+    server.has_api_key = !typed_key_empty || had_key;
+    match servers.iter_mut().find(|s| s.id == server.id) {
+        Some(saved) => *saved = server,
+        None => servers.push(server),
+    }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn delete_remote_transcription_server(app: AppHandle, id: String) -> Result<(), String> {
+    let key_id = id.clone();
+    if let Err(e) = keychain_call(move || crate::keychain::remove(&key_id)).await {
+        warn!("Couldn't remove the deleted server's key from the keychain: {e}");
+    }
+    let mut settings = settings::get_settings(&app);
+    settings.remote_transcription_servers.retain(|s| s.id != id);
+    // Never fall through to another server: recordings would start going
+    // somewhere the user didn't pick. Dictation is local until they choose.
+    if settings.remote_transcription_server_id.as_deref() == Some(id.as_str()) {
+        settings.remote_transcription_server_id = None;
+    }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Forgets the server's API key.
+#[tauri::command]
+#[specta::specta]
+pub async fn clear_remote_transcription_api_key(app: AppHandle, id: String) -> Result<(), String> {
+    let key_id = id.clone();
+    keychain_call(move || crate::keychain::remove(&key_id)).await?;
+    let mut settings = settings::get_settings(&app);
+    for server in &mut settings.remote_transcription_servers {
+        if server.id == id {
+            server.has_api_key = false;
+        }
+    }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn select_remote_transcription_server(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    if !settings
+        .remote_transcription_servers
+        .iter()
+        .any(|s| s.id == id)
+    {
+        return Err(format!("missingServer|{id}"));
+    }
+    settings.remote_transcription_server_id = Some(id);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Sends a second of silence to `server` (saved or not), the way a
+/// dictation would, and reports what came back.
+#[tauri::command]
+#[specta::specta]
+pub async fn test_remote_transcription(
+    app: AppHandle,
+    server: settings::RemoteAsrServer,
+) -> Result<crate::managers::transcription::RemoteTestResult, String> {
+    let language = settings::get_settings(&app).selected_language;
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::managers::transcription::test_remote_transcription(server, &language)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| crate::managers::transcription::coded_error(&e))
+}
+
+/// Runs a keychain call on a blocking thread: it may wait for an unlock
+/// prompt, which must not hold up the main thread.
+async fn keychain_call(
+    f: impl FnOnce() -> Result<(), String> + Send + 'static,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(f)
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| format!("keychain|{e}"))
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.selected_language = language.clone();

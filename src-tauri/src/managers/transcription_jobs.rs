@@ -391,6 +391,10 @@ impl ChunkControl for Control<'_> {
         }
     }
 
+    fn cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::Acquire)
+    }
+
     fn progress(&self, done: usize, total: usize) {
         // The chunk a cancel caught still finishes; don't report it as running.
         if self.cancelled.load(Ordering::Acquire) {

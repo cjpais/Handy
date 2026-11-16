@@ -93,6 +93,66 @@ async changeTranslateToEnglishSetting(enabled: boolean) : Promise<Result<null, s
     else return { status: "error", error: e  as any };
 }
 },
+async changeRemoteTranscriptionEnabledSetting(enabled: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_remote_transcription_enabled_setting", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Adds `server`, or replaces the saved one with its id. Saving never
+ * changes which server dictation uses: only
+ * [`select_remote_transcription_server`] does.
+ */
+async saveRemoteTranscriptionServer(server: RemoteAsrServer) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_remote_transcription_server", { server }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteRemoteTranscriptionServer(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_remote_transcription_server", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Forgets the server's API key.
+ */
+async clearRemoteTranscriptionApiKey(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_remote_transcription_api_key", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async selectRemoteTranscriptionServer(id: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("select_remote_transcription_server", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Sends a second of silence to `server` (saved or not), the way a
+ * dictation would, and reports what came back.
+ */
+async testRemoteTranscription(server: RemoteAsrServer) : Promise<Result<RemoteTestResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_remote_transcription", { server }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changeSelectedLanguageSetting(language: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_selected_language_setting", { language }) };
@@ -1136,7 +1196,12 @@ whats_new_last_seen_version?: string; selected_model?: string; onboarding_comple
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).
  */
-selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; 
+selected_channel?: number | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; 
+/**
+ * Send recordings to the selected remote server instead of a local
+ * model; see `active_remote_server`.
+ */
+remote_transcription_enabled?: boolean; remote_transcription_servers?: RemoteAsrServer[]; remote_transcription_server_id?: string | null; selected_language?: string; 
 /**
  * Every language the person dictates in (codes, e.g. ["en", "zh"]),
  * picked during onboarding. Empty until then.
@@ -1430,10 +1495,93 @@ export type RecordingPhase =
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type RecordingStateEvent = { phase: RecordingPhase }
 /**
+ * A speech-to-text server the user set up. Nothing about any particular
+ * server is built in: the request and the response are described here.
+ */
+export type RemoteAsrServer = { id?: string; name?: string; 
+/**
+ * The full URL the recording is POSTed to. May use the placeholders;
+ * a query parameter whose placeholder has no value is left out.
+ */
+url?: string; body?: RemoteBody; 
+/**
+ * Only on its way in from Settings: the key itself is kept in the
+ * system keychain and this is always empty in what is stored or sent
+ * back to the window.
+ */
+api_key?: SecretString; 
+/**
+ * Whether the keychain holds a key for this server.
+ */
+has_api_key?: boolean; headers?: RequestPair[]; 
+/**
+ * Multipart form fields sent with the recording, or the top-level keys
+ * of a chat request. One whose value is empty is left out.
+ */
+fields?: RequestPair[]; 
+/**
+ * What a chat request tells the model to do with the audio.
+ */
+prompt?: string; 
+/**
+ * The request body when `body` is JSON.
+ */
+json_body?: string; 
+/**
+ * The multipart field the WAV is sent in.
+ */
+file_field?: string; 
+/**
+ * Where the text is in a JSON response: comma-separated dot paths
+ * (`text`, `results.0.transcript`); the first one present wins. A
+ * response that isn't JSON is the text itself.
+ */
+text_paths?: string; timeout_secs?: number }
+/**
+ * How a remote transcription request carries the recording.
+ */
+export type RemoteBody = 
+/**
+ * A multipart form: the WAV in `file_field`, plus `fields`.
+ */
+"multipart" | 
+/**
+ * An OpenAI-style chat request for an audio LLM: `prompt` as the
+ * system message, the WAV as `input_audio`, and `fields` as top-level
+ * keys (`model`, `temperature`…).
+ */
+"chat" | 
+/**
+ * The WAV itself is the request body.
+ */
+"raw" | 
+/**
+ * `json_body`, with `{audio_base64}` standing for the WAV.
+ */
+"json"
+/**
+ * A connection test's result, for Settings.
+ */
+export type RemoteTestResult = { elapsed_ms: number; 
+/**
+ * What the server made of a second of silence (usually nothing).
+ */
+text: string }
+/**
+ * A name/value pair of a remote transcription request: a form field or an
+ * HTTP header. Values may use `{language}` and `{api_key}`; a pair whose
+ * placeholder has no value is left out of the request.
+ */
+export type RequestPair = { name: string; value: string }
+/**
  * A retired ONNX model found on disk.
  */
 export type RetiredModel = { id: string; name: string; size_mb: number; replacement_repo: string }
 export type SecretMap = Partial<{ [key in string]: string }>
+/**
+ * A secret kept out of logs: `Debug` never prints it.
+ */
+export type SecretString = string
 export type SecureInputStatus = { 
 /**
  * Secure input is currently enabled (live check)

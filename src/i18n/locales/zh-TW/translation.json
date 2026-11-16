@@ -471,7 +471,8 @@
         "output": "輸出",
         "transcription": "轉錄",
         "history": "歷史",
-        "experimental": "實驗性"
+        "experimental": "實驗性",
+        "remoteTranscription": "遠端轉錄"
       },
       "experimentalToggle": {
         "label": "實驗性功能",
@@ -624,6 +625,137 @@
           "simplified": "簡體",
           "traditionalTw": "繁體（臺灣）",
           "traditionalHk": "繁體（香港）"
+        }
+      },
+      "remoteTranscription": {
+        "label": "使用遠端伺服器",
+        "description": "將錄音傳送到您自己架設的語音轉文字伺服器，而不是使用這台電腦上的模型。聽寫、檔案轉錄和重新轉錄歷史紀錄都會使用它。說話時不會有即時預覽。",
+        "needsServer": "尚未使用任何伺服器。請新增一個伺服器，填入 URL，然後選擇「使用此伺服器」。在那之前，Handy 會繼續使用本機模型。",
+        "server": {
+          "label": "伺服器",
+          "description": "您的伺服器。檢視或編輯其中一個伺服器，不會改變聽寫所使用的伺服器。",
+          "none": "尚無伺服器",
+          "inUse": "{{name}}（使用中）",
+          "choose": "選擇伺服器"
+        },
+        "add": "新增伺服器",
+        "presets": {
+          "hints": {
+            "openthai": "iApp 的泰語模型，serve/app.py",
+            "whisper-cpp": "whisper-server 的 /inference",
+            "llama-cpp": "llama-server 中的 Voxtral、Qwen2.5-Omni…",
+            "mlx-audio": "Apple Silicon 上的 mlx_audio.server",
+            "openai-compatible": "vLLM、speaches、LocalAI、faster-whisper 等",
+            "custom": "所有欄位都由您自行填寫"
+          },
+          "names": {
+            "custom": "自訂伺服器",
+            "whisper-cpp": "whisper.cpp 伺服器",
+            "llama-cpp": "llama.cpp 音訊模型",
+            "openai-compatible": "OpenAI 相容伺服器"
+          }
+        },
+        "name": {
+          "label": "名稱",
+          "description": "顯示在伺服器清單和底部狀態列中。",
+          "placeholder": "未命名伺服器",
+          "untitled": "伺服器 {{n}}"
+        },
+        "url": {
+          "label": "端點 URL",
+          "description": "錄音以 POST 傳送到的完整 URL。查詢參數可以使用 {language} 和 {api_key}；缺少值的參數會被省略。"
+        },
+        "body": {
+          "label": "音訊傳送方式",
+          "description": "錄音如何傳送到伺服器。語音伺服器接受表單上傳。音訊 LLM（llama.cpp、vLLM…）接受聊天請求，Handy 會為您建立。有些伺服器要求音訊作為整個請求本文，而「自訂 JSON」可讓您自行撰寫本文。",
+          "multipart": "表單上傳（multipart）",
+          "chat": "附音訊的聊天（LLM）",
+          "raw": "原始音訊本文",
+          "json": "自訂 JSON",
+          "rawHint": "WAV 就是整個請求本文，以 audio/wav 傳送。如果您的伺服器需要其他類型，請新增 Content-Type 標頭。"
+        },
+        "apiKey": {
+          "label": "API 金鑰",
+          "description": "儲存在系統鑰匙圈中，而不是 Handy 的設定檔中。凡是標頭或欄位中寫有 {api_key} 的地方都會使用它；沒有金鑰時，這些項目會被省略。",
+          "saved": "已儲存在鑰匙圈中。輸入新值即可取代",
+          "remove": "移除"
+        },
+        "optional": "可選",
+        "prompt": {
+          "label": "提示詞",
+          "description": "用淺白的文字告訴模型要如何處理您的錄音。以系統訊息傳送；這裡也可以使用 {language}。"
+        },
+        "fields": {
+          "label": "請求欄位",
+          "description": "隨錄音一起傳送的表單欄位。{language} 會替換為 Handy 的語言（例如 th），選擇自動時會省略該欄位；{language|auto} 則會改為傳送 auto。空值也會被省略。",
+          "chatDescription": "請求的額外設定，例如 model 或 temperature。數字和 true/false 會依原本的型別傳送；將值留空即可不傳送該設定。",
+          "nameLabel": "欄位名稱",
+          "valueLabel": "欄位值",
+          "namePlaceholder": "名稱",
+          "add": "新增欄位"
+        },
+        "jsonBody": {
+          "label": "JSON 本文",
+          "description": "手動撰寫的完整請求本文。{audio_base64} 代表錄音；這裡也可以使用 {language} 和 {api_key}。值會自動跳脫。"
+        },
+        "pairs": {
+          "value": "值",
+          "remove": "移除 {{name}}"
+        },
+        "moreOptions": "更多選項",
+        "headers": {
+          "label": "標頭",
+          "description": "每個請求都會附帶的 HTTP 標頭。{api_key} 會替換為 API 金鑰。",
+          "nameLabel": "標頭名稱",
+          "valueLabel": "標頭值",
+          "namePlaceholder": "標頭",
+          "add": "新增標頭"
+        },
+        "fileField": {
+          "label": "音訊欄位",
+          "description": "用來傳送錄音的表單欄位，格式為 16 kHz 單聲道 WAV。"
+        },
+        "textPaths": {
+          "label": "回應中的文字",
+          "description": "文字在伺服器 JSON 回應中的位置：以點號分隔的路徑，多個路徑以逗號分隔，使用第一個存在的路徑（例如 display_text、text 或 results.0.transcript）。* 會取出所有項目並將其串接。非 JSON 的回應會直接當作文字使用。"
+        },
+        "timeout": {
+          "label": "逾時（秒）",
+          "description": "等待伺服器回應多久後放棄。"
+        },
+        "unencrypted": "此 URL 未加密（http://），且不在您的區域網路中：您的錄音和 API 金鑰在傳輸途中可能被讀取。如果伺服器支援，請使用 https://。",
+        "notInUse": "聽寫未使用此伺服器。",
+        "use": "使用此伺服器",
+        "test": {
+          "button": "測試連線",
+          "testing": "測試中…",
+          "hint": "像聽寫一樣傳送一秒鐘的靜音。",
+          "ok": "已連線。伺服器在 {{seconds}} 秒內回應。",
+          "failed": "測試失敗：{{detail}}"
+        },
+        "delete": "刪除伺服器",
+        "deleteConfirm": "再按一次即可刪除",
+        "footer": "正在 {{host}} 上轉錄",
+        "errors": {
+          "missingId": "此伺服器沒有 ID。",
+          "invalidUrl": "「{{detail}}」不是有效的 URL。",
+          "urlScheme": "URL 必須以 http:// 或 https:// 開頭。",
+          "jsonNeedsAudio": "JSON 本文需要在放置錄音的位置包含 {audio_base64}。",
+          "jsonInvalid": "JSON 本文不是有效的 JSON：{{detail}}",
+          "invalidHeader": "標頭「{{detail}}」的名稱或值包含 HTTP 不允許的內容。",
+          "keychain": "無法使用系統鑰匙圈：{{detail}}",
+          "missingServer": "該伺服器已不存在。",
+          "noUrl": "請先新增伺服器的 URL。",
+          "unreachable": "無法連線到 {{detail}}。",
+          "noAnswer": "未收到回應：{{detail}}",
+          "refused": "伺服器回應：{{detail}}",
+          "webPage": "伺服器傳回的是網頁，而不是轉錄文字。請檢查 URL。",
+          "stream": "伺服器以串流方式傳回回應。請在請求欄位中關閉串流。",
+          "tooLarge": "伺服器的回應過大，不可能是轉錄文字。",
+          "noText": "回應中 {{detail}} 處沒有文字。請檢查「回應中的文字」。",
+          "keychainMissing": "API 金鑰已不在鑰匙圈中。請重新輸入。",
+          "placeholder": "{{detail}} 中使用的預留位置在此處沒有值。請為它設定備用值，例如 {language|auto}。",
+          "badRequest": "無法建立請求：{{detail}}"
         }
       }
     },

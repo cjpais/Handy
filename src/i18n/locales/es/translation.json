@@ -471,7 +471,8 @@
         "output": "Salida",
         "transcription": "Transcripción",
         "history": "Historial",
-        "experimental": "Experimental"
+        "experimental": "Experimental",
+        "remoteTranscription": "Transcripción remota"
       },
       "experimentalToggle": {
         "label": "Funciones experimentales",
@@ -624,6 +625,137 @@
           "simplified": "Simplificado",
           "traditionalTw": "Tradicional (Taiwán)",
           "traditionalHk": "Tradicional (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Usar un servidor remoto",
+        "description": "Envía las grabaciones a un servidor de voz a texto que gestionas tú, en lugar de a un modelo en este equipo. El dictado, la transcripción de archivos y la re-transcripción del historial lo usan. No hay vista previa en vivo mientras hablas.",
+        "needsServer": "Todavía no hay ningún servidor en uso. Agrega uno, ponle una URL y elige Usar este servidor. Hasta entonces, Handy sigue usando el modelo local.",
+        "server": {
+          "label": "Servidor",
+          "description": "Tus servidores. Ver o editar uno no cambia el que usa el dictado.",
+          "none": "Todavía no hay servidores",
+          "inUse": "{{name}} (en uso)",
+          "choose": "Elige un servidor"
+        },
+        "add": "Agregar servidor",
+        "presets": {
+          "hints": {
+            "openthai": "Modelo tailandés de iApp, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… en llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper, etc.",
+            "custom": "Rellena todos los campos tú mismo"
+          },
+          "names": {
+            "custom": "Servidor personalizado",
+            "whisper-cpp": "Servidor whisper.cpp",
+            "llama-cpp": "Modelo de audio de llama.cpp",
+            "openai-compatible": "Servidor compatible con OpenAI"
+          }
+        },
+        "name": {
+          "label": "Nombre",
+          "description": "Se muestra en la lista de servidores y en el pie de página.",
+          "placeholder": "Servidor sin nombre",
+          "untitled": "Servidor {{n}}"
+        },
+        "url": {
+          "label": "URL del endpoint",
+          "description": "La URL completa a la que se envía la grabación por POST. Los parámetros de consulta pueden usar {language} y {api_key}; si a uno le falta el valor, se omite."
+        },
+        "body": {
+          "label": "Enviar audio como",
+          "description": "Cómo llega la grabación al servidor. Los servidores de voz aceptan un envío de formulario. Los LLM de audio (llama.cpp, vLLM…) aceptan una solicitud de chat, que Handy crea por ti. Algunos servidores quieren el audio como cuerpo completo, y JSON personalizado te permite escribir el cuerpo tú mismo.",
+          "multipart": "Envío de formulario (multipart)",
+          "chat": "Chat con audio (LLM)",
+          "raw": "Audio sin procesar como cuerpo",
+          "json": "JSON personalizado",
+          "rawHint": "El WAV es el cuerpo completo de la solicitud y se envía como audio/wav. Agrega un encabezado Content-Type si tu servidor espera otro."
+        },
+        "apiKey": {
+          "label": "Clave API",
+          "description": "Se guarda en el llavero del sistema, no en el archivo de configuración de Handy. Se usa donde un encabezado o campo diga {api_key}; si no hay clave, esos se omiten.",
+          "saved": "Guardada en tu llavero. Escribe para reemplazarla",
+          "remove": "Eliminar"
+        },
+        "optional": "Opcional",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Lo que se le pide al modelo que haga con tu grabación, en palabras sencillas. Se envía como mensaje del sistema; {language} también funciona aquí."
+        },
+        "fields": {
+          "label": "Campos de la solicitud",
+          "description": "Campos de formulario enviados con la grabación. {language} se convierte en el idioma de Handy (por ejemplo, th) y el campo se omite en Automático; {language|auto} envía auto en su lugar. Un valor vacío también se omite.",
+          "chatDescription": "Ajustes adicionales para la solicitud, como model o temperature. Los números y true/false se envían como tales; deja un valor vacío para omitir el ajuste.",
+          "nameLabel": "Nombre del campo",
+          "valueLabel": "Valor del campo",
+          "namePlaceholder": "nombre",
+          "add": "Agregar campo"
+        },
+        "jsonBody": {
+          "label": "Cuerpo JSON",
+          "description": "El cuerpo completo de la solicitud, escrito a mano. {audio_base64} es la grabación; {language} y {api_key} también funcionan aquí. Los valores se escapan automáticamente."
+        },
+        "pairs": {
+          "value": "Valor",
+          "remove": "Eliminar {{name}}"
+        },
+        "moreOptions": "Más opciones",
+        "headers": {
+          "label": "Encabezados",
+          "description": "Encabezados HTTP enviados con cada solicitud. {api_key} se convierte en la clave API.",
+          "nameLabel": "Nombre del encabezado",
+          "valueLabel": "Valor del encabezado",
+          "namePlaceholder": "Encabezado",
+          "add": "Agregar encabezado"
+        },
+        "fileField": {
+          "label": "Campo de audio",
+          "description": "El campo de formulario en el que se envía la grabación, como WAV mono de 16 kHz."
+        },
+        "textPaths": {
+          "label": "Texto en la respuesta",
+          "description": "Dónde está el texto en la respuesta JSON del servidor: rutas con puntos, separadas por comas; gana la primera que exista (por ejemplo, display_text, text o results.0.transcript). * toma todos los elementos y los une. Una respuesta que no es JSON se usa como texto."
+        },
+        "timeout": {
+          "label": "Tiempo de espera (segundos)",
+          "description": "Cuánto esperar al servidor antes de rendirse."
+        },
+        "unencrypted": "Esta URL no está cifrada (http://) y no está en tu red local: tus grabaciones y la clave API pueden leerse por el camino. Usa https:// si el servidor lo ofrece.",
+        "notInUse": "El dictado no está usando este servidor.",
+        "use": "Usar este servidor",
+        "test": {
+          "button": "Probar conexión",
+          "testing": "Probando…",
+          "hint": "Envía un segundo de silencio igual que lo haría un dictado.",
+          "ok": "Conectado. El servidor respondió en {{seconds}} s.",
+          "failed": "La prueba falló: {{detail}}"
+        },
+        "delete": "Eliminar servidor",
+        "deleteConfirm": "Haz clic de nuevo para eliminar",
+        "footer": "Transcribiendo en {{host}}",
+        "errors": {
+          "missingId": "Este servidor no tiene id.",
+          "invalidUrl": "«{{detail}}» no es una URL.",
+          "urlScheme": "La URL debe empezar por http:// o https://.",
+          "jsonNeedsAudio": "El cuerpo JSON necesita {audio_base64} donde va la grabación.",
+          "jsonInvalid": "El cuerpo JSON no es JSON válido: {{detail}}",
+          "invalidHeader": "El encabezado «{{detail}}» tiene un nombre o valor que HTTP no permite.",
+          "keychain": "No se pudo usar el llavero del sistema: {{detail}}",
+          "missingServer": "Ese servidor ya no existe.",
+          "noUrl": "Primero añade la URL del servidor.",
+          "unreachable": "No se pudo conectar con {{detail}}.",
+          "noAnswer": "Sin respuesta de {{detail}}.",
+          "refused": "El servidor respondió {{detail}}",
+          "webPage": "El servidor devolvió una página web, no una transcripción. Revisa la URL.",
+          "stream": "El servidor envió su respuesta en streaming. Desactiva el streaming en los campos de la solicitud.",
+          "tooLarge": "La respuesta del servidor es demasiado grande para ser una transcripción.",
+          "noText": "La respuesta no tiene texto en {{detail}}. Revisa «Texto en la respuesta».",
+          "keychainMissing": "La clave API ya no está en tu llavero. Vuelve a introducirla.",
+          "placeholder": "«{{detail}}» usa un marcador de posición que aquí no tiene valor. Dale un valor alternativo, como {language|auto}.",
+          "badRequest": "No se pudo crear la solicitud: {{detail}}"
         }
       }
     },

@@ -471,7 +471,8 @@
         "output": "Ausgabe",
         "transcription": "Transkription",
         "history": "Verlauf",
-        "experimental": "Experimentell"
+        "experimental": "Experimentell",
+        "remoteTranscription": "Remote-Transkription"
       },
       "experimentalToggle": {
         "label": "Experimentelle Funktionen",
@@ -624,6 +625,137 @@
           "simplified": "Vereinfacht",
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Remote-Server verwenden",
+        "description": "Sendet Aufnahmen an einen Spracherkennungsserver, den du selbst betreibst, statt an ein Modell auf diesem Computer. Diktat, Dateitranskription und erneutes Transkribieren im Verlauf nutzen ihn. Während du sprichst, gibt es keine Live-Vorschau.",
+        "needsServer": "Noch ist kein Server in Verwendung. Füge einen hinzu, gib eine URL ein und wähle „Diesen Server verwenden“. Bis dahin nutzt Handy weiter das lokale Modell.",
+        "server": {
+          "label": "Server",
+          "description": "Deine Server. Einen anzusehen oder zu bearbeiten ändert nicht, welchen das Diktat verwendet.",
+          "none": "Noch keine Server",
+          "inUse": "{{name}} (in Verwendung)",
+          "choose": "Server auswählen"
+        },
+        "add": "Server hinzufügen",
+        "presets": {
+          "hints": {
+            "openthai": "Thailändisches Modell von iApp, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… über llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper usw.",
+            "custom": "Alle Felder selbst ausfüllen"
+          },
+          "names": {
+            "custom": "Eigener Server",
+            "whisper-cpp": "whisper.cpp-Server",
+            "llama-cpp": "llama.cpp-Audiomodell",
+            "openai-compatible": "OpenAI-kompatibler Server"
+          }
+        },
+        "name": {
+          "label": "Name",
+          "description": "Wird in der Serverliste und in der Fußzeile angezeigt.",
+          "placeholder": "Unbenannter Server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "Endpunkt-URL",
+          "description": "Die vollständige URL, an die die Aufnahme per POST gesendet wird. Query-Parameter können {language} und {api_key} verwenden; einer ohne Wert wird weggelassen."
+        },
+        "body": {
+          "label": "Audio senden als",
+          "description": "Wie die Aufnahme an den Server geht. Sprachserver erwarten einen Formular-Upload. Audio-LLMs (llama.cpp, vLLM…) erwarten eine Chat-Anfrage, die Handy für dich erstellt. Manche Server wollen das Audio als gesamten Body, und mit „Eigenes JSON“ schreibst du den Body selbst.",
+          "multipart": "Formular-Upload (multipart)",
+          "chat": "Chat mit Audio (LLM)",
+          "raw": "Reines Audio als Body",
+          "json": "Eigenes JSON",
+          "rawHint": "Die WAV-Datei ist der gesamte Request-Body und wird als audio/wav gesendet. Füge einen Content-Type-Header hinzu, wenn dein Server etwas anderes erwartet."
+        },
+        "apiKey": {
+          "label": "API-Schlüssel",
+          "description": "Wird im Schlüsselbund deines Systems gespeichert, nicht in Handys Einstellungsdatei. Wird überall verwendet, wo ein Header oder Feld {api_key} enthält; diese werden ohne Schlüssel weggelassen.",
+          "saved": "Im Schlüsselbund gespeichert. Zum Ersetzen einen neuen eingeben",
+          "remove": "Entfernen"
+        },
+        "optional": "Optional",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Was das Modell mit deiner Aufnahme tun soll, in einfachen Worten. Wird als Systemnachricht gesendet; {language} funktioniert auch hier."
+        },
+        "fields": {
+          "label": "Anfragefelder",
+          "description": "Formularfelder, die mit der Aufnahme gesendet werden. {language} wird zu Handys Sprache (z. B. th), und bei „Automatisch“ wird das Feld weggelassen; {language|auto} sendet stattdessen auto. Ein leerer Wert wird ebenfalls weggelassen.",
+          "chatDescription": "Zusätzliche Einstellungen für die Anfrage, etwa model oder temperature. Zahlen und true/false werden als solche gesendet; lass einen Wert leer, um die Einstellung wegzulassen.",
+          "nameLabel": "Feldname",
+          "valueLabel": "Feldwert",
+          "namePlaceholder": "Name",
+          "add": "Feld hinzufügen"
+        },
+        "jsonBody": {
+          "label": "JSON-Body",
+          "description": "Der gesamte Request-Body, von Hand geschrieben. {audio_base64} ist die Aufnahme; {language} und {api_key} funktionieren auch hier. Werte werden automatisch maskiert."
+        },
+        "pairs": {
+          "value": "Wert",
+          "remove": "{{name}} entfernen"
+        },
+        "moreOptions": "Weitere Optionen",
+        "headers": {
+          "label": "Header",
+          "description": "HTTP-Header, die mit jeder Anfrage gesendet werden. {api_key} wird zum API-Schlüssel.",
+          "nameLabel": "Header-Name",
+          "valueLabel": "Header-Wert",
+          "namePlaceholder": "Header",
+          "add": "Header hinzufügen"
+        },
+        "fileField": {
+          "label": "Audiofeld",
+          "description": "Das Formularfeld, in dem die Aufnahme gesendet wird, als 16 kHz Mono-WAV."
+        },
+        "textPaths": {
+          "label": "Text in der Antwort",
+          "description": "Wo der Text in der JSON-Antwort des Servers steht: Punktpfade, durch Kommas getrennt, der erste vorhandene gewinnt (z. B. display_text, text oder results.0.transcript). * nimmt alle Einträge und verbindet sie. Eine Antwort, die kein JSON ist, wird als Text verwendet."
+        },
+        "timeout": {
+          "label": "Zeitlimit (Sekunden)",
+          "description": "Wie lange auf den Server gewartet wird, bevor abgebrochen wird."
+        },
+        "unencrypted": "Diese URL ist nicht verschlüsselt (http://) und liegt nicht in deinem lokalen Netzwerk: Deine Aufnahmen und der API-Schlüssel können unterwegs mitgelesen werden. Verwende https://, wenn der Server es anbietet.",
+        "notInUse": "Das Diktat verwendet diesen Server nicht.",
+        "use": "Diesen Server verwenden",
+        "test": {
+          "button": "Verbindung testen",
+          "testing": "Wird getestet…",
+          "hint": "Sendet eine Sekunde Stille, so wie es ein Diktat tun würde.",
+          "ok": "Verbunden. Der Server hat in {{seconds}} s geantwortet.",
+          "failed": "Der Test ist fehlgeschlagen: {{detail}}"
+        },
+        "delete": "Server löschen",
+        "deleteConfirm": "Zum Löschen erneut klicken",
+        "footer": "Transkription auf {{host}}",
+        "errors": {
+          "missingId": "Dieser Server hat keine ID.",
+          "invalidUrl": "„{{detail}}“ ist keine URL.",
+          "urlScheme": "Die URL muss mit http:// oder https:// beginnen.",
+          "jsonNeedsAudio": "Der JSON-Body braucht {audio_base64} an der Stelle der Aufnahme.",
+          "jsonInvalid": "Der JSON-Body ist kein gültiges JSON: {{detail}}",
+          "invalidHeader": "Der Header „{{detail}}“ hat einen Namen oder Wert, den HTTP nicht erlaubt.",
+          "keychain": "Der Schlüsselbund des Systems konnte nicht verwendet werden: {{detail}}",
+          "missingServer": "Dieser Server existiert nicht mehr.",
+          "noUrl": "Füge zuerst die URL des Servers hinzu.",
+          "unreachable": "Verbindung zu {{detail}} nicht möglich.",
+          "noAnswer": "Keine Antwort von {{detail}}.",
+          "refused": "Der Server antwortete mit {{detail}}",
+          "webPage": "Der Server hat eine Webseite statt eines Transkripts zurückgegeben. Prüfe die URL.",
+          "stream": "Der Server hat seine Antwort gestreamt. Schalte Streaming in den Anfragefeldern aus.",
+          "tooLarge": "Die Antwort des Servers ist zu groß für ein Transkript.",
+          "noText": "Die Antwort enthält keinen Text unter {{detail}}. Prüfe „Text in der Antwort“.",
+          "keychainMissing": "Der API-Schlüssel ist nicht mehr in deinem Schlüsselbund. Gib ihn erneut ein.",
+          "placeholder": "„{{detail}}“ verwendet einen Platzhalter, der hier keinen Wert hat. Gib ihm einen Ersatzwert, etwa {language|auto}.",
+          "badRequest": "Die Anfrage konnte nicht erstellt werden: {{detail}}"
         }
       }
     },

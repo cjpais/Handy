@@ -471,7 +471,8 @@
         "output": "Sortida",
         "transcription": "Transcripció",
         "history": "Historial",
-        "experimental": "Experimental"
+        "experimental": "Experimental",
+        "remoteTranscription": "Transcripció remota"
       },
       "experimentalToggle": {
         "label": "Funcions experimentals",
@@ -624,6 +625,137 @@
           "simplified": "Simplificat",
           "traditionalTw": "Tradicional (Taiwan)",
           "traditionalHk": "Tradicional (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Utilitza un servidor remot",
+        "description": "Envia els enregistraments a un servidor de veu a text que gestioneu vosaltres, en lloc d'un model en aquest ordinador. El fan servir el dictat, la transcripció de fitxers i la retranscripció de l'historial. No hi ha previsualització en directe mentre parleu.",
+        "needsServer": "Encara no s'utilitza cap servidor. Afegiu-ne un, indiqueu-ne l'URL i trieu «Utilitzeu aquest servidor». Fins aleshores, el Handy continua utilitzant el model local.",
+        "server": {
+          "label": "Servidor",
+          "description": "Els vostres servidors. Consultar-ne o editar-ne un no canvia quin utilitza el dictat.",
+          "none": "Encara no hi ha cap servidor",
+          "inUse": "{{name}} (en ús)",
+          "choose": "Trieu un servidor"
+        },
+        "add": "Afegiu un servidor",
+        "presets": {
+          "hints": {
+            "openthai": "Model tai d'iApp, serve/app.py",
+            "whisper-cpp": "/inference de whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… a llama-server",
+            "mlx-audio": "mlx_audio.server en Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper, etc.",
+            "custom": "Ompliu tots els camps vosaltres mateixos"
+          },
+          "names": {
+            "custom": "Servidor personalitzat",
+            "whisper-cpp": "Servidor whisper.cpp",
+            "llama-cpp": "Model d'àudio de llama.cpp",
+            "openai-compatible": "Servidor compatible amb OpenAI"
+          }
+        },
+        "name": {
+          "label": "Nom",
+          "description": "Es mostra a la llista de servidors i al peu.",
+          "placeholder": "Servidor sense nom",
+          "untitled": "Servidor {{n}}"
+        },
+        "url": {
+          "label": "URL del punt de connexió",
+          "description": "L'URL completa a la qual s'envia l'enregistrament amb POST. Els paràmetres de consulta poden utilitzar {language} i {api_key}; si en falta el valor, el paràmetre s'omet."
+        },
+        "body": {
+          "label": "Envia l'àudio com a",
+          "description": "Com arriba l'enregistrament al servidor. Els servidors de veu accepten una pujada de formulari. Els LLM d'àudio (llama.cpp, vLLM…) accepten una sol·licitud de xat, que el Handy construeix per vosaltres. Alguns servidors volen l'àudio com a cos sencer, i amb JSON personalitzat podeu escriure el cos vosaltres mateixos.",
+          "multipart": "Pujada de formulari (multipart)",
+          "chat": "Xat amb àudio (LLM)",
+          "raw": "Àudio en brut com a cos",
+          "json": "JSON personalitzat",
+          "rawHint": "El WAV és el cos sencer de la sol·licitud, enviat com a audio/wav. Afegiu una capçalera Content-Type si el servidor n'espera una altra."
+        },
+        "apiKey": {
+          "label": "Clau de l'API",
+          "description": "Es desa al clauer del sistema, no al fitxer de configuració del Handy. S'utilitza allà on una capçalera o un camp diu {api_key}; si no hi ha clau, s'ometen.",
+          "saved": "Desada al clauer. Escriviu per substituir-la",
+          "remove": "Suprimiu"
+        },
+        "optional": "Opcional",
+        "prompt": {
+          "label": "Indicació",
+          "description": "Què ha de fer el model amb el vostre enregistrament, en paraules senzilles. S'envia com a missatge del sistema; {language} també funciona aquí."
+        },
+        "fields": {
+          "label": "Camps de la sol·licitud",
+          "description": "Camps de formulari enviats amb l'enregistrament. {language} es converteix en l'idioma del Handy (com ara th) i el camp s'omet en mode automàtic; {language|auto} envia auto en el seu lloc. Un valor buit també s'omet.",
+          "chatDescription": "Opcions addicionals per a la sol·licitud, com ara model o temperature. Els números i true/false s'envien com a tals; deixeu un valor buit per ometre l'opció.",
+          "nameLabel": "Nom del camp",
+          "valueLabel": "Valor del camp",
+          "namePlaceholder": "nom",
+          "add": "Afegiu un camp"
+        },
+        "jsonBody": {
+          "label": "Cos JSON",
+          "description": "El cos sencer de la sol·licitud, escrit a mà. {audio_base64} és l'enregistrament; {language} i {api_key} també funcionen aquí. Els valors s'escapen automàticament."
+        },
+        "pairs": {
+          "value": "Valor",
+          "remove": "Suprimiu {{name}}"
+        },
+        "moreOptions": "Més opcions",
+        "headers": {
+          "label": "Capçaleres",
+          "description": "Capçaleres HTTP enviades amb cada sol·licitud. {api_key} es converteix en la clau de l'API.",
+          "nameLabel": "Nom de la capçalera",
+          "valueLabel": "Valor de la capçalera",
+          "namePlaceholder": "Capçalera",
+          "add": "Afegiu una capçalera"
+        },
+        "fileField": {
+          "label": "Camp d'àudio",
+          "description": "El camp de formulari en què s'envia l'enregistrament, com a WAV mono de 16 kHz."
+        },
+        "textPaths": {
+          "label": "Text a la resposta",
+          "description": "On és el text a la resposta JSON del servidor: camins amb punts, separats per comes; s'utilitza el primer que hi sigui (com ara display_text, text o results.0.transcript). * agafa tots els elements i els uneix. Una resposta que no és JSON s'utilitza com a text."
+        },
+        "timeout": {
+          "label": "Temps d'espera (segons)",
+          "description": "Quant de temps s'espera el servidor abans de desistir."
+        },
+        "unencrypted": "Aquesta URL no està xifrada (http://) i no és a la vostra xarxa local: els enregistraments i la clau de l'API es poden llegir pel camí. Utilitzeu https:// si el servidor ho permet.",
+        "notInUse": "El dictat no utilitza aquest servidor.",
+        "use": "Utilitzeu aquest servidor",
+        "test": {
+          "button": "Proveu la connexió",
+          "testing": "S'està provant…",
+          "hint": "Envia un segon de silenci tal com ho faria un dictat.",
+          "ok": "Connectat. El servidor ha respost en {{seconds}} s.",
+          "failed": "La prova ha fallat: {{detail}}"
+        },
+        "delete": "Suprimiu el servidor",
+        "deleteConfirm": "Feu clic de nou per suprimir",
+        "footer": "Transcrivint a {{host}}",
+        "errors": {
+          "missingId": "Aquest servidor no té identificador.",
+          "invalidUrl": "«{{detail}}» no és una URL.",
+          "urlScheme": "L'URL ha de començar per http:// o https://.",
+          "jsonNeedsAudio": "El cos JSON necessita {audio_base64} on va l'enregistrament.",
+          "jsonInvalid": "El cos JSON no és JSON vàlid: {{detail}}",
+          "invalidHeader": "La capçalera «{{detail}}» té un nom o un valor que HTTP no permet.",
+          "keychain": "No s'ha pogut utilitzar el clauer del sistema: {{detail}}",
+          "missingServer": "Aquest servidor ja no existeix.",
+          "noUrl": "Primer afegiu l'URL del servidor.",
+          "unreachable": "No s'ha pogut connectar a {{detail}}.",
+          "noAnswer": "No hi ha resposta de {{detail}}.",
+          "refused": "El servidor ha respost {{detail}}",
+          "webPage": "El servidor ha retornat una pàgina web, no una transcripció. Comproveu l'URL.",
+          "stream": "El servidor ha enviat la resposta en streaming. Desactiveu el streaming als camps de la sol·licitud.",
+          "tooLarge": "La resposta del servidor és massa gran per ser una transcripció.",
+          "noText": "La resposta no té text a {{detail}}. Comproveu «Text a la resposta».",
+          "keychainMissing": "La clau de l'API ja no és al vostre clauer. Torneu-la a introduir.",
+          "placeholder": "«{{detail}}» fa servir un marcador de posició que aquí no té valor. Doneu-li un valor alternatiu, com ara {language|auto}.",
+          "badRequest": "No s'ha pogut construir la sol·licitud: {{detail}}"
         }
       }
     },

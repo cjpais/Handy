@@ -471,7 +471,8 @@
         "output": "输出",
         "transcription": "转录",
         "history": "历史",
-        "experimental": "实验性"
+        "experimental": "实验性",
+        "remoteTranscription": "远程转录"
       },
       "experimentalToggle": {
         "label": "实验性功能",
@@ -624,6 +625,137 @@
           "simplified": "简体",
           "traditionalTw": "繁体（台湾）",
           "traditionalHk": "繁体（香港）"
+        }
+      },
+      "remoteTranscription": {
+        "label": "使用远程服务器",
+        "description": "将录音发送到您自己运行的语音转文字服务器，而不是使用这台电脑上的模型。听写、文件转录和重新转录历史记录都会使用它。说话时没有实时预览。",
+        "needsServer": "尚未使用任何服务器。请添加一个服务器，填写 URL，然后选择「使用此服务器」。在此之前，Handy 会继续使用本地模型。",
+        "server": {
+          "label": "服务器",
+          "description": "您的服务器。查看或编辑某个服务器不会改变听写所使用的服务器。",
+          "none": "还没有服务器",
+          "inUse": "{{name}}（使用中）",
+          "choose": "选择服务器"
+        },
+        "add": "添加服务器",
+        "presets": {
+          "hints": {
+            "openthai": "iApp 的泰语模型，serve/app.py",
+            "whisper-cpp": "whisper-server 的 /inference",
+            "llama-cpp": "llama-server 中的 Voxtral、Qwen2.5-Omni…",
+            "mlx-audio": "Apple Silicon 上的 mlx_audio.server",
+            "openai-compatible": "vLLM、speaches、LocalAI、faster-whisper 等",
+            "custom": "所有字段都由您自己填写"
+          },
+          "names": {
+            "custom": "自定义服务器",
+            "whisper-cpp": "whisper.cpp 服务器",
+            "llama-cpp": "llama.cpp 音频模型",
+            "openai-compatible": "OpenAI 兼容服务器"
+          }
+        },
+        "name": {
+          "label": "名称",
+          "description": "显示在服务器列表和底部状态栏中。",
+          "placeholder": "未命名服务器",
+          "untitled": "服务器 {{n}}"
+        },
+        "url": {
+          "label": "端点 URL",
+          "description": "录音通过 POST 发送到的完整 URL。查询参数中可以使用 {language} 和 {api_key}；值缺失的参数会被省略。"
+        },
+        "body": {
+          "label": "音频发送方式",
+          "description": "录音如何发送到服务器。语音服务器接收表单上传。音频 LLM（llama.cpp、vLLM…）接收聊天请求，Handy 会为您构建。有些服务器要求音频作为整个请求体，而「自定义 JSON」可让您自己编写请求体。",
+          "multipart": "表单上传（multipart）",
+          "chat": "带音频的聊天（LLM）",
+          "raw": "原始音频请求体",
+          "json": "自定义 JSON",
+          "rawHint": "WAV 即整个请求体，以 audio/wav 发送。如果您的服务器需要其他类型，请添加 Content-Type 请求头。"
+        },
+        "apiKey": {
+          "label": "API 密钥",
+          "description": "保存在系统钥匙串中，而不是 Handy 的设置文件中。凡是请求头或字段中写有 {api_key} 的地方都会使用它；没有密钥时，这些项会被省略。",
+          "saved": "已保存在钥匙串中。输入新值即可替换",
+          "remove": "移除"
+        },
+        "optional": "可选",
+        "prompt": {
+          "label": "提示词",
+          "description": "用平实的语言告诉模型如何处理您的录音。作为系统消息发送；这里也可以使用 {language}。"
+        },
+        "fields": {
+          "label": "请求字段",
+          "description": "随录音一起发送的表单字段。{language} 会替换为 Handy 的语言（例如 th），选择自动时该字段会被省略；{language|auto} 则会改为发送 auto。空值也会被省略。",
+          "chatDescription": "请求的额外设置，例如 model 或 temperature。数字和 true/false 会按原类型发送；将值留空即可不发送该设置。",
+          "nameLabel": "字段名",
+          "valueLabel": "字段值",
+          "namePlaceholder": "名称",
+          "add": "添加字段"
+        },
+        "jsonBody": {
+          "label": "JSON 请求体",
+          "description": "手动编写的完整请求体。{audio_base64} 代表录音；这里也可以使用 {language} 和 {api_key}。值会自动转义。"
+        },
+        "pairs": {
+          "value": "值",
+          "remove": "移除 {{name}}"
+        },
+        "moreOptions": "更多选项",
+        "headers": {
+          "label": "请求头",
+          "description": "每个请求都会附带的 HTTP 请求头。{api_key} 会替换为 API 密钥。",
+          "nameLabel": "请求头名称",
+          "valueLabel": "请求头值",
+          "namePlaceholder": "请求头",
+          "add": "添加请求头"
+        },
+        "fileField": {
+          "label": "音频字段",
+          "description": "用于发送录音的表单字段，格式为 16 kHz 单声道 WAV。"
+        },
+        "textPaths": {
+          "label": "响应中的文本",
+          "description": "文本在服务器 JSON 响应中的位置：用点号分隔的路径，多个路径用逗号分隔，使用第一个存在的路径（例如 display_text、text 或 results.0.transcript）。* 会取出所有项并将其拼接。非 JSON 的响应会直接用作文本。"
+        },
+        "timeout": {
+          "label": "超时（秒）",
+          "description": "等待服务器响应多久后放弃。"
+        },
+        "unencrypted": "此 URL 未加密（http://），且不在您的本地网络中：您的录音和 API 密钥在传输途中可能被读取。如果服务器支持，请使用 https://。",
+        "notInUse": "听写未使用此服务器。",
+        "use": "使用此服务器",
+        "test": {
+          "button": "测试连接",
+          "testing": "正在测试…",
+          "hint": "像听写一样发送一秒钟的静音。",
+          "ok": "已连接。服务器在 {{seconds}} 秒内响应。",
+          "failed": "测试失败：{{detail}}"
+        },
+        "delete": "删除服务器",
+        "deleteConfirm": "再次点击以删除",
+        "footer": "正在 {{host}} 上转录",
+        "errors": {
+          "missingId": "此服务器没有 ID。",
+          "invalidUrl": "「{{detail}}」不是有效的 URL。",
+          "urlScheme": "URL 必须以 http:// 或 https:// 开头。",
+          "jsonNeedsAudio": "JSON 请求体需要在放置录音的位置包含 {audio_base64}。",
+          "jsonInvalid": "JSON 请求体不是有效的 JSON：{{detail}}",
+          "invalidHeader": "请求头「{{detail}}」的名称或值包含 HTTP 不允许的内容。",
+          "keychain": "无法使用系统钥匙串：{{detail}}",
+          "missingServer": "该服务器已不存在。",
+          "noUrl": "请先添加服务器的 URL。",
+          "unreachable": "无法连接到 {{detail}}。",
+          "noAnswer": "未收到响应：{{detail}}",
+          "refused": "服务器返回：{{detail}}",
+          "webPage": "服务器返回的是网页，而不是转录文本。请检查 URL。",
+          "stream": "服务器以流式方式返回了响应。请在请求字段中关闭流式输出。",
+          "tooLarge": "服务器的响应过大，不可能是转录文本。",
+          "noText": "响应中 {{detail}} 处没有文本。请检查「响应中的文本」。",
+          "keychainMissing": "API 密钥已不在钥匙串中。请重新输入。",
+          "placeholder": "{{detail}} 中使用的占位符在此处没有值。请为它设置后备值，例如 {language|auto}。",
+          "badRequest": "无法构建请求：{{detail}}"
         }
       }
     },

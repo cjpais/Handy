@@ -5,6 +5,9 @@ import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
 import NoticeChip from "./NoticeChip";
 import TranscriptionStatus from "./TranscriptionStatus";
+import RemoteServerStatus from "./RemoteServerStatus";
+import { useSettings } from "../../hooks/useSettings";
+import { activeRemoteServer } from "@/lib/remoteServers";
 
 interface FooterProps {
   onShowHistory: () => void;
@@ -12,6 +15,8 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
   const [version, setVersion] = useState("");
+  const { settings } = useSettings();
+  const remoteServer = activeRemoteServer(settings);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -31,7 +36,11 @@ const Footer: React.FC<FooterProps> = ({ onShowHistory }) => {
     <div className="w-full border-t border-line pt-3">
       <div className="flex justify-between items-center text-xs px-4 pb-3 text-ink-2">
         <div className="flex items-center gap-4">
-          <ModelSelector />
+          {remoteServer ? (
+            <RemoteServerStatus server={remoteServer} />
+          ) : (
+            <ModelSelector />
+          )}
           <TranscriptionStatus onShowHistory={onShowHistory} />
         </div>
 

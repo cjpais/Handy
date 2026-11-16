@@ -471,7 +471,8 @@
         "output": "Output",
         "transcription": "Transcription",
         "history": "History",
-        "experimental": "Experimental"
+        "experimental": "Experimental",
+        "remoteTranscription": "Remote Transcription"
       },
       "experimentalToggle": {
         "label": "Experimental Features",
@@ -624,6 +625,137 @@
           "simplified": "Simplified",
           "traditionalTw": "Traditional (Taiwan)",
           "traditionalHk": "Traditional (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Use a Remote Server",
+        "description": "Send recordings to a speech-to-text server you run, instead of a model on this computer. Dictation, file transcription and re-transcribing history all use it. There's no live preview while you speak.",
+        "needsServer": "No server is in use yet. Add one, give it a URL and choose Use This Server. Until then, Handy keeps using the local model.",
+        "server": {
+          "label": "Server",
+          "description": "Your servers. Looking at or editing one doesn't change which one dictation uses.",
+          "none": "No servers yet",
+          "inUse": "{{name}} (in use)",
+          "choose": "Choose a server"
+        },
+        "add": "Add server",
+        "presets": {
+          "hints": {
+            "openthai": "iApp's Thai model, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… in llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper…",
+            "custom": "Fill in every field yourself"
+          },
+          "names": {
+            "whisper-cpp": "whisper.cpp server",
+            "llama-cpp": "llama.cpp audio model",
+            "openai-compatible": "OpenAI-compatible server",
+            "custom": "Custom server"
+          }
+        },
+        "name": {
+          "label": "Name",
+          "description": "Shown in the server list and the footer.",
+          "placeholder": "Unnamed server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "Endpoint URL",
+          "description": "The full URL the recording is POSTed to. Query parameters can use {language} and {api_key}; one whose value is missing is left out."
+        },
+        "body": {
+          "label": "Send Audio As",
+          "description": "How the recording goes to the server. Speech servers take a form upload. Audio LLMs (llama.cpp, vLLM…) take a chat request, which Handy builds for you. Some servers want the audio as the whole body, and Custom JSON lets you write the body yourself.",
+          "multipart": "Form upload (multipart)",
+          "chat": "Chat with audio (LLM)",
+          "raw": "Raw audio body",
+          "json": "Custom JSON",
+          "rawHint": "The WAV is the whole request body, sent as audio/wav. Add a Content-Type header if your server expects another."
+        },
+        "apiKey": {
+          "label": "API Key",
+          "description": "Kept in your system's keychain, not in Handy's settings file. Used wherever a header or field says {api_key}; those are left out when there is no key.",
+          "saved": "Saved in your keychain. Type to replace it",
+          "remove": "Remove"
+        },
+        "optional": "Optional",
+        "prompt": {
+          "label": "Prompt",
+          "description": "What the model is told to do with your recording, in plain words. Sent as the system message; {language} works here too."
+        },
+        "fields": {
+          "label": "Request Fields",
+          "description": "Form fields sent with the recording. {language} becomes Handy's language (such as th) and the field is left out on Auto; {language|auto} sends auto instead. An empty value is left out too.",
+          "chatDescription": "Extra settings for the request, such as model or temperature. Numbers and true/false are sent as such; leave a value empty to leave the setting out.",
+          "nameLabel": "Field name",
+          "valueLabel": "Field value",
+          "namePlaceholder": "name",
+          "add": "Add field"
+        },
+        "jsonBody": {
+          "label": "JSON Body",
+          "description": "The whole request body, written by hand. {audio_base64} is the recording; {language} and {api_key} work here too. Values are escaped for you."
+        },
+        "pairs": {
+          "value": "Value",
+          "remove": "Remove {{name}}"
+        },
+        "moreOptions": "More Options",
+        "headers": {
+          "label": "Headers",
+          "description": "HTTP headers sent with each request. {api_key} becomes the API key.",
+          "nameLabel": "Header name",
+          "valueLabel": "Header value",
+          "namePlaceholder": "Header",
+          "add": "Add header"
+        },
+        "fileField": {
+          "label": "Audio Field",
+          "description": "The form field the recording is sent in, as a 16 kHz mono WAV."
+        },
+        "textPaths": {
+          "label": "Text in Response",
+          "description": "Where the text is in the server's JSON reply: dot paths, comma-separated, the first one present wins (such as display_text, text or results.0.transcript). * takes every item and joins them. A reply that isn't JSON is used as the text."
+        },
+        "timeout": {
+          "label": "Timeout (seconds)",
+          "description": "How long to wait for the server before giving up."
+        },
+        "unencrypted": "This URL isn't encrypted (http://) and isn't on your local network: your recordings and the API key can be read on the way. Use https:// if the server offers it.",
+        "notInUse": "Dictation isn't using this server.",
+        "use": "Use This Server",
+        "test": {
+          "button": "Test Connection",
+          "testing": "Testing…",
+          "hint": "Sends one second of silence the way a dictation would.",
+          "ok": "Connected. The server answered in {{seconds}} s.",
+          "failed": "The test failed: {{detail}}"
+        },
+        "delete": "Delete Server",
+        "deleteConfirm": "Click again to delete",
+        "footer": "Transcribing on {{host}}",
+        "errors": {
+          "missingId": "This server has no id.",
+          "invalidUrl": "“{{detail}}” isn't a URL.",
+          "urlScheme": "The URL must start with http:// or https://.",
+          "jsonNeedsAudio": "The JSON body needs {audio_base64} where the recording goes.",
+          "jsonInvalid": "The JSON body isn't valid JSON: {{detail}}",
+          "invalidHeader": "The header “{{detail}}” has a name or value HTTP doesn't allow.",
+          "keychain": "Couldn't use the system keychain: {{detail}}",
+          "missingServer": "That server no longer exists.",
+          "noUrl": "Add the server's URL first.",
+          "unreachable": "Couldn't connect to {{detail}}.",
+          "noAnswer": "No answer from {{detail}}.",
+          "refused": "The server answered {{detail}}",
+          "webPage": "The server sent back a web page, not a transcript. Check the URL.",
+          "stream": "The server streamed its answer. Turn streaming off in the request fields.",
+          "tooLarge": "The server's reply is too large to be a transcript.",
+          "noText": "The reply has no text at {{detail}}. Check Text in Response.",
+          "keychainMissing": "The API key is no longer in your keychain. Enter it again.",
+          "placeholder": "The {{detail}} uses a placeholder that has no value here. Give it a fallback, such as {language|auto}.",
+          "badRequest": "The request couldn't be built: {{detail}}"
         }
       }
     },

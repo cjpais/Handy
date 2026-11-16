@@ -27,8 +27,8 @@ pub fn verify_wav_file<P: AsRef<Path>>(file_path: P, expected_samples: usize) ->
     Ok(())
 }
 
-/// Save audio samples as a WAV file
-pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()> {
+/// Writes `samples` as the WAV Handy records: 16 kHz mono 16-bit PCM.
+fn write_wav<W: std::io::Write + std::io::Seek>(writer: W, samples: &[f32]) -> Result<()> {
     let spec = WavSpec {
         channels: 1,
         sample_rate: 16000,
@@ -36,7 +36,7 @@ pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()
         sample_format: hound::SampleFormat::Int,
     };
 
-    let mut writer = WavWriter::create(file_path.as_ref(), spec)?;
+    let mut writer = WavWriter::new(writer, spec)?;
 
     // Convert f32 samples to i16 for WAV
     for sample in samples {
@@ -45,6 +45,20 @@ pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()
     }
 
     writer.finalize()?;
+    Ok(())
+}
+
+/// Save audio samples as a WAV file
+pub fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()> {
+    let file = std::io::BufWriter::new(std::fs::File::create(file_path.as_ref())?);
+    write_wav(file, samples)?;
     debug!("Saved WAV file: {:?}", file_path.as_ref());
     Ok(())
+}
+
+/// Audio samples as the bytes of a WAV file, for sending over the network.
+pub fn wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
+    let mut cursor = std::io::Cursor::new(Vec::with_capacity(44 + samples.len() * 2));
+    write_wav(&mut cursor, samples)?;
+    Ok(cursor.into_inner())
 }

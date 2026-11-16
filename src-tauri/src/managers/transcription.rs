@@ -39,10 +39,21 @@ mod chunked;
 mod job;
 mod live;
 pub mod policy;
+mod remote;
 
 pub use job::ChunkControl;
+pub use remote::{
+    clean_remote_server, coded_error, test_remote_transcription, RemoteTarget, RemoteTestResult,
+};
 
 const STREAM_PERF_LOG_INTERVAL: Duration = Duration::from_secs(5);
+
+/// The longest recording a remote server gets in one request. Longer ones
+/// are cut at pauses first.
+const REMOTE_WHOLE_CLIP_SAMPLES: usize = 60 * 16_000;
+
+/// Tries per remote request when it fails in a way that may not repeat.
+const REMOTE_ATTEMPTS: usize = 3;
 
 pub(crate) fn panic_payload_message(payload: &(dyn std::any::Any + Send)) -> String {
     if let Some(message) = payload.downcast_ref::<&str>() {
@@ -278,6 +289,13 @@ pub struct TranscriptionManager {
     /// Handy's spoken-language detector, loaded in this process on first
     /// use and unloaded with the model.
     language_detector: Arc<LanguageDetector>,
+    /// Where the recording in progress will be transcribed, decided when it
+    /// starts so a settings change mid-recording can't split the decision.
+    /// `None` between recordings.
+    session_backend: Arc<Mutex<Option<Option<remote::RemoteTarget>>>>,
+    /// Bumped by every cancel; a remote request waiting on a server gives up
+    /// when it moves.
+    remote_cancel: Arc<AtomicU64>,
 }
 
 impl TranscriptionManager {
@@ -298,6 +316,8 @@ impl TranscriptionManager {
             next_stream_worker_id: Arc::new(AtomicU64::new(1)),
             active_stream_worker: Arc::new(AtomicU64::new(0)),
             job_active: Arc::new(AtomicBool::new(false)),
+            session_backend: Arc::new(Mutex::new(None)),
+            remote_cancel: Arc::new(AtomicU64::new(0)),
             language_detector: Arc::new(LanguageDetector::default()),
         };
 
@@ -964,6 +984,28 @@ impl TranscriptionManager {
     /// worker for it.
     pub fn cancel_transcription(&self) {
         self.engine.cancel();
+        self.remote_cancel.fetch_add(1, Ordering::AcqRel);
+    }
+
+    /// Decides where the recording about to start is transcribed, and
+    /// returns whether that is a remote server (so no model is needed).
+    pub fn begin_session(&self, settings: &AppSettings) -> bool {
+        let remote = remote::RemoteTarget::from_settings(settings).map(|mut target| {
+            target.cancel_mark = Some(self.remote_cancel.load(Ordering::Acquire));
+            target
+        });
+        let is_remote = remote.is_some();
+        *lock_ignoring_poison(&self.session_backend) = Some(remote);
+
+        is_remote
+    }
+
+    /// A check for a cancel since `mark` (now, if none), for a remote
+    /// request to poll.
+    fn remote_cancelled(&self, mark: Option<u64>) -> impl Fn() -> bool {
+        let epoch = Arc::clone(&self.remote_cancel);
+        let mark = mark.unwrap_or_else(|| epoch.load(Ordering::Acquire));
+        move || epoch.load(Ordering::Acquire) != mark
     }
 
     /// Emit a working-phase event to the streaming overlay (spinner + label).
@@ -975,18 +1017,31 @@ impl TranscriptionManager {
         .emit(&self.app_handle);
     }
 
-    /// Transcribe a whole clip in batch: a re-transcribed history entry, or
-    /// a file from the CLI.
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
-        Ok(self.complete(Instant::now(), audio, None)?.text)
+    /// Transcribe a whole clip for the CLI: on `remote` when given,
+    /// otherwise with the loaded model.
+    pub fn transcribe(&self, audio: Vec<f32>, remote: Option<RemoteTarget>) -> Result<String> {
+        Ok(self.complete(Instant::now(), audio, None, remote)?.text)
     }
 
     /// Transcribe a finished recording: what its live decode produced, or a
     /// batch run of the whole recording when there is no live result.
-    pub fn transcribe_recording(&self, samples: Vec<f32>) -> Result<Transcription> {
+    pub fn transcribe_recording(
+        &self,
+        samples: Vec<f32>,
+        remote: Option<RemoteTarget>,
+    ) -> Result<Transcription> {
         let started = Instant::now();
         let live = self.finalize_live(samples.len())?;
-        self.complete(started, samples, live)
+        self.complete(started, samples, live, remote)
+    }
+
+    /// Where the recording that just stopped goes, as its start decided
+    /// (settings only if nothing did). Taken when it stops, so a cancel and
+    /// a new recording can't hand one recording's server to another.
+    pub fn end_session(&self) -> Option<RemoteTarget> {
+        lock_ignoring_poison(&self.session_backend)
+            .take()
+            .unwrap_or_else(|| RemoteTarget::from_settings(&get_settings(&self.app_handle)))
     }
 
     /// The final text of one transcription, from its live result or else a
@@ -996,6 +1051,7 @@ impl TranscriptionManager {
         started: Instant,
         audio: Vec<f32>,
         live: Option<RunOutcome>,
+        remote: Option<remote::RemoteTarget>,
     ) -> Result<Transcription> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
@@ -1015,17 +1071,23 @@ impl TranscriptionManager {
             });
         }
 
-        let outcome = match live {
-            Some(outcome) => outcome,
-            None => self.decode_batch(audio)?,
-        };
         let settings = get_settings(&self.app_handle);
+        let remote_used = live.is_none() && remote.is_some();
+        let outcome = match (live, remote) {
+            (Some(outcome), _) => outcome,
+            (None, Some(target)) => {
+                let cancelled = self.remote_cancelled(target.cancel_mark);
+                self.decode_remote_clip(&target, audio, &settings, &cancelled)?
+            }
+            (None, None) => self.decode_batch(audio)?,
+        };
         let language = outcome
             .setup
             .spoken_language(outcome.model_detected_language.as_deref());
         let final_result = finish_text(outcome, &settings);
 
-        let translation_note = if settings.translate_to_english {
+        // A remote server doesn't translate: that's its own request settings.
+        let translation_note = if settings.translate_to_english && !remote_used {
             " (translated)"
         } else {
             ""
@@ -1055,6 +1117,50 @@ impl TranscriptionManager {
         Ok(Transcription {
             text: final_result,
             language: Some(language),
+        })
+    }
+
+    /// What cuts long audio at pauses, for every path that chunks it.
+    fn chunker(&self, backend: crate::settings::VadBackend) -> chunking::Chunker {
+        let app_handle = self.app_handle.clone();
+        chunking::Chunker::new(Box::new(move || {
+            crate::managers::audio::create_detector(backend, &app_handle)
+        }))
+    }
+
+    /// Decode a clip on the remote server: in one request when it is short,
+    /// otherwise cut at pauses and sent a piece at a time, so a long
+    /// dictation doesn't hit a server's upload limit or its timeout.
+    fn decode_remote_clip(
+        &self,
+        target: &remote::RemoteTarget,
+        audio: Vec<f32>,
+        settings: &AppSettings,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<RunOutcome> {
+        if audio.len() <= REMOTE_WHOLE_CLIP_SAMPLES {
+            return decode_remote(target, &audio, cancelled);
+        }
+        let mut chunker = self.chunker(settings.vad_backend);
+        let mut chunks = chunker.push(audio);
+        chunks.extend(chunker.finish());
+        debug!("Remote transcription in {} chunks", chunks.len());
+
+        let mut texts = Vec::with_capacity(chunks.len());
+        let mut setup = None;
+        for chunk in &chunks {
+            let outcome = decode_remote(target, chunk, cancelled)?;
+            texts.push(outcome.text);
+            setup.get_or_insert(outcome.setup);
+        }
+        let Some(setup) = setup else {
+            anyhow::bail!("The recording had nothing to send");
+        };
+        let texts: Vec<&str> = texts.iter().map(String::as_str).collect();
+        Ok(RunOutcome {
+            setup,
+            text: chunking::join_transcripts(&texts),
+            model_detected_language: None,
         })
     }
 
@@ -1230,6 +1336,65 @@ impl TranscriptionManager {
                 transcript
             })
     }
+}
+
+/// The value behind `mutex`, even if a thread panicked while holding it:
+/// what it guards stays valid either way.
+fn lock_ignoring_poison<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Decode a whole clip on the remote server, stopping early if `cancelled`.
+/// No local model is involved, so the run setup carries only the language
+/// the request named.
+fn decode_remote(
+    target: &remote::RemoteTarget,
+    audio: &[f32],
+    cancelled: &dyn Fn() -> bool,
+) -> Result<RunOutcome> {
+    // A dropped connection or a rate limit may not happen again: try a few
+    // times, a little further apart each time. Anything else (a bad key, a
+    // wrong path) fails the same way, so it is reported at once. The error
+    // goes out as it is: callers show its text, which says what failed.
+    let wav = crate::audio_toolkit::wav_bytes(audio)?;
+    let mut attempts = 0;
+    let text = loop {
+        attempts += 1;
+        match target.transcribe_wav(wav.clone(), cancelled) {
+            Ok(text) => break text,
+            Err(e) if attempts < REMOTE_ATTEMPTS && remote::is_transient(&e) => {
+                warn!("Remote transcription failed ({e:#}); trying again");
+                let wait_until = Instant::now() + Duration::from_secs(attempts as u64);
+                while Instant::now() < wait_until {
+                    if cancelled() {
+                        return Err(EngineError::Cancelled.into());
+                    }
+                    thread::sleep(Duration::from_millis(50));
+                }
+            }
+            Err(e) => return Err(e),
+        }
+    };
+    let language = target.requested_language();
+    let source = if language.is_some() {
+        LanguageSource::Selected
+    } else {
+        LanguageSource::Model
+    };
+    Ok(RunOutcome {
+        setup: RunSetup {
+            run_options: RunOptions::default(),
+            language: LanguageDecision {
+                language: language.clone(),
+                source,
+            },
+            languages: Vec::new(),
+            applied_language_hint: language,
+            output_was_translated: false,
+        },
+        text,
+        model_detected_language: None,
+    })
 }
 
 /// What a batch transcription runs with, read once before its first run.

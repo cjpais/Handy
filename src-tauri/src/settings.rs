@@ -389,6 +389,159 @@ impl std::ops::DerefMut for SecretMap {
     }
 }
 
+/// A name/value pair of a remote transcription request: a form field or an
+/// HTTP header. Values may use `{language}` and `{api_key}`; a pair whose
+/// placeholder has no value is left out of the request.
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, Type)]
+pub struct RequestPair {
+    pub name: String,
+    pub value: String,
+}
+
+/// How a remote transcription request carries the recording.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum RemoteBody {
+    /// A multipart form: the WAV in `file_field`, plus `fields`.
+    #[default]
+    Multipart,
+    /// An OpenAI-style chat request for an audio LLM: `prompt` as the
+    /// system message, the WAV as `input_audio`, and `fields` as top-level
+    /// keys (`model`, `temperature`…).
+    Chat,
+    /// The WAV itself is the request body.
+    Raw,
+    /// `json_body`, with `{audio_base64}` standing for the WAV.
+    Json,
+}
+
+/// A speech-to-text server the user set up. Nothing about any particular
+/// server is built in: the request and the response are described here.
+#[derive(Serialize, Deserialize, Clone, Type)]
+pub struct RemoteAsrServer {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    /// The full URL the recording is POSTed to. May use the placeholders;
+    /// a query parameter whose placeholder has no value is left out.
+    #[serde(default)]
+    pub url: String,
+    #[serde(default)]
+    pub body: RemoteBody,
+    /// Only on its way in from Settings: the key itself is kept in the
+    /// system keychain and this is always empty in what is stored or sent
+    /// back to the window.
+    #[serde(default)]
+    pub api_key: SecretString,
+    /// Whether the keychain holds a key for this server.
+    #[serde(default)]
+    pub has_api_key: bool,
+    #[serde(default)]
+    pub headers: Vec<RequestPair>,
+    /// Multipart form fields sent with the recording, or the top-level keys
+    /// of a chat request. One whose value is empty is left out.
+    #[serde(default)]
+    pub fields: Vec<RequestPair>,
+    /// What a chat request tells the model to do with the audio.
+    #[serde(default)]
+    pub prompt: String,
+    /// The request body when `body` is JSON.
+    #[serde(default)]
+    pub json_body: String,
+    /// The multipart field the WAV is sent in.
+    #[serde(default = "default_remote_file_field")]
+    pub file_field: String,
+    /// Where the text is in a JSON response: comma-separated dot paths
+    /// (`text`, `results.0.transcript`); the first one present wins. A
+    /// response that isn't JSON is the text itself.
+    #[serde(default = "default_remote_text_paths")]
+    pub text_paths: String,
+    #[serde(default = "default_remote_timeout_secs")]
+    pub timeout_secs: u32,
+}
+
+/// For logs: a key can be typed straight into the URL, a header or the JSON
+/// body, so none of those are printed.
+impl fmt::Debug for RemoteAsrServer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let header_names: Vec<&str> = self.headers.iter().map(|h| h.name.as_str()).collect();
+        f.debug_struct("RemoteAsrServer")
+            .field("id", &self.id)
+            .field("name", &self.name)
+            .field("url", &crate::llm_client::sanitized_url_for_log(&self.url))
+            .field("body", &self.body)
+            .field("api_key", &self.api_key)
+            .field("has_api_key", &self.has_api_key)
+            .field("headers", &header_names)
+            .field("fields", &self.fields.len())
+            .field("file_field", &self.file_field)
+            .field("text_paths", &self.text_paths)
+            .field("timeout_secs", &self.timeout_secs)
+            .finish_non_exhaustive()
+    }
+}
+
+/// The saved servers, leaving out any entry that can't be read (a value from
+/// a newer version, a hand edit) instead of failing the whole list, which
+/// would drop every server.
+fn servers_skipping_damaged<'de, D>(deserializer: D) -> Result<Vec<RemoteAsrServer>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let entries = Vec::<serde_json::Value>::deserialize(deserializer)?;
+    Ok(entries
+        .into_iter()
+        .filter_map(|entry| match serde_json::from_value(entry) {
+            Ok(server) => Some(server),
+            Err(e) => {
+                log::warn!("Skipping a saved remote server that can't be read: {e}");
+                None
+            }
+        })
+        .collect())
+}
+
+fn default_remote_file_field() -> String {
+    "file".to_string()
+}
+
+fn default_remote_text_paths() -> String {
+    "text".to_string()
+}
+
+fn default_remote_timeout_secs() -> u32 {
+    120
+}
+
+/// A secret kept out of logs: `Debug` never prints it.
+#[derive(Clone, Default, Serialize, Deserialize, Type)]
+#[serde(transparent)]
+pub(crate) struct SecretString(String);
+
+impl fmt::Debug for SecretString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(if self.0.is_empty() {
+            "\"\""
+        } else {
+            "[REDACTED]"
+        })
+    }
+}
+
+impl From<String> for SecretString {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl std::ops::Deref for SecretString {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 /// The container-level `serde(default)` (backed by the `Default` impl below)
 /// guarantees every field — including ones added in the future — falls back to
@@ -453,6 +606,14 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
+    /// Send recordings to the selected remote server instead of a local
+    /// model; see `active_remote_server`.
+    #[serde(default)]
+    pub remote_transcription_enabled: bool,
+    #[serde(default, deserialize_with = "servers_skipping_damaged")]
+    pub remote_transcription_servers: Vec<RemoteAsrServer>,
+    #[serde(default)]
+    pub remote_transcription_server_id: Option<String>,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
     /// Every language the person dictates in (codes, e.g. ["en", "zh"]),
@@ -1030,6 +1191,9 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
+        remote_transcription_enabled: false,
+        remote_transcription_servers: Vec::new(),
+        remote_transcription_server_id: None,
         selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
@@ -1090,6 +1254,18 @@ impl Default for AppSettings {
 pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
 
 impl AppSettings {
+    /// The server recordings go to instead of a local model, if remote
+    /// transcription is on and the selected server has a URL.
+    pub fn active_remote_server(&self) -> Option<&RemoteAsrServer> {
+        if !self.remote_transcription_enabled {
+            return None;
+        }
+        let id = self.remote_transcription_server_id.as_deref()?;
+        self.remote_transcription_servers
+            .iter()
+            .find(|server| server.id == id && !server.url.trim().is_empty())
+    }
+
     /// Samples (16 kHz) of speech the language detector hears.
     pub fn language_detection_window_samples(&self) -> usize {
         let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();

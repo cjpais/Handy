@@ -10,9 +10,7 @@ use super::{
     agreed_language, engine_error, post_process_transcription_text, real_time_factor, BatchContext,
     Transcription, TranscriptionManager,
 };
-use crate::audio_toolkit::chunking::Chunker;
 use crate::engine_supervisor::EngineError;
-use crate::managers::audio::create_detector;
 
 /// Tries per chunk when a dictation's cancel interrupts it.
 const MAX_CHUNK_ATTEMPTS: usize = 3;
@@ -28,6 +26,11 @@ pub trait ChunkControl {
     /// decoded. Blocks while dictation is using the engine; `false` stops the
     /// transcription.
     fn proceed(&self) -> bool;
+    /// Whether the transcription was cancelled, without waiting on anything:
+    /// a request to a remote server polls it to stop mid-flight.
+    fn cancelled(&self) -> bool {
+        false
+    }
     /// `done` of `total` samples are transcribed.
     fn progress(&self, done: usize, total: usize);
 }
@@ -49,6 +52,12 @@ impl TranscriptionManager {
             }));
         }
 
+        // A remote server transcribes instead: nothing to load here.
+        let current = crate::settings::get_settings(&self.app_handle);
+        if let Some(target) = super::remote::RemoteTarget::from_settings(&current) {
+            return self.transcribe_remote_in_chunks(&target, current, audio, control, started);
+        }
+
         self.touch_activity();
         self.initiate_model_load(false);
         // Read once: the model can't change until the job ends.
@@ -59,9 +68,7 @@ impl TranscriptionManager {
             ..
         } = self.batch_context(&audio)?;
 
-        let backend = settings.vad_backend;
-        let app_handle = self.app_handle.clone();
-        let mut chunker = Chunker::new(Box::new(move || create_detector(backend, &app_handle)));
+        let mut chunker = self.chunker(settings.vad_backend);
         let mut pieces = audio.chunks(FEED_SAMPLES);
 
         let mut transcripts: Vec<Transcript> = Vec::new();
@@ -133,6 +140,74 @@ impl TranscriptionManager {
         Ok(Some(Transcription {
             text: paragraphs.join("\n\n"),
             language: Some(language),
+        }))
+    }
+
+    /// [`Self::transcribe_in_chunks`] on the remote server: the same chunks,
+    /// each sent as one request.
+    fn transcribe_remote_in_chunks(
+        &self,
+        target: &super::remote::RemoteTarget,
+        settings: crate::settings::AppSettings,
+        audio: Vec<f32>,
+        control: &dyn ChunkControl,
+        started: Instant,
+    ) -> Result<Option<Transcription>> {
+        let total = audio.len();
+        let mut chunker = self.chunker(settings.vad_backend);
+        let mut pieces = audio.chunks(FEED_SAMPLES);
+        let mut paragraphs = Vec::new();
+        let mut language = None;
+        let mut done = 0;
+        control.progress(done, total);
+        loop {
+            if !control.proceed() {
+                return Ok(None);
+            }
+            let (chunks, last) = match pieces.next() {
+                Some(piece) => (chunker.push(piece), false),
+                None => (chunker.finish(), true),
+            };
+            for chunk in chunks {
+                if !control.proceed() {
+                    return Ok(None);
+                }
+                let outcome = match super::decode_remote(target, &chunk, &|| control.cancelled()) {
+                    Ok(outcome) => outcome,
+                    Err(e)
+                        if matches!(
+                            e.downcast_ref::<EngineError>(),
+                            Some(EngineError::Cancelled)
+                        ) =>
+                    {
+                        return Ok(None)
+                    }
+                    Err(e) => return Err(e),
+                };
+                language.get_or_insert_with(|| outcome.setup.spoken_language(None));
+                let paragraph = super::finish_text(outcome, &settings);
+                if !paragraph.trim().is_empty() {
+                    paragraphs.push(paragraph);
+                }
+                done += chunk.len();
+                control.progress(done, total);
+            }
+            if last {
+                break;
+            }
+        }
+        let elapsed_secs = started.elapsed().as_secs_f64();
+        let audio_secs = total as f64 / 16_000.0;
+        info!(
+            "Remote transcription of {:.1}s of audio in {} paragraphs took {:.1}s ({:.1}x real time)",
+            audio_secs,
+            paragraphs.len(),
+            elapsed_secs,
+            real_time_factor(audio_secs, elapsed_secs)
+        );
+        Ok(Some(Transcription {
+            text: paragraphs.join("\n\n"),
+            language,
         }))
     }
 }

@@ -471,7 +471,8 @@
         "output": "Wyjście",
         "transcription": "Transkrypcja",
         "history": "Historia",
-        "experimental": "Eksperymentalne"
+        "experimental": "Eksperymentalne",
+        "remoteTranscription": "Transkrypcja zdalna"
       },
       "experimentalToggle": {
         "label": "Funkcje Eksperymentalne",
@@ -624,6 +625,137 @@
           "simplified": "Uproszczone",
           "traditionalTw": "Tradycyjne (Tajwan)",
           "traditionalHk": "Tradycyjne (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Użyj zdalnego serwera",
+        "description": "Wysyłaj nagrania do własnego serwera zamiany mowy na tekst zamiast do modelu na tym komputerze. Korzystają z niego dyktowanie, transkrypcja plików i ponowna transkrypcja historii. Podczas mówienia nie ma podglądu na żywo.",
+        "needsServer": "Żaden serwer nie jest jeszcze używany. Dodaj serwer, podaj jego URL i wybierz Użyj tego serwera. Do tego czasu Handy korzysta z lokalnego modelu.",
+        "server": {
+          "label": "Serwer",
+          "description": "Twoje serwery. Przeglądanie lub edytowanie serwera nie zmienia tego, którego używa dyktowanie.",
+          "none": "Brak serwerów",
+          "inUse": "{{name}} (w użyciu)",
+          "choose": "Wybierz serwer"
+        },
+        "add": "Dodaj serwer",
+        "presets": {
+          "hints": {
+            "openthai": "Tajski model iApp, serve/app.py",
+            "whisper-cpp": "/inference z whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… w llama-server",
+            "mlx-audio": "mlx_audio.server na Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper itd.",
+            "custom": "Wypełnij wszystkie pola samodzielnie"
+          },
+          "names": {
+            "custom": "Własny serwer",
+            "whisper-cpp": "Serwer whisper.cpp",
+            "llama-cpp": "Model audio llama.cpp",
+            "openai-compatible": "Serwer zgodny z OpenAI"
+          }
+        },
+        "name": {
+          "label": "Nazwa",
+          "description": "Wyświetlana na liście serwerów i w stopce.",
+          "placeholder": "Serwer bez nazwy",
+          "untitled": "Serwer {{n}}"
+        },
+        "url": {
+          "label": "URL punktu końcowego",
+          "description": "Pełny URL, na który nagranie jest wysyłane metodą POST. Parametry zapytania mogą używać {language} i {api_key}; parametr bez wartości jest pomijany."
+        },
+        "body": {
+          "label": "Wysyłaj dźwięk jako",
+          "description": "Sposób przesyłania nagrania do serwera. Serwery mowy przyjmują przesłanie formularza. LLM-y audio (llama.cpp, vLLM…) przyjmują żądanie czatu, które Handy przygotowuje za Ciebie. Niektóre serwery oczekują dźwięku jako całej treści żądania, a Własny JSON pozwala samodzielnie napisać treść.",
+          "multipart": "Przesłanie formularza (multipart)",
+          "chat": "Czat z dźwiękiem (LLM)",
+          "raw": "Surowy dźwięk jako treść",
+          "json": "Własny JSON",
+          "rawHint": "Plik WAV stanowi całą treść żądania, wysyłaną jako audio/wav. Dodaj nagłówek Content-Type, jeśli serwer oczekuje innego."
+        },
+        "apiKey": {
+          "label": "Klucz API",
+          "description": "Przechowywany w pęku kluczy systemu, a nie w pliku ustawień Handy. Używany wszędzie tam, gdzie nagłówek lub pole zawiera {api_key}; bez klucza są one pomijane.",
+          "saved": "Zapisany w pęku kluczy. Wpisz, aby go zastąpić",
+          "remove": "Usuń"
+        },
+        "optional": "Opcjonalne",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Co model ma zrobić z nagraniem, opisane zwykłymi słowami. Wysyłane jako wiadomość systemowa; {language} też tu działa."
+        },
+        "fields": {
+          "label": "Pola żądania",
+          "description": "Pola formularza wysyłane z nagraniem. {language} zmienia się w język Handy (np. th), a przy ustawieniu Automatycznie pole jest pomijane; {language|auto} wysyła wtedy auto. Puste wartości również są pomijane.",
+          "chatDescription": "Dodatkowe ustawienia żądania, np. model lub temperature. Liczby i true/false są wysyłane jako takie; zostaw wartość pustą, aby pominąć ustawienie.",
+          "nameLabel": "Nazwa pola",
+          "valueLabel": "Wartość pola",
+          "namePlaceholder": "nazwa",
+          "add": "Dodaj pole"
+        },
+        "jsonBody": {
+          "label": "Treść JSON",
+          "description": "Cała treść żądania, napisana ręcznie. {audio_base64} to nagranie; {language} i {api_key} też tu działają. Wartości są automatycznie escapowane."
+        },
+        "pairs": {
+          "value": "Wartość",
+          "remove": "Usuń {{name}}"
+        },
+        "moreOptions": "Więcej opcji",
+        "headers": {
+          "label": "Nagłówki",
+          "description": "Nagłówki HTTP wysyłane z każdym żądaniem. {api_key} zmienia się w klucz API.",
+          "nameLabel": "Nazwa nagłówka",
+          "valueLabel": "Wartość nagłówka",
+          "namePlaceholder": "Nagłówek",
+          "add": "Dodaj nagłówek"
+        },
+        "fileField": {
+          "label": "Pole dźwięku",
+          "description": "Pole formularza, w którym wysyłane jest nagranie jako mono WAV 16 kHz."
+        },
+        "textPaths": {
+          "label": "Tekst w odpowiedzi",
+          "description": "Gdzie w odpowiedzi JSON serwera jest tekst: ścieżki z kropkami, oddzielone przecinkami; wygrywa pierwsza istniejąca (np. display_text, text lub results.0.transcript). * bierze wszystkie elementy i je łączy. Odpowiedź, która nie jest JSON-em, jest używana jako tekst."
+        },
+        "timeout": {
+          "label": "Limit czasu (sekundy)",
+          "description": "Jak długo czekać na serwer, zanim nastąpi rezygnacja."
+        },
+        "unencrypted": "Ten URL nie jest szyfrowany (http://) i nie znajduje się w sieci lokalnej: nagrania i klucz API mogą zostać odczytane po drodze. Użyj https://, jeśli serwer to obsługuje.",
+        "notInUse": "Dyktowanie nie używa tego serwera.",
+        "use": "Użyj tego serwera",
+        "test": {
+          "button": "Testuj połączenie",
+          "testing": "Testowanie…",
+          "hint": "Wysyła sekundę ciszy tak jak dyktowanie.",
+          "ok": "Połączono. Serwer odpowiedział w {{seconds}} s.",
+          "failed": "Test nie powiódł się: {{detail}}"
+        },
+        "delete": "Usuń serwer",
+        "deleteConfirm": "Kliknij ponownie, aby usunąć",
+        "footer": "Transkrypcja na {{host}}",
+        "errors": {
+          "missingId": "Ten serwer nie ma identyfikatora.",
+          "invalidUrl": "„{{detail}}” nie jest adresem URL.",
+          "urlScheme": "URL musi zaczynać się od http:// lub https://.",
+          "jsonNeedsAudio": "Treść JSON musi zawierać {audio_base64} w miejscu nagrania.",
+          "jsonInvalid": "Treść JSON nie jest poprawnym JSON-em: {{detail}}",
+          "invalidHeader": "Nagłówek „{{detail}}” ma nazwę lub wartość niedozwoloną w HTTP.",
+          "keychain": "Nie można użyć systemowego pęku kluczy: {{detail}}",
+          "missingServer": "Ten serwer już nie istnieje.",
+          "noUrl": "Najpierw dodaj URL serwera.",
+          "unreachable": "Nie można połączyć się z {{detail}}.",
+          "noAnswer": "Brak odpowiedzi od {{detail}}.",
+          "refused": "Serwer odpowiedział: {{detail}}",
+          "webPage": "Serwer zwrócił stronę internetową zamiast transkrypcji. Sprawdź URL.",
+          "stream": "Serwer przesłał odpowiedź strumieniowo. Wyłącz streaming w polach żądania.",
+          "tooLarge": "Odpowiedź serwera jest za duża, by mogła być transkrypcją.",
+          "noText": "W odpowiedzi nie ma tekstu w {{detail}}. Sprawdź „Tekst w odpowiedzi”.",
+          "keychainMissing": "Klucza API nie ma już w pęku kluczy. Wpisz go ponownie.",
+          "placeholder": "„{{detail}}” używa symbolu zastępczego, który nie ma tu wartości. Nadaj mu wartość zapasową, np. {language|auto}.",
+          "badRequest": "Nie można zbudować żądania: {{detail}}"
         }
       }
     },

@@ -471,7 +471,8 @@
         "output": "출력",
         "transcription": "전사",
         "history": "히스토리",
-        "experimental": "실험적"
+        "experimental": "실험적",
+        "remoteTranscription": "원격 전사"
       },
       "experimentalToggle": {
         "label": "실험적 기능",
@@ -624,6 +625,137 @@
           "simplified": "간체",
           "traditionalTw": "번체 (대만)",
           "traditionalHk": "번체 (홍콩)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "원격 서버 사용",
+        "description": "이 컴퓨터의 모델 대신 직접 운영하는 음성 인식 서버로 녹음을 보냅니다. 받아쓰기, 파일 전사, 히스토리 다시 전사에 모두 사용됩니다. 말하는 동안 실시간 미리보기는 표시되지 않습니다.",
+        "needsServer": "아직 사용 중인 서버가 없습니다. 서버를 추가하고 URL을 입력한 뒤 이 서버 사용을 선택하세요. 그 전까지 Handy는 로컬 모델을 계속 사용합니다.",
+        "server": {
+          "label": "서버",
+          "description": "내 서버 목록입니다. 서버를 보거나 편집해도 받아쓰기에 사용하는 서버는 바뀌지 않습니다.",
+          "none": "아직 서버가 없습니다",
+          "inUse": "{{name}} (사용 중)",
+          "choose": "서버 선택"
+        },
+        "add": "서버 추가",
+        "presets": {
+          "hints": {
+            "openthai": "iApp의 태국어 모델, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "llama-server의 Voxtral, Qwen2.5-Omni…",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper 등",
+            "custom": "모든 항목을 직접 입력"
+          },
+          "names": {
+            "custom": "사용자 정의 서버",
+            "whisper-cpp": "whisper.cpp 서버",
+            "llama-cpp": "llama.cpp 오디오 모델",
+            "openai-compatible": "OpenAI 호환 서버"
+          }
+        },
+        "name": {
+          "label": "이름",
+          "description": "서버 목록과 하단 표시줄에 표시됩니다.",
+          "placeholder": "이름 없는 서버",
+          "untitled": "서버 {{n}}"
+        },
+        "url": {
+          "label": "엔드포인트 URL",
+          "description": "녹음을 POST로 보낼 전체 URL입니다. 쿼리 매개변수에 {language}와 {api_key}를 쓸 수 있으며, 값이 없는 매개변수는 빠집니다."
+        },
+        "body": {
+          "label": "오디오 전송 방식",
+          "description": "녹음을 서버로 보내는 방식입니다. 음성 인식 서버는 폼 업로드를 받습니다. 오디오 LLM(llama.cpp, vLLM…)은 채팅 요청을 받으며, Handy가 대신 만들어 줍니다. 오디오를 요청 본문 전체로 받는 서버도 있으며, 사용자 정의 JSON을 사용하면 본문을 직접 작성할 수 있습니다.",
+          "multipart": "폼 업로드 (multipart)",
+          "chat": "오디오 포함 채팅 (LLM)",
+          "raw": "오디오를 본문 그대로",
+          "json": "사용자 정의 JSON",
+          "rawHint": "WAV가 요청 본문 전체가 되며 audio/wav로 전송됩니다. 서버가 다른 형식을 요구하면 Content-Type 헤더를 추가하세요."
+        },
+        "apiKey": {
+          "label": "API 키",
+          "description": "Handy 설정 파일이 아닌 시스템 키체인에 보관됩니다. 헤더나 필드에 {api_key}가 있는 곳에 사용되며, 키가 없으면 해당 항목은 빠집니다.",
+          "saved": "키체인에 저장됨. 입력하면 교체됩니다",
+          "remove": "제거"
+        },
+        "optional": "선택 사항",
+        "prompt": {
+          "label": "프롬프트",
+          "description": "모델이 녹음으로 무엇을 할지 쉬운 말로 적습니다. 시스템 메시지로 전송되며, 여기서도 {language}를 쓸 수 있습니다."
+        },
+        "fields": {
+          "label": "요청 필드",
+          "description": "녹음과 함께 보내는 폼 필드입니다. {language}는 Handy의 언어(예: th)로 바뀌며, 자동일 때는 필드가 빠집니다. {language|auto}는 대신 auto를 보냅니다. 값이 비어 있는 필드도 빠집니다.",
+          "chatDescription": "model이나 temperature 같은 요청의 추가 설정입니다. 숫자와 true/false는 그대로 전송됩니다. 값을 비워 두면 해당 설정은 빠집니다.",
+          "nameLabel": "필드 이름",
+          "valueLabel": "필드 값",
+          "namePlaceholder": "이름",
+          "add": "필드 추가"
+        },
+        "jsonBody": {
+          "label": "JSON 본문",
+          "description": "직접 작성하는 요청 본문 전체입니다. {audio_base64}가 녹음이며, {language}와 {api_key}도 여기서 쓸 수 있습니다. 값은 자동으로 이스케이프됩니다."
+        },
+        "pairs": {
+          "value": "값",
+          "remove": "{{name}} 제거"
+        },
+        "moreOptions": "추가 옵션",
+        "headers": {
+          "label": "헤더",
+          "description": "요청마다 함께 보내는 HTTP 헤더입니다. {api_key}는 API 키로 바뀝니다.",
+          "nameLabel": "헤더 이름",
+          "valueLabel": "헤더 값",
+          "namePlaceholder": "헤더",
+          "add": "헤더 추가"
+        },
+        "fileField": {
+          "label": "오디오 필드",
+          "description": "녹음을 16 kHz 모노 WAV로 담아 보내는 폼 필드입니다."
+        },
+        "textPaths": {
+          "label": "응답 속 텍스트",
+          "description": "서버의 JSON 응답에서 텍스트가 있는 위치입니다. 점으로 구분한 경로를 쉼표로 나열하며, 처음으로 존재하는 경로가 사용됩니다(예: display_text, text, results.0.transcript). *는 모든 항목을 가져와 이어 붙입니다. JSON이 아닌 응답은 그대로 텍스트로 사용됩니다."
+        },
+        "timeout": {
+          "label": "시간 제한 (초)",
+          "description": "포기하기 전에 서버를 기다리는 시간입니다."
+        },
+        "unencrypted": "이 URL은 암호화되지 않았고(http://) 로컬 네트워크에 있지도 않습니다. 녹음과 API 키가 전송 중에 노출될 수 있습니다. 서버가 지원하면 https://를 사용하세요.",
+        "notInUse": "받아쓰기에서 이 서버를 사용하고 있지 않습니다.",
+        "use": "이 서버 사용",
+        "test": {
+          "button": "연결 테스트",
+          "testing": "테스트 중…",
+          "hint": "받아쓰기와 같은 방식으로 1초 길이의 무음을 보냅니다.",
+          "ok": "연결되었습니다. 서버가 {{seconds}}초 만에 응답했습니다.",
+          "failed": "테스트 실패: {{detail}}"
+        },
+        "delete": "서버 삭제",
+        "deleteConfirm": "삭제하려면 다시 클릭하세요",
+        "footer": "{{host}}에서 전사 중",
+        "errors": {
+          "missingId": "이 서버에는 ID가 없습니다.",
+          "invalidUrl": "“{{detail}}”은(는) URL이 아닙니다.",
+          "urlScheme": "URL은 http:// 또는 https://로 시작해야 합니다.",
+          "jsonNeedsAudio": "JSON 본문에서 녹음이 들어갈 자리에 {audio_base64}가 있어야 합니다.",
+          "jsonInvalid": "JSON 본문이 올바른 JSON이 아닙니다: {{detail}}",
+          "invalidHeader": "헤더 “{{detail}}”의 이름 또는 값에 HTTP에서 허용하지 않는 문자가 있습니다.",
+          "keychain": "시스템 키체인을 사용할 수 없습니다: {{detail}}",
+          "missingServer": "해당 서버가 더 이상 없습니다.",
+          "noUrl": "먼저 서버 URL을 추가하세요.",
+          "unreachable": "연결할 수 없습니다: {{detail}}",
+          "noAnswer": "응답이 없습니다: {{detail}}",
+          "refused": "서버 응답: {{detail}}",
+          "webPage": "서버가 전사 결과 대신 웹 페이지를 보냈습니다. URL을 확인하세요.",
+          "stream": "서버가 응답을 스트리밍으로 보냈습니다. 요청 필드에서 스트리밍을 끄세요.",
+          "tooLarge": "서버 응답이 너무 커서 전사 결과로 볼 수 없습니다.",
+          "noText": "응답의 {{detail}} 위치에 텍스트가 없습니다. “응답 속 텍스트”를 확인하세요.",
+          "keychainMissing": "API 키가 더 이상 키체인에 없습니다. 다시 입력하세요.",
+          "placeholder": "{{detail}}에 여기서 값이 없는 자리 표시자가 있습니다. {language|auto}처럼 대체 값을 지정하세요.",
+          "badRequest": "요청을 만들 수 없습니다: {{detail}}"
         }
       }
     },

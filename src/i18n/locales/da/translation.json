@@ -471,7 +471,8 @@
         "output": "Output",
         "transcription": "Transskription",
         "history": "Historik",
-        "experimental": "Eksperimentel"
+        "experimental": "Eksperimentel",
+        "remoteTranscription": "Fjerntransskription"
       },
       "experimentalToggle": {
         "label": "Eksperimentelle funktioner",
@@ -624,6 +625,137 @@
           "simplified": "Forenklet",
           "traditionalTw": "Traditionelle (Taiwan)",
           "traditionalHk": "Traditionelle (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Brug en fjernserver",
+        "description": "Send optagelser til en tale-til-tekst-server, du selv kører, i stedet for en model på denne computer. Diktering, transskription af filer og gentransskription af historik bruger den alle. Der er ingen live-forhåndsvisning, mens du taler.",
+        "needsServer": "Der er ikke nogen server i brug endnu. Tilføj en, giv den en URL, og vælg \"Brug denne server\". Indtil da bruger Handy fortsat den lokale model.",
+        "server": {
+          "label": "Server",
+          "description": "Dine servere. At se på eller redigere en server ændrer ikke, hvilken server diktering bruger.",
+          "none": "Ingen servere endnu",
+          "inUse": "{{name}} (i brug)",
+          "choose": "Vælg en server"
+        },
+        "add": "Tilføj server",
+        "presets": {
+          "hints": {
+            "openthai": "iApps thailandske model, serve/app.py",
+            "whisper-cpp": "whisper-servers /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… i llama-server",
+            "mlx-audio": "mlx_audio.server på Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper osv.",
+            "custom": "Udfyld selv alle felter"
+          },
+          "names": {
+            "custom": "Brugerdefineret server",
+            "whisper-cpp": "whisper.cpp-server",
+            "llama-cpp": "llama.cpp-lydmodel",
+            "openai-compatible": "OpenAI-kompatibel server"
+          }
+        },
+        "name": {
+          "label": "Navn",
+          "description": "Vises på serverlisten og i sidefoden.",
+          "placeholder": "Unavngivet server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "Endpoint-URL",
+          "description": "Den fulde URL, som optagelsen sendes til med POST. Forespørgselsparametre kan bruge {language} og {api_key}; en parameter uden værdi udelades."
+        },
+        "body": {
+          "label": "Send lyd som",
+          "description": "Hvordan optagelsen sendes til serveren. Taleservere modtager en formularupload. Lyd-LLM'er (llama.cpp, vLLM…) modtager en chatanmodning, som Handy bygger for dig. Nogle servere vil have lyden som hele brødteksten, og med Brugerdefineret JSON kan du selv skrive brødteksten.",
+          "multipart": "Formularupload (multipart)",
+          "chat": "Chat med lyd (LLM)",
+          "raw": "Rå lyd som brødtekst",
+          "json": "Brugerdefineret JSON",
+          "rawHint": "WAV-filen er hele anmodningens brødtekst og sendes som audio/wav. Tilføj en Content-Type-header, hvis din server forventer en anden."
+        },
+        "apiKey": {
+          "label": "API-nøgle",
+          "description": "Gemmes i systemets nøglering, ikke i Handys indstillingsfil. Bruges overalt, hvor en header eller et felt indeholder {api_key}; de udelades, når der ikke er nogen nøgle.",
+          "saved": "Gemt i din nøglering. Skriv for at erstatte den",
+          "remove": "Fjern"
+        },
+        "optional": "Valgfrit",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Hvad modellen skal gøre med din optagelse, med almindelige ord. Sendes som systembesked; {language} virker også her."
+        },
+        "fields": {
+          "label": "Anmodningsfelter",
+          "description": "Formularfelter, der sendes med optagelsen. {language} bliver til Handys sprog (f.eks. th), og feltet udelades ved Automatisk; {language|auto} sender auto i stedet. En tom værdi udelades også.",
+          "chatDescription": "Ekstra indstillinger til anmodningen, f.eks. model eller temperature. Tal og true/false sendes som sådan; lad en værdi være tom for at udelade indstillingen.",
+          "nameLabel": "Feltnavn",
+          "valueLabel": "Feltværdi",
+          "namePlaceholder": "navn",
+          "add": "Tilføj felt"
+        },
+        "jsonBody": {
+          "label": "JSON-brødtekst",
+          "description": "Hele anmodningens brødtekst, skrevet i hånden. {audio_base64} er optagelsen; {language} og {api_key} virker også her. Værdier escapes automatisk."
+        },
+        "pairs": {
+          "value": "Værdi",
+          "remove": "Fjern {{name}}"
+        },
+        "moreOptions": "Flere indstillinger",
+        "headers": {
+          "label": "Headere",
+          "description": "HTTP-headere, der sendes med hver anmodning. {api_key} bliver til API-nøglen.",
+          "nameLabel": "Headernavn",
+          "valueLabel": "Headerværdi",
+          "namePlaceholder": "Header",
+          "add": "Tilføj header"
+        },
+        "fileField": {
+          "label": "Lydfelt",
+          "description": "Det formularfelt, optagelsen sendes i, som mono-WAV i 16 kHz."
+        },
+        "textPaths": {
+          "label": "Tekst i svaret",
+          "description": "Hvor teksten står i serverens JSON-svar: punktumstier adskilt af kommaer, hvor den første, der findes, bruges (f.eks. display_text, text eller results.0.transcript). * tager alle elementer og sætter dem sammen. Et svar, der ikke er JSON, bruges som teksten."
+        },
+        "timeout": {
+          "label": "Timeout (sekunder)",
+          "description": "Hvor længe der ventes på serveren, før der gives op."
+        },
+        "unencrypted": "Denne URL er ikke krypteret (http://) og er ikke på dit lokale netværk: dine optagelser og API-nøglen kan læses undervejs. Brug https://, hvis serveren understøtter det.",
+        "notInUse": "Diktering bruger ikke denne server.",
+        "use": "Brug denne server",
+        "test": {
+          "button": "Test forbindelse",
+          "testing": "Tester…",
+          "hint": "Sender ét sekunds stilhed, ligesom en diktering ville.",
+          "ok": "Forbundet. Serveren svarede på {{seconds}} s.",
+          "failed": "Testen mislykkedes: {{detail}}"
+        },
+        "delete": "Slet server",
+        "deleteConfirm": "Klik igen for at slette",
+        "footer": "Transskriberer på {{host}}",
+        "errors": {
+          "missingId": "Denne server har intet id.",
+          "invalidUrl": "\"{{detail}}\" er ikke en URL.",
+          "urlScheme": "URL'en skal starte med http:// eller https://.",
+          "jsonNeedsAudio": "JSON-brødteksten skal indeholde {audio_base64}, hvor optagelsen skal stå.",
+          "jsonInvalid": "JSON-brødteksten er ikke gyldig JSON: {{detail}}",
+          "invalidHeader": "Headeren \"{{detail}}\" har et navn eller en værdi, som HTTP ikke tillader.",
+          "keychain": "Kunne ikke bruge systemets nøglering: {{detail}}",
+          "missingServer": "Den server findes ikke længere.",
+          "noUrl": "Tilføj først serverens URL.",
+          "unreachable": "Kunne ikke oprette forbindelse til {{detail}}.",
+          "noAnswer": "Intet svar fra {{detail}}.",
+          "refused": "Serveren svarede {{detail}}",
+          "webPage": "Serveren sendte en webside tilbage, ikke en transskription. Tjek URL'en.",
+          "stream": "Serveren streamede sit svar. Slå streaming fra i anmodningsfelterne.",
+          "tooLarge": "Serverens svar er for stort til at være en transskription.",
+          "noText": "Svaret har ingen tekst ved {{detail}}. Tjek \"Tekst i svaret\".",
+          "keychainMissing": "API-nøglen er ikke længere i din nøglering. Indtast den igen.",
+          "placeholder": "\"{{detail}}\" bruger en pladsholder, der ikke har nogen værdi her. Giv den en reserveværdi, f.eks. {language|auto}.",
+          "badRequest": "Anmodningen kunne ikke opbygges: {{detail}}"
         }
       }
     },

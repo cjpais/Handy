@@ -471,7 +471,8 @@
         "output": "出力",
         "transcription": "文字起こし",
         "history": "履歴",
-        "experimental": "実験的"
+        "experimental": "実験的",
+        "remoteTranscription": "リモート文字起こし"
       },
       "experimentalToggle": {
         "label": "実験的な機能",
@@ -624,6 +625,137 @@
           "simplified": "簡体字",
           "traditionalTw": "繁体字 (台湾)",
           "traditionalHk": "繁体字 (香港)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "リモートサーバーを使用",
+        "description": "このコンピューター上のモデルではなく、自分で運用している音声認識サーバーに録音を送ります。音声入力、ファイルの文字起こし、履歴の再文字起こしのすべてで使われます。話している間のライブプレビューはありません。",
+        "needsServer": "使用中のサーバーはまだありません。サーバーを追加して URL を入力し、「このサーバーを使用」を選んでください。それまでは Handy はローカルモデルを使い続けます。",
+        "server": {
+          "label": "サーバー",
+          "description": "登録したサーバーです。表示や編集をしても、音声入力で使うサーバーは変わりません。",
+          "none": "サーバーはまだありません",
+          "inUse": "{{name}} (使用中)",
+          "choose": "サーバーを選択"
+        },
+        "add": "サーバーを追加",
+        "presets": {
+          "hints": {
+            "openthai": "iApp のタイ語モデル、serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "llama-server 上の Voxtral、Qwen2.5-Omni…",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM、speaches、LocalAI、faster-whisper…",
+            "custom": "すべての項目を自分で入力"
+          },
+          "names": {
+            "custom": "カスタムサーバー",
+            "whisper-cpp": "whisper.cpp サーバー",
+            "llama-cpp": "llama.cpp 音声モデル",
+            "openai-compatible": "OpenAI 互換サーバー"
+          }
+        },
+        "name": {
+          "label": "名前",
+          "description": "サーバー一覧とフッターに表示されます。",
+          "placeholder": "名前のないサーバー",
+          "untitled": "サーバー {{n}}"
+        },
+        "url": {
+          "label": "エンドポイント URL",
+          "description": "録音を POST する完全な URL です。クエリパラメーターには {language} と {api_key} を使えます。値がないパラメーターは省かれます。"
+        },
+        "body": {
+          "label": "音声の送信形式",
+          "description": "録音をサーバーに送る方法です。音声認識サーバーはフォームアップロードを受け付けます。音声 LLM (llama.cpp、vLLM…) はチャットリクエストを受け付け、これは Handy が作成します。音声をリクエスト本文全体として受け取るサーバーもあります。「カスタム JSON」では本文を自分で書けます。",
+          "multipart": "フォームアップロード (multipart)",
+          "chat": "音声付きチャット (LLM)",
+          "raw": "音声をそのまま本文に",
+          "json": "カスタム JSON",
+          "rawHint": "WAV がリクエスト本文全体となり、audio/wav として送信されます。サーバーが別の形式を求める場合は Content-Type ヘッダーを追加してください。"
+        },
+        "apiKey": {
+          "label": "API キー",
+          "description": "Handy の設定ファイルではなく、システムのキーチェーンに保存されます。ヘッダーや項目に {api_key} と書かれた箇所で使われ、キーがない場合はそれらが省かれます。",
+          "saved": "キーチェーンに保存済み。入力すると置き換えます",
+          "remove": "削除"
+        },
+        "optional": "任意",
+        "prompt": {
+          "label": "プロンプト",
+          "description": "録音をどう処理するかをモデルにわかりやすい言葉で指示します。システムメッセージとして送信され、ここでも {language} が使えます。"
+        },
+        "fields": {
+          "label": "リクエスト項目",
+          "description": "録音と一緒に送るフォーム項目です。{language} は Handy の言語 (th など) に置き換わり、「自動」のときは項目ごと省かれます。{language|auto} なら代わりに auto を送ります。空の値も省かれます。",
+          "chatDescription": "model や temperature など、リクエストの追加設定です。数値と true/false はそのまま送信されます。値を空にするとその設定は省かれます。",
+          "nameLabel": "項目名",
+          "valueLabel": "項目の値",
+          "namePlaceholder": "名前",
+          "add": "項目を追加"
+        },
+        "jsonBody": {
+          "label": "JSON 本文",
+          "description": "手書きのリクエスト本文全体です。{audio_base64} が録音で、{language} と {api_key} もここで使えます。値は自動的にエスケープされます。"
+        },
+        "pairs": {
+          "value": "値",
+          "remove": "{{name}} を削除"
+        },
+        "moreOptions": "その他のオプション",
+        "headers": {
+          "label": "ヘッダー",
+          "description": "各リクエストと一緒に送る HTTP ヘッダーです。{api_key} は API キーに置き換わります。",
+          "nameLabel": "ヘッダー名",
+          "valueLabel": "ヘッダーの値",
+          "namePlaceholder": "ヘッダー",
+          "add": "ヘッダーを追加"
+        },
+        "fileField": {
+          "label": "音声の項目",
+          "description": "録音を 16 kHz モノラル WAV として送るフォーム項目です。"
+        },
+        "textPaths": {
+          "label": "応答内のテキスト",
+          "description": "サーバーの JSON 応答のどこにテキストがあるかを、ドット区切りのパスをカンマで区切って指定します。最初に見つかったものが使われます (display_text、text、results.0.transcript など)。* はすべての要素を取り出して結合します。JSON でない応答はそのままテキストとして使われます。"
+        },
+        "timeout": {
+          "label": "タイムアウト (秒)",
+          "description": "あきらめるまでサーバーの応答を待つ時間です。"
+        },
+        "unencrypted": "この URL は暗号化されておらず (http://)、ローカルネットワーク上にもありません。録音と API キーが途中で読み取られる可能性があります。サーバーが対応していれば https:// を使ってください。",
+        "notInUse": "音声入力はこのサーバーを使っていません。",
+        "use": "このサーバーを使用",
+        "test": {
+          "button": "接続をテスト",
+          "testing": "テスト中…",
+          "hint": "音声入力と同じ方法で 1 秒間の無音を送ります。",
+          "ok": "接続しました。サーバーは {{seconds}} 秒で応答しました。",
+          "failed": "テストに失敗しました: {{detail}}"
+        },
+        "delete": "サーバーを削除",
+        "deleteConfirm": "もう一度クリックすると削除します",
+        "footer": "{{host}} で文字起こし中",
+        "errors": {
+          "missingId": "このサーバーには ID がありません。",
+          "invalidUrl": "「{{detail}}」は URL ではありません。",
+          "urlScheme": "URL は http:// または https:// で始まる必要があります。",
+          "jsonNeedsAudio": "JSON 本文には、録音を入れる位置に {audio_base64} が必要です。",
+          "jsonInvalid": "JSON 本文が正しい JSON ではありません: {{detail}}",
+          "invalidHeader": "ヘッダー「{{detail}}」の名前または値に HTTP で使えない文字が含まれています。",
+          "keychain": "システムのキーチェーンを使用できませんでした: {{detail}}",
+          "missingServer": "そのサーバーはもう存在しません。",
+          "noUrl": "先にサーバーの URL を入力してください。",
+          "unreachable": "接続できませんでした: {{detail}}",
+          "noAnswer": "応答がありません: {{detail}}",
+          "refused": "サーバーの応答: {{detail}}",
+          "webPage": "サーバーから文字起こしではなく Web ページが返されました。URL を確認してください。",
+          "stream": "サーバーが応答をストリーミングで返しました。リクエスト項目でストリーミングをオフにしてください。",
+          "tooLarge": "サーバーの応答が大きすぎるため、文字起こし結果とは見なせません。",
+          "noText": "応答の {{detail}} にテキストがありません。「応答内のテキスト」を確認してください。",
+          "keychainMissing": "API キーがキーチェーンにありません。もう一度入力してください。",
+          "placeholder": "{{detail}} で、ここでは値のないプレースホルダーが使われています。{language|auto} のように代わりの値を指定してください。",
+          "badRequest": "リクエストを作成できませんでした: {{detail}}"
         }
       }
     },

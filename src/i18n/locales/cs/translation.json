@@ -471,7 +471,8 @@
         "output": "Výstup",
         "transcription": "Přepis",
         "history": "Historie",
-        "experimental": "Experimentální"
+        "experimental": "Experimentální",
+        "remoteTranscription": "Vzdálený přepis"
       },
       "experimentalToggle": {
         "label": "Experimentální funkce",
@@ -624,6 +625,137 @@
           "simplified": "Zjednodušené",
           "traditionalTw": "Tradiční (Tchaj-wan)",
           "traditionalHk": "Tradiční (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Použít vzdálený server",
+        "description": "Posílat nahrávky na vlastní server pro převod řeči na text místo modelu v tomto počítači. Používá ho diktování, přepis souborů i opětovný přepis z historie. Během mluvení není k dispozici živý náhled.",
+        "needsServer": "Zatím se nepoužívá žádný server. Přidejte ho, zadejte jeho URL a zvolte „Použít tento server“. Do té doby Handy používá místní model.",
+        "server": {
+          "label": "Server",
+          "description": "Vaše servery. Zobrazení nebo úprava serveru nemění, který z nich používá diktování.",
+          "none": "Zatím žádné servery",
+          "inUse": "{{name}} (používá se)",
+          "choose": "Vyberte server"
+        },
+        "add": "Přidat server",
+        "presets": {
+          "hints": {
+            "openthai": "Thajský model od iApp, serve/app.py",
+            "whisper-cpp": "/inference ve whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… v llama-server",
+            "mlx-audio": "mlx_audio.server na Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper atd.",
+            "custom": "Všechna pole vyplníte sami"
+          },
+          "names": {
+            "custom": "Vlastní server",
+            "whisper-cpp": "Server whisper.cpp",
+            "llama-cpp": "Zvukový model přes llama.cpp",
+            "openai-compatible": "Server kompatibilní s OpenAI"
+          }
+        },
+        "name": {
+          "label": "Název",
+          "description": "Zobrazuje se v seznamu serverů a v zápatí.",
+          "placeholder": "Nepojmenovaný server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "URL endpointu",
+          "description": "Úplná URL, na kterou se nahrávka odesílá metodou POST. Parametry dotazu mohou použít {language} a {api_key}; parametr bez hodnoty se vynechá."
+        },
+        "body": {
+          "label": "Odesílat zvuk jako",
+          "description": "Jak se nahrávka dostane na server. Řečové servery přijímají nahrání přes formulář. Zvukové LLM (llama.cpp, vLLM…) přijímají chatový požadavek, který Handy sestaví za vás. Některé servery chtějí zvuk jako celé tělo požadavku a s možností Vlastní JSON si tělo napíšete sami.",
+          "multipart": "Nahrání formulářem (multipart)",
+          "chat": "Chat se zvukem (LLM)",
+          "raw": "Surový zvuk jako tělo",
+          "json": "Vlastní JSON",
+          "rawHint": "Celým tělem požadavku je WAV odeslaný jako audio/wav. Pokud váš server očekává jiný typ, přidejte hlavičku Content-Type."
+        },
+        "apiKey": {
+          "label": "API klíč",
+          "description": "Uložen v systémové klíčence, ne v souboru nastavení Handy. Použije se všude, kde hlavička nebo pole obsahuje {api_key}; bez klíče se vynechají.",
+          "saved": "Uloženo v klíčence. Psaním ho nahradíte",
+          "remove": "Odebrat"
+        },
+        "optional": "Volitelné",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Co má model s vaší nahrávkou udělat, napsáno běžnými slovy. Odesílá se jako systémová zpráva; i zde funguje {language}."
+        },
+        "fields": {
+          "label": "Pole požadavku",
+          "description": "Pole formuláře odesílaná s nahrávkou. {language} se nahradí jazykem Handy (např. th) a v režimu Automaticky se pole vynechá; {language|auto} místo toho pošle auto. Prázdná hodnota se také vynechá.",
+          "chatDescription": "Další nastavení požadavku, například model nebo temperature. Čísla a true/false se odešlou jako takové; nechte hodnotu prázdnou a nastavení se vynechá.",
+          "nameLabel": "Název pole",
+          "valueLabel": "Hodnota pole",
+          "namePlaceholder": "název",
+          "add": "Přidat pole"
+        },
+        "jsonBody": {
+          "label": "Tělo JSON",
+          "description": "Celé tělo požadavku napsané ručně. {audio_base64} je nahrávka; i zde fungují {language} a {api_key}. Hodnoty se escapují automaticky."
+        },
+        "pairs": {
+          "value": "Hodnota",
+          "remove": "Odebrat {{name}}"
+        },
+        "moreOptions": "Další možnosti",
+        "headers": {
+          "label": "Hlavičky",
+          "description": "HTTP hlavičky odesílané s každým požadavkem. {api_key} se nahradí API klíčem.",
+          "nameLabel": "Název hlavičky",
+          "valueLabel": "Hodnota hlavičky",
+          "namePlaceholder": "Hlavička",
+          "add": "Přidat hlavičku"
+        },
+        "fileField": {
+          "label": "Pole se zvukem",
+          "description": "Pole formuláře, ve kterém se nahrávka odesílá jako mono WAV 16 kHz."
+        },
+        "textPaths": {
+          "label": "Text v odpovědi",
+          "description": "Kde je text v JSON odpovědi serveru: cesty s tečkami oddělené čárkami, použije se první existující (např. display_text, text nebo results.0.transcript). * vezme všechny položky a spojí je. Odpověď, která není JSON, se použije jako text."
+        },
+        "timeout": {
+          "label": "Časový limit (sekundy)",
+          "description": "Jak dlouho čekat na server, než to Handy vzdá."
+        },
+        "unencrypted": "Tato URL není šifrovaná (http://) a není ve vaší místní síti: vaše nahrávky i API klíč lze cestou přečíst. Pokud to server podporuje, použijte https://.",
+        "notInUse": "Diktování tento server nepoužívá.",
+        "use": "Použít tento server",
+        "test": {
+          "button": "Otestovat připojení",
+          "testing": "Testování…",
+          "hint": "Odešle jednu sekundu ticha stejně jako diktování.",
+          "ok": "Připojeno. Server odpověděl za {{seconds}} s.",
+          "failed": "Test selhal: {{detail}}"
+        },
+        "delete": "Smazat server",
+        "deleteConfirm": "Klikněte znovu pro smazání",
+        "footer": "Přepis na {{host}}",
+        "errors": {
+          "missingId": "Tento server nemá ID.",
+          "invalidUrl": "„{{detail}}“ není URL.",
+          "urlScheme": "URL musí začínat http:// nebo https://.",
+          "jsonNeedsAudio": "Tělo JSON musí obsahovat {audio_base64} na místě nahrávky.",
+          "jsonInvalid": "Tělo JSON není platný JSON: {{detail}}",
+          "invalidHeader": "Hlavička „{{detail}}“ má název nebo hodnotu, kterou HTTP nepovoluje.",
+          "keychain": "Systémovou klíčenku nelze použít: {{detail}}",
+          "missingServer": "Tento server už neexistuje.",
+          "noUrl": "Nejdřív zadejte URL serveru.",
+          "unreachable": "Nelze se připojit k {{detail}}.",
+          "noAnswer": "Žádná odpověď od {{detail}}.",
+          "refused": "Server odpověděl {{detail}}",
+          "webPage": "Server vrátil webovou stránku, ne přepis. Zkontrolujte URL.",
+          "stream": "Server poslal odpověď jako stream. Vypněte streamování v polích požadavku.",
+          "tooLarge": "Odpověď serveru je na přepis příliš velká.",
+          "noText": "Odpověď neobsahuje text v {{detail}}. Zkontrolujte „Text v odpovědi“.",
+          "keychainMissing": "API klíč už v klíčence není. Zadejte ho znovu.",
+          "placeholder": "„{{detail}}“ používá zástupný symbol, který tu nemá hodnotu. Dejte mu náhradní hodnotu, například {language|auto}.",
+          "badRequest": "Požadavek nelze sestavit: {{detail}}"
         }
       }
     },

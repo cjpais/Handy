@@ -471,7 +471,8 @@
         "output": "Uitvoer",
         "transcription": "Transcriptie",
         "history": "Geschiedenis",
-        "experimental": "Experimenteel"
+        "experimental": "Experimenteel",
+        "remoteTranscription": "Transcriptie op afstand"
       },
       "experimentalToggle": {
         "label": "Experimentele functies",
@@ -624,6 +625,137 @@
           "simplified": "Vereenvoudigd",
           "traditionalTw": "Traditioneel (Taiwan)",
           "traditionalHk": "Traditioneel (Hongkong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Externe server gebruiken",
+        "description": "Stuur opnames naar een spraak-naar-tekstserver die je zelf draait, in plaats van een model op deze computer. Dicteren, bestanden transcriberen en geschiedenis opnieuw transcriberen gebruiken deze allemaal. Tijdens het spreken is er geen live voorbeeld.",
+        "needsServer": "Er is nog geen server in gebruik. Voeg er een toe, geef hem een URL en kies Deze server gebruiken. Tot die tijd blijft Handy het lokale model gebruiken.",
+        "server": {
+          "label": "Server",
+          "description": "Je servers. Een server bekijken of bewerken verandert niet welke server dicteren gebruikt.",
+          "none": "Nog geen servers",
+          "inUse": "{{name}} (in gebruik)",
+          "choose": "Kies een server"
+        },
+        "add": "Server toevoegen",
+        "presets": {
+          "hints": {
+            "openthai": "Thais model van iApp, serve/app.py",
+            "whisper-cpp": "/inference van whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… via llama-server",
+            "mlx-audio": "mlx_audio.server op Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper enz.",
+            "custom": "Vul alle velden zelf in"
+          },
+          "names": {
+            "custom": "Aangepaste server",
+            "whisper-cpp": "whisper.cpp-server",
+            "llama-cpp": "llama.cpp-audiomodel",
+            "openai-compatible": "OpenAI-compatibele server"
+          }
+        },
+        "name": {
+          "label": "Naam",
+          "description": "Wordt getoond in de serverlijst en de voettekst.",
+          "placeholder": "Naamloze server",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "Endpoint-URL",
+          "description": "De volledige URL waarnaar de opname met POST wordt verstuurd. Queryparameters kunnen {language} en {api_key} gebruiken; een parameter waarvan de waarde ontbreekt, wordt weggelaten."
+        },
+        "body": {
+          "label": "Audio verzenden als",
+          "description": "Hoe de opname naar de server gaat. Spraakservers verwachten een formulierupload. Audio-LLM's (llama.cpp, vLLM…) verwachten een chatverzoek, dat Handy voor je opbouwt. Sommige servers willen de audio als volledige body, en met Aangepaste JSON schrijf je de body zelf.",
+          "multipart": "Formulierupload (multipart)",
+          "chat": "Chat met audio (LLM)",
+          "raw": "Ruwe audio als body",
+          "json": "Aangepaste JSON",
+          "rawHint": "De WAV is de volledige request-body, verzonden als audio/wav. Voeg een Content-Type-header toe als je server iets anders verwacht."
+        },
+        "apiKey": {
+          "label": "API-sleutel",
+          "description": "Wordt bewaard in de sleutelhanger van je systeem, niet in het instellingenbestand van Handy. Wordt gebruikt waar een header of veld {api_key} bevat; die worden weggelaten als er geen sleutel is.",
+          "saved": "Opgeslagen in je sleutelhanger. Typ om te vervangen",
+          "remove": "Verwijderen"
+        },
+        "optional": "Optioneel",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Wat het model met je opname moet doen, in gewone woorden. Wordt als systeembericht verzonden; {language} werkt hier ook."
+        },
+        "fields": {
+          "label": "Verzoekvelden",
+          "description": "Formuliervelden die met de opname worden verzonden. {language} wordt de taal van Handy (zoals th) en het veld wordt weggelaten bij Automatisch; {language|auto} stuurt dan auto. Een lege waarde wordt ook weggelaten.",
+          "chatDescription": "Extra instellingen voor het verzoek, zoals model of temperature. Getallen en true/false worden als zodanig verzonden; laat een waarde leeg om de instelling weg te laten.",
+          "nameLabel": "Veldnaam",
+          "valueLabel": "Veldwaarde",
+          "namePlaceholder": "naam",
+          "add": "Veld toevoegen"
+        },
+        "jsonBody": {
+          "label": "JSON-body",
+          "description": "De volledige request-body, met de hand geschreven. {audio_base64} is de opname; {language} en {api_key} werken hier ook. Waarden worden automatisch geëscaped."
+        },
+        "pairs": {
+          "value": "Waarde",
+          "remove": "{{name}} verwijderen"
+        },
+        "moreOptions": "Meer opties",
+        "headers": {
+          "label": "Headers",
+          "description": "HTTP-headers die met elk verzoek worden verzonden. {api_key} wordt de API-sleutel.",
+          "nameLabel": "Headernaam",
+          "valueLabel": "Headerwaarde",
+          "namePlaceholder": "Header",
+          "add": "Header toevoegen"
+        },
+        "fileField": {
+          "label": "Audioveld",
+          "description": "Het formulierveld waarin de opname wordt verzonden, als 16 kHz mono-WAV."
+        },
+        "textPaths": {
+          "label": "Tekst in antwoord",
+          "description": "Waar de tekst staat in het JSON-antwoord van de server: puntpaden, gescheiden door komma's; het eerste dat aanwezig is, wint (zoals display_text, text of results.0.transcript). * neemt elk item en voegt ze samen. Een antwoord dat geen JSON is, wordt als tekst gebruikt."
+        },
+        "timeout": {
+          "label": "Time-out (seconden)",
+          "description": "Hoe lang er op de server wordt gewacht voordat het wordt opgegeven."
+        },
+        "unencrypted": "Deze URL is niet versleuteld (http://) en staat niet op je lokale netwerk: je opnames en de API-sleutel kunnen onderweg worden meegelezen. Gebruik https:// als de server dat aanbiedt.",
+        "notInUse": "Dicteren gebruikt deze server niet.",
+        "use": "Deze server gebruiken",
+        "test": {
+          "button": "Verbinding testen",
+          "testing": "Testen…",
+          "hint": "Stuurt één seconde stilte, zoals een dictaat dat zou doen.",
+          "ok": "Verbonden. De server antwoordde in {{seconds}} s.",
+          "failed": "De test is mislukt: {{detail}}"
+        },
+        "delete": "Server verwijderen",
+        "deleteConfirm": "Klik nogmaals om te verwijderen",
+        "footer": "Transcriberen op {{host}}",
+        "errors": {
+          "missingId": "Deze server heeft geen id.",
+          "invalidUrl": "“{{detail}}” is geen URL.",
+          "urlScheme": "De URL moet beginnen met http:// of https://.",
+          "jsonNeedsAudio": "De JSON-body heeft {audio_base64} nodig op de plek van de opname.",
+          "jsonInvalid": "De JSON-body is geen geldige JSON: {{detail}}",
+          "invalidHeader": "De header “{{detail}}” heeft een naam of waarde die HTTP niet toestaat.",
+          "keychain": "Kan de sleutelhanger van het systeem niet gebruiken: {{detail}}",
+          "missingServer": "Die server bestaat niet meer.",
+          "noUrl": "Voeg eerst de URL van de server toe.",
+          "unreachable": "Kan geen verbinding maken met {{detail}}.",
+          "noAnswer": "Geen antwoord van {{detail}}.",
+          "refused": "De server antwoordde {{detail}}",
+          "webPage": "De server stuurde een webpagina terug in plaats van een transcriptie. Controleer de URL.",
+          "stream": "De server streamde zijn antwoord. Zet streaming uit in de verzoekvelden.",
+          "tooLarge": "Het antwoord van de server is te groot voor een transcriptie.",
+          "noText": "Het antwoord bevat geen tekst op {{detail}}. Controleer “Tekst in antwoord”.",
+          "keychainMissing": "De API-sleutel staat niet meer in je sleutelhanger. Voer hem opnieuw in.",
+          "placeholder": "“{{detail}}” gebruikt een placeholder die hier geen waarde heeft. Geef hem een terugvalwaarde, zoals {language|auto}.",
+          "badRequest": "Het verzoek kon niet worden opgebouwd: {{detail}}"
         }
       }
     },

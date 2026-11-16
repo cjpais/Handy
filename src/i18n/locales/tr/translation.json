@@ -471,7 +471,8 @@
         "output": "Çıktı",
         "transcription": "Transkripsiyon",
         "history": "Geçmiş",
-        "experimental": "Deneysel"
+        "experimental": "Deneysel",
+        "remoteTranscription": "Uzak Transkripsiyon"
       },
       "experimentalToggle": {
         "label": "Deneysel Özellikler",
@@ -624,6 +625,137 @@
           "simplified": "Basitleştirilmiş",
           "traditionalTw": "Geleneksel (Tayvan)",
           "traditionalHk": "Geleneksel (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Uzak Sunucu Kullan",
+        "description": "Kayıtları bu bilgisayardaki bir model yerine kendi çalıştırdığınız bir konuşmadan metne sunucusuna gönderir. Yazdırma, dosya transkripsiyonu ve geçmişi yeniden transkribe etme bunu kullanır. Konuşurken canlı önizleme yoktur.",
+        "needsServer": "Henüz kullanımda bir sunucu yok. Bir sunucu ekleyin, URL'sini girin ve Bu Sunucuyu Kullan'ı seçin. O zamana kadar Handy yerel modeli kullanmaya devam eder.",
+        "server": {
+          "label": "Sunucu",
+          "description": "Sunucularınız. Birini görüntülemek veya düzenlemek, yazdırmanın hangisini kullandığını değiştirmez.",
+          "none": "Henüz sunucu yok",
+          "inUse": "{{name}} (kullanımda)",
+          "choose": "Bir sunucu seçin"
+        },
+        "add": "Sunucu ekle",
+        "presets": {
+          "hints": {
+            "openthai": "iApp'in Tayca modeli, serve/app.py",
+            "whisper-cpp": "whisper-server, /inference",
+            "llama-cpp": "llama-server'da Voxtral, Qwen2.5-Omni…",
+            "mlx-audio": "Apple Silicon üzerinde mlx_audio.server",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper vb.",
+            "custom": "Tüm alanları kendiniz doldurun"
+          },
+          "names": {
+            "custom": "Özel sunucu",
+            "whisper-cpp": "whisper.cpp sunucusu",
+            "llama-cpp": "llama.cpp ses modeli",
+            "openai-compatible": "OpenAI uyumlu sunucu"
+          }
+        },
+        "name": {
+          "label": "Ad",
+          "description": "Sunucu listesinde ve alt bilgide gösterilir.",
+          "placeholder": "Adsız sunucu",
+          "untitled": "Sunucu {{n}}"
+        },
+        "url": {
+          "label": "Uç Nokta URL'si",
+          "description": "Kaydın POST ile gönderildiği tam URL. Sorgu parametrelerinde {language} ve {api_key} kullanılabilir; değeri eksik olan parametre gönderilmez."
+        },
+        "body": {
+          "label": "Ses Gönderme Biçimi",
+          "description": "Kaydın sunucuya nasıl gideceği. Konuşma sunucuları form yüklemesi alır. Ses LLM'leri (llama.cpp, vLLM…) bir sohbet isteği alır; bunu Handy sizin için oluşturur. Bazı sunucular sesi isteğin gövdesinin tamamı olarak ister; Özel JSON ile gövdeyi kendiniz yazabilirsiniz.",
+          "multipart": "Form yüklemesi (multipart)",
+          "chat": "Sesli sohbet (LLM)",
+          "raw": "Ham ses gövdesi",
+          "json": "Özel JSON",
+          "rawHint": "WAV, isteğin gövdesinin tamamıdır ve audio/wav olarak gönderilir. Sunucunuz başka bir tür bekliyorsa bir Content-Type başlığı ekleyin."
+        },
+        "apiKey": {
+          "label": "API Anahtarı",
+          "description": "Handy'nin ayar dosyasında değil, sisteminizin anahtar zincirinde saklanır. Bir başlık veya alanda {api_key} yazan her yerde kullanılır; anahtar yoksa bunlar gönderilmez.",
+          "saved": "Anahtar zincirinizde kayıtlı. Değiştirmek için yazın",
+          "remove": "Kaldır"
+        },
+        "optional": "İsteğe bağlı",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Modele kaydınızla ne yapacağının sade bir dille anlatıldığı metin. Sistem mesajı olarak gönderilir; {language} burada da çalışır."
+        },
+        "fields": {
+          "label": "İstek Alanları",
+          "description": "Kayıtla birlikte gönderilen form alanları. {language}, Handy'nin diline (örneğin th) dönüşür ve Otomatik'te alan gönderilmez; {language|auto} ise bunun yerine auto gönderir. Boş bir değer de gönderilmez.",
+          "chatDescription": "İstek için ek ayarlar, örneğin model veya temperature. Sayılar ve true/false olduğu gibi gönderilir; bir ayarı göndermemek için değerini boş bırakın.",
+          "nameLabel": "Alan adı",
+          "valueLabel": "Alan değeri",
+          "namePlaceholder": "ad",
+          "add": "Alan ekle"
+        },
+        "jsonBody": {
+          "label": "JSON Gövdesi",
+          "description": "Elle yazılan isteğin gövdesinin tamamı. {audio_base64} kayıttır; {language} ve {api_key} burada da çalışır. Değerler sizin için kaçışlanır."
+        },
+        "pairs": {
+          "value": "Değer",
+          "remove": "{{name}} öğesini kaldır"
+        },
+        "moreOptions": "Diğer Seçenekler",
+        "headers": {
+          "label": "Başlıklar",
+          "description": "Her istekle gönderilen HTTP başlıkları. {api_key}, API anahtarına dönüşür.",
+          "nameLabel": "Başlık adı",
+          "valueLabel": "Başlık değeri",
+          "namePlaceholder": "Başlık",
+          "add": "Başlık ekle"
+        },
+        "fileField": {
+          "label": "Ses Alanı",
+          "description": "Kaydın 16 kHz mono WAV olarak gönderildiği form alanı."
+        },
+        "textPaths": {
+          "label": "Yanıttaki Metin",
+          "description": "Metnin sunucunun JSON yanıtında nerede olduğu: virgülle ayrılmış nokta yolları, ilk bulunan kullanılır (örneğin display_text, text veya results.0.transcript). * tüm öğeleri alır ve birleştirir. JSON olmayan bir yanıt metin olarak kullanılır."
+        },
+        "timeout": {
+          "label": "Zaman Aşımı (saniye)",
+          "description": "Vazgeçmeden önce sunucunun ne kadar bekleneceği."
+        },
+        "unencrypted": "Bu URL şifreli değil (http://) ve yerel ağınızda da değil: kayıtlarınız ve API anahtarı yolda okunabilir. Sunucu destekliyorsa https:// kullanın.",
+        "notInUse": "Yazdırma bu sunucuyu kullanmıyor.",
+        "use": "Bu Sunucuyu Kullan",
+        "test": {
+          "button": "Bağlantıyı Test Et",
+          "testing": "Test ediliyor…",
+          "hint": "Bir yazdırmanın yapacağı gibi bir saniyelik sessizlik gönderir.",
+          "ok": "Bağlandı. Sunucu {{seconds}} sn içinde yanıt verdi.",
+          "failed": "Test başarısız oldu: {{detail}}"
+        },
+        "delete": "Sunucuyu Sil",
+        "deleteConfirm": "Silmek için tekrar tıklayın",
+        "footer": "{{host}} üzerinde transkripsiyon",
+        "errors": {
+          "missingId": "Bu sunucunun kimliği yok.",
+          "invalidUrl": "“{{detail}}” bir URL değil.",
+          "urlScheme": "URL, http:// veya https:// ile başlamalıdır.",
+          "jsonNeedsAudio": "JSON gövdesinde kaydın gideceği yerde {audio_base64} olmalıdır.",
+          "jsonInvalid": "JSON gövdesi geçerli JSON değil: {{detail}}",
+          "invalidHeader": "“{{detail}}” başlığının adı veya değeri HTTP'nin izin vermediği karakterler içeriyor.",
+          "keychain": "Sistem anahtar zinciri kullanılamadı: {{detail}}",
+          "missingServer": "Bu sunucu artık mevcut değil.",
+          "noUrl": "Önce sunucunun URL'sini ekleyin.",
+          "unreachable": "Bağlanılamadı: {{detail}}.",
+          "noAnswer": "Yanıt alınamadı: {{detail}}.",
+          "refused": "Sunucunun yanıtı: {{detail}}",
+          "webPage": "Sunucu transkript yerine bir web sayfası gönderdi. URL'yi kontrol edin.",
+          "stream": "Sunucu yanıtını akış olarak gönderdi. İstek alanlarında akışı kapatın.",
+          "tooLarge": "Sunucunun yanıtı bir transkript olamayacak kadar büyük.",
+          "noText": "Yanıtta {{detail}} konumunda metin yok. “Yanıttaki Metin” ayarını kontrol edin.",
+          "keychainMissing": "API anahtarı artık anahtar zincirinizde değil. Yeniden girin.",
+          "placeholder": "{{detail}} ayarında burada değeri olmayan bir yer tutucu var. Ona {language|auto} gibi bir yedek değer verin.",
+          "badRequest": "İstek oluşturulamadı: {{detail}}"
         }
       }
     },

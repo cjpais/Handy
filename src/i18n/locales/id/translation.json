@@ -471,7 +471,8 @@
         "output": "Keluaran",
         "transcription": "Transkripsi",
         "history": "Riwayat",
-        "experimental": "Eksperimental"
+        "experimental": "Eksperimental",
+        "remoteTranscription": "Transkripsi Jarak Jauh"
       },
       "experimentalToggle": {
         "label": "Fitur Eksperimental",
@@ -624,6 +625,137 @@
           "simplified": "Sederhana",
           "traditionalTw": "Tradisional (Taiwan)",
           "traditionalHk": "Tradisional (Hong Kong)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Gunakan Server Jarak Jauh",
+        "description": "Kirim rekaman ke server speech-to-text yang Anda jalankan sendiri, alih-alih model di komputer ini. Dikte, transkripsi file, dan transkripsi ulang riwayat semuanya memakainya. Tidak ada pratinjau langsung saat Anda berbicara.",
+        "needsServer": "Belum ada server yang digunakan. Tambahkan satu, isi URL-nya, lalu pilih Gunakan Server Ini. Sampai saat itu, Handy tetap memakai model lokal.",
+        "server": {
+          "label": "Server",
+          "description": "Server Anda. Melihat atau mengedit salah satunya tidak mengubah server yang dipakai untuk dikte.",
+          "none": "Belum ada server",
+          "inUse": "{{name}} (digunakan)",
+          "choose": "Pilih server"
+        },
+        "add": "Tambah server",
+        "presets": {
+          "hints": {
+            "openthai": "Model bahasa Thai dari iApp, serve/app.py",
+            "whisper-cpp": "whisper-server's /inference",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… di llama-server",
+            "mlx-audio": "mlx_audio.server on Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper, dll.",
+            "custom": "Isi semua kolom sendiri"
+          },
+          "names": {
+            "custom": "Server kustom",
+            "whisper-cpp": "Server whisper.cpp",
+            "llama-cpp": "Model audio llama.cpp",
+            "openai-compatible": "Server kompatibel OpenAI"
+          }
+        },
+        "name": {
+          "label": "Nama",
+          "description": "Ditampilkan di daftar server dan di bagian bawah jendela.",
+          "placeholder": "Server tanpa nama",
+          "untitled": "Server {{n}}"
+        },
+        "url": {
+          "label": "URL Endpoint",
+          "description": "URL lengkap tujuan rekaman dikirim lewat POST. Parameter kueri dapat memakai {language} dan {api_key}; parameter yang nilainya kosong dihilangkan."
+        },
+        "body": {
+          "label": "Kirim Audio Sebagai",
+          "description": "Cara rekaman dikirim ke server. Server ucapan menerima unggahan formulir. LLM audio (llama.cpp, vLLM…) menerima permintaan chat, yang dibuatkan oleh Handy. Sebagian server ingin audio menjadi seluruh body, dan JSON Kustom memungkinkan Anda menulis body sendiri.",
+          "multipart": "Unggahan formulir (multipart)",
+          "chat": "Chat dengan audio (LLM)",
+          "raw": "Body audio mentah",
+          "json": "JSON Kustom",
+          "rawHint": "File WAV menjadi seluruh body permintaan, dikirim sebagai audio/wav. Tambahkan header Content-Type jika server Anda mengharapkan jenis lain."
+        },
+        "apiKey": {
+          "label": "Kunci API",
+          "description": "Disimpan di keychain sistem Anda, bukan di file pengaturan Handy. Dipakai di mana pun header atau kolom berisi {api_key}; bagian itu dihilangkan jika tidak ada kunci.",
+          "saved": "Tersimpan di keychain Anda. Ketik untuk menggantinya",
+          "remove": "Hapus"
+        },
+        "optional": "Opsional",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Apa yang harus dilakukan model dengan rekaman Anda, dalam kata-kata biasa. Dikirim sebagai pesan sistem; {language} juga berfungsi di sini."
+        },
+        "fields": {
+          "label": "Kolom Permintaan",
+          "description": "Kolom formulir yang dikirim bersama rekaman. {language} menjadi bahasa Handy (misalnya th) dan kolom dihilangkan saat Otomatis; {language|auto} mengirim auto sebagai gantinya. Nilai kosong juga dihilangkan.",
+          "chatDescription": "Pengaturan tambahan untuk permintaan, seperti model atau temperature. Angka dan true/false dikirim apa adanya; kosongkan nilai untuk menghilangkan pengaturan itu.",
+          "nameLabel": "Nama kolom",
+          "valueLabel": "Nilai kolom",
+          "namePlaceholder": "nama",
+          "add": "Tambah kolom"
+        },
+        "jsonBody": {
+          "label": "Body JSON",
+          "description": "Seluruh body permintaan, ditulis manual. {audio_base64} adalah rekamannya; {language} dan {api_key} juga berfungsi di sini. Nilai di-escape secara otomatis."
+        },
+        "pairs": {
+          "value": "Nilai",
+          "remove": "Hapus {{name}}"
+        },
+        "moreOptions": "Opsi Lainnya",
+        "headers": {
+          "label": "Header",
+          "description": "Header HTTP yang dikirim di setiap permintaan. {api_key} diganti dengan kunci API.",
+          "nameLabel": "Nama header",
+          "valueLabel": "Nilai header",
+          "namePlaceholder": "Header",
+          "add": "Tambah header"
+        },
+        "fileField": {
+          "label": "Kolom Audio",
+          "description": "Kolom formulir tempat rekaman dikirim, sebagai WAV mono 16 kHz."
+        },
+        "textPaths": {
+          "label": "Teks dalam Respons",
+          "description": "Letak teks dalam balasan JSON server: jalur bertitik, dipisahkan koma, yang pertama ditemukan dipakai (misalnya display_text, text, atau results.0.transcript). * mengambil semua item dan menggabungkannya. Balasan yang bukan JSON dipakai sebagai teks."
+        },
+        "timeout": {
+          "label": "Batas Waktu (detik)",
+          "description": "Berapa lama menunggu server sebelum menyerah."
+        },
+        "unencrypted": "URL ini tidak terenkripsi (http://) dan tidak berada di jaringan lokal Anda: rekaman dan kunci API Anda bisa dibaca di perjalanan. Gunakan https:// jika server mendukungnya.",
+        "notInUse": "Dikte tidak memakai server ini.",
+        "use": "Gunakan Server Ini",
+        "test": {
+          "button": "Uji Koneksi",
+          "testing": "Menguji…",
+          "hint": "Mengirim satu detik hening seperti saat dikte.",
+          "ok": "Terhubung. Server menjawab dalam {{seconds}} dtk.",
+          "failed": "Uji gagal: {{detail}}"
+        },
+        "delete": "Hapus Server",
+        "deleteConfirm": "Klik lagi untuk menghapus",
+        "footer": "Mentranskripsi di {{host}}",
+        "errors": {
+          "missingId": "Server ini tidak memiliki id.",
+          "invalidUrl": "“{{detail}}” bukan URL.",
+          "urlScheme": "URL harus diawali http:// atau https://.",
+          "jsonNeedsAudio": "Body JSON memerlukan {audio_base64} di tempat rekaman diletakkan.",
+          "jsonInvalid": "Body JSON bukan JSON yang valid: {{detail}}",
+          "invalidHeader": "Header “{{detail}}” memiliki nama atau nilai yang tidak diizinkan HTTP.",
+          "keychain": "Tidak dapat memakai keychain sistem: {{detail}}",
+          "missingServer": "Server itu sudah tidak ada.",
+          "noUrl": "Tambahkan URL server terlebih dahulu.",
+          "unreachable": "Tidak dapat terhubung ke {{detail}}.",
+          "noAnswer": "Tidak ada jawaban dari {{detail}}.",
+          "refused": "Server menjawab {{detail}}",
+          "webPage": "Server mengirim balik halaman web, bukan transkrip. Periksa URL-nya.",
+          "stream": "Server mengirim jawabannya secara streaming. Matikan streaming di kolom permintaan.",
+          "tooLarge": "Balasan server terlalu besar untuk sebuah transkrip.",
+          "noText": "Balasan tidak memiliki teks di {{detail}}. Periksa “Teks dalam Respons”.",
+          "keychainMissing": "Kunci API sudah tidak ada di keychain Anda. Masukkan lagi.",
+          "placeholder": "{{detail}} memakai placeholder yang tidak memiliki nilai di sini. Beri nilai cadangan, misalnya {language|auto}.",
+          "badRequest": "Permintaan tidak dapat dibuat: {{detail}}"
         }
       }
     },

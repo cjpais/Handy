@@ -12,6 +12,7 @@ mod commands;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
+mod keychain;
 mod language_detection;
 mod languages;
 mod llm_client;
@@ -571,10 +572,36 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
 
     let tm = app.state::<Arc<TranscriptionManager>>();
 
-    let model_id = args
+    // A remote server transcribes unless a local model is asked for. The
+    // output keeps its shape: the server stands in for the model.
+    let remote = args
         .model
-        .clone()
-        .unwrap_or_else(|| get_settings(app).selected_model);
+        .is_none()
+        .then(|| get_settings(app).active_remote_server().cloned())
+        .flatten();
+
+    // Built once, outside the runs. Its key is read from the keychain on the
+    // first request (then kept in memory), so the first run's time includes
+    // that read.
+    let remote_target = remote.as_ref().and_then(|_| {
+        crate::managers::transcription::RemoteTarget::from_settings(&get_settings(app))
+    });
+    if let Some(server) = &remote {
+        eprintln!(
+            "note: transcribing on the remote server {} ({}); pass --model to use a local model",
+            server.name,
+            crate::llm_client::sanitized_url_for_log(&server.url)
+        );
+    }
+    let model_id = match &remote {
+        // A label for the output only: the server's name, or its URL.
+        Some(server) if !server.name.trim().is_empty() => server.name.clone(),
+        Some(server) => crate::llm_client::sanitized_url_for_log(&server.url),
+        None => args
+            .model
+            .clone()
+            .unwrap_or_else(|| get_settings(app).selected_model),
+    };
     if model_id.is_empty() {
         eprintln!("error: no model selected (pass --model or pick one in the app)");
         return 2;
@@ -585,18 +612,24 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
     // to use the persisted accelerator setting.
     let device_index = args.device_index;
     let requested_device = match device_index {
+        _ if remote.is_some() => "remote server".to_string(),
         Some(idx) => format!("index {}", idx),
         None => "settings".to_string(),
     };
 
     // Cold load (timed).
     let load_start = Instant::now();
-    if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
-        eprintln!("error: load_model('{}') failed: {}", model_id, e);
-        return 1;
+    if remote.is_none() {
+        if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+            eprintln!("error: load_model('{}') failed: {}", model_id, e);
+            return 1;
+        }
     }
     let load_ms = load_start.elapsed().as_millis() as u64;
-    let bound_backend = tm.current_backend();
+    let bound_backend = match &remote {
+        Some(_) => Some("remote".to_string()),
+        None => tm.current_backend(),
+    };
 
     let runs = args.repeat.unwrap_or(1).max(1);
     let mut times_ms: Vec<u64> = Vec::new();
@@ -605,17 +638,18 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
         // If the model's unload-timeout is "Immediately", transcribe() unloads
         // the engine after each run; reload (untimed) so repeats keep working
         // and the inference timing below stays clean.
-        if !tm.is_model_loaded() {
+        if remote.is_none() && !tm.is_model_loaded() {
             if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
                 eprintln!("error: reload before run {} failed: {}", i + 1, e);
                 return 1;
             }
         }
         let t = Instant::now();
-        match tm.transcribe(samples.clone()) {
+        // With --model this is always that model, never the remote server.
+        match tm.transcribe(samples.clone(), remote_target.clone()) {
             Ok(out) => text = out,
             Err(e) => {
-                eprintln!("error: transcribe failed: {}", e);
+                eprintln!("error: transcribe failed: {:#}", e);
                 return 1;
             }
         }
@@ -699,6 +733,12 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
+            shortcut::change_remote_transcription_enabled_setting,
+            shortcut::save_remote_transcription_server,
+            shortcut::delete_remote_transcription_server,
+            shortcut::clear_remote_transcription_api_key,
+            shortcut::select_remote_transcription_server,
+            shortcut::test_remote_transcription,
             shortcut::change_selected_language_setting,
             shortcut::change_spoken_languages_setting,
             shortcut::change_overlay_position_setting,

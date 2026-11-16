@@ -471,7 +471,8 @@
         "output": "Đầu ra",
         "transcription": "Chuyển đổi",
         "history": "Lịch sử",
-        "experimental": "Thử nghiệm"
+        "experimental": "Thử nghiệm",
+        "remoteTranscription": "Phiên âm từ xa"
       },
       "experimentalToggle": {
         "label": "Tính năng thử nghiệm",
@@ -624,6 +625,137 @@
           "simplified": "Giản thể",
           "traditionalTw": "Phồn thể (Đài Loan)",
           "traditionalHk": "Phồn thể (Hồng Kông)"
+        }
+      },
+      "remoteTranscription": {
+        "label": "Dùng máy chủ từ xa",
+        "description": "Gửi bản ghi âm đến máy chủ chuyển giọng nói thành văn bản do bạn tự chạy, thay vì dùng mô hình trên máy tính này. Đọc chính tả, phiên âm tệp và phiên âm lại lịch sử đều dùng nó. Không có bản xem trước trực tiếp khi bạn nói.",
+        "needsServer": "Chưa có máy chủ nào được dùng. Hãy thêm một máy chủ, nhập URL rồi chọn Dùng máy chủ này. Cho đến lúc đó, Handy vẫn dùng mô hình cục bộ.",
+        "server": {
+          "label": "Máy chủ",
+          "description": "Các máy chủ của bạn. Xem hoặc sửa một máy chủ không làm thay đổi máy chủ mà tính năng đọc chính tả đang dùng.",
+          "none": "Chưa có máy chủ nào",
+          "inUse": "{{name}} (đang dùng)",
+          "choose": "Chọn máy chủ"
+        },
+        "add": "Thêm máy chủ",
+        "presets": {
+          "hints": {
+            "openthai": "Mô hình tiếng Thái của iApp, serve/app.py",
+            "whisper-cpp": "/inference của whisper-server",
+            "llama-cpp": "Voxtral, Qwen2.5-Omni… trong llama-server",
+            "mlx-audio": "mlx_audio.server trên Apple Silicon",
+            "openai-compatible": "vLLM, speaches, LocalAI, faster-whisper, v.v.",
+            "custom": "Tự điền tất cả các trường"
+          },
+          "names": {
+            "custom": "Máy chủ tùy chỉnh",
+            "whisper-cpp": "Máy chủ whisper.cpp",
+            "llama-cpp": "Mô hình âm thanh llama.cpp",
+            "openai-compatible": "Máy chủ tương thích OpenAI"
+          }
+        },
+        "name": {
+          "label": "Tên",
+          "description": "Hiển thị trong danh sách máy chủ và ở chân trang.",
+          "placeholder": "Máy chủ chưa đặt tên",
+          "untitled": "Máy chủ {{n}}"
+        },
+        "url": {
+          "label": "URL điểm cuối",
+          "description": "URL đầy đủ mà bản ghi âm được gửi đến bằng POST. Tham số truy vấn có thể dùng {language} và {api_key}; tham số nào thiếu giá trị sẽ bị bỏ qua."
+        },
+        "body": {
+          "label": "Cách gửi âm thanh",
+          "description": "Cách bản ghi âm được gửi đến máy chủ. Máy chủ giọng nói nhận tải lên qua biểu mẫu. LLM âm thanh (llama.cpp, vLLM…) nhận yêu cầu chat, do Handy tạo sẵn cho bạn. Một số máy chủ cần âm thanh là toàn bộ phần thân yêu cầu, còn JSON tùy chỉnh cho phép bạn tự viết phần thân.",
+          "multipart": "Tải lên biểu mẫu (multipart)",
+          "chat": "Chat kèm âm thanh (LLM)",
+          "raw": "Âm thanh thô làm phần thân",
+          "json": "JSON tùy chỉnh",
+          "rawHint": "Tệp WAV là toàn bộ phần thân yêu cầu, được gửi dưới dạng audio/wav. Hãy thêm header Content-Type nếu máy chủ của bạn cần loại khác."
+        },
+        "apiKey": {
+          "label": "Khóa API",
+          "description": "Được lưu trong chuỗi khóa của hệ thống, không nằm trong tệp cài đặt của Handy. Được dùng ở mọi header hoặc trường có ghi {api_key}; khi không có khóa, các mục đó sẽ bị bỏ qua.",
+          "saved": "Đã lưu trong chuỗi khóa. Nhập để thay thế",
+          "remove": "Xóa"
+        },
+        "optional": "Tùy chọn",
+        "prompt": {
+          "label": "Prompt",
+          "description": "Điều mô hình cần làm với bản ghi âm của bạn, viết bằng lời thường. Được gửi dưới dạng tin nhắn hệ thống; {language} cũng dùng được ở đây."
+        },
+        "fields": {
+          "label": "Trường yêu cầu",
+          "description": "Các trường biểu mẫu được gửi kèm bản ghi âm. {language} sẽ thành ngôn ngữ của Handy (chẳng hạn th) và trường bị bỏ qua khi chọn Tự động; {language|auto} sẽ gửi auto thay vào đó. Giá trị trống cũng bị bỏ qua.",
+          "chatDescription": "Các thiết lập thêm cho yêu cầu, chẳng hạn model hoặc temperature. Số và true/false được gửi đúng kiểu; để trống giá trị nếu muốn bỏ thiết lập đó.",
+          "nameLabel": "Tên trường",
+          "valueLabel": "Giá trị trường",
+          "namePlaceholder": "tên",
+          "add": "Thêm trường"
+        },
+        "jsonBody": {
+          "label": "Phần thân JSON",
+          "description": "Toàn bộ phần thân yêu cầu, tự viết tay. {audio_base64} là bản ghi âm; {language} và {api_key} cũng dùng được ở đây. Các giá trị được thoát ký tự tự động."
+        },
+        "pairs": {
+          "value": "Giá trị",
+          "remove": "Xóa {{name}}"
+        },
+        "moreOptions": "Tùy chọn khác",
+        "headers": {
+          "label": "Header",
+          "description": "Các header HTTP gửi kèm mỗi yêu cầu. {api_key} sẽ được thay bằng khóa API.",
+          "nameLabel": "Tên header",
+          "valueLabel": "Giá trị header",
+          "namePlaceholder": "Header",
+          "add": "Thêm header"
+        },
+        "fileField": {
+          "label": "Trường âm thanh",
+          "description": "Trường biểu mẫu chứa bản ghi âm, dưới dạng WAV mono 16 kHz."
+        },
+        "textPaths": {
+          "label": "Văn bản trong phản hồi",
+          "description": "Vị trí của văn bản trong phản hồi JSON của máy chủ: các đường dẫn dạng dấu chấm, phân cách bằng dấu phẩy, đường dẫn đầu tiên tồn tại sẽ được dùng (chẳng hạn display_text, text hoặc results.0.transcript). * lấy mọi phần tử và nối chúng lại. Phản hồi không phải JSON sẽ được dùng làm văn bản."
+        },
+        "timeout": {
+          "label": "Thời gian chờ (giây)",
+          "description": "Thời gian chờ máy chủ trước khi bỏ cuộc."
+        },
+        "unencrypted": "URL này không được mã hóa (http://) và không nằm trong mạng cục bộ của bạn: bản ghi âm và khóa API có thể bị đọc trên đường truyền. Hãy dùng https:// nếu máy chủ hỗ trợ.",
+        "notInUse": "Đọc chính tả không dùng máy chủ này.",
+        "use": "Dùng máy chủ này",
+        "test": {
+          "button": "Kiểm tra kết nối",
+          "testing": "Đang kiểm tra…",
+          "hint": "Gửi một giây im lặng giống như khi đọc chính tả.",
+          "ok": "Đã kết nối. Máy chủ phản hồi sau {{seconds}} giây.",
+          "failed": "Kiểm tra thất bại: {{detail}}"
+        },
+        "delete": "Xóa máy chủ",
+        "deleteConfirm": "Nhấn lần nữa để xóa",
+        "footer": "Đang phiên âm trên {{host}}",
+        "errors": {
+          "missingId": "Máy chủ này không có ID.",
+          "invalidUrl": "“{{detail}}” không phải là URL.",
+          "urlScheme": "URL phải bắt đầu bằng http:// hoặc https://.",
+          "jsonNeedsAudio": "Phần thân JSON cần có {audio_base64} ở vị trí đặt bản ghi âm.",
+          "jsonInvalid": "Phần thân JSON không phải JSON hợp lệ: {{detail}}",
+          "invalidHeader": "Header “{{detail}}” có tên hoặc giá trị mà HTTP không cho phép.",
+          "keychain": "Không thể dùng chuỗi khóa của hệ thống: {{detail}}",
+          "missingServer": "Máy chủ đó không còn tồn tại.",
+          "noUrl": "Hãy thêm URL của máy chủ trước.",
+          "unreachable": "Không thể kết nối tới {{detail}}.",
+          "noAnswer": "Không có phản hồi từ {{detail}}.",
+          "refused": "Máy chủ trả lời {{detail}}",
+          "webPage": "Máy chủ trả về một trang web chứ không phải bản chép lời. Hãy kiểm tra URL.",
+          "stream": "Máy chủ đã gửi phản hồi dạng streaming. Hãy tắt streaming trong các trường yêu cầu.",
+          "tooLarge": "Phản hồi của máy chủ quá lớn để là một bản chép lời.",
+          "noText": "Phản hồi không có văn bản tại {{detail}}. Hãy kiểm tra “Văn bản trong phản hồi”.",
+          "keychainMissing": "Khóa API không còn trong chuỗi khóa của bạn. Hãy nhập lại.",
+          "placeholder": "{{detail}} dùng một placeholder không có giá trị ở đây. Hãy đặt giá trị dự phòng cho nó, ví dụ {language|auto}.",
+          "badRequest": "Không thể tạo yêu cầu: {{detail}}"
         }
       }
     },
