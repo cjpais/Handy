@@ -1,12 +1,13 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use crate::settings::{get_settings, AppSettings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
 #[cfg(target_os = "linux")]
 use std::sync::OnceLock;
+use std::sync::{mpsc, Mutex, PoisonError};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -14,18 +15,36 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 #[cfg(target_os = "linux")]
 use crate::utils::{is_gnome_wayland, is_kde_wayland, is_wayland};
 
-fn with_enigo<T>(
+/// Serializes pastes: overlapping ones would restore each other's transcript as
+/// the user's clipboard. Only taken by `paste`, which never runs on the main thread.
+static PASTE_LOCK: Mutex<()> = Mutex::new(());
+
+/// Runs `f` with the shared Enigo on the main thread (macOS TIS APIs require it)
+/// and waits for the result. Runs inline if already on the main thread, so no deadlock.
+fn with_enigo<T: Send + 'static>(
     app_handle: &AppHandle,
-    f: impl FnOnce(&mut Enigo) -> Result<T, String>,
+    f: impl FnOnce(&mut Enigo) -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-    f(&mut enigo)
+    let (tx, rx) = mpsc::sync_channel(1);
+    let app = app_handle.clone();
+    app_handle
+        .run_on_main_thread(move || {
+            let result = (|| {
+                let enigo_state = app
+                    .try_state::<EnigoState>()
+                    .ok_or("Enigo state not initialized")?;
+                let mut enigo = enigo_state
+                    .0
+                    .lock()
+                    .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+                f(&mut enigo)
+            })();
+            let _ = tx.send(result);
+        })
+        .map_err(|e| format!("Failed to run input on the main thread: {}", e))?;
+    // A dropped closure (event loop shutting down) closes the channel.
+    rx.recv()
+        .map_err(|_| "Main thread dropped the input request".to_string())?
 }
 
 fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
@@ -70,8 +89,31 @@ fn paste_via_clipboard(
         None
     };
 
+    // Shift+Insert reads PRIMARY in many terminals and the clipboard in GUI
+    // apps, so put the transcript on both. Only for Shift+Insert: Ctrl+V never
+    // reads PRIMARY, and writing it replaces the user's highlighted text.
+    #[cfg(target_os = "linux")]
+    let saved_primary = if *paste_method == PasteMethod::ShiftInsert {
+        let saved = crate::primary_selection::read();
+        match crate::primary_selection::write(text) {
+            Ok(()) => Some(saved),
+            Err(e) => {
+                log::warn!("Could not put the transcript on the primary selection: {e}");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
     // Write text to clipboard first
-    write_text_to_clipboard(app_handle, text)?;
+    if let Err(e) = write_text_to_clipboard(app_handle, text) {
+        #[cfg(target_os = "linux")]
+        if let Some(saved) = saved_primary {
+            crate::primary_selection::restore(saved);
+        }
+        return Err(e);
+    }
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
@@ -80,14 +122,15 @@ fn paste_via_clipboard(
     let paste_result = (|| -> Result<(), String> {
         // Send paste key combo
         #[cfg(target_os = "linux")]
-        let key_combo_sent = try_send_key_combo_linux(paste_method)?;
+        let key_combo_sent = try_send_key_combo_linux(paste_method);
 
         #[cfg(not(target_os = "linux"))]
         let key_combo_sent = false;
 
         // Fall back to enigo if no native tool handled it
         if !key_combo_sent {
-            with_enigo(app_handle, |enigo| match paste_method {
+            let paste_method = *paste_method;
+            with_enigo(app_handle, move |enigo| match paste_method {
                 // The legacy path cannot detect a mistimed chord, so it keeps the
                 // conservative 100ms modifier hold.
                 PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo, 100),
@@ -114,48 +157,49 @@ fn paste_via_clipboard(
             // Nothing was there to begin with — don't leave the transcription behind.
             let _ = clipboard.clear();
         }
+        #[cfg(target_os = "linux")]
+        if let Some(saved) = saved_primary {
+            crate::primary_selection::restore(saved);
+        }
     })
 }
 
-/// Attempts to send a key combination using Linux-native tools.
-/// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
+/// Sends the paste key combination with the first Linux-native tool that works.
+/// A tool that is installed but fails (ydotool without its daemon, wtype on a
+/// compositor without the virtual-keyboard protocol) hands over to the next one.
+/// Returns `false` when none of them sent it, so the caller falls back to enigo.
 #[cfg(target_os = "linux")]
-fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
+fn try_send_key_combo_linux(paste_method: &PasteMethod) -> bool {
+    type SendKeyCombo = fn(&PasteMethod) -> Result<(), String>;
+    let mut tools: Vec<(&str, SendKeyCombo)> = Vec::new();
     if is_wayland() {
         // Wayland: prefer wtype (but not on KDE or GNOME), then dotool, then ydotool
         // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
         // or on GNOME/Mutter (same reason — Mutter deliberately does not implement
         // the virtual-keyboard-v1 protocol).
         if !is_kde_wayland() && !is_gnome_wayland() && is_wtype_available() {
-            info!("Using wtype for key combo");
-            send_key_combo_via_wtype(paste_method)?;
-            return Ok(true);
+            tools.push(("wtype", send_key_combo_via_wtype));
         }
         if is_dotool_available() {
-            info!("Using dotool for key combo");
-            send_key_combo_via_dotool(paste_method)?;
-            return Ok(true);
+            tools.push(("dotool", send_key_combo_via_dotool));
         }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
-            return Ok(true);
-        }
-    } else {
+    } else if is_xdotool_available() {
         // X11: prefer xdotool, then ydotool
-        if is_xdotool_available() {
-            info!("Using xdotool for key combo");
-            send_key_combo_via_xdotool(paste_method)?;
-            return Ok(true);
-        }
-        if is_ydotool_available() {
-            info!("Using ydotool for key combo");
-            send_key_combo_via_ydotool(paste_method)?;
-            return Ok(true);
+        tools.push(("xdotool", send_key_combo_via_xdotool));
+    }
+    if is_ydotool_available() {
+        tools.push(("ydotool", send_key_combo_via_ydotool));
+    }
+
+    for (name, send) in tools {
+        info!("Using {} for key combo", name);
+        match send(paste_method) {
+            Ok(()) => return true,
+            Err(e) => log::warn!("{} could not send the paste keys: {}", name, e),
         }
     }
 
-    Ok(false)
+    false
 }
 
 /// Attempts to type text directly using Linux-native tools.
@@ -317,6 +361,32 @@ fn classify_ydotool_key_syntax(help: &str) -> Option<YdotoolKeySyntax> {
     }
 }
 
+/// A `ydotool` command that can reach ydotoold when `YDOTOOL_SOCKET` is not set
+/// (autostart, desktop launcher): distro packages put the socket in different
+/// places, such as /tmp on Fedora and /run/ydotoold on NixOS.
+#[cfg(target_os = "linux")]
+fn ydotool_command() -> Command {
+    let mut command = Command::new("ydotool");
+    if std::env::var_os("YDOTOOL_SOCKET").is_none_or(|v| v.is_empty()) {
+        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_default();
+        let candidates = [
+            format!("{runtime_dir}/.ydotool_socket"),
+            "/tmp/.ydotool_socket".to_string(),
+            "/run/ydotoold/socket".to_string(),
+        ];
+        // Only trust sockets owned by root or by us: /tmp is world-writable.
+        use std::os::unix::fs::MetadataExt;
+        let uid = unsafe { libc::getuid() };
+        if let Some(socket) = candidates
+            .iter()
+            .find(|p| std::fs::metadata(p).is_ok_and(|m| m.uid() == 0 || m.uid() == uid))
+        {
+            command.env("YDOTOOL_SOCKET", socket);
+        }
+    }
+    command
+}
+
 /// Detects and caches a recognized ydotool key syntax. Unknown or failed probes are not cached,
 /// allowing a transient daemon or PATH problem to recover on a later paste attempt.
 #[cfg(target_os = "linux")]
@@ -325,7 +395,7 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
         return *syntax;
     }
 
-    match Command::new("ydotool").args(["key", "--help"]).output() {
+    match ydotool_command().args(["key", "--help"]).output() {
         Ok(output) => {
             // ydotool 0.x writes help to stderr and its exit status varies by build.
             let mut help = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -356,6 +426,19 @@ fn detect_ydotool_key_syntax() -> YdotoolKeySyntax {
             YDOTOOL_UNKNOWN_HELP_FALLBACK
         }
     }
+}
+
+/// ydotool prints its errors, such as a missing ydotoold, on stdout rather than stderr.
+#[cfg(target_os = "linux")]
+fn ydotool_error(output: &std::process::Output) -> String {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let message = [stderr.trim(), stdout.trim()]
+        .into_iter()
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!("ydotool failed ({}): {}", output.status, message)
 }
 
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
@@ -474,6 +557,29 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Builds the dotool stdin script that types `text`.
+///
+/// dotool reads one command per line, so each line of `text` gets its own
+/// `type` command and line breaks are sent as `key enter`, like the other
+/// typing tools do. Otherwise everything after the first newline would be run
+/// as dotool commands instead of being typed.
+#[cfg(target_os = "linux")]
+fn dotool_type_script(text: &str) -> String {
+    let mut script = String::new();
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            script.push_str("key enter\n");
+        }
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if !line.is_empty() {
+            script.push_str("type ");
+            script.push_str(line);
+            script.push('\n');
+        }
+    }
+    script
+}
+
 /// Type text directly via dotool (works on both Wayland and X11 via uinput).
 #[cfg(target_os = "linux")]
 fn type_text_via_dotool(text: &str) -> Result<(), String> {
@@ -486,8 +592,8 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        // dotool uses "type <text>" command
-        writeln!(stdin, "type {}", text)
+        stdin
+            .write_all(dotool_type_script(text).as_bytes())
             .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
     }
 
@@ -506,7 +612,7 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
 #[cfg(target_os = "linux")]
 fn type_text_via_ydotool(text: &str) -> Result<(), String> {
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .arg("type")
         .arg("--")
         .arg(text)
@@ -514,8 +620,7 @@ fn type_text_via_ydotool(text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ydotool failed: {}", stderr));
+        return Err(ydotool_error(&output));
     }
 
     Ok(())
@@ -639,14 +744,13 @@ fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> 
     let syntax = detect_ydotool_key_syntax();
     let args = ydotool_key_args(paste_method, syntax)?;
 
-    let output = Command::new("ydotool")
+    let output = ydotool_command()
         .args(args)
         .output()
         .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("ydotool failed: {}", stderr));
+        return Err(ydotool_error(&output));
     }
 
     Ok(())
@@ -721,7 +825,10 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    with_enigo(app_handle, |enigo| input::paste_text_direct(enigo, text))
+    let text = text.to_string();
+    with_enigo(app_handle, move |enigo| {
+        input::paste_text_direct(enigo, &text)
+    })
 }
 
 pub(crate) fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
@@ -771,8 +878,51 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
-pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+/// What [`paste`] did with the text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PasteOutcome {
+    Pasted,
+    /// The focused window takes no input from Handy, so nothing arrived.
+    Blocked,
+}
+
+/// Whether `paste_method` works by sending keystrokes to the focused window.
+fn sends_keys(paste_method: PasteMethod) -> bool {
+    match paste_method {
+        PasteMethod::Direct
+        | PasteMethod::CtrlV
+        | PasteMethod::CtrlShiftV
+        | PasteMethod::ShiftInsert => true,
+        PasteMethod::None | PasteMethod::ExternalScript => false,
+    }
+}
+
+/// Pastes `text` into the focused app. Call from a worker thread, never the main
+/// thread: it sleeps between steps (input injection hops via `with_enigo`).
+pub fn paste(text: String, app_handle: AppHandle) -> Result<PasteOutcome, String> {
+    let _paste = PASTE_LOCK.lock().unwrap_or_else(PoisonError::into_inner);
     let settings = get_settings(&app_handle);
+
+    // Windows drops the keystrokes Handy sends to an elevated window and may
+    // not say so, so ask before pasting instead of trusting the result. The
+    // paste still runs as usual; only what Handy reports changes.
+    let blocked =
+        sends_keys(settings.paste_method) && crate::utils::foreground_window_is_elevated();
+    let result = paste_as_configured(text, app_handle, settings);
+    if !blocked {
+        return result.map(|()| PasteOutcome::Pasted);
+    }
+    if let Err(e) = result {
+        log::warn!("Paste into an elevated window failed: {e}");
+    }
+    Ok(PasteOutcome::Blocked)
+}
+
+fn paste_as_configured(
+    text: String,
+    app_handle: AppHandle,
+    settings: AppSettings,
+) -> Result<(), String> {
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
@@ -810,15 +960,22 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             // the legacy path untouched.
             #[cfg(any(target_os = "macos", target_os = "windows"))]
             if settings.reliable_paste {
-                let reliable_result = with_enigo(&app_handle, |enigo| {
+                // Runs entirely on the main thread, as it requires.
+                let (text, app) = (text.clone(), app_handle.clone());
+                let (auto_submit, auto_submit_key, clipboard_handling) = (
+                    settings.auto_submit,
+                    settings.auto_submit_key,
+                    settings.clipboard_handling,
+                );
+                let reliable_result = with_enigo(&app_handle, move |enigo| {
                     crate::paste_tx::try_reliable_paste(
                         &text,
-                        &app_handle,
+                        &app,
                         &paste_method,
                         enigo,
-                        settings.auto_submit,
-                        settings.auto_submit_key,
-                        settings.clipboard_handling,
+                        auto_submit,
+                        auto_submit_key,
+                        clipboard_handling,
                     )
                 });
                 match reliable_result {
@@ -848,8 +1005,9 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        if let Err(error) = with_enigo(&app_handle, |enigo| {
-            send_return_key(enigo, settings.auto_submit_key)
+        let auto_submit_key = settings.auto_submit_key;
+        if let Err(error) = with_enigo(&app_handle, move |enigo| {
+            send_return_key(enigo, auto_submit_key)
         }) {
             log::warn!("Paste succeeded, but auto-submit failed: {error}");
         }
@@ -942,6 +1100,24 @@ e.g. 28:1 28:0 means pressing on the Enter button on a standard US keyboard.
         assert_eq!(
             ydotool_key_args(&PasteMethod::ShiftInsert, YdotoolKeySyntax::RawKeycodes).unwrap(),
             ["key", "42:1", "110:1", "110:0", "42:0"]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_types_single_line_text_unchanged() {
+        assert_eq!(dotool_type_script("hello world"), "type hello world\n");
+        assert_eq!(dotool_type_script(" indented"), "type  indented\n");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_script_does_not_run_lines_of_text_as_commands() {
+        // dotool reads one command per line; text after a line break must still
+        // be typed, not executed as `key`/`click` commands.
+        assert_eq!(
+            dotool_type_script("first line\nkey super+l\r\nclick left\n"),
+            "type first line\nkey enter\ntype key super+l\nkey enter\ntype click left\nkey enter\n"
         );
     }
 

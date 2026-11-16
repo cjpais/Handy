@@ -1,6 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
-import { commands, type PostProcessProvider } from "@/bindings";
+import {
+  commands,
+  type PostProcessApiFormat,
+  type PostProcessProvider,
+} from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
@@ -14,6 +18,9 @@ type PostProcessProviderState = {
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
+  apiFormat: PostProcessApiFormat;
+  handleApiFormatChange: (value: PostProcessApiFormat) => void;
+  isApiFormatUpdating: boolean;
   apiKey: string;
   handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
@@ -36,6 +43,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     isUpdating,
     setPostProcessProvider,
     updatePostProcessBaseUrl,
+    updatePostProcessApiFormat,
     updatePostProcessApiKey,
     updatePostProcessModel,
     fetchPostProcessModels,
@@ -62,6 +70,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
+  const apiFormat = selectedProvider?.api_format ?? "openai";
   const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
 
@@ -127,6 +136,15 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       }
     },
     [selectedProvider, baseUrl, updatePostProcessBaseUrl],
+  );
+
+  const handleApiFormatChange = useCallback(
+    (value: PostProcessApiFormat) => {
+      if (value !== apiFormat) {
+        void updatePostProcessApiFormat(selectedProviderId, value);
+      }
+    },
+    [apiFormat, selectedProviderId, updatePostProcessApiFormat],
   );
 
   const handleApiKeyChange = useCallback(
@@ -195,6 +213,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const isBaseUrlUpdating = isUpdating(
     `post_process_base_url:${selectedProviderId}`,
   );
+  const isApiFormatUpdating = isUpdating(
+    `post_process_api_format:${selectedProviderId}`,
+  );
   const isApiKeyUpdating = isUpdating(
     `post_process_api_key:${selectedProviderId}`,
   );
@@ -219,6 +240,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,
+    apiFormat,
+    handleApiFormatChange,
+    isApiFormatUpdating,
     apiKey,
     handleApiKeyChange,
     isApiKeyUpdating,

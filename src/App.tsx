@@ -1,47 +1,70 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useState,
   useRef,
   type ReactNode,
 } from "react";
-import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
-import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
-import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
+import { OnboardingFlow } from "./components/onboarding/OnboardingFlow";
+import ModelMigration from "./components/onboarding/ModelMigration";
 import {
-  DebugSettings,
-  type OnboardingPreviewStep,
-} from "./components/settings";
+  ReplaceModel,
+  ReturningPermissions,
+} from "./components/onboarding/StandaloneScreens";
+import {
+  clearOnboardingProgress,
+  type OnboardingStep as OnboardingPreviewStep,
+} from "./components/onboarding/onboardingStore";
+import { DebugSettings, ModelsSettings } from "./components/settings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { FileDropOverlay } from "./components/FileDropOverlay";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { WhatsNewGate } from "./components/whats-new";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
+import { deleteRetiredModel } from "@/lib/models/retired";
+import { NoticePanel } from "@/components/notices/NoticePanel";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
-type OnboardingStep = "accessibility" | "model" | "done";
-
-// Stable identity so preview effects do not re-run due to callback changes.
-const NOOP = () => {};
+// flow is first-run onboarding; the rest are single screens for returning users.
+type OnboardingStep =
+  | "flow"
+  | "permissions"
+  | "migration"
+  | "replaceModel"
+  | "done";
 
 const renderSettingsContent = (
   section: SidebarSection,
   onPreviewOnboarding: (step: OnboardingPreviewStep) => void,
+  onRunOnboarding: () => void,
+  onRunModelMigration: () => void,
+  onSectionChange: (section: SidebarSection) => void,
 ) => {
+  if (section === "models") {
+    return (
+      <ModelsSettings onChangeLanguages={() => onSectionChange("general")} />
+    );
+  }
   if (section === "debug") {
-    return <DebugSettings onPreviewOnboarding={onPreviewOnboarding} />;
+    return (
+      <DebugSettings
+        onPreviewOnboarding={onPreviewOnboarding}
+        onRunOnboarding={onRunOnboarding}
+        onRunModelMigration={onRunModelMigration}
+      />
+    );
   }
 
   const ActiveComponent =
@@ -56,11 +79,12 @@ function App() {
   );
   const [onboardingPreview, setOnboardingPreview] =
     useState<OnboardingPreviewStep | null>(null);
-  // Track if this is a returning user who just needs to grant permissions
-  // (vs a new user who needs full onboarding including model selection)
-  const [isReturningUser, setIsReturningUser] = useState(false);
+  // Set when a returning user's selected model is a retired (ONNX) model that
+  // is still on disk: they must update it before the app can transcribe.
+  const [migrationModelId, setMigrationModelId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
+  const showHistory = useCallback(() => setCurrentSection("history"), []);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -71,20 +95,6 @@ function App() {
   );
   const hasCompletedPostOnboardingInit = useRef(false);
   const settingsScrollRef = useRef<HTMLDivElement>(null);
-  const isShowingOnboarding =
-    onboardingPreview !== null ||
-    onboardingStep === "accessibility" ||
-    onboardingStep === "model";
-
-  // Classic scrollbars consume layout space. Reserve a matching gutter on the
-  // opposite edge while onboarding is visible so its content stays centered in
-  // the physical window. Overlay scrollbars ignore scrollbar-gutter.
-  useLayoutEffect(() => {
-    const attribute = "data-onboarding-active";
-    document.documentElement.toggleAttribute(attribute, isShowingOnboarding);
-    return () => document.documentElement.removeAttribute(attribute);
-  }, [isShowingOnboarding]);
-
   // Reset the scroll position whenever the active section changes.
   useLayoutEffect(() => {
     settingsScrollRef.current?.scrollTo({ top: 0 });
@@ -139,86 +149,29 @@ function App() {
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // Listen for recording errors from the backend and show a toast
-  useEffect(() => {
-    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
-      const { error_type, detail } = event.payload;
-
-      if (error_type === "microphone_permission_denied") {
-        const currentPlatform = platform();
-        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
-        const description = t(platformKey, {
-          defaultValue: t("errors.micPermissionDenied.generic"),
-        });
-        toast.error(t("errors.micPermissionDeniedTitle"), { description });
-      } else if (error_type === "no_input_device") {
-        toast.error(t("errors.noInputDeviceTitle"), {
-          description: t("errors.noInputDevice"),
-        });
-      } else {
-        toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for paste failures and show a toast.
-  // The technical error detail is logged to handy.log on the Rust side
-  // (see actions.rs `error!("Failed to paste transcription: ...")`),
-  // so we show a localized, user-friendly message here instead of the raw error.
-  useEffect(() => {
-    const unlisten = listen("paste-error", () => {
-      toast.error(t("errors.pasteFailedTitle"), {
-        description: t("errors.pasteFailed"),
-      });
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for transcription failures and show a toast.
-  // The payload is the backend error message (also logged to handy.log).
-  useEffect(() => {
-    const unlisten = listen<string>("transcription-error", (event) => {
-      toast.error(t("errors.transcriptionFailedTitle"), {
-        description: event.payload,
-      });
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for model loading failures and show a toast
-  useEffect(() => {
-    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
-      if (event.payload.event_type === "loading_failed") {
-        toast.error(
-          t("errors.modelLoadFailed", {
-            model:
-              event.payload.model_name || t("errors.modelLoadFailedUnknown"),
-          }),
-          {
-            description: event.payload.error,
-          },
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
   const revealMainWindowForPermissions = async () => {
     try {
       await commands.showMainWindowCommand();
     } catch (e) {
       console.warn("Failed to show main window for permission onboarding:", e);
+    }
+  };
+
+  const getMigrationModelId = async (
+    selectedModel: string,
+  ): Promise<string | null> => {
+    const retired = await commands.getRetiredModels();
+    return retired.some((m) => m.id === selectedModel) ? selectedModel : null;
+  };
+
+  // Returning users land in the app unless their model needs updating. The
+  // window may start hidden, so bring it forward for the update screen.
+  const finishReturningUser = async (retiredModelId: string | null) => {
+    if (retiredModelId) {
+      await revealMainWindowForPermissions();
+      setOnboardingStep("migration");
+    } else {
+      setOnboardingStep("done");
     }
   };
 
@@ -232,7 +185,10 @@ function App() {
 
       if (hasCompletedOnboarding) {
         // Returning user - check if they need to grant permissions first
-        setIsReturningUser(true);
+        const retiredModelId = await getMigrationModelId(
+          settingsResult.data.selected_model ?? "",
+        );
+        setMigrationModelId(retiredModelId);
 
         if (currentPlatform === "macos") {
           try {
@@ -242,7 +198,7 @@ function App() {
             ]);
             if (!hasAccessibility || !hasMicrophone) {
               await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
+              setOnboardingStep("permissions");
               return;
             }
           } catch (e) {
@@ -260,7 +216,7 @@ function App() {
               microphoneStatus.overall_access === "denied"
             ) {
               await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
+              setOnboardingStep("permissions");
               return;
             }
           } catch (e) {
@@ -269,86 +225,96 @@ function App() {
           }
         }
 
-        setOnboardingStep("done");
+        await finishReturningUser(retiredModelId);
       } else {
         // New user - start full onboarding
-        setIsReturningUser(false);
-        setOnboardingStep("accessibility");
+        setOnboardingStep("flow");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
-      setOnboardingStep("accessibility");
+      setOnboardingStep("flow");
     }
   };
 
-  const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app
-    // New users need to select a model
-    setOnboardingStep(isReturningUser ? "done" : "model");
+  // Debug: the real onboarding from Welcome, for testing it end to end.
+  const runOnboarding = () => {
+    clearOnboardingProgress();
+    setOnboardingStep("flow");
   };
 
-  const handleModelSelected = () => {
-    // Transition to main app - user has started a download
+  // Debug: the real model migration screen. It leads with the selected model
+  // if that's retired, otherwise with the first retired model on disk.
+  const runModelMigration = async () => {
+    const retired = await commands.getRetiredModels();
+    if (retired.length === 0) {
+      console.info("Model migration: no old-format models on disk");
+      return;
+    }
+    const selected = settings?.selected_model;
+    setMigrationModelId(
+      retired.find((m) => m.id === selected)?.id ?? retired[0].id,
+    );
+    setOnboardingStep("migration");
+  };
+
+  const handleModelSelected = async () => {
+    // Reached when the user picks a different model instead of updating.
+    for (const model of await commands.getRetiredModels()) {
+      await deleteRetiredModel(model.id);
+    }
     setOnboardingStep("done");
   };
-
-  // Rendered once around every step below (including onboarding) so
-  // toast.error() calls surface to the user. sonner renders via a portal, so
-  // its position in the tree doesn't affect layout. Without this, errors during
-  // onboarding (e.g. a model download failing because blob.handy.computer is
-  // unreachable) are silently swallowed and the wizard just appears to "blink".
-  const toaster = (
-    <Toaster
-      theme="system"
-      toastOptions={{
-        unstyled: true,
-        classNames: {
-          toast:
-            "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-          title: "font-medium",
-          description: "text-mid-gray",
-          actionButton:
-            "px-2 py-1 text-xs font-medium rounded-lg border bg-mid-gray/10 border-mid-gray/20 hover:bg-background-ui/30 hover:border-logo-primary cursor-pointer whitespace-nowrap",
-        },
-      }}
-    />
-  );
 
   // Still checking onboarding status
   if (onboardingStep === null) {
     return null;
   }
 
-  // Select the content for the current step. The Toaster is rendered once, in a
-  // stable wrapper around this node, so crossing between onboarding steps and
-  // the main app never remounts it (which would drop any in-flight toast).
+  // Select the content for the current step. NoticePanel is rendered once,
+  // beside this node, so errors surface on every step, including onboarding.
   let content: ReactNode;
   if (onboardingPreview) {
-    // Render previews in the same top-level slot as real onboarding. Keeping
-    // the settings layout unmounted ensures viewport overflow behaves exactly
-    // as it does during first-run onboarding.
+    // Previews render in the same top-level slot as real onboarding, inert:
+    // no prompts, downloads or setting writes.
     content = (
       <>
-        {onboardingPreview === "accessibility" ? (
-          <AccessibilityOnboarding onComplete={NOOP} preview />
-        ) : (
-          <Onboarding onModelSelected={NOOP} preview />
-        )}
+        <OnboardingFlow
+          preview
+          previewStep={onboardingPreview}
+          onComplete={() => setOnboardingPreview(null)}
+        />
         <button
           type="button"
           onClick={() => setOnboardingPreview(null)}
-          className="fixed top-4 end-4 z-50 rounded-lg border border-mid-gray/20 bg-background px-4 py-2 text-sm font-medium text-text shadow-lg hover:bg-background-ui/30 cursor-pointer"
+          className="fixed top-4 end-4 z-50 rounded-lg border border-line bg-background px-4 py-2 text-sm font-medium text-text shadow-lg hover:bg-logo-primary/20 cursor-pointer"
         >
           {t("settings.debug.onboardingPreview.exitButton")}
         </button>
       </>
     );
-  } else if (onboardingStep === "accessibility") {
+  } else if (onboardingStep === "flow") {
+    content = <OnboardingFlow onComplete={() => setOnboardingStep("done")} />;
+  } else if (onboardingStep === "permissions") {
     content = (
-      <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
+      <ReturningPermissions
+        onComplete={() => finishReturningUser(migrationModelId)}
+      />
     );
-  } else if (onboardingStep === "model") {
-    content = <Onboarding onModelSelected={handleModelSelected} />;
+  } else if (onboardingStep === "migration" && migrationModelId) {
+    content = (
+      <ModelMigration
+        inUseModelId={migrationModelId}
+        onComplete={() => setOnboardingStep("done")}
+        onChooseAnother={() => setOnboardingStep("replaceModel")}
+      />
+    );
+  } else if (onboardingStep === "replaceModel") {
+    content = (
+      <ReplaceModel
+        onBack={() => setOnboardingStep("migration")}
+        onComplete={handleModelSelected}
+      />
+    );
   } else {
     content = (
       <div
@@ -367,24 +333,33 @@ function App() {
           {/* Scrollable content area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div ref={settingsScrollRef} className="flex-1 overflow-y-auto">
-              <div className="flex flex-col items-center p-4 gap-4">
-                <AccessibilityPermissions />
+              {/* Models fills the window: its table scrolls, not the page. */}
+              <div
+                className={`flex flex-col items-center p-4 gap-4 ${currentSection === "models" ? "h-full" : ""}`}
+              >
                 <SecureInputWarning />
-                {renderSettingsContent(currentSection, setOnboardingPreview)}
+                {renderSettingsContent(
+                  currentSection,
+                  setOnboardingPreview,
+                  runOnboarding,
+                  runModelMigration,
+                  setCurrentSection,
+                )}
               </div>
             </div>
           </div>
         </div>
         {/* Fixed footer at bottom */}
-        <Footer />
+        <Footer onShowHistory={showHistory} />
+        <FileDropOverlay onDropped={showHistory} />
       </div>
     );
   }
 
   return (
     <>
-      {toaster}
       {content}
+      <NoticePanel />
     </>
   );
 }

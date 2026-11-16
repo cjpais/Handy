@@ -9,34 +9,48 @@ mod chinese_script;
 pub mod cli;
 mod clipboard;
 mod commands;
+pub mod engine_supervisor;
 mod helpers;
 mod input;
+mod language_detection;
+mod languages;
 mod llm_client;
 mod managers;
 mod memory;
+mod notices;
 mod overlay;
 mod paste_tx;
 pub mod portable;
+#[cfg(target_os = "linux")]
+mod primary_selection;
 mod secure_input;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod system_languages;
 mod transcription_coordinator;
+mod transcription_hook;
 mod tray;
 mod tray_i18n;
 mod utils;
+pub mod webkit_renderer;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
+#[cfg(target_os = "linux")]
+pub use utils::apply_handy_gdk_backend;
 pub use utils::env_flag_enabled;
+#[cfg(target_os = "linux")]
+pub use utils::{disable_gamescope_wsi_layer, gamescope_wsi_disabled_by_handy};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use managers::transcription_jobs::TranscriptionJobManager;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
@@ -206,19 +220,13 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
-    // Initialize the transcribe-cpp native backend (logging + backend module
-    // registration) once, before any whisper model is loaded.
-    managers::transcription::init_transcribe_backend();
-
-    // Apply accelerator preferences before any model loads
-    managers::transcription::apply_accelerator_settings(app_handle);
-
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::TrayState::new());
+    app_handle.manage(TranscriptionJobManager::new(app_handle));
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -293,6 +301,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 // Full explanation lives in the settings-window banner
                 show_main_window(app);
             }
+            "notice" => {
+                show_main_window(app);
+            }
             "check_updates" => {
                 let settings = settings::get_settings(app);
                 if settings::update_checks_effectively_enabled(&settings) {
@@ -309,10 +320,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     log::warn!("No model is currently loaded.");
                     return;
                 }
-                match transcription_manager.unload_model() {
-                    Ok(()) => log::info!("Model unloaded via tray."),
-                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                if let Err(e) = transcription_manager.ensure_model_unlocked() {
+                    log::warn!("{}", e);
+                    return;
                 }
+                transcription_manager.request_unload();
+                log::info!("Model unloaded via tray.");
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -342,6 +355,17 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     tray::update_tray_menu(&app_clone);
                 });
             }
+            id if id.starts_with("language_select:") => {
+                let language = id.strip_prefix("language_select:").unwrap().to_string();
+                if let Err(e) =
+                    shortcut::change_selected_language_setting(app.clone(), language.clone())
+                {
+                    log::error!("Failed to switch language via tray: {}", e);
+                    return;
+                }
+                log::info!("Language switched to {} via tray.", language);
+                tray::rebuild_tray_menu(app);
+            }
             _ => {}
         })
         .build(app_handle)
@@ -362,6 +386,14 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.listen("model-state-changed", move |_| {
         tray::update_tray_menu(&app_handle_for_listener);
     });
+    // A download or delete can change what the language submenu offers (the
+    // language detector arriving makes Auto usable).
+    for event in ["model-download-complete", "model-deleted"] {
+        let app_handle_for_listener = app_handle.clone();
+        app_handle.listen(event, move |_| {
+            tray::update_tray_menu(&app_handle_for_listener);
+        });
+    }
 
     // Apply the autostart preference (SMAppService login item on macOS 13+,
     // tauri-plugin-autostart elsewhere)
@@ -438,7 +470,14 @@ fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
     // --list-devices: print registered compute devices (with indices) and exit.
     // Useful on multi-GPU machines to discover the index for --device-index.
     if args.list_devices {
-        let devices = crate::managers::transcription::describe_compute_devices();
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        let devices = match crate::managers::transcription::describe_compute_devices(&tm) {
+            Ok(devices) => devices,
+            Err(e) => {
+                eprintln!("error: {}", e);
+                return 1;
+            }
+        };
         if devices.is_empty() {
             println!("No transcribe-cpp compute devices registered.");
         } else {
@@ -661,11 +700,14 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
+            shortcut::change_spoken_languages_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_overlay_style_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_extra_recording_buffer_setting,
+            shortcut::change_language_detection_setting,
+            shortcut::change_language_detection_window_setting,
             shortcut::change_paste_delay_ms_setting,
             shortcut::change_paste_delay_after_ms_setting,
             shortcut::change_reliable_paste_setting,
@@ -679,6 +721,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_post_process_enabled_setting,
             shortcut::change_experimental_enabled_setting,
             shortcut::change_post_process_base_url_setting,
+            shortcut::change_post_process_api_format_setting,
             shortcut::change_post_process_api_key_setting,
             shortcut::change_post_process_model_setting,
             shortcut::set_post_process_provider,
@@ -694,6 +737,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_vad_enabled_setting,
+            shortcut::change_long_form_chunking_setting,
             shortcut::change_vad_backend_setting,
             shortcut::change_filler_word_removal_enabled_setting,
             shortcut::change_chinese_script_setting,
@@ -705,7 +749,6 @@ pub fn run(cli_args: CliArgs) {
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
             shortcut::change_transcribe_accelerator_setting,
-            shortcut::change_ort_accelerator_setting,
             shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,
             shortcut::handy_keys::start_handy_keys_recording,
@@ -728,10 +771,16 @@ pub fn run(cli_args: CliArgs) {
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
+            commands::reset_macos_permission,
+            commands::complete_onboarding,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
+            commands::models::download_language_detector,
+            commands::models::is_language_detector_downloaded,
             commands::models::delete_model,
+            commands::models::get_retired_models,
+            commands::models::delete_retired_model,
             commands::models::cancel_download,
             commands::models::set_active_model,
             commands::models::get_current_model,
@@ -755,22 +804,33 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::is_recording,
             commands::audio::get_microphone_channels,
             commands::audio::set_selected_channel,
+            commands::audio::change_airpods_mode_setting,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
+            commands::transcription::get_language_status,
             commands::transcription::unload_model_manually,
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
             commands::history::retry_history_entry_transcription,
+            commands::history::cancel_history_entry_transcription,
+            commands::history::transcribe_file,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            notices::get_active_notices,
+            notices::dismiss_notice,
+            notices::dismiss_overlay_notice,
         ])
         .events(collect_events![
             managers::history::HistoryUpdatePayload,
+            managers::transcription_jobs::TranscriptionJob,
             managers::transcription::StreamTextEvent,
             managers::transcription::StreamPhaseEvent,
+            transcription_coordinator::RecordingStateEvent,
+            actions::TranscriptionCompleteEvent,
+            notices::NoticesChanged,
         ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -878,6 +938,7 @@ pub fn run(cli_args: CliArgs) {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
+        .plugin(system_languages::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
@@ -888,6 +949,7 @@ pub fn run(cli_args: CliArgs) {
             Some(vec![]),
         ))
         .manage(cli_args.clone())
+        .manage(notices::NoticeStore::default())
         .setup(move |app| {
             #[cfg(target_os = "windows")]
             log::info!(
@@ -895,6 +957,20 @@ pub fn run(cli_args: CliArgs) {
                 std::env::var_os("VK_LOADER_LAYERS_DISABLE"),
                 utils::env_flag_enabled("HANDY_KEEP_VULKAN_IMPLICIT_LAYERS"),
             );
+            #[cfg(target_os = "linux")]
+            log::info!(
+                "GTK backend: GDK_BACKEND={:?}, HANDY_GDK_BACKEND={:?} (applied: {})",
+                std::env::var_os("GDK_BACKEND"),
+                std::env::var_os("HANDY_GDK_BACKEND"),
+                std::env::var("HANDY_GDK_BACKEND").is_ok_and(|v| !v.trim().is_empty()),
+            );
+            #[cfg(target_os = "linux")]
+            log::info!(
+                "Gamescope WSI layer policy: DISABLE_GAMESCOPE_WSI={:?} (set by Handy: {})",
+                std::env::var_os("DISABLE_GAMESCOPE_WSI"),
+                utils::gamescope_wsi_disabled_by_handy(),
+            );
+            system_languages::log_system_languages();
 
             specta_builder.mount_events(app);
 
@@ -914,19 +990,16 @@ pub fn run(cli_args: CliArgs) {
                     TranscriptionManager::new(&app_handle, model_manager.clone())
                         .expect("Failed to initialize transcription manager"),
                 );
+                managers::transcription::report_compute_devices(&transcription_manager);
                 app_handle.manage(model_manager);
                 app_handle.manage(transcription_manager);
-                managers::transcription::init_transcribe_backend();
-                managers::transcription::report_compute_devices();
-                managers::transcription::apply_accelerator_settings(&app_handle);
 
                 let handle = app_handle.clone();
                 let args = cli_args.clone();
                 std::thread::spawn(move || {
                     let code = run_headless_guarded(|| run_headless_transcription(&handle, &args));
-                    // Drop the loaded engine before teardown: ggml-metal's global
-                    // device free asserts (SIGABRT) if a model's Metal resources
-                    // are still alive at C++ static-destructor time.
+                    // Drop the loaded engine before exit so its transcription
+                    // worker is told to shut down cleanly.
                     if let Some(tm) = handle.try_state::<Arc<TranscriptionManager>>() {
                         let _ = tm.unload_model();
                     }
@@ -946,8 +1019,8 @@ pub fn run(cli_args: CliArgs) {
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
-                    .inner_size(680.0, 570.0)
-                    .min_inner_size(680.0, 570.0)
+                    .inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
+                    .min_inner_size(utils::MAIN_WINDOW_SIZE.0, utils::MAIN_WINDOW_SIZE.1)
                     .resizable(true)
                     .maximizable(true)
                     .visible(false);
@@ -956,9 +1029,26 @@ pub fn run(cli_args: CliArgs) {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            // Only used on Windows, to disable WebView2 browser accelerators.
-            #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
+            // Only used on macOS (to size it) and Windows (to disable WebView2
+            // browser accelerators).
+            #[cfg_attr(
+                not(any(target_os = "macos", target_os = "windows")),
+                allow(unused_variables)
+            )]
             let main_window = win_builder.build()?;
+
+            // macOS draws the title bar inside the inner size; grow the window to fit it.
+            #[cfg(target_os = "macos")]
+            {
+                let bar = utils::measure_title_bar(&main_window);
+                if bar > 0.0 {
+                    let (width, height) = utils::MAIN_WINDOW_SIZE;
+                    let size = tauri::LogicalSize::new(width, height + bar);
+                    let _ = main_window.set_min_size(Some(size));
+                    let _ = main_window.set_size(size);
+                    let _ = main_window.center();
+                }
+            }
 
             // Disable WebView2 browser accelerators (F5, F6, Ctrl+F, F12, ...).
             // A settings window has no use for them, and pressing F6 while
@@ -1006,6 +1096,8 @@ pub fn run(cli_args: CliArgs) {
             // Only forward logs to the webview while debug mode is on (the live log
             // viewer is the sole consumer and only exists in debug mode). This also
             // honors the runtime `--debug` override applied to `settings` above.
+            // Build the runtime first: its Trace logs would re-enter spawn() mid-init and deadlock.
+            let _ = tauri::async_runtime::handle();
             WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
@@ -1031,10 +1123,14 @@ pub fn run(cli_args: CliArgs) {
             // stays off the startup path. get_available_accelerators then enumerates
             // ORT execution providers and transcribe-cpp compute devices; without this
             // the cost is paid synchronously when the user first opens Advanced
-            // settings, freezing the UI. Result is cached in a OnceLock.
-            std::thread::spawn(|| {
-                crate::managers::transcription::report_compute_devices();
-                let _ = crate::managers::transcription::get_available_accelerators();
+            // settings, freezing the UI. The device list is kept by the
+            // transcription engine and refreshed by every worker it starts that may
+            // use the GPU (CPU-only workers can't see it).
+            let devices_app_handle = app_handle.clone();
+            std::thread::spawn(move || {
+                let tm = devices_app_handle.state::<Arc<TranscriptionManager>>();
+                crate::managers::transcription::report_compute_devices(&tm);
+                let _ = crate::managers::transcription::get_available_accelerators(&tm);
             });
 
             // Hide tray icon if --no-tray was passed
@@ -1095,6 +1191,8 @@ pub fn run(cli_args: CliArgs) {
     #[cfg(target_os = "macos")]
     apply_startup_activation_policy(&mut app, headless_mode);
 
+    // `app` is only used by the macOS arm.
+    #[cfg_attr(not(target_os = "macos"), allow(unused_variables))]
     app.run(|app, event| match &event {
         #[cfg(target_os = "macos")]
         tauri::RunEvent::Reopen { .. } => {
@@ -1113,12 +1211,10 @@ pub fn run(cli_args: CliArgs) {
             }
             show_main_window(app);
         }
-        // Teardown transcribe.cpp before exit
-        tauri::RunEvent::Exit => {
-            if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
-                let _ = tm.unload_model();
-            }
-        }
+        // No transcription teardown on exit: transcribe.cpp runs only in the
+        // worker process, which exits by itself as soon as this process's end
+        // of its stdin closes, even if it is hung. Waiting on an unload here
+        // could block quitting behind a hung model load.
         _ => {}
     });
 }

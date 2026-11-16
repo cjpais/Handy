@@ -8,7 +8,6 @@ import {
   GeneralSettings,
   AdvancedSettings,
   HistorySettings,
-  DebugSettings,
   AboutSettings,
   PostProcessingSettings,
   ModelsSettings,
@@ -27,7 +26,8 @@ interface IconProps {
 interface SectionConfig {
   labelKey: string;
   icon: React.ComponentType<IconProps>;
-  component: React.ComponentType;
+  /** `null` when App renders the section itself (Debug, with its handlers). */
+  component: React.ComponentType | null;
   enabled: (settings: any) => boolean;
 }
 
@@ -65,7 +65,7 @@ export const SECTIONS_CONFIG = {
   debug: {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
-    component: DebugSettings,
+    component: null,
     enabled: (settings) => settings?.debug_mode ?? false,
   },
   about: {
@@ -93,9 +93,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
+    <div className="flex flex-col w-40 h-full border-e border-line items-center px-2">
       <HandyTextLogo width={120} className="m-4" />
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
+      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-line">
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
                 isActive
                   ? "bg-logo-primary/80"
-                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
+                  : "hover:bg-line hover:opacity-100 opacity-85"
               }`}
               onClick={() => onSectionChange(section.id)}
             >

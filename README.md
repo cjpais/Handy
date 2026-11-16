@@ -122,6 +122,25 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
+### Transcription hook
+
+Advanced users on macOS and Linux can rewrite text right before Handy pastes it. Put an executable at `hooks/transcription` in Handy's app data folder (`~/Library/Application Support/com.pais.handy/` on macOS, `~/.local/share/com.pais.handy/` on Linux). Handy writes the text to its stdin, after any LLM post-processing, and pastes its stdout. One trailing newline is removed, and empty output pastes nothing. If the hook fails or runs longer than 30 seconds, the original text is pasted.
+
+The hook doesn't get your shell's `PATH`: on macOS, Handy started from the Dock or Finder only sees `/usr/bin:/bin:/usr/sbin:/sbin`. Use absolute paths for anything else, such as `/opt/homebrew/bin/opencc`.
+
+Example that prefixes `#` when Terminal is the frontmost app (macOS):
+
+```bash
+mkdir -p ~/Library/Application\ Support/com.pais.handy/hooks
+cd ~/Library/Application\ Support/com.pais.handy/hooks
+cat > transcription << 'EOF'
+#!/bin/bash
+app=$(osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true')
+if [ "$app" = "Terminal" ]; then echo "# $(cat)"; else cat; fi
+EOF
+chmod +x transcription
+```
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
@@ -138,11 +157,19 @@ This is a hardware limitation rather than a Handy bug. `fn` is not part of the s
 
 If you switch between a MacBook keyboard and an external one, pick a shortcut built from standard modifiers (`ctrl`, `option`, `shift`, `command`) or a regular key instead.
 
+### Administrator Apps (Windows)
+
+Windows doesn't let Handy paste into apps that are running as administrator, so Handy shows an error and the transcript is saved in History. With the Handy Keys keyboard implementation, the shortcut also won't work while an administrator app is focused. This is expected. To use Handy with these apps, run Handy as administrator too.
+
 ### Linux Notes
+
+**Paste Method:**
+
+On Linux, new installs paste with **Shift+Insert** (**Clipboard (Shift+Insert)** in **Advanced → Paste Method**). It puts the transcript on both the clipboard and the primary selection, so the same key pastes in GUI apps (which read the clipboard) and in terminals such as kitty, Ghostty, Alacritty and GNOME Terminal (which read the primary selection), then restores both. **Direct** typing is still available, but it depends on your keyboard layout: it can drop capitals and accented characters or type the wrong characters on non-US layouts.
 
 **Text Input Tools:**
 
-For reliable text input on Linux, install the appropriate tool for your display server:
+Handy needs a tool to send the paste key (or to type, with Direct). Install the appropriate one for your display server:
 
 | Display Server | Recommended Tool | Install Command                                    |
 | -------------- | ---------------- | -------------------------------------------------- |
@@ -176,7 +203,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   - For building from source on Ubuntu/Debian, you may also need `libgtk-layer-shell-dev`.
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
-- If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
+- Handy picks the WebKit renderer on Linux from the linked WebKitGTK version: 2.54 and newer keep the compositor on shared memory (`WEBKIT_DMABUF_RENDERER_FORCE_SHM=1`), older releases disable DMA-BUF rendering (`WEBKIT_DISABLE_DMABUF_RENDERER=1`). Explicit values for either variable are preserved. For rendering workarounds, see [Troubleshooting → Configure the WebKit renderer](#3-configure-the-webkit-renderer).
 - If Handy fails to start reliably on Linux, see [Troubleshooting → Linux Startup Crashes or Instability](#linux-startup-crashes-or-instability).
 - **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the [CLI flags](#cli-parameters) as the command for your custom shortcut.
 
@@ -398,21 +425,37 @@ If installing the library does not help, you can skip `gtk-layer-shell` initiali
 HANDY_NO_GTK_LAYER_SHELL=1 handy
 ```
 
-**3. Disable WebKit DMA-BUF renderer (`WEBKIT_DISABLE_DMABUF_RENDERER`)**
+**3. Configure the WebKit renderer (`WEBKIT_DISABLE_DMABUF_RENDERER` / `WEBKIT_DMABUF_RENDERER_FORCE_SHM`)**
 
-On some GPU/driver combinations the WebKitGTK DMA-BUF renderer can cause the window to fail to render or to crash. Try:
+Handy picks the renderer at startup from the WebKitGTK build it links, because the DMA-BUF renderer crashes on some GPU/driver combinations but the non-composited fallback loses pixels on the 2.54 series:
+
+- **WebKitGTK 2.54 and newer:** the compositor stays enabled and is forced onto shared memory with `WEBKIT_DMABUF_RENDERER_FORCE_SHM=1`. 2.54 composites only the damaged region of every frame, so the previous workaround (`WEBKIT_DISABLE_DMABUF_RENDERER=1`) left transparent windows — such as the recording overlay — showing only their animated parts ([#2166](https://github.com/cjpais/Handy/issues/2166)).
+- **Older releases:** DMA-BUF rendering is disabled with `WEBKIT_DISABLE_DMABUF_RENDERER=1`, which can cause blank windows but matches the previous behavior.
+
+Explicit environment-variable values are preserved, including in the Nix package:
 
 ```bash
+# Force the legacy non-composited renderer (2.54: partial frames may reappear)
 WEBKIT_DISABLE_DMABUF_RENDERER=1 handy
+
+# Keep the compositor on shared memory (the 2.54 default below)
+WEBKIT_DMABUF_RENDERER_FORCE_SHM=1 handy
+
+# Let WebKit use DMA-BUF when supported (may reintroduce the GPU/driver crashes)
+WEBKIT_DISABLE_DMABUF_RENDERER=0 handy
 ```
+
+Fully quit Handy, including its tray instance, before testing a value. Running a second instance with `--toggle-transcription` does not change the running process's environment.
 
 **Making a workaround permanent**
 
-Once you've found a flag that helps, export it from your shell profile (`~/.bashrc`, `~/.zshenv`, …) or from the desktop autostart entry that launches Handy. If you launch Handy from a `.desktop` file, you can prefix the `Exec=` line, e.g.:
+Set the variable in the environment of the launcher that actually starts Handy. Shell profile exports may not apply to desktop-menu or autostart launches. If you launch Handy from a `.desktop` file, you can prefix the `Exec=` line, e.g.:
 
 ```ini
 Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
 ```
+
+Handy's built-in autostart rewrites its generated desktop entry, so editing that entry is not a durable workaround. For autostart, use an appropriate session/service environment, or disable Handy's built-in autostart and manage your own startup entry with the required variable.
 
 If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
@@ -425,8 +468,24 @@ If the recording overlay is empty or bordered, fully quit Handy and launch a
 env -u HANDY_NO_GTK_LAYER_SHELL GDK_BACKEND=wayland handy
 ```
 
-If this works, apply `GDK_BACKEND=wayland` only to Handy's launcher. This
-workaround does not work with the 0.9.6 AppImage, which forces X11.
+If this works, apply `GDK_BACKEND=wayland` only to Handy's launcher.
+
+The AppImage forces `GDK_BACKEND=x11` in its launch script, after your environment, so
+`GDK_BACKEND=wayland ./Handy.AppImage` has no effect. Use `HANDY_GDK_BACKEND` instead; Handy copies it
+into `GDK_BACKEND` before GTK starts:
+
+```bash
+HANDY_GDK_BACKEND=wayland ./Handy_x.y.z_amd64.AppImage
+```
+
+For a launcher, put the variable in the `.desktop` entry, for example
+`Exec=env HANDY_GDK_BACKEND=wayland /path/to/Handy_x.y.z_amd64.AppImage`.
+
+Try native Wayland if the AppImage shows a frozen Language dropdown, a black window after closing
+to the tray and relaunching ([#1729](https://github.com/cjpais/Handy/issues/1729)), or exits with
+`Failed to initialize gtk backend` on a Wayland-only compositor such as Niri without XWayland
+([#2034](https://github.com/cjpais/Handy/issues/2034)). The AppImage defaults to X11 because of
+[tauri#8541](https://github.com/tauri-apps/tauri/issues/8541), so this stays opt-in.
 
 ### Vulkan Overlays and Capture Tools on Windows (`HANDY_KEEP_VULKAN_IMPLICIT_LAYERS`)
 

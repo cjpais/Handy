@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "../../ui/Button";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { WhatsNewModal } from "../../whats-new/WhatsNewModal";
@@ -27,14 +26,13 @@ export const WhatsNewPreview: React.FC<WhatsNewPreviewProps> = ({
       const releaseNote = findLatestReleaseNote();
 
       if (!releaseNote) {
-        toast.info(t("settings.debug.whatsNewPreview.noNotes"));
+        console.info("What's New preview: no bundled release notes");
         return;
       }
 
       setNote(releaseNote);
     } catch (error) {
       console.error("Failed to preview release notes:", error);
-      toast.error(t("settings.debug.whatsNewPreview.error"));
     } finally {
       setIsLoading(false);
     }

@@ -5,7 +5,7 @@ Thank you for helping translate Handy! This guide explains how to add or improve
 ## Quick Start
 
 1. Fork the repository
-2. Copy the English translation file to your language folder
+2. Check the [currently supported languages](#currently-supported-languages). For an existing language, edit its translation file; for a new language, copy the English translation file to a new language folder
 3. Translate the values (not the keys!)
 4. Submit a pull request
 
@@ -151,24 +151,13 @@ Some languages have complex plural rules. For now, use a general form that works
 
 ## Currently Supported Languages
 
-| Language   | Code | Status            |
-| ---------- | ---- | ----------------- |
-| English    | `en` | Complete (source) |
-| Catalan    | `ca` | Complete          |
-| Chinese    | `zh` | Complete          |
-| French     | `fr` | Complete          |
-| German     | `de` | Complete          |
-| Japanese   | `ja` | Complete          |
-| Spanish    | `es` | Complete          |
-| Vietnamese | `vi` | Complete          |
+See [language metadata](src/i18n/languages.ts) for the current language names and codes, and [locale folders](src/i18n/locales) for their translation files. The app discovers supported languages from these folders.
+
+[English](src/i18n/locales/en/translation.json) is the source language. Existing translations may still need corrections or updates.
 
 ## Requested Languages
 
-We'd love help with:
-
-- Korean (`ko`)
-- Portuguese (`pt`)
-- And more!
+We welcome additional languages that are not yet in the [locale folders](src/i18n/locales), as well as [improvements to existing translations](#improving-existing-translations).
 
 ---
 

@@ -4,6 +4,8 @@ const HandyHand = ({
 }: {
   width?: number | string;
   height?: number | string;
+  // The sidebar passes a className for its icons; the hand ignores it.
+  className?: string;
 }) => (
   <svg
     width={width || 126}

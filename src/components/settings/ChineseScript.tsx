@@ -15,18 +15,23 @@ export const ChineseScriptSetting: React.FC<ChineseScriptProps> = React.memo(
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
+    // The script's own name leads, so it reads the same in every language.
     const scriptOptions = [
+      {
+        value: "simplified",
+        label: `简体 ${t("settings.advanced.chineseScript.options.simplified")}`,
+      },
+      {
+        value: "traditional_tw",
+        label: `繁體 ${t("settings.advanced.chineseScript.options.traditionalTw")}`,
+      },
+      {
+        value: "traditional_hk",
+        label: `繁體 ${t("settings.advanced.chineseScript.options.traditionalHk")}`,
+      },
       {
         value: "as_transcribed",
         label: t("settings.advanced.chineseScript.options.asTranscribed"),
-      },
-      {
-        value: "simplified",
-        label: t("settings.advanced.chineseScript.options.simplified"),
-      },
-      {
-        value: "traditional",
-        label: t("settings.advanced.chineseScript.options.traditional"),
       },
     ];
 

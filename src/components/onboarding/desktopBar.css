@@ -1,0 +1,99 @@
+/* Drawn menu bar / taskbar (DesktopBar.tsx); .is-demo and .is-try set sizes. */
+.desktop-bar.is-demo {
+  --bar-gap: 11px;
+  --bar-pad: 10px;
+  --bar-font: 10.5px;
+  --bar-menu-height: 20px;
+  --bar-task-height: 25px;
+  --bar-task-gap: 7.5px;
+  --bar-menu: 5px;
+  --bar-app: 14px;
+  --bar-app-radius: 4px;
+  --bar-apple-width: 9px;
+  --bar-apple-height: 10px;
+  --bar-start: 12.5px;
+}
+/* Taskbar matches the menu bar's height so Try it's window is the same size. */
+.desktop-bar.is-try {
+  --bar-gap: 14px;
+  --bar-pad: 14px;
+  --bar-font: 12px;
+  --bar-menu-height: 26px;
+  --bar-task-height: 26px;
+  --bar-task-gap: 9px;
+  --bar-menu: 6px;
+  --bar-app: 15px;
+  --bar-app-radius: 5px;
+  --bar-apple-width: 11px;
+  --bar-apple-height: 13px;
+  --bar-start: 13px;
+}
+.desktop-bar {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--bar-gap);
+  padding: 0 var(--bar-pad);
+  font-size: var(--bar-font);
+  font-weight: 600;
+  color: var(--color-ink-2);
+  background: color-mix(in srgb, var(--color-background) 62%, transparent);
+  backdrop-filter: blur(8px);
+}
+.desktop-bar.is-menu {
+  top: 0;
+  height: var(--bar-menu-height);
+}
+.desktop-bar.is-task {
+  bottom: 0;
+  height: var(--bar-task-height);
+  /* Equal outer columns keep the apps centred on the bar, not the space left by the tray. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+.desktop-task-group {
+  display: flex;
+  align-items: center;
+  gap: var(--bar-task-gap);
+}
+/* the menus, as blanks */
+.desktop-bar i {
+  height: var(--bar-menu);
+  border-radius: calc(var(--bar-menu) / 2);
+  background: var(--color-line);
+}
+/* the taskbar's apps */
+.desktop-bar b {
+  width: var(--bar-app);
+  height: var(--bar-app);
+  border-radius: var(--bar-app-radius);
+  background: var(--color-line);
+}
+.desktop-apple {
+  width: var(--bar-apple-width);
+  height: var(--bar-apple-height);
+  border-radius: 45% 45% 50% 50%;
+  background: var(--color-ink-2);
+}
+.desktop-start {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: var(--bar-start);
+  height: var(--bar-start);
+}
+.desktop-start i {
+  height: auto;
+  border-radius: 0;
+  background: var(--color-ink-2);
+}
+.desktop-tux {
+  width: calc(var(--bar-start) * 1.2);
+  height: calc(var(--bar-start) * 1.2);
+  fill: var(--color-ink-2);
+}
+.desktop-tray {
+  display: grid;
+}

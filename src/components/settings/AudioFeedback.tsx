@@ -2,8 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
-import { VolumeSlider } from "./VolumeSlider";
-import { SoundPicker } from "./SoundPicker";
 
 interface AudioFeedbackProps {
   descriptionMode?: "inline" | "tooltip";

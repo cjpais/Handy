@@ -81,7 +81,7 @@ impl VoiceActivityDetector for SmoothedVad {
 
                     // Collect prefill + current frame
                     self.temp_out.clear();
-                    for buffered in self.frame_buffer.iter_mut() {
+                    for buffered in self.frame_buffer.iter_mut().filter(|f| !f.emitted) {
                         self.temp_out.extend(buffered.samples.iter());
                         buffered.emitted = true;
                     }

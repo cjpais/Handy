@@ -4,6 +4,11 @@ import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
+import { LANGUAGE_DETECTOR_ID } from "../../hooks/useLanguageDetector";
+import {
+  areModelsLocked,
+  useModelsLocked,
+} from "../../stores/transcriptionJobsStore";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
@@ -15,7 +20,6 @@ type ModelStatus =
   | "loading"
   | "downloading"
   | "verifying"
-  | "extracting"
   | "error"
   | "unloaded"
   | "none";
@@ -30,11 +34,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     models,
     currentModel,
     downloadProgress,
-    downloadStats,
     verifyingModels,
-    extractingModels,
     selectModel,
   } = useModelStore();
+  const modelsLocked = useModelsLocked();
 
   const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
   const [modelError, setModelError] = useState<string | null>(null);
@@ -97,15 +100,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
-    // Auto-select model when download completes (fires after extraction too)
+    // Auto-select model when download completes
     const downloadCompleteUnlisten = listen<string>(
       "model-download-complete",
       (event) => {
         const modelId = event.payload;
+        // The language detector downloads like a model but isn't one.
+        if (modelId === LANGUAGE_DETECTOR_ID) return;
         setTimeout(async () => {
           try {
             const isRecording = await commands.isRecording();
-            if (!isRecording) {
+            // A file job holds the current model until it's done.
+            if (!isRecording && !areModelsLocked()) {
               setPendingModelId(modelId);
               setModelError(null);
               setShowModelDropdown(false);
@@ -168,22 +174,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       }
     }
 
-    const extractingKeys = Object.keys(extractingModels);
-    if (extractingKeys.length > 0) {
-      if (extractingKeys.length === 1) {
-        const modelId = extractingKeys[0];
-        const model = models.find((m) => m.id === modelId);
-        const modelName = model
-          ? getTranslatedModelName(model, t)
-          : t("modelSelector.extractingGeneric").replace("...", "");
-        return t("modelSelector.extracting", { modelName });
-      } else {
-        return t("modelSelector.extractingMultiple", {
-          count: extractingKeys.length,
-        });
-      }
-    }
-
     const progressValues = Object.values(downloadProgress);
     if (progressValues.length > 0) {
       if (progressValues.length === 1) {
@@ -213,12 +203,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
               modelName: getTranslatedModelName(currentModelInfo, t),
             })
           : t("modelSelector.loadingGeneric");
-      case "extracting":
-        return currentModelInfo
-          ? t("modelSelector.extracting", {
-              modelName: getTranslatedModelName(currentModelInfo, t),
-            })
-          : t("modelSelector.extractingGeneric");
       case "error":
         return modelError || t("modelSelector.modelError");
       case "unloaded":
@@ -237,7 +221,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   // Derive display status from model status + store state
   const getDisplayStatus = (): ModelStatus => {
     if (Object.keys(verifyingModels).length > 0) return "verifying";
-    if (Object.keys(extractingModels).length > 0) return "extracting";
     if (Object.keys(downloadProgress).length > 0) return "downloading";
     return modelStatus;
   };
@@ -250,6 +233,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           status={getDisplayStatus()}
           displayText={getModelDisplayText()}
           isDropdownOpen={showModelDropdown}
+          busy={modelsLocked}
           onClick={() => setShowModelDropdown(!showModelDropdown)}
         />
 
@@ -258,16 +242,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           <ModelDropdown
             models={models}
             currentModelId={displayModelId}
+            locked={modelsLocked}
             onModelSelect={handleModelSelect}
           />
         )}
       </div>
 
       {/* Download Progress Bar for Models */}
-      <DownloadProgressDisplay
-        downloadProgress={downloadProgress}
-        downloadStats={downloadStats}
-      />
+      <DownloadProgressDisplay downloadProgress={downloadProgress} />
     </>
   );
 };
