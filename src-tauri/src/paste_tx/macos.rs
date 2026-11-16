@@ -28,7 +28,8 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use super::{evaluate, send_chord, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
-use crate::clipboard_restore::{self, SavedClipboard};
+use crate::clipboard::SavedClipboard;
+use crate::clipboard_restore;
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
 
@@ -101,8 +102,6 @@ struct MacPending {
     /// Taken by `settle`.
     saved: Option<SavedClipboard>,
     change_count: NSInteger,
-    /// How long after the read the previous clipboard comes back.
-    restore_delay: Duration,
     provider: Option<Retained<HandyPasteProvider>>,
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
@@ -176,9 +175,7 @@ fn settle(
             // as data, since the promise's owner goes away below.
             Some(read_at) => {
                 let change_count = replace_promise_with_data(&p.transcript);
-                let delay = p.restore_delay.saturating_sub(read_at.elapsed());
-                clipboard_restore::schedule(app_handle, saved, change_count, delay);
-                info!("[reliable-paste] restoring previous clipboard in {delay:?}");
+                clipboard_restore::schedule(app_handle, saved, change_count, read_at);
             }
             // Nobody read it within the timeout: waiting longer won't help.
             None => {
@@ -280,7 +277,6 @@ fn spawn_waiter(pending: Arc<Mutex<MacPending>>, app_handle: AppHandle) {
     });
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn run(
     text: &str,
     app_handle: &AppHandle,
@@ -289,7 +285,6 @@ pub(super) fn run(
     auto_submit: bool,
     auto_submit_key: AutoSubmitKey,
     clipboard_handling: ClipboardHandling,
-    restore_delay: Duration,
 ) -> Result<(), String> {
     // Settle any previous transaction first, and take over a restore still
     // pending, so the snapshot is the user's clipboard, not a transcript.
@@ -341,7 +336,6 @@ pub(super) fn run(
         state,
         saved: Some(saved),
         change_count,
-        restore_delay,
         provider: Some(provider),
         auto_submit,
         auto_submit_key,

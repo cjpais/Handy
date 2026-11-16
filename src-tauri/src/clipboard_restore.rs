@@ -10,47 +10,14 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use log::info;
 use objc2_app_kit::NSPasteboard;
 use objc2_foundation::NSInteger;
-use tauri::image::Image;
 use tauri::AppHandle;
-use tauri_plugin_clipboard_manager::ClipboardExt;
 
-/// The clipboard as the user had it before a paste.
-pub(crate) struct SavedClipboard {
-    text: Option<String>,
-    image: Option<Image<'static>>,
-}
-
-impl SavedClipboard {
-    fn read(app: &AppHandle) -> Self {
-        let clipboard = app.clipboard();
-        let text = clipboard.read_text().ok().filter(|t| !t.is_empty());
-        // Only probe for an image when there is no text: reading one decodes
-        // the full bitmap.
-        let image = if text.is_none() {
-            clipboard.read_image().ok().map(|image| image.to_owned())
-        } else {
-            None
-        };
-        Self { text, image }
-    }
-
-    /// Puts it back, or clears the clipboard when it held nothing.
-    pub fn restore(&self, app: &AppHandle) {
-        let clipboard = app.clipboard();
-        if let Some(text) = &self.text {
-            let _ = clipboard.write_text(text);
-        } else if let Some(image) = &self.image {
-            let _ = clipboard.write_image(image);
-        } else {
-            let _ = clipboard.clear();
-        }
-    }
-}
+use crate::clipboard::SavedClipboard;
 
 struct Pending {
     id: u64,
@@ -77,15 +44,18 @@ pub(crate) fn take_saved(app: &AppHandle) -> SavedClipboard {
     }
 }
 
-/// Restores `saved` after `delay`, unless the clipboard changed from
-/// `change_count` by then (the user copied something) or a newer paste took
-/// the restore over (`take_saved`).
+/// Restores `saved` `clipboard_restore_delay_ms` after `since`, unless the
+/// clipboard changed from `change_count` by then (the user copied something)
+/// or a newer paste took the restore over (`take_saved`).
 pub(crate) fn schedule(
     app: &AppHandle,
     saved: SavedClipboard,
     change_count: NSInteger,
-    delay: Duration,
+    since: Instant,
 ) {
+    let delay_ms = crate::settings::get_settings(app).clipboard_restore_delay_ms;
+    let delay = Duration::from_millis(delay_ms).saturating_sub(since.elapsed());
+    info!("[paste] restoring previous clipboard in {delay:?}");
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     let Ok(mut slot) = PENDING.lock() else { return };
     *slot = Some(Pending {

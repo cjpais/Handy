@@ -192,10 +192,8 @@ pub(crate) fn send_chord(
 /// been published when the platform transaction cannot start, in which case
 /// the caller should fall back to the legacy paste path. On `Ok`, publishing
 /// and chord injection have completed and the guarded restore (plus
-/// auto-submit) finishes asynchronously. On macOS the restore comes
-/// `restore_delay` after the read, as `clipboard_restore` does it.
+/// auto-submit) finishes asynchronously.
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn try_reliable_paste(
     text: &str,
     app_handle: &tauri::AppHandle,
@@ -204,11 +202,7 @@ pub(crate) fn try_reliable_paste(
     auto_submit: bool,
     auto_submit_key: crate::settings::AutoSubmitKey,
     clipboard_handling: crate::settings::ClipboardHandling,
-    restore_delay: Duration,
 ) -> Result<(), String> {
-    // Windows restores once reads go quiet.
-    #[cfg(target_os = "windows")]
-    let _ = restore_delay;
     platform::run(
         text,
         app_handle,
@@ -217,8 +211,6 @@ pub(crate) fn try_reliable_paste(
         auto_submit,
         auto_submit_key,
         clipboard_handling,
-        #[cfg(target_os = "macos")]
-        restore_delay,
     )
 }
 

@@ -9,6 +9,8 @@ use std::process::Command;
 use std::sync::OnceLock;
 use std::sync::{mpsc, Mutex, PoisonError};
 use std::time::Duration;
+#[cfg(target_os = "macos")]
+use std::time::Instant;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -60,6 +62,41 @@ fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), Str
         .map_err(|e| format!("Failed to write to clipboard: {}", e))
 }
 
+/// The clipboard as the user had it before a paste.
+pub(crate) struct SavedClipboard {
+    text: Option<String>,
+    image: Option<tauri::image::Image<'static>>,
+}
+
+impl SavedClipboard {
+    pub fn read(app_handle: &AppHandle) -> Self {
+        let clipboard = app_handle.clipboard();
+        let text = clipboard.read_text().ok().filter(|t| !t.is_empty());
+        // Only probe for an image when there is no text: text is by far the
+        // common case, and reading an image decodes the full bitmap.
+        let image = if text.is_none() {
+            clipboard.read_image().ok().map(|image| image.to_owned())
+        } else {
+            None
+        };
+        Self { text, image }
+    }
+
+    /// Puts it back. Text takes priority; an image is only restored when the
+    /// clipboard held no text, and an empty clipboard is cleared so the
+    /// transcript isn't left behind.
+    pub fn restore(&self, app_handle: &AppHandle) {
+        if let Some(text) = &self.text {
+            let _ = write_text_to_clipboard(app_handle, text);
+        } else if let Some(image) = &self.image {
+            info!("Restoring image to clipboard");
+            let _ = app_handle.clipboard().write_image(image);
+        } else {
+            let _ = app_handle.clipboard().clear();
+        }
+    }
+}
+
 fn finish_clipboard_paste(
     paste_result: Result<(), String>,
     paste_delay_after_ms: u64,
@@ -71,30 +108,18 @@ fn finish_clipboard_paste(
 }
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
-/// On macOS the restore comes `restore_delay` later, in the background (see `clipboard_restore`).
+/// On macOS the restore comes later, in the background (see `clipboard_restore`).
 fn paste_via_clipboard(
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
     paste_delay_after_ms: u64,
-    #[cfg(target_os = "macos")] restore_delay: Duration,
 ) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     let saved = crate::clipboard_restore::take_saved(app_handle);
     #[cfg(not(target_os = "macos"))]
-    let clipboard = app_handle.clipboard();
-    #[cfg(not(target_os = "macos"))]
-    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
-    // Only probe for an image when there is no text to restore. Text is by far the
-    // common case, and reading an image decodes the full bitmap, so this keeps the
-    // text path exactly as cheap as it was before.
-    #[cfg(not(target_os = "macos"))]
-    let saved_image = if saved_text.is_none() {
-        clipboard.read_image().ok().map(|image| image.to_owned())
-    } else {
-        None
-    };
+    let saved = SavedClipboard::read(app_handle);
 
     // Shift+Insert reads PRIMARY in many terminals and the clipboard in GUI
     // apps, so put the transcript on both. Only for Shift+Insert: Ctrl+V never
@@ -158,26 +183,15 @@ fn paste_via_clipboard(
     #[cfg(target_os = "macos")]
     let pasted = paste_result.is_ok();
     finish_clipboard_paste(paste_result, paste_delay_after_ms, || {
+        // Restore the original clipboard even when key injection failed.
         #[cfg(target_os = "macos")]
         if pasted {
-            crate::clipboard_restore::schedule(app_handle, saved, change_count, restore_delay);
+            crate::clipboard_restore::schedule(app_handle, saved, change_count, Instant::now());
         } else {
             saved.restore(app_handle);
         }
-        // Restore original clipboard content even when key injection failed.
-        // Text takes priority so this path stays identical to the previous behavior;
-        // an image is only restored when the clipboard held no text at all, which is
-        // the case that used to silently wipe screenshots.
         #[cfg(not(target_os = "macos"))]
-        if let Some(clipboard_content) = saved_text {
-            let _ = write_text_to_clipboard(app_handle, &clipboard_content);
-        } else if let Some(image) = saved_image {
-            info!("Restoring image to clipboard");
-            let _ = clipboard.write_image(&image);
-        } else {
-            // Nothing was there to begin with — don't leave the transcription behind.
-            let _ = clipboard.clear();
-        }
+        saved.restore(app_handle);
         #[cfg(target_os = "linux")]
         if let Some(saved) = saved_primary {
             crate::primary_selection::restore(saved);
@@ -993,7 +1007,6 @@ fn paste_as_configured(
                     settings.auto_submit_key,
                     settings.clipboard_handling,
                 );
-                let restore_delay = Duration::from_millis(settings.clipboard_restore_delay_ms);
                 let reliable_result = with_enigo(&app_handle, move |enigo| {
                     crate::paste_tx::try_reliable_paste(
                         &text,
@@ -1003,7 +1016,6 @@ fn paste_as_configured(
                         auto_submit,
                         auto_submit_key,
                         clipboard_handling,
-                        restore_delay,
                     )
                 });
                 match reliable_result {
@@ -1019,8 +1031,6 @@ fn paste_as_configured(
                 &paste_method,
                 paste_delay_ms,
                 paste_delay_after_ms,
-                #[cfg(target_os = "macos")]
-                Duration::from_millis(settings.clipboard_restore_delay_ms),
             )?
         }
         PasteMethod::ExternalScript => {
