@@ -123,7 +123,12 @@ fn play_audio_file(
         DeviceSinkBuilder::from_default_device()?
     };
 
-    let device_sink = sink_builder.open_stream()?;
+    // rodio 0.23 asks for a fixed 2048-frame buffer, which many Bluetooth
+    // outputs reject (macOS reports 14..=1024 for a Bose QC Ultra), so the chime
+    // failed with "Error opening the stream with the OS". Let the device pick.
+    let device_sink = sink_builder
+        .with_buffer_size(rodio::cpal::BufferSize::Default)
+        .open_stream()?;
     let mixer = device_sink.mixer();
 
     let file = File::open(path)?;
