@@ -74,6 +74,18 @@ struct MenuInputs {
     language: Option<LanguageMenu>,
 }
 
+impl MenuInputs {
+    /// Fields that require replacing the menu's labels or item tree. Recording
+    /// state, lock/load state, update availability, and the optional warning
+    /// lines are applied to the live menu, so they do not call set_menu().
+    fn same_structure(&self, other: &Self) -> bool {
+        self.selected_model == other.selected_model
+            && self.downloaded_models == other.downloaded_models
+            && self.locale == other.locale
+            && self.language == other.language
+    }
+}
+
 /// What the language submenu shows: `(code, name)` entries, with codes as
 /// language identities, the spelling `selected_language` is saved in.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -111,6 +123,10 @@ struct TrayInner {
     applied_menu: Option<MenuInputs>,
     /// An apply is scheduled on the main thread.
     pending: bool,
+    /// Handles for updating the current menu in place. Replacing the menu on
+    /// every recording-state change re-registers the StatusNotifierItem on
+    /// Linux, which makes GNOME reread the previous (already deleted) icon.
+    menu_controls: Option<MenuControls>,
     /// Decoded icons by resource path so the main thread never touches disk.
     icons: HashMap<&'static str, Image<'static>>,
     /// Handed out to each sync request in trigger order, so a slow request
@@ -131,6 +147,7 @@ impl TrayState {
             applied_icon: None,
             applied_menu: None,
             pending: false,
+            menu_controls: None,
             icons: HashMap::new(),
             next_seq: 0,
             desired_seq: 0,
@@ -142,6 +159,149 @@ impl TrayState {
             warn!("Tray state mutex was poisoned, recovering");
             poisoned.into_inner()
         })
+    }
+}
+
+/// Mutable handles for the state-dependent part of the tray menu. The menu is
+/// still rebuilt when its labels or contents change, but idle/busy transitions
+/// only move the relevant items in this already-registered menu.
+#[derive(Clone)]
+struct MenuControls {
+    menu: Menu<tauri::Wry>,
+    secure_input_warning: MenuItem<tauri::Wry>,
+    notice: MenuItem<tauri::Wry>,
+    warning_separator: PredefinedMenuItem<tauri::Wry>,
+    cancel: MenuItem<tauri::Wry>,
+    copy_last_transcript: MenuItem<tauri::Wry>,
+    copy_separator: PredefinedMenuItem<tauri::Wry>,
+    model_submenu: Submenu<tauri::Wry>,
+    language_submenu: Option<Submenu<tauri::Wry>>,
+    unload_model: MenuItem<tauri::Wry>,
+    action_separator: PredefinedMenuItem<tauri::Wry>,
+    content_start: usize,
+    busy: bool,
+    secure_input: bool,
+    notice_code: Option<NoticeCode>,
+    check_updates: MenuItem<tauri::Wry>,
+}
+
+impl MenuControls {
+    fn update(&mut self, inputs: &MenuInputs) -> tauri::Result<Option<String>> {
+        let busy_changed = self.busy != inputs.busy;
+        let secure_input_changed = self.secure_input != inputs.secure_input;
+        let warning_layout_changed =
+            secure_input_changed || self.notice_code.is_some() != inputs.notice.is_some();
+
+        let strings = get_tray_translations(Some(inputs.locale.clone()));
+        let secure_input_label = if strings.secure_input_warning.is_empty() {
+            get_tray_translations(Some("en".to_string())).secure_input_warning
+        } else {
+            strings.secure_input_warning.clone()
+        };
+        self.secure_input_warning.set_text(&secure_input_label)?;
+        self.notice.set_text(
+            inputs
+                .notice
+                .map(|code| code.tray_title(&strings))
+                .unwrap_or_default(),
+        )?;
+        self.notice.set_enabled(inputs.notice.is_some())?;
+
+        if busy_changed {
+            // Remove the old content and its trailing separator before adding
+            // the new content. These mutations are sent over DBusMenu without
+            // calling TrayIcon::set_menu(), so the SNI item is not registered
+            // a second time.
+            self.menu.remove(&self.action_separator)?;
+            if self.busy {
+                self.menu.remove(&self.cancel)?;
+                self.menu.remove(&self.copy_separator)?;
+                self.menu.remove(&self.copy_last_transcript)?;
+            } else {
+                self.menu.remove(&self.copy_last_transcript)?;
+                self.menu.remove(&self.copy_separator)?;
+                self.menu.remove(&self.model_submenu)?;
+                if let Some(language) = &self.language_submenu {
+                    self.menu.remove(language)?;
+                }
+                self.menu.remove(&self.unload_model)?;
+            }
+        }
+
+        if warning_layout_changed {
+            if self.secure_input {
+                self.menu.remove(&self.secure_input_warning)?;
+            }
+            if self.notice_code.is_some() {
+                self.menu.remove(&self.notice)?;
+            }
+            if self.secure_input || self.notice_code.is_some() {
+                self.menu.remove(&self.warning_separator)?;
+            }
+
+            let mut position = 2;
+            if inputs.secure_input {
+                self.menu.insert(&self.secure_input_warning, position)?;
+                position += 1;
+            }
+            if inputs.notice.is_some() {
+                self.menu.insert(&self.notice, position)?;
+                position += 1;
+            }
+            if inputs.secure_input || inputs.notice.is_some() {
+                self.menu.insert(&self.warning_separator, position)?;
+                position += 1;
+            }
+            self.content_start = position;
+        }
+        self.secure_input = inputs.secure_input;
+        self.notice_code = inputs.notice;
+
+        if busy_changed {
+            if inputs.busy {
+                self.menu.insert(&self.cancel, self.content_start)?;
+                self.menu
+                    .insert(&self.copy_separator, self.content_start + 1)?;
+                self.menu
+                    .insert(&self.copy_last_transcript, self.content_start + 2)?;
+                self.menu
+                    .insert(&self.action_separator, self.content_start + 3)?;
+            } else {
+                let mut position = self.content_start;
+                self.menu.insert(&self.copy_last_transcript, position)?;
+                position += 1;
+                self.menu.insert(&self.copy_separator, position)?;
+                position += 1;
+                self.menu.insert(&self.model_submenu, position)?;
+                position += 1;
+                if let Some(language) = &self.language_submenu {
+                    self.menu.insert(language, position)?;
+                    position += 1;
+                }
+                self.menu.insert(&self.unload_model, position)?;
+                self.menu.insert(&self.action_separator, position + 1)?;
+            }
+            self.busy = inputs.busy;
+        }
+
+        self.cancel.set_enabled(inputs.busy)?;
+        self.model_submenu
+            .set_enabled(!inputs.busy && !inputs.models_locked)?;
+        self.unload_model
+            .set_enabled(inputs.model_loaded && !inputs.busy && !inputs.models_locked)?;
+        self.check_updates
+            .set_enabled(inputs.update_checks_enabled)?;
+
+        let tooltip = if secure_input_changed {
+            Some(if inputs.secure_input {
+                format!("{} — {}", version_label(), secure_input_label)
+            } else {
+                version_label()
+            })
+        } else {
+            None
+        };
+        Ok(tooltip)
     }
 }
 
@@ -286,11 +446,21 @@ fn sync_tray_with(app: &AppHandle, update: impl FnOnce(&mut TrayInner)) {
 
     // Record intent and claim a sequence number in one critical section, so
     // sequence order == the order in which state changes were requested.
-    let (seq, icon_state) = {
+    let (seq, icon_state, cached_language) = {
         let mut inner = state.lock();
         update(&mut inner);
         inner.next_seq += 1;
-        (inner.next_seq, inner.icon_state)
+        let cached_language = inner
+            .desired
+            .as_ref()
+            .map(|desired| desired.menu.language.clone())
+            .or_else(|| {
+                inner
+                    .applied_menu
+                    .as_ref()
+                    .map(|menu| menu.language.clone())
+            });
+        (inner.next_seq, inner.icon_state, cached_language)
     };
 
     // Tray not built yet (early secure-input monitor callbacks). The intent
@@ -299,7 +469,7 @@ fn sync_tray_with(app: &AppHandle, update: impl FnOnce(&mut TrayInner)) {
         return;
     }
 
-    let desired = compute_desired(app, icon_state);
+    let desired = compute_desired(app, icon_state, cached_language);
 
     // Decode the icon off the main thread, once per path, outside the lock.
     let needs_icon = !state.lock().icons.contains_key(desired.icon_path);
@@ -346,7 +516,11 @@ fn sync_tray_with(app: &AppHandle, update: impl FnOnce(&mut TrayInner)) {
     }
 }
 
-fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
+fn compute_desired(
+    app: &AppHandle,
+    icon_state: TrayIconState,
+    cached_language: Option<Option<LanguageMenu>>,
+) -> TrayDesired {
     let settings = settings::get_settings(app);
     let theme = get_current_theme(app);
     let secure_input = crate::secure_input::tray_warning_active(app);
@@ -364,12 +538,11 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
         .map(|m| (m.id, m.name))
         .collect();
     downloaded_models.sort_by(|a, b| a.1.cmp(&b.1));
-    // The busy menu has no language submenu, so skip the detector lookup (a
-    // disk probe) on the dictation path. Going idle rebuilds it fresh.
+    // Keep the language submenu's structure stable across recording-state
+    // changes without probing the detector file on the dictation path. It is
+    // hidden while busy, and refreshed when the app returns to idle.
     let model_manager = app.state::<Arc<ModelManager>>();
-    let language = if icon_state.is_busy() {
-        None
-    } else {
+    let compute_language = || {
         model_manager
             .get_model_info(&settings.selected_model)
             .and_then(|model| {
@@ -379,6 +552,11 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
                     model_manager.language_detector_path().is_some(),
                 )
             })
+    };
+    let language = if icon_state.is_busy() {
+        cached_language.unwrap_or_else(compute_language)
+    } else {
+        compute_language()
     };
 
     TrayDesired {
@@ -531,7 +709,7 @@ fn apply_on_main(app: &AppHandle) {
     };
 
     let started = Instant::now();
-    let (desired, icon, icon_changed, menu_changed) = {
+    let (desired, icon, icon_changed, menu_changed, menu_structure_changed, controls) = {
         let mut inner = state.lock();
         inner.pending = false;
         let Some(desired) = inner.desired.clone() else {
@@ -544,7 +722,18 @@ fn apply_on_main(app: &AppHandle) {
             return;
         }
         let icon = inner.icons.get(desired.icon_path).cloned();
-        (desired, icon, icon_changed, menu_changed)
+        let menu_structure_changed = inner
+            .applied_menu
+            .as_ref()
+            .is_none_or(|applied| !applied.same_structure(&desired.menu));
+        (
+            desired,
+            icon,
+            icon_changed,
+            menu_changed,
+            menu_structure_changed,
+            inner.menu_controls.clone(),
+        )
     };
 
     // Each part is recorded as applied only if its native call succeeded, so a
@@ -562,23 +751,72 @@ fn apply_on_main(app: &AppHandle) {
     }
 
     let mut menu_ok = false;
+    let mut updated_controls = None;
+    let mut invalidate_menu_controls = false;
     if menu_changed {
-        match build_menu(app, &desired.menu) {
-            Ok((menu, tooltip)) => match tray.set_menu(Some(menu)) {
-                Ok(()) => {
+        if menu_structure_changed {
+            match build_menu(app, &desired.menu) {
+                Ok((menu, tooltip, controls)) => match tray.set_menu(Some(menu)) {
+                    Ok(()) => {
+                        menu_ok = true;
+                        updated_controls = Some(controls);
+                        // Best-effort: logged, not retried. The tooltip is
+                        // cosmetic and can only fail on Windows, where a
+                        // failing Shell_NotifyIcon call means the icon is
+                        // failing too.
+                        if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+                            error!("Failed to set tray tooltip: {err}");
+                        }
+                    }
+                    Err(err) => error!("Failed to set tray menu: {err}"),
+                },
+                Err(err) => error!("Failed to build tray menu: {err}"),
+            }
+        } else if let Some(mut controls) = controls {
+            match controls.update(&desired.menu) {
+                Ok(tooltip) => {
                     menu_ok = true;
-                    // Best-effort: logged, not retried. The tooltip is cosmetic
-                    // and can only fail on Windows, where a failing
-                    // Shell_NotifyIcon call means the icon is failing too.
-                    // Gating `menu_ok` on it would re-run the full menu
-                    // rebuild on every sync for the cheapest mutation.
-                    if let Err(err) = tray.set_tooltip(Some(tooltip)) {
-                        error!("Failed to set tray tooltip: {err}");
+                    updated_controls = Some(controls);
+                    if let Some(tooltip) = tooltip {
+                        if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+                            error!("Failed to set tray tooltip: {err}");
+                        }
                     }
                 }
-                Err(err) => error!("Failed to set tray menu: {err}"),
-            },
-            Err(err) => error!("Failed to build tray menu: {err}"),
+                Err(err) => {
+                    error!("Failed to update tray menu in place: {err}; rebuilding it");
+                    invalidate_menu_controls = true;
+                    match build_menu(app, &desired.menu) {
+                        Ok((menu, tooltip, controls)) => match tray.set_menu(Some(menu)) {
+                            Ok(()) => {
+                                menu_ok = true;
+                                updated_controls = Some(controls);
+                                invalidate_menu_controls = false;
+                                if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+                                    error!("Failed to set tray tooltip: {err}");
+                                }
+                            }
+                            Err(err) => error!("Failed to rebuild tray menu: {err}"),
+                        },
+                        Err(err) => error!("Failed to build tray menu: {err}"),
+                    }
+                }
+            }
+        } else {
+            error!("Tray menu controls are missing; rebuilding the menu");
+            match build_menu(app, &desired.menu) {
+                Ok((menu, tooltip, controls)) => match tray.set_menu(Some(menu)) {
+                    Ok(()) => {
+                        menu_ok = true;
+                        updated_controls = Some(controls);
+                        if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+                            error!("Failed to set tray tooltip: {err}");
+                        }
+                    }
+                    Err(err) => error!("Failed to set tray menu: {err}"),
+                },
+                Err(err) => error!("Failed to build tray menu: {err}"),
+            }
         }
     }
 
@@ -589,6 +827,14 @@ fn apply_on_main(app: &AppHandle) {
         }
         if menu_ok {
             inner.applied_menu = Some(desired.menu.clone());
+            if let Some(controls) = updated_controls {
+                inner.menu_controls = Some(controls);
+            }
+        } else if invalidate_menu_controls {
+            // An in-place operation may have succeeded partially before a
+            // later GTK/DBusMenu operation failed. Don't retry against stale
+            // handles and stale layout assumptions on the next sync.
+            inner.menu_controls = None;
         }
     }
 
@@ -599,7 +845,15 @@ fn apply_on_main(app: &AppHandle) {
         } else {
             "unchanged"
         },
-        if menu_changed { "rebuilt" } else { "unchanged" },
+        if menu_changed {
+            if menu_structure_changed {
+                "rebuilt"
+            } else {
+                "updated"
+            }
+        } else {
+            "unchanged"
+        },
         desired.menu.busy,
         started.elapsed()
     );
@@ -626,38 +880,41 @@ fn version_label() -> String {
 /// to app state: everything it depends on is in `inputs`, plus the
 /// process-constant `HANDY_DISABLE_UPDATER` env flag behind
 /// `update_checks_forced_disabled()`, which cannot change during a run.
-fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri::Wry>, String)> {
+fn build_menu(
+    app: &AppHandle,
+    inputs: &MenuInputs,
+) -> tauri::Result<(Menu<tauri::Wry>, String, MenuControls)> {
     let strings = get_tray_translations(Some(inputs.locale.clone()));
 
     // Secure Input warning entry (macOS): clicking opens the settings window
     // where the full warning banner explains the situation. Locales that
     // haven't translated the key yet get the English string rather than a
     // blank menu item (build.rs emits "" for missing keys).
-    let secure_input_warning = if inputs.secure_input {
-        let label = if strings.secure_input_warning.is_empty() {
-            get_tray_translations(Some("en".to_string())).secure_input_warning
-        } else {
-            strings.secure_input_warning.clone()
-        };
-        Some(MenuItem::with_id(
-            app,
-            "secure_input_warning",
-            &label,
-            true,
-            None::<&str>,
-        )?)
+    let secure_input_label = if strings.secure_input_warning.is_empty() {
+        get_tray_translations(Some("en".to_string())).secure_input_warning
     } else {
-        None
+        strings.secure_input_warning.clone()
     };
+    let secure_input_warning = MenuItem::with_id(
+        app,
+        "secure_input_warning",
+        &secure_input_label,
+        true,
+        None::<&str>,
+    )?;
 
     // Clicking opens the window, where the footer has the details.
-    let notice_line = inputs
+    let notice_label = inputs
         .notice
-        .map(|code| {
-            let label = code.tray_title(&strings);
-            MenuItem::with_id(app, "notice", label, true, None::<&str>)
-        })
-        .transpose()?;
+        .map(|code| code.tray_title(&strings))
+        .unwrap_or_default();
+    let notice = MenuItem::with_id(
+        app,
+        "notice",
+        notice_label,
+        inputs.notice.is_some(),
+        None::<&str>,
+    )?;
 
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]
@@ -689,103 +946,109 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
         true,
         None::<&str>,
     )?;
+    let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, inputs.busy, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", &strings.quit, true, quit_accelerator)?;
     let separator = || PredefinedMenuItem::separator(app);
 
-    let menu = if inputs.busy {
-        let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)?;
-        Menu::with_items(
-            app,
-            &[
-                &version_i,
-                &separator()?,
-                &cancel_i,
-                &separator()?,
-                &copy_last_transcript_i,
-                &separator()?,
-                &settings_i,
-                &check_updates_i,
-                &separator()?,
-                &quit_i,
-            ],
-        )?
+    // Build both state-specific groups up front. On state transitions one
+    // group is removed and the other inserted into this root menu, preserving
+    // the menu's existing visible layout without another set_menu() call.
+    let submenu_label = inputs
+        .downloaded_models
+        .iter()
+        .find(|(id, _)| *id == inputs.selected_model)
+        .map(|(_, name)| name.clone())
+        .unwrap_or_else(|| strings.model.clone());
+    let model_submenu = Submenu::with_id(
+        app,
+        "model_submenu",
+        &submenu_label,
+        !inputs.busy && !inputs.models_locked,
+    )?;
+    for (id, name) in &inputs.downloaded_models {
+        let is_active = *id == inputs.selected_model;
+        let item_id = format!("model_select:{}", id);
+        let item = CheckMenuItem::with_id(app, &item_id, name, true, is_active, None::<&str>)?;
+        model_submenu.append(&item)?;
+    }
+    let language_i = inputs
+        .language
+        .as_ref()
+        .map(|language| language_submenu(app, &strings, language))
+        .transpose()?;
+    let unload_model_i = MenuItem::with_id(
+        app,
+        "unload_model",
+        &strings.unload_model,
+        inputs.model_loaded && !inputs.busy && !inputs.models_locked,
+        None::<&str>,
+    )?;
+
+    let intro_separator = separator()?;
+    let copy_separator = separator()?;
+    let warning_separator = separator()?;
+    let action_separator = separator()?;
+    let bottom_separator = separator()?;
+    let menu = Menu::new(app)?;
+    menu.append(&version_i)?;
+    menu.append(&intro_separator)?;
+
+    let mut tooltip = version_label;
+    if inputs.secure_input {
+        menu.append(&secure_input_warning)?;
+        tooltip = format!("{} — {}", tooltip, secure_input_label);
+    }
+    if inputs.notice.is_some() {
+        menu.append(&notice)?;
+    }
+    if inputs.secure_input || inputs.notice.is_some() {
+        menu.append(&warning_separator)?;
+    }
+
+    let content_start = menu.items()?.len();
+    if inputs.busy {
+        menu.append(&cancel_i)?;
+        menu.append(&copy_separator)?;
+        menu.append(&copy_last_transcript_i)?;
     } else {
-        // Build model submenu — label is the active model name
-        let submenu_label = inputs
-            .downloaded_models
-            .iter()
-            .find(|(id, _)| *id == inputs.selected_model)
-            .map(|(_, name)| name.clone())
-            .unwrap_or_else(|| strings.model.clone());
-
-        let model_submenu =
-            Submenu::with_id(app, "model_submenu", &submenu_label, !inputs.models_locked)?;
-        for (id, name) in &inputs.downloaded_models {
-            let is_active = *id == inputs.selected_model;
-            let item_id = format!("model_select:{}", id);
-            let item = CheckMenuItem::with_id(app, &item_id, name, true, is_active, None::<&str>)?;
-            model_submenu.append(&item)?;
+        menu.append(&copy_last_transcript_i)?;
+        menu.append(&copy_separator)?;
+        menu.append(&model_submenu)?;
+        if let Some(language) = &language_i {
+            menu.append(language)?;
         }
-
-        let unload_model_i = MenuItem::with_id(
-            app,
-            "unload_model",
-            &strings.unload_model,
-            inputs.model_loaded && !inputs.models_locked,
-            None::<&str>,
-        )?;
-
-        let menu = Menu::with_items(
-            app,
-            &[
-                &version_i,
-                &separator()?,
-                &copy_last_transcript_i,
-                &separator()?,
-                &model_submenu,
-                &unload_model_i,
-                &separator()?,
-                &settings_i,
-                &check_updates_i,
-                &separator()?,
-                &quit_i,
-            ],
-        )?;
-        // Right below the model submenu: version, separator, copy, separator, model.
-        if let Some(language) = &inputs.language {
-            menu.insert(&language_submenu(app, &strings, language)?, 5)?;
-        }
-        menu
-    };
+        menu.append(&unload_model_i)?;
+    }
+    menu.append(&action_separator)?;
+    menu.append(&settings_i)?;
 
     // When update checks are forced off (e.g. HANDY_DISABLE_UPDATER, set by
-    // the Nix package), the item is dropped from the menu rather than shown
-    // disabled — it can never do anything in that case, and a disabled item
-    // still shifts every entry below it by one position. A manually-disabled
-    // toggle in Debug Settings keeps the old greyed-out behavior via the
-    // enabled flag.
-    if settings::update_checks_forced_disabled() {
-        menu.remove(&check_updates_i)?;
+    // the Nix package), the item is dropped rather than shown disabled.
+    if !settings::update_checks_forced_disabled() {
+        menu.append(&check_updates_i)?;
     }
+    menu.append(&bottom_separator)?;
+    menu.append(&quit_i)?;
 
-    // Both layouts start with [version, separator, ...]; slot the warnings in
-    // right below the version line so they're the first actionable thing seen.
-    let mut tooltip = version_label;
-    let mut position = 2;
-    if let Some(warning_item) = secure_input_warning {
-        menu.insert(&warning_item, position)?;
-        position += 1;
-        tooltip = format!("{} — {}", tooltip, warning_item.text().unwrap_or_default());
-    }
-    if let Some(notice_item) = notice_line {
-        menu.insert(&notice_item, position)?;
-        position += 1;
-    }
-    if position > 2 {
-        menu.insert(&separator()?, position)?;
-    }
-
-    Ok((menu, tooltip))
+    let controls = MenuControls {
+        menu: menu.clone(),
+        secure_input_warning,
+        notice,
+        warning_separator,
+        cancel: cancel_i,
+        copy_last_transcript: copy_last_transcript_i,
+        copy_separator,
+        model_submenu,
+        language_submenu: language_i,
+        unload_model: unload_model_i,
+        action_separator,
+        content_start,
+        busy: inputs.busy,
+        secure_input: inputs.secure_input,
+        notice_code: inputs.notice,
+        check_updates: check_updates_i,
+    };
+    Ok((menu, tooltip, controls))
 }
 
 fn last_transcript_text(entry: &HistoryEntry) -> &str {
@@ -868,6 +1131,7 @@ mod tests {
     };
     use crate::managers::history::HistoryEntry;
     use crate::managers::model::{ModelInfo, ModelSource};
+    use crate::notices::NoticeCode;
     use crate::settings::{get_default_settings, AppSettings};
 
     fn codes(list: &str) -> Vec<String> {
@@ -1052,5 +1316,25 @@ mod tests {
     #[test]
     fn idle_and_busy_menus_differ() {
         assert_ne!(inputs(false), inputs(true));
+    }
+
+    #[test]
+    fn state_changes_do_not_change_menu_structure() {
+        let idle = inputs(false);
+        let mut busy = inputs(true);
+        busy.models_locked = true;
+        busy.model_loaded = false;
+        busy.update_checks_enabled = false;
+        busy.secure_input = true;
+        busy.notice = Some(NoticeCode::MicrophoneSilent);
+        assert!(idle.same_structure(&busy));
+
+        let mut changed_locale = busy.clone();
+        changed_locale.locale = "fr".to_string();
+        assert!(!idle.same_structure(&changed_locale));
+
+        let mut changed_model = busy;
+        changed_model.selected_model = "large".to_string();
+        assert!(!idle.same_structure(&changed_model));
     }
 }
