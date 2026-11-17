@@ -7,18 +7,31 @@ use rubato::audioadapter_buffers::direct::InterleavedSlice;
 use rubato::{Fft, FixedSync, Indexing, Resampler};
 use std::fs::File;
 use std::path::Path;
+use std::sync::LazyLock;
 use symphonia::core::audio::SampleBuffer;
-use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL};
+use symphonia::core::codecs::{CodecRegistry, DecoderOptions, CODEC_TYPE_NULL};
 use symphonia::core::errors::Error as SymphoniaError;
 use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
+use symphonia_adapter_libopus::OpusDecoder;
 
 use crate::audio_toolkit::constants::WHISPER_SAMPLE_RATE;
 
 /// Frames the resampler takes per step.
 const RESAMPLER_CHUNK_FRAMES: usize = 1024;
+
+/// Symphonia's decoders plus libopus for Opus.
+fn codecs() -> &'static CodecRegistry {
+    static CODECS: LazyLock<CodecRegistry> = LazyLock::new(|| {
+        let mut registry = CodecRegistry::new();
+        symphonia::default::register_enabled_codecs(&mut registry);
+        registry.register_all::<OpusDecoder>();
+        registry
+    });
+    &CODECS
+}
 
 /// The whole of `path`'s first audio track, downmixed to mono and resampled
 /// to 16 kHz.
@@ -44,7 +57,7 @@ pub fn decode_audio_file(path: &Path) -> Result<Vec<f32>> {
         .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
         .ok_or_else(|| anyhow!("The file has no audio track"))?;
     let track_id = track.id;
-    let mut decoder = symphonia::default::get_codecs()
+    let mut decoder = codecs()
         .make(&track.codec_params, &DecoderOptions::default())
         .map_err(|e| anyhow!("The file's audio format is not supported: {}", e))?;
 
@@ -258,6 +271,41 @@ mod tests {
         assert_eq!(samples.len(), 32_000);
         let peak = samples.iter().fold(0.0f32, |m, s| m.max(s.abs()));
         assert!((0.4..0.6).contains(&peak), "peak {}", peak);
+    }
+
+    #[test]
+    fn opus_voice_notes_decode_to_16k_mono() {
+        // A 1 s 440 Hz tone: Ogg Opus with 20 ms packets, and stereo WebM
+        // with 120 ms packets, the largest Opus allows.
+        for name in ["tone_440hz_mono.opus", "tone_440hz_stereo_120ms.webm"] {
+            let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(name);
+
+            let samples = decode_audio_file(&path).unwrap();
+
+            // The last packet's padding isn't trimmed: up to 120 ms more.
+            assert!(
+                (16_000..=17_920).contains(&samples.len()),
+                "{}: {} samples",
+                name,
+                samples.len()
+            );
+            let tone = &samples[1_600..14_400];
+            let peak = tone.iter().fold(0.0f32, |m, s| m.max(s.abs()));
+            assert!(peak > 0.25, "{}: peak {}", name, peak);
+            let crossings = tone
+                .windows(2)
+                .filter(|w| (w[0] < 0.0) != (w[1] < 0.0))
+                .count();
+            // 0.8 s of 440 Hz crosses zero about 704 times.
+            assert!(
+                (690..=720).contains(&crossings),
+                "{}: {} zero crossings",
+                name,
+                crossings
+            );
+        }
     }
 
     fn resample_in_packets(mono: &[f32], rate: u32, packet: usize) -> Vec<f32> {

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isComposingKeyEvent } from "@/lib/utils/keyboard";
 import {
   getLanguage,
   languageList,
@@ -33,6 +34,8 @@ interface LanguageChipProps {
   onRemove: () => void;
   /** The last language can't go: the chip stays, without its ×. */
   locked?: boolean;
+  /** `soft`: Settings' small borderless tag, beside its Dropdowns. */
+  variant?: "pill" | "soft";
 }
 
 /** A picked language by its endonym, with a remove button that keeps focus in the search. */
@@ -41,6 +44,7 @@ export const LanguageChip: React.FC<LanguageChipProps> = ({
   removeLabel,
   onRemove,
   locked = false,
+  variant = "pill",
 }) => {
   const { native } = getLanguage(code);
   const name = (
@@ -48,6 +52,25 @@ export const LanguageChip: React.FC<LanguageChipProps> = ({
       {native}
     </bdi>
   );
+  if (variant === "soft") {
+    const soft =
+      "inline-flex h-[26px] shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-wash text-xs font-medium text-text";
+    if (locked) return <span className={`${soft} px-2.5`}>{name}</span>;
+    return (
+      <button
+        type="button"
+        aria-label={removeLabel}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onRemove}
+        className={`group ${soft} cursor-pointer ps-2.5 pe-1.5 transition-colors hover:bg-line`}
+      >
+        {name}
+        <span className="grid size-[14px] place-items-center text-ink-3 transition-colors group-hover:text-text">
+          <RemoveIcon />
+        </span>
+      </button>
+    );
+  }
   if (locked)
     return (
       <span className="inline-flex h-[28px] items-center rounded-full border-[1.5px] border-line-strong bg-background px-[12px] text-small font-semibold text-text">
@@ -129,7 +152,7 @@ export const languageSearchKeys = (
     clear: () => void;
   },
 ): boolean => {
-  if (e.nativeEvent.isComposing) return false;
+  if (isComposingKeyEvent(e.nativeEvent)) return false;
   if (e.key === "Enter" && query) {
     e.preventDefault();
     if (first) toggle(first);

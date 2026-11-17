@@ -1,5 +1,6 @@
 use crate::managers::model::{ModelInfo, ModelManager, RetiredModel, LANGUAGE_DETECTOR_ID};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
+use crate::notices::{self, NoticeSource};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use log::error;
 use std::sync::Arc;
@@ -49,8 +50,8 @@ pub async fn download_model(
         .map_err(|e| e.to_string());
 
     if let Err(ref error) = result {
-        // Log as well as emit: the toast is transient, and failed downloads have
-        // historically been undiagnosable because logs showed nothing (#1579).
+        // Log as well as emit: failed downloads have historically been
+        // undiagnosable because logs showed nothing (#1579).
         error!("Model download failed for {}: {}", model_id, error);
         let _ = app_handle.emit(
             "model-download-failed",
@@ -135,7 +136,7 @@ pub async fn delete_model(
     }
 
     model_manager.delete_model(&model_id).map_err(|e| {
-        // The UI only shows a generic failure toast, so the cause has to be logged.
+        // The UI only shows a generic failure message, so the cause has to be logged.
         error!("Model delete failed for {}: {}", model_id, e);
         e.to_string()
     })
@@ -202,6 +203,10 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
 
     // Load the model. On failure, revert the persisted selection.
     if let Err(e) = transcription_manager.load_model(model_id) {
+        notices::raise(
+            app,
+            transcription_manager.model_load_notice(model_id, &e, NoticeSource::Model),
+        );
         let mut settings = get_settings(app);
         settings.selected_model = old_model;
         write_settings(app, settings);

@@ -1,6 +1,4 @@
 import { create } from "zustand";
-import { toast } from "sonner";
-import i18n from "@/i18n";
 import { events, type TranscriptionJobStatus } from "@/bindings";
 
 export type ActiveJobStatus = Extract<
@@ -38,7 +36,6 @@ export const useTranscriptionJobsStore = create<TranscriptionJobsStore>()(
         });
         if (status.state === "failed") {
           console.error(`Transcription of entry ${entryId} failed:`, status);
-          toast.error(i18n.t("settings.history.transcribeFailed"));
         }
       });
     },

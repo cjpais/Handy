@@ -149,13 +149,63 @@
    width transition (intrinsic max-content can't be transitioned, and every label
    is short enough to fit the resting pill, so content-sizing produced no visible
    grow). The resting pill hugs the waveform; the working pill is roomy enough to
-   center the longest label — the .swork-label ellipsis is only a safety net past it. */
+   center the longest label — the .swork-label ellipsis is only a safety net past it.
+   A notice hugs its title instead, so RecordingOverlay.tsx measures that width and
+   sets it inline, which keeps it animatable. */
 .scard.compact {
   animation: none;
   width: var(--ov-rest-w);
 }
 .scard.compact.cworking {
   width: var(--ov-work-w);
+}
+
+/* Notice: badge and title, in the pill and the Live panel. */
+.scard.cnotice {
+  cursor: pointer;
+}
+.scard.cnotice:not(.open) {
+  border-radius: 24px;
+}
+.scard.level-error {
+  --notice: var(--color-error);
+}
+.scard.level-warning {
+  --notice: var(--color-warning);
+}
+.sbase.snotice {
+  grid-template-columns: auto minmax(0, max-content);
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+}
+.nglyph {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--notice);
+}
+.nlabel {
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Measures the full title, since the visible one can be cut off. */
+.nlabel.nprobe {
+  position: absolute;
+  visibility: hidden;
+  overflow: visible;
+}
+.stext-cap .ndetail {
+  display: block;
+  color: var(--s-muted);
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* text region — auto-height open via grid-rows trick; region fades as a whole */

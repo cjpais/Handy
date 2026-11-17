@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import { Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { commands, type RetiredModel } from "@/bindings";
@@ -40,10 +40,8 @@ const RetiredModelsNotice: React.FC = () => {
     setOnDisk(await commands.getRetiredModels());
     setDeleting(false);
 
-    if (deleted === retired.length) {
-      toast(t("settings.models.retiredNotice.deleted"));
-    } else {
-      toast.error(t("settings.models.retiredNotice.deleteFailed"));
+    if (deleted < retired.length) {
+      notify({ title: t("settings.models.retiredNotice.deleteFailed") });
     }
   };
 

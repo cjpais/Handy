@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import {
   commands,
   events,
@@ -35,7 +35,11 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer, AudioPlayerGroup } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { copyToClipboard } from "./clipboard";
-import { pickAndTranscribeFiles } from "./transcribeFiles";
+import {
+  pickAndTranscribeFiles,
+  useFileReadsStore,
+  type FileRead,
+} from "./transcribeFiles";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -62,6 +66,40 @@ const PAGE_SIZE = 30;
 
 // Long text folds to this many lines until "Show more".
 const FOLDED_LINES = 4;
+
+// The pulse of an entry's text while it's being transcribed.
+const TRANSCRIBE_PULSE = {
+  animation: "transcribe-pulse 3s ease-in-out infinite",
+};
+
+const TranscribePulseKeyframes: React.FC = () => (
+  <style>{`
+    @keyframes transcribe-pulse {
+      0%, 100% { color: var(--color-ink-3); }
+      50% { color: var(--color-text); }
+    }
+  `}</style>
+);
+
+// A dropped or picked file while its audio is read, before it's an entry.
+const FileReadRow: React.FC<{ read: FileRead }> = ({ read }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="px-4 py-2 pb-5 flex flex-col gap-3">
+      <span
+        className="flex items-center gap-1 min-w-0 h-7 text-sm text-ink-3"
+        title={read.name}
+      >
+        <FileAudio width={14} height={14} className="shrink-0" />
+        <span className="truncate">{read.name}</span>
+      </span>
+      <p className="italic text-sm w-full" style={TRANSCRIBE_PULSE}>
+        <TranscribePulseKeyframes />
+        {t("settings.history.readingFile")}
+      </p>
+    </div>
+  );
+};
 
 interface HeaderButtonProps {
   onClick: () => void;
@@ -90,6 +128,7 @@ export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
   const jobs = useTranscriptionJobsStore((state) => state.jobs);
+  const reads = useFileReadsStore((state) => state.reads);
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -235,12 +274,12 @@ export const HistorySettings: React.FC = () => {
     try {
       const result = await commands.deleteHistoryEntry(id);
       if (result.status !== "ok") {
-        // Reload on failure
-        loadPage();
+        throw new Error(String(result.error));
       }
     } catch (error) {
       console.error("Failed to delete entry:", error);
       loadPage();
+      throw error;
     }
   };
 
@@ -249,7 +288,7 @@ export const HistorySettings: React.FC = () => {
       await pickAndTranscribeFiles();
     } catch (error) {
       console.error("Failed to pick a file to transcribe:", error);
-      toast.error(t("settings.history.transcribeFailed"));
+      notify({ title: t("settings.history.transcribeFailed") });
     }
   };
 
@@ -272,7 +311,7 @@ export const HistorySettings: React.FC = () => {
         {t("settings.history.loading")}
       </div>
     );
-  } else if (entries.length === 0) {
+  } else if (entries.length === 0 && reads.length === 0) {
     content = (
       <div className="px-4 py-3 text-center text-ink-2">
         {t("settings.history.empty")}
@@ -283,6 +322,9 @@ export const HistorySettings: React.FC = () => {
       <>
         <AudioPlayerGroup>
           <div className="divide-y divide-line">
+            {reads.map((read) => (
+              <FileReadRow key={`read-${read.id}`} read={read} />
+            ))}
             {entries.map((entry) => (
               <HistoryEntryComponent
                 key={entry.id}
@@ -394,7 +436,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
     const copied = await onCopyText();
     if (!copied) {
-      toast.error(t("settings.history.copyError"));
+      notify({ title: t("settings.history.copyError") });
       return;
     }
 
@@ -407,7 +449,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      toast.error(t("settings.history.deleteError"));
+      notify({ title: t("settings.history.deleteError") });
     }
   };
 
@@ -504,7 +546,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           }`}
           style={
             retrying
-              ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
+              ? TRANSCRIBE_PULSE
               : folded
                 ? {
                     display: "-webkit-box",
@@ -515,14 +557,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 : undefined
           }
         >
-          {retrying && (
-            <style>{`
-            @keyframes transcribe-pulse {
-              0%, 100% { color: var(--color-ink-3); }
-              50% { color: var(--color-text); }
-            }
-          `}</style>
-          )}
+          {retrying && <TranscribePulseKeyframes />}
           {retrying
             ? progressText
             : hasTranscription

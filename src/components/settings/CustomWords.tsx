@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { notify } from "@/stores/noticeStore";
 import { useSettings } from "../../hooks/useSettings";
+import { isComposingKeyEvent } from "../../lib/utils/keyboard";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingContainer } from "../ui/SettingContainer";
@@ -28,11 +29,11 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     const handleAddWord = () => {
       if (normalizedWord && normalizedWord.length <= 50) {
         if (customWords.includes(normalizedWord)) {
-          toast.error(
-            t("settings.advanced.customWords.duplicate", {
+          notify({
+            title: t("settings.advanced.customWords.duplicate", {
               word: normalizedWord,
             }),
-          );
+          });
           return;
         }
         updateSetting("custom_words", [...customWords, normalizedWord]);
@@ -48,6 +49,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (isComposingKeyEvent(e.nativeEvent)) return;
       if (e.key === "Enter") {
         e.preventDefault();
         handleAddWord();

@@ -163,7 +163,7 @@ export const useTryEngine = ({ os }: { os: OSType }) => {
         setWaiting(false);
         setPhase("idle");
         setWay(null);
-        // Failures already get the app's error toast.
+        // Failures already get the app's notice.
         if (payload.outcome === "failed") {
           setResult({ kind: "none" });
           return;

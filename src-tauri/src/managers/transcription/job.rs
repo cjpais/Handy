@@ -50,7 +50,7 @@ impl TranscriptionManager {
         }
 
         self.touch_activity();
-        self.initiate_model_load();
+        self.initiate_model_load(false);
         // Read once: the model can't change until the job ends.
         let BatchContext {
             settings,

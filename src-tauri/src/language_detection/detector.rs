@@ -36,6 +36,7 @@ impl Loaded {
             &ModelOptions {
                 backend: Backend::Cpu,
                 device: None,
+                ..Default::default()
             },
         )
         .map_err(|e| anyhow::anyhow!("Failed to load the language detector: {e}"))?;

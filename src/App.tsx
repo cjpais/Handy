@@ -6,15 +6,12 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import SecureInputWarning from "./components/SecureInputWarning";
 import Footer from "./components/footer";
@@ -37,6 +34,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { deleteRetiredModel } from "@/lib/models/retired";
+import { NoticePanel } from "@/components/notices/NoticePanel";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 // flow is first-run onboarding; the rest are single screens for returning users.
@@ -151,81 +149,6 @@ function App() {
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // Listen for recording errors from the backend and show a toast
-  useEffect(() => {
-    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
-      const { error_type, detail } = event.payload;
-
-      if (error_type === "microphone_permission_denied") {
-        const currentPlatform = platform();
-        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
-        const description = t(platformKey, {
-          defaultValue: t("errors.micPermissionDenied.generic"),
-        });
-        toast.error(t("errors.micPermissionDeniedTitle"), { description });
-      } else if (error_type === "no_input_device") {
-        toast.error(t("errors.noInputDeviceTitle"), {
-          description: t("errors.noInputDevice"),
-        });
-      } else {
-        toast.error(
-          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for paste failures and show a toast.
-  // The technical error detail is logged to handy.log on the Rust side
-  // (see actions.rs `error!("Failed to paste transcription: ...")`),
-  // so we show a localized, user-friendly message here instead of the raw error.
-  useEffect(() => {
-    const unlisten = listen("paste-error", () => {
-      toast.error(t("errors.pasteFailedTitle"), {
-        description: t("errors.pasteFailed"),
-      });
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for transcription failures and show a toast.
-  // The payload is the backend error message (also logged to handy.log).
-  useEffect(() => {
-    const unlisten = listen<string>("transcription-error", (event) => {
-      toast.error(t("errors.transcriptionFailedTitle"), {
-        description: event.payload,
-      });
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for model loading failures and show a toast
-  useEffect(() => {
-    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
-      if (event.payload.event_type === "loading_failed") {
-        toast.error(
-          t("errors.modelLoadFailed", {
-            model:
-              event.payload.model_name || t("errors.modelLoadFailedUnknown"),
-          }),
-          {
-            description: event.payload.error,
-          },
-        );
-      }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
   const revealMainWindowForPermissions = async () => {
     try {
       await commands.showMainWindowCommand();
@@ -324,7 +247,7 @@ function App() {
   const runModelMigration = async () => {
     const retired = await commands.getRetiredModels();
     if (retired.length === 0) {
-      toast.info(t("settings.debug.modelMigration.noRetired"));
+      console.info("Model migration: no old-format models on disk");
       return;
     }
     const selected = settings?.selected_model;
@@ -342,36 +265,13 @@ function App() {
     setOnboardingStep("done");
   };
 
-  // Rendered once around every step below (including onboarding) so
-  // toast.error() calls surface to the user. sonner renders via a portal, so
-  // its position in the tree doesn't affect layout. Without this, errors during
-  // onboarding (e.g. a model download failing because blob.handy.computer is
-  // unreachable) are silently swallowed and the wizard just appears to "blink".
-  const toaster = (
-    <Toaster
-      theme="system"
-      toastOptions={{
-        unstyled: true,
-        classNames: {
-          toast:
-            "bg-background border border-line rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-          title: "font-medium",
-          description: "text-ink-3",
-          actionButton:
-            "px-2 py-1 text-xs font-medium rounded-lg border bg-wash border-line hover:bg-logo-primary/20 hover:border-logo-primary cursor-pointer whitespace-nowrap",
-        },
-      }}
-    />
-  );
-
   // Still checking onboarding status
   if (onboardingStep === null) {
     return null;
   }
 
-  // Select the content for the current step. The Toaster is rendered once, in a
-  // stable wrapper around this node, so crossing between onboarding steps and
-  // the main app never remounts it (which would drop any in-flight toast).
+  // Select the content for the current step. NoticePanel is rendered once,
+  // beside this node, so errors surface on every step, including onboarding.
   let content: ReactNode;
   if (onboardingPreview) {
     // Previews render in the same top-level slot as real onboarding, inert:
@@ -458,8 +358,8 @@ function App() {
 
   return (
     <>
-      {toaster}
       {content}
+      <NoticePanel />
     </>
   );
 }
