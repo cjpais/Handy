@@ -217,6 +217,45 @@ impl Drop for LoadingGuard {
     }
 }
 
+/// Whether a finished load should unload its model: a dictation that ended
+/// while it ran asked for it, and nothing else owns the model.
+fn deferred_unload_due(requested: bool, loaded: bool, immediate: bool, job_active: bool) -> bool {
+    requested && loaded && immediate && !job_active
+}
+
+/// Ends a background model load on every exit, panics included: runs the
+/// unload a dictation that already ended asked for, clears `is_loading` and
+/// wakes waiters. The decision, the unload and the reset share one critical
+/// section, so a caller of `initiate_model_load` either withdrew the request
+/// first or finds the model already unloaded and loads it afresh.
+struct ModelLoadDone {
+    manager: TranscriptionManager,
+    loaded: bool,
+    /// Unload setting when the load began; the settings store must not be read
+    /// inside Drop while holding `is_loading`.
+    immediate: bool,
+}
+
+impl Drop for ModelLoadDone {
+    fn drop(&mut self) {
+        let m = &self.manager;
+        // A panic inside Drop calls abort(), so recover from poisoning.
+        let mut is_loading = match m.is_loading.lock() {
+            Ok(g) => g,
+            Err(e) => e.into_inner(),
+        };
+        let requested = m.unload_after_load.swap(false, Ordering::AcqRel);
+        if deferred_unload_due(requested, self.loaded, self.immediate, m.job_active()) {
+            info!("Immediately unloading model: its dictation ended while it loaded");
+            if catch_unwind(AssertUnwindSafe(|| m.request_unload())).is_err() {
+                error!("Deferred model unload panicked");
+            }
+        }
+        *is_loading = false;
+        m.loading_condvar.notify_all();
+    }
+}
+
 /// RAII guard that clears the streaming worker flags on any worker exit -
 /// normal return, early return, or a panic that unwinds the detached worker
 /// thread. Tokens prevent an older worker from clearing a newer worker's
@@ -254,6 +293,11 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    /// A dictation ended while its model load was still running, so the load
+    /// unloads the model when it finishes. Only touched while holding
+    /// `is_loading`, which makes it atomic with the load's end and with a
+    /// later dictation joining the load (which withdraws it).
+    unload_after_load: Arc<AtomicBool>,
     reload_model_on_next_use: Arc<AtomicBool>,
     /// Routes real-time audio frames to the active streaming worker; see
     /// [`StreamRouter`]. Shared with the audio recorder so per-frame feeds skip
@@ -292,6 +336,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            unload_after_load: Arc::new(AtomicBool::new(false)),
             reload_model_on_next_use: Arc::new(AtomicBool::new(false)),
             router: Arc::new(StreamRouter::new()),
             stream_active: Arc::new(AtomicBool::new(false)),
@@ -516,6 +561,27 @@ impl TranscriptionManager {
         }
     }
 
+    /// A dictation ended: unload now, or, if its model load is still running,
+    /// when that load finishes unless a later dictation joins it first. Only
+    /// dictation-end callers use this; a job ending doesn't own the load.
+    pub fn maybe_unload_after_dictation(&self, context: &str) {
+        if !self.job_active()
+            && get_settings(&self.app_handle).model_unload_timeout
+                == ModelUnloadTimeout::Immediately
+        {
+            let is_loading = self.is_loading.lock().unwrap();
+            if *is_loading {
+                debug!(
+                    "Deferring immediate model unload until loading finishes after {}",
+                    context
+                );
+                self.unload_after_load.store(true, Ordering::Release);
+                return;
+            }
+        }
+        self.maybe_unload_immediately(context);
+    }
+
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         self.load_model_with_device(model_id, None)
     }
@@ -697,6 +763,10 @@ impl TranscriptionManager {
     /// `raise_notice`: file jobs and Settings report their own failures.
     pub fn initiate_model_load(&self, raise_notice: bool) -> bool {
         let mut is_loading = self.is_loading.lock().unwrap();
+        // Whoever asks for the model now needs it: withdraw a deferred unload
+        // left by a dictation that already ended, whether this call joins the
+        // load in flight or starts a new one.
+        self.unload_after_load.store(false, Ordering::Release);
         if *is_loading {
             return false;
         }
@@ -714,16 +784,23 @@ impl TranscriptionManager {
                     .reload_model_on_next_use
                     .store(false, Ordering::Release);
             }
+            // Dropped on every exit, panics included.
+            let mut done = ModelLoadDone {
+                manager: self_clone.clone(),
+                loaded: false,
+                immediate: false,
+            };
             let settings = get_settings(&self_clone.app_handle);
-            if let Err(e) = self_clone.load_model(&settings.selected_model) {
-                error!("Failed to load model {}: {}", settings.selected_model, e);
-                if raise_notice {
-                    self_clone.raise_model_load_failed(&settings.selected_model, &e);
+            done.immediate = settings.model_unload_timeout == ModelUnloadTimeout::Immediately;
+            match self_clone.load_model(&settings.selected_model) {
+                Ok(()) => done.loaded = true,
+                Err(e) => {
+                    error!("Failed to load model {}: {}", settings.selected_model, e);
+                    if raise_notice {
+                        self_clone.raise_model_load_failed(&settings.selected_model, &e);
+                    }
                 }
             }
-            let mut is_loading = self_clone.is_loading.lock().unwrap();
-            *is_loading = false;
-            self_clone.loading_condvar.notify_all();
         });
         true
     }
@@ -1008,7 +1085,7 @@ impl TranscriptionManager {
         debug!("Audio vector length: {}", audio_len);
         if audio.is_empty() {
             debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
+            self.maybe_unload_after_dictation("empty audio");
             return Ok(Transcription {
                 text: String::new(),
                 language: None,
@@ -1050,7 +1127,7 @@ impl TranscriptionManager {
             );
         }
 
-        self.maybe_unload_immediately("transcription");
+        self.maybe_unload_after_dictation("transcription");
 
         Ok(Transcription {
             text: final_result,
@@ -2001,6 +2078,25 @@ pub fn get_available_accelerators(tm: &TranscriptionManager) -> AvailableAcceler
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deferred_unload_requires_every_condition() {
+        // requested, loaded, immediate, job_active
+        assert!(deferred_unload_due(true, true, true, false));
+        assert!(!deferred_unload_due(false, true, true, false), "no request");
+        assert!(
+            !deferred_unload_due(true, false, true, false),
+            "failed load"
+        );
+        assert!(
+            !deferred_unload_due(true, true, false, false),
+            "not immediate"
+        );
+        assert!(
+            !deferred_unload_due(true, true, true, true),
+            "file job owns it"
+        );
+    }
 
     fn languages(codes: &[&str]) -> Vec<String> {
         codes.iter().map(|code| (*code).to_string()).collect()
