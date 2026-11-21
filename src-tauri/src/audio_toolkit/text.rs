@@ -59,6 +59,9 @@ fn is_supported_fuzzy_key(key: &str) -> bool {
     !key.is_empty() && key.chars().all(|c| c.is_ascii_alphanumeric())
 }
 
+/// Keys this short or shorter never get the Soundex boost.
+const MIN_PHONETIC_BOOST_LEN: usize = 4;
+
 fn supports_soundex(key: &str) -> bool {
     !key.is_empty() && key.chars().all(|c| c.is_ascii_alphabetic())
 }
@@ -112,7 +115,11 @@ fn find_best_match<'a>(
 
         // Soundex is an English/ASCII phonetic algorithm. Numeric terms can
         // still use edit distance, but must not receive a phonetic boost.
-        let phonetic_match = supports_soundex(candidate)
+        // Soundex ignores vowels, so short words collide easily ("see", "say"
+        // and "Siye" share a code). Only boost when both keys are long enough
+        // for the code to mean something.
+        let phonetic_match = candidate_len.min(custom_word_len) > MIN_PHONETIC_BOOST_LEN
+            && supports_soundex(candidate)
             && supports_soundex(&custom_word_key.key)
             && soundex(candidate, &custom_word_key.key);
 
@@ -883,5 +890,28 @@ mod tests {
         let custom_words = vec!["你号".to_string()];
         let result = apply_custom_words(text, &custom_words, 1.0);
         assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_apply_custom_words_keeps_short_common_words() {
+        let custom_words = vec![
+            "Siye".to_string(),
+            "Bae".to_string(),
+            "Nomi".to_string(),
+            "Phat".to_string(),
+            "Fred".to_string(),
+        ];
+        let text = "I see what you say, be sure to put my name down for Friday";
+        assert_eq!(apply_custom_words(text, &custom_words, 0.18), text);
+    }
+
+    #[test]
+    fn test_apply_custom_words_still_fixes_close_misspellings() {
+        let custom_words = vec!["Paxiom".to_string(), "Cresco".to_string()];
+        let text = "send the paxium deck to crisco";
+        assert_eq!(
+            apply_custom_words(text, &custom_words, 0.18),
+            "send the Paxiom deck to Cresco"
+        );
     }
 }
