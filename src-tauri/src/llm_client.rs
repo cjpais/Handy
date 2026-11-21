@@ -145,6 +145,8 @@ const ANTHROPIC_MAX_TOKENS: u32 = 4096;
 struct AnthropicMessagesRequest {
     model: String,
     max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
     messages: Vec<ChatMessage>,
 }
 
@@ -382,7 +384,7 @@ pub async fn send_chat_completion(
     disable_reasoning: bool,
 ) -> Result<Option<String>, String> {
     if provider.api_format == PostProcessApiFormat::Anthropic {
-        return send_anthropic_message(provider, api_key, model, prompt).await;
+        return send_anthropic_message(provider, api_key, model, prompt, None).await;
     }
 
     send_chat_completion_with_schema(
@@ -391,6 +393,34 @@ pub async fn send_chat_completion(
         model,
         prompt,
         None,
+        None,
+        disable_reasoning,
+    )
+    .await
+}
+
+/// Send a transcript and an optional system prompt using the provider's API
+/// format. Legacy-mode fallback path: used when the user's prompt template
+/// has no `${output}` placeholder, so the transcript cannot be inlined by
+/// substitution and must be sent as its own user message.
+pub async fn send_prompt_with_system(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    user_content: String,
+    system_prompt: Option<String>,
+    disable_reasoning: bool,
+) -> Result<Option<String>, String> {
+    if provider.api_format == PostProcessApiFormat::Anthropic {
+        return send_anthropic_message(provider, api_key, model, user_content, system_prompt).await;
+    }
+
+    send_chat_completion_with_schema(
+        provider,
+        api_key,
+        model,
+        user_content,
+        system_prompt,
         None,
         disable_reasoning,
     )
@@ -550,16 +580,17 @@ pub async fn send_chat_completion_with_schema(
     Ok(choice.message.content)
 }
 
-/// Send a single-prompt request to an Anthropic Messages API (`/messages`).
-/// Used by every provider with the Anthropic format (the built-in Anthropic
-/// provider and a custom provider set to it). None of them use structured
-/// output, and thinking is off unless requested, so no reasoning fields are
-/// needed.
+/// Send a request to an Anthropic Messages API (`/messages`). Used by every
+/// provider with the Anthropic format (the built-in Anthropic provider and a
+/// custom provider set to it). None of them use structured output, and
+/// thinking is off unless requested, so no reasoning fields are needed.
+/// `system_prompt` becomes the API's top-level `system` field when present.
 async fn send_anthropic_message(
     provider: &PostProcessProvider,
     api_key: String,
     model: &str,
     prompt: String,
+    system_prompt: Option<String>,
 ) -> Result<Option<String>, String> {
     let url = format!("{}/messages", provider.base_url.trim_end_matches('/'));
 
@@ -571,6 +602,7 @@ async fn send_anthropic_message(
     let request_body = AnthropicMessagesRequest {
         model: model.to_string(),
         max_tokens: ANTHROPIC_MAX_TOKENS,
+        system: system_prompt,
         messages: vec![ChatMessage {
             role: "user".to_string(),
             content: prompt,
@@ -763,6 +795,66 @@ mod tests {
         format!("http://{address}")
     }
 
+    /// Like `serve_one_response`, but also captures the raw request bytes so
+    /// tests can assert on the request body.
+    async fn serve_one_response_capture(status: &str, body: &str) -> (String, std::sync::Arc<std::sync::Mutex<String>>) {
+        use std::sync::{Arc, Mutex};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+
+        let captured: Arc<Mutex<String>> = Arc::new(Mutex::new(String::new()));
+        let captured_for_task = Arc::clone(&captured);
+
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+
+            // Read the complete request before replying: a single read() may
+            // return a partial request even when it fits the buffer, so loop
+            // until the headers and their Content-Length body have arrived.
+            let mut request: Vec<u8> = Vec::new();
+            let mut chunk = [0_u8; 4096];
+            loop {
+                let read = stream.read(&mut chunk).await.unwrap();
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&chunk[..read]);
+
+                let header_end = request
+                    .windows(4)
+                    .position(|window| window == b"\r\n\r\n");
+                let header_end = match header_end {
+                    Some(position) => position,
+                    None => continue,
+                };
+                let headers = String::from_utf8_lossy(&request[..header_end]).to_lowercase();
+                let content_length = headers.lines().find_map(|line| {
+                    line.strip_prefix("content-length:")
+                        .and_then(|value| value.trim().parse::<usize>().ok())
+                });
+                match content_length {
+                    // Body complete — or no length to wait for.
+                    Some(length) if request.len() >= header_end + 4 + length => break,
+                    Some(_) => {}
+                    None => break,
+                }
+            }
+
+            captured_for_task
+                .lock()
+                .unwrap()
+                .push_str(&String::from_utf8_lossy(&request));
+            stream.write_all(response.as_bytes()).await.unwrap();
+        });
+
+        (format!("http://{address}"), captured)
+    }
+
     #[test]
     fn error_source_chain_includes_all_nested_causes() {
         let error = TestError {
@@ -921,6 +1013,7 @@ mod tests {
         let request = AnthropicMessagesRequest {
             model: "claude-haiku".to_string(),
             max_tokens: ANTHROPIC_MAX_TOKENS,
+            system: None,
             messages: vec![ChatMessage {
                 role: "user".to_string(),
                 content: "hi".to_string(),
@@ -929,8 +1022,25 @@ mod tests {
         let json = serde_json::to_value(&request).unwrap();
         assert_eq!(json["max_tokens"], ANTHROPIC_MAX_TOKENS);
         assert_eq!(json["messages"][0]["role"], "user");
+        // `system` stays off the wire when absent, like `stream` etc.
+        assert!(json.get("system").is_none());
         assert!(json.get("stream").is_none());
         assert!(json.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn anthropic_request_serializes_system_when_present() {
+        let request = AnthropicMessagesRequest {
+            model: "claude-haiku".to_string(),
+            max_tokens: ANTHROPIC_MAX_TOKENS,
+            system: Some("Clean the transcript.".to_string()),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "hi".to_string(),
+            }],
+        };
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["system"], "Clean the transcript.");
     }
 
     #[test]
@@ -961,6 +1071,64 @@ mod tests {
         )
         .await;
         assert_eq!(result, Ok(Some("Cleaned text".to_string())));
+    }
+
+    #[tokio::test]
+    async fn prompt_with_system_sends_system_then_user_for_openai_format() {
+        let (base_url, request) = serve_one_response_capture(
+            "200 OK",
+            r#"{"choices":[{"message":{"content":"Cleaned"},"finish_reason":"stop"}]}"#,
+        )
+        .await;
+        let result = send_prompt_with_system(
+            &provider("custom", &base_url),
+            "key".to_string(),
+            "test-model",
+            "the transcript".to_string(),
+            Some("Clean the transcript.".to_string()),
+            false,
+        )
+        .await;
+        assert_eq!(result, Ok(Some("Cleaned".to_string())));
+
+        let raw = request.lock().unwrap().clone();
+        let body = raw.split("\r\n\r\n").nth(1).unwrap_or("");
+        let json: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(json["messages"][0]["role"], "system");
+        assert_eq!(json["messages"][0]["content"], "Clean the transcript.");
+        assert_eq!(json["messages"][1]["role"], "user");
+        assert_eq!(json["messages"][1]["content"], "the transcript");
+        // The legacy fallback never uses structured output.
+        assert!(json.get("response_format").is_none());
+    }
+
+    #[tokio::test]
+    async fn prompt_with_system_sends_anthropic_system_field() {
+        let (base_url, request) = serve_one_response_capture(
+            "200 OK",
+            r#"{"type":"message","role":"assistant","content":[{"type":"text","text":"Cleaned"}]}"#,
+        )
+        .await;
+        let result = send_prompt_with_system(
+            &anthropic_format_provider(&base_url),
+            "key".to_string(),
+            "claude-haiku",
+            "the transcript".to_string(),
+            Some("Clean the transcript.".to_string()),
+            true,
+        )
+        .await;
+        assert_eq!(result, Ok(Some("Cleaned".to_string())));
+
+        let raw = request.lock().unwrap().clone();
+        let body = raw.split("\r\n\r\n").nth(1).unwrap_or("");
+        let json: serde_json::Value = serde_json::from_str(body).unwrap();
+        assert_eq!(json["system"], "Clean the transcript.");
+        assert_eq!(json["messages"][0]["role"], "user");
+        assert_eq!(json["messages"][0]["content"], "the transcript");
+        assert_eq!(json["messages"].as_array().map(Vec::len), Some(1));
+        // Anthropic never receives OpenAI-style structured output.
+        assert!(json.get("response_format").is_none());
     }
 
     #[tokio::test]
