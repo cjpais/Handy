@@ -123,7 +123,11 @@ fn play_audio_file(
         DeviceSinkBuilder::from_default_device()?
     };
 
-    let device_sink = sink_builder.open_stream()?;
+    // rodio defaults to a fixed 2048-frame buffer, which some Bluetooth
+    // outputs reject (#2524).
+    let device_sink = sink_builder
+        .with_buffer_size(rodio::cpal::BufferSize::Default)
+        .open_stream()?;
     let mixer = device_sink.mixer();
 
     let file = File::open(path)?;
