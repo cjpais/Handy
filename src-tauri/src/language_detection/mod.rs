@@ -72,6 +72,10 @@ const MIN_SPEECH_SAMPLES: usize = 16_000 / 2;
 /// uncertain (with two languages: p < 0.6). It is used either way.
 const UNSURE_RATIO: f32 = 1.5;
 
+/// Below this share of probability on the allowed languages, the speech
+/// matches none of them and the ranking among them is noise (#2405).
+const MIN_ALLOWED_MASS: f32 = 0.1;
+
 /// How a transcription's language was chosen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -229,6 +233,9 @@ impl Plan {
             identified.allowed_mass * 100.0,
             identified.elapsed.as_millis()
         );
+        if identified.allowed_mass < MIN_ALLOWED_MASS {
+            return fallback_decision;
+        }
         match language {
             Some(language) => LanguageDecision {
                 language: Some(language),
@@ -279,6 +286,23 @@ mod tests {
         });
         assert_eq!(decision.language.as_deref(), Some("he"));
         assert_eq!(decision.source, LanguageSource::Detected);
+    }
+
+    /// #2405: accented English scored 97% Russian with no mass on either language.
+    #[test]
+    fn speech_in_none_of_the_languages_uses_the_first() {
+        let plan = Plan::Detect {
+            languages: codes(&["en", "ru"]),
+            allowed: codes(&["en", "ru"]),
+            fallback: DetectFallback::FirstLanguage,
+        };
+        let decision = plan.decide(Some(&SPEECH), |_, _| {
+            let mut identified = ranked(&[("ru", 0.972), ("en", 0.028)])?;
+            identified.allowed_mass = 0.0;
+            Ok(identified)
+        });
+        assert_eq!(decision.language.as_deref(), Some("en"));
+        assert_eq!(decision.source, LanguageSource::Fallback);
     }
 
     #[test]
