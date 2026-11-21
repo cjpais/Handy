@@ -22,7 +22,15 @@ const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 const SILERO_VAD_THRESHOLD: f32 = 0.3;
 const EARSHOT_VAD_THRESHOLD: f32 = 0.5;
 
+#[cfg(all(test, target_os = "linux"))]
+mod lifecycle_tests;
+
 fn set_mute(mute: bool) {
+    #[cfg(all(test, target_os = "linux"))]
+    if lifecycle_tests::set_mute(mute) {
+        return;
+    }
+
     // Expected behavior:
     // - Windows: works on most systems using standard audio drivers.
     // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
@@ -146,6 +154,11 @@ fn get_mute() -> Option<bool> {
 
 #[cfg(target_os = "linux")]
 fn get_mute() -> Option<bool> {
+    #[cfg(test)]
+    if let Some(muted) = lifecycle_tests::get_mute() {
+        return Some(muted);
+    }
+
     use std::process::Command;
 
     // 1. PipeWire (wpctl): prints "[MUTED]" in the volume line when muted.
@@ -324,9 +337,9 @@ pub fn recording_notice_code(error: &anyhow::Error) -> NoticeCode {
 /// A fresh detector for `backend`, without Handy's smoothing: what a
 /// recording's VAD wraps, and what scores audio for long-form chunking, so
 /// every path uses the selected backend.
-pub fn create_detector(
+pub fn create_detector<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<Box<dyn SpeechScorer>, anyhow::Error> {
     Ok(match backend {
         VadBackend::Silero => {
@@ -352,9 +365,9 @@ pub fn create_detector(
 /// A detector for `backend` with a recording's smoothing (pre-roll, onset,
 /// offline hangover): what keeps speech in a recording, and what cuts the
 /// silence out of other audio the same way.
-pub fn create_smoothed_detector(
+pub fn create_smoothed_detector<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<SmoothedVad, anyhow::Error> {
     let detector: Box<dyn VoiceActivityDetector> = create_detector(backend, app_handle)?;
 
@@ -370,9 +383,9 @@ pub fn create_smoothed_detector(
     ))
 }
 
-fn create_capture_vad(
+fn create_capture_vad<R: tauri::Runtime>(
     backend: VadBackend,
-    app_handle: &tauri::AppHandle,
+    app_handle: &tauri::AppHandle<R>,
 ) -> Result<CaptureVad, anyhow::Error> {
     let smoothed_vad = create_smoothed_detector(backend, app_handle)?;
     let frame_samples = smoothed_vad.frame_samples();
@@ -411,6 +424,11 @@ fn microphone_config(
 }
 
 fn open_microphone(config: RecorderConfig) -> Result<OpenMicrophone, handy_recorder::Error> {
+    #[cfg(all(test, target_os = "linux"))]
+    if let Some(result) = lifecycle_tests::open_microphone(&config) {
+        return result;
+    }
+
     let failed = Arc::new(AtomicBool::new(false));
     let recorder = Recorder::open_with_failure_handler(config, {
         let failed = Arc::clone(&failed);
@@ -467,13 +485,12 @@ impl RecordingReadiness {
     }
 }
 
-#[derive(Clone)]
-pub struct AudioRecordingManager {
+pub struct AudioRecordingManager<R: tauri::Runtime = tauri::Wry> {
     /// Never assign through this directly — route every write through
     /// `set_state()`, which keeps `recording_active` in sync.
     state: Arc<Mutex<RecordingState>>,
     mode: Arc<Mutex<MicrophoneMode>>,
-    app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle<R>,
 
     recorder: Arc<Mutex<Option<OpenMicrophone>>>,
     vad: Arc<Mutex<VadSlot>>,
@@ -511,15 +528,18 @@ pub struct AudioRecordingManager {
     /// retry re-enumerates. The system-default case is never cached — the
     /// recorder resolves the current default itself.
     cached_device: Arc<Mutex<Option<(String, String)>>>,
+    device_change_pending: Arc<AtomicBool>,
     /// The last recording was all-zero samples, not just audio without speech.
     last_input_silent: Arc<AtomicBool>,
+    #[cfg(all(test, target_os = "linux"))]
+    lazy_close_hooks: Option<Arc<lifecycle_tests::LazyCloseHooks>>,
 }
 
-impl AudioRecordingManager {
+impl<R: tauri::Runtime> AudioRecordingManager<R> {
     /* ---------- construction ------------------------------------------------ */
 
     pub fn new(
-        app: &tauri::AppHandle,
+        app: &tauri::AppHandle<R>,
         stream_router: Arc<StreamRouter>,
     ) -> Result<Self, anyhow::Error> {
         let settings = get_settings(app);
@@ -554,7 +574,10 @@ impl AudioRecordingManager {
             recording_active: Arc::new(AtomicBool::new(false)),
             capture_generation: Arc::new(AtomicU64::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
+            device_change_pending: Arc::new(AtomicBool::new(false)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
+            #[cfg(all(test, target_os = "linux"))]
+            lazy_close_hooks: None,
         };
 
         // Always-on?  Open immediately.
@@ -682,16 +705,27 @@ impl AudioRecordingManager {
     fn schedule_lazy_close(&self) {
         let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
+        #[cfg(all(test, target_os = "linux"))]
+        let hooks = self.lazy_close_hooks.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(STREAM_IDLE_TIMEOUT);
-            let rm = app.state::<Arc<AudioRecordingManager>>();
+            #[cfg(all(test, target_os = "linux"))]
+            let timeout = hooks.as_ref().map_or(STREAM_IDLE_TIMEOUT, |h| h.timeout);
+            #[cfg(not(all(test, target_os = "linux")))]
+            let timeout = STREAM_IDLE_TIMEOUT;
+            std::thread::sleep(timeout);
+            let rm = app.state::<Arc<Self>>();
             // Hold state lock across the check AND close to serialize against
             // try_start_recording, preventing a race where the stream is closed
             // under an active recording.
             let state = rm.state.lock().unwrap();
             if rm.close_generation.load(Ordering::SeqCst) == gen
                 && matches!(*state, RecordingState::Idle)
+                && matches!(*rm.mode.lock().unwrap(), MicrophoneMode::OnDemand)
             {
+                #[cfg(all(test, target_os = "linux"))]
+                if let Some(hooks) = &hooks {
+                    (hooks.before_close)();
+                }
                 // stop_microphone_stream does not acquire the state lock,
                 // so holding it here is safe (no deadlock).
                 info!(
@@ -699,6 +733,10 @@ impl AudioRecordingManager {
                     STREAM_IDLE_TIMEOUT
                 );
                 rm.stop_microphone_stream();
+                #[cfg(all(test, target_os = "linux"))]
+                if let Some(hooks) = &hooks {
+                    (hooks.after_close)();
+                }
             }
         });
     }
@@ -997,11 +1035,12 @@ impl AudioRecordingManager {
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
+        let state = self.state.lock().unwrap();
         let cur_mode = self.mode.lock().unwrap().clone();
 
         match (cur_mode, &new_mode) {
             (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
-                if matches!(*self.state.lock().unwrap(), RecordingState::Idle) {
+                if matches!(*state, RecordingState::Idle) {
                     self.close_generation.fetch_add(1, Ordering::SeqCst);
                     self.stop_microphone_stream();
                 }
@@ -1048,6 +1087,10 @@ impl AudioRecordingManager {
         // closes are never scheduled).
         self.close_generation.fetch_add(1, Ordering::SeqCst);
 
+        if self.device_change_pending.load(Ordering::Relaxed) {
+            self.stop_microphone_stream();
+        }
+
         // A recorder can fail just before this start, ahead of its failure
         // handler; the start then reports it. Reopen and try once more.
         let mut reopened = false;
@@ -1060,6 +1103,7 @@ impl AudioRecordingManager {
                 error!("Failed to open microphone stream: {e}");
                 return Err(e);
             }
+            self.device_change_pending.store(false, Ordering::Relaxed);
 
             let (ready_tx, receiver) = mpsc::channel();
             let sink = CaptureSink::new(
@@ -1148,15 +1192,23 @@ impl AudioRecordingManager {
         Ok(())
     }
 
+    /// Accept the saved selection, applying it on the next take if capture is active.
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
-        // Device settings changed; re-enumerate the device and restart capture.
+        let state = self.state.lock().unwrap();
         self.invalidate_device_cache();
+        self.device_change_pending.store(true, Ordering::Relaxed);
+        if !matches!(*state, RecordingState::Idle) {
+            return Ok(());
+        }
+
         let was_open = *self.is_open.lock().unwrap();
         if was_open {
             self.close_generation.fetch_add(1, Ordering::SeqCst);
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
+            self.device_change_pending.store(false, Ordering::Relaxed);
         }
+        drop(state);
         Ok(())
     }
 
