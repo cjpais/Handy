@@ -17,6 +17,7 @@
     "test:keyboard": "bun src/lib/utils/keyboard.test.ts",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
+    "test:post-process-models": "bun src/stores/postProcessModels.test.ts",
     "check:translations": "bun scripts/check-translations.ts",
     "check:model-languages": "bun scripts/check-model-language-coverage.ts",
     "sync:catalog": "bun scripts/sync-catalog.ts",
