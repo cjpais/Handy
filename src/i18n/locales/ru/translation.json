@@ -240,9 +240,6 @@
       },
       "unsupported": "Эта модель не понимает язык «{{language}}», поэтому не сможет им печатать",
       "unrated": "Эта модель понимает язык «{{language}}», но мы ещё не измеряли, насколько хорошо",
-      "under": "менее {{max}} %",
-      "between": "от {{min}} до {{max}} %",
-      "over": "{{min}} % и более",
       "speedTitle": "Скорость: {{speed}}",
       "speedName": {
         "0": "Очень медленно",
@@ -263,6 +260,13 @@
       "underSeconds": "менее {{max}} с",
       "betweenSeconds": "от {{min}} до {{max}} с",
       "overSeconds": "{{min}} с и более"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Рекомендуемая",

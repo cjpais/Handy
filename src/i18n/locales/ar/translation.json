@@ -240,9 +240,6 @@
       },
       "unsupported": "هذا النموذج لا يفهم {{language}}، لذا لا يستطيع كتابتها",
       "unrated": "هذا النموذج يفهم {{language}}، لكننا لم نقِس مستوى جودته بعد",
-      "under": "أقل من {{max}}%",
-      "between": "من {{min}} إلى {{max}}%",
-      "over": "{{min}}% أو أكثر",
       "speedTitle": "السرعة: {{speed}}",
       "speedName": {
         "0": "بطيء جدًا",
@@ -263,6 +260,13 @@
       "underSeconds": "أقل من {{max}} ث",
       "betweenSeconds": "من {{min}} إلى {{max}} ث",
       "overSeconds": "{{min}} ث أو أكثر"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "موصى به",

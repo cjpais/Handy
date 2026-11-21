@@ -240,9 +240,6 @@
       },
       "unsupported": "Tento model nerozumí jazyku {{language}}, takže v něm nemůže psát",
       "unrated": "Tento model rozumí jazyku {{language}}, ale zatím jsme neměřili, jak dobře",
-      "under": "pod {{max}} %",
-      "between": "{{min}} až {{max}} %",
-      "over": "{{min}} % nebo více",
       "speedTitle": "Rychlost: {{speed}}",
       "speedName": {
         "0": "Velmi pomalý",
@@ -263,6 +260,13 @@
       "underSeconds": "pod {{max}} s",
       "betweenSeconds": "{{min}} až {{max}} s",
       "overSeconds": "{{min}} s nebo více"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Doporučeno",
