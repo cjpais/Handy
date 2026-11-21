@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Kortkommandon blockeras av Secure Input",
     "language": "Språk",
     "autoLanguage": "Automatiskt",
-    "otherLanguages": "Andra språk"
+    "otherLanguages": "Andra språk",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Allmänt",

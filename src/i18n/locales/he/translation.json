@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ קיצורי המקשים חסומים על ידי Secure Input",
     "language": "שפה",
     "autoLanguage": "אוטומטי",
-    "otherLanguages": "שפות אחרות"
+    "otherLanguages": "שפות אחרות",
+    "microphone": "מיקרופון"
   },
   "sidebar": {
     "general": "כללי",

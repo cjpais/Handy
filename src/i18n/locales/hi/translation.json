@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Secure Input ने शॉर्टकट ब्लॉक किए हैं",
     "language": "भाषा",
     "autoLanguage": "ऑटो",
-    "otherLanguages": "अन्य भाषाएँ"
+    "otherLanguages": "अन्य भाषाएँ",
+    "microphone": "माइक्रोफ़ोन"
   },
   "sidebar": {
     "general": "सामान्य",

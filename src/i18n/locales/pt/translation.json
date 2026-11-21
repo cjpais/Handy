@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Atalhos bloqueados pelo Secure Input",
     "language": "Idioma",
     "autoLanguage": "Automático",
-    "otherLanguages": "Outros idiomas"
+    "otherLanguages": "Outros idiomas",
+    "microphone": "Microfone"
   },
   "sidebar": {
     "general": "Geral",

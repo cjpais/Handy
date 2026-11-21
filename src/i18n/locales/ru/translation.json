@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Сочетания клавиш заблокированы Secure Input",
     "language": "Язык",
     "autoLanguage": "Авто",
-    "otherLanguages": "Другие языки"
+    "otherLanguages": "Другие языки",
+    "microphone": "Микрофон"
   },
   "sidebar": {
     "general": "Общие",
