@@ -719,6 +719,18 @@
       "dropDescription": "Nó sẽ xuất hiện trong Lịch sử."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Ghi chẩn đoán",
+        "description": "Ghi lại dữ liệu chẩn đoán thời gian cho phiên hỗ trợ.",
+        "start": "Bắt đầu chẩn đoán",
+        "stopAndSave": "Dừng và lưu",
+        "active": "Đang ghi chẩn đoán",
+        "counts": "{{events}} sự kiện, {{dropped}} bị bỏ",
+        "savedTo": "Đã lưu vào {{path}}",
+        "reveal": "Hiển thị",
+        "privacyNote": "Chỉ ghi dữ liệu thời gian — không ghi âm thanh hoặc văn bản đã chuyển đổi.",
+        "error": "Chẩn đoán thất bại: {{message}}"
+      },
       "title": "Gỡ lỗi",
       "logDirectory": {
         "title": "Thư mục nhật ký",

@@ -719,6 +719,18 @@
       "dropDescription": "Akan muncul di Riwayat."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Perekaman diagnostik",
+        "description": "Rekam diagnostik pewaktuan untuk sesi dukungan.",
+        "start": "Mulai diagnostik",
+        "stopAndSave": "Hentikan dan simpan",
+        "active": "Merekam diagnostik",
+        "counts": "{{events}} peristiwa, {{dropped}} diabaikan",
+        "savedTo": "Disimpan di {{path}}",
+        "reveal": "Tampilkan",
+        "privacyNote": "Hanya data pewaktuan — audio atau teks hasil transkripsi tidak direkam.",
+        "error": "Diagnostik gagal: {{message}}"
+      },
       "title": "Debug",
       "logDirectory": {
         "title": "Direktori Log",

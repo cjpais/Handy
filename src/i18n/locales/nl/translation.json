@@ -719,6 +719,18 @@
       "dropDescription": "Het verschijnt in de geschiedenis."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Diagnostiek-opname",
+        "description": "Timingdiagnostiek opnemen voor een supportsessie.",
+        "start": "Diagnostiek starten",
+        "stopAndSave": "Stoppen en opslaan",
+        "active": "Diagnostiek wordt opgenomen",
+        "counts": "{{events}} gebeurtenissen, {{dropped}} weggevallen",
+        "savedTo": "Opgeslagen in {{path}}",
+        "reveal": "Tonen",
+        "privacyNote": "Alleen timinggegevens — geen audio of getranscribeerde tekst wordt opgenomen.",
+        "error": "Diagnostiek mislukt: {{message}}"
+      },
       "title": "Probleemoplossing",
       "logDirectory": {
         "title": "Logboekmap",

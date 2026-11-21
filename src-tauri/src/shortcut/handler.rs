@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use crate::actions::ACTION_MAP;
+use crate::diagnostics::{self, Args, Name};
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::get_settings;
 use crate::transcription_coordinator::is_transcribe_binding;
@@ -32,6 +33,16 @@ pub fn handle_shortcut_event(
     hotkey_string: &str,
     is_pressed: bool,
 ) {
+    // Timing evidence only: key edge with press state. The binding id and
+    // hotkey string are deliberately not recorded.
+    diagnostics::instant(
+        None,
+        Name::ShortcutEvent,
+        Args {
+            flag: Some(is_pressed),
+            ..Default::default()
+        },
+    );
     let settings = get_settings(app);
 
     // Transcribe bindings are handled by the coordinator.

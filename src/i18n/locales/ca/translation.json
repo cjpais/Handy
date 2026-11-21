@@ -719,6 +719,18 @@
       "dropDescription": "Apareixerà a l'historial."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Captura de diagnòstic",
+        "description": "Registra diagnòstics de temps per a una sessió de suport.",
+        "start": "Inicia el diagnòstic",
+        "stopAndSave": "Atura i desa",
+        "active": "S'està registrant el diagnòstic",
+        "counts": "{{events}} esdeveniments, {{dropped}} descartats",
+        "savedTo": "Desat a {{path}}",
+        "reveal": "Mostra",
+        "privacyNote": "Només dades de temps — no es registra cap àudio ni text transcrit.",
+        "error": "El diagnòstic ha fallat: {{message}}"
+      },
       "title": "Depuració",
       "logDirectory": {
         "title": "Directori de registres",

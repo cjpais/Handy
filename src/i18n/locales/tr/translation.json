@@ -719,6 +719,18 @@
       "dropDescription": "Geçmiş'te görünecek."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Tanılama yakalama",
+        "description": "Destek oturumu için zamanlama tanılaması kaydeder.",
+        "start": "Tanılamayı başlat",
+        "stopAndSave": "Durdur ve kaydet",
+        "active": "Tanılama kaydediliyor",
+        "counts": "{{events}} olay, {{dropped}} tanesi atıldı",
+        "savedTo": "Şuraya kaydedildi: {{path}}",
+        "reveal": "Göster",
+        "privacyNote": "Yalnızca zamanlama verileri — ses veya yazıya dökülmüş metin kaydedilmez.",
+        "error": "Tanılama başarısız oldu: {{message}}"
+      },
       "title": "Hata Ayıklama",
       "logDirectory": {
         "title": "Log Dizini",

@@ -719,6 +719,18 @@
       "dropDescription": "Es erscheint im Verlauf."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Diagnose-Aufzeichnung",
+        "description": "Zeiterfassungs-Diagnosen für eine Support-Sitzung aufzeichnen.",
+        "start": "Diagnose starten",
+        "stopAndSave": "Stoppen und speichern",
+        "active": "Diagnose wird aufgezeichnet",
+        "counts": "{{events}} Ereignisse, {{dropped}} verworfen",
+        "savedTo": "Gespeichert unter {{path}}",
+        "reveal": "Anzeigen",
+        "privacyNote": "Nur Zeitdaten — keine Audio- oder transkribierten Texte werden aufgezeichnet.",
+        "error": "Diagnose fehlgeschlagen: {{message}}"
+      },
       "title": "Debug",
       "logDirectory": {
         "title": "Log-Verzeichnis",

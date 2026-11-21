@@ -719,6 +719,18 @@
       "dropDescription": "Zobrazí se v historii."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Záznam diagnostiky",
+        "description": "Zaznamenává časovou diagnostiku pro relaci podpory.",
+        "start": "Spustit diagnostiku",
+        "stopAndSave": "Zastavit a uložit",
+        "active": "Diagnostika se zaznamenává",
+        "counts": "Události: {{events}}, zahozeno: {{dropped}}",
+        "savedTo": "Uloženo do {{path}}",
+        "reveal": "Zobrazit",
+        "privacyNote": "Pouze časová data — nezaznamenává se žádný zvuk ani přepsaný text.",
+        "error": "Diagnostika se nezdařila: {{message}}"
+      },
       "title": "Ladění",
       "logDirectory": {
         "title": "Složka protokolů",

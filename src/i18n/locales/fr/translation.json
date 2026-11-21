@@ -719,6 +719,18 @@
       "dropDescription": "Il apparaîtra dans l'historique."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Capture de diagnostic",
+        "description": "Enregistre des diagnostics de minutage pour une session d'assistance.",
+        "start": "Démarrer le diagnostic",
+        "stopAndSave": "Arrêter et enregistrer",
+        "active": "Diagnostic en cours d'enregistrement",
+        "counts": "{{events}} événements, {{dropped}} ignorés",
+        "savedTo": "Enregistré dans {{path}}",
+        "reveal": "Afficher",
+        "privacyNote": "Données de minutage uniquement — aucun audio ni texte transcrit n'est enregistré.",
+        "error": "Échec du diagnostic : {{message}}"
+      },
       "title": "Débogage",
       "logDirectory": {
         "title": "Répertoire des journaux",

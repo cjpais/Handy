@@ -1,5 +1,6 @@
 use super::{AudioFrameCallback, CaptureSink, CaptureVad, LevelCallback, VadPolicy};
 use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
+use crate::diagnostics;
 use handy_recorder::{AudioChunk, Sink};
 use std::sync::{mpsc, Arc, Mutex};
 
@@ -64,6 +65,7 @@ fn harness(policy: VadPolicy) -> Harness {
         on_levels,
         on_audio,
         ready_tx,
+        diagnostics::next_run(),
     );
     Harness {
         sink,
