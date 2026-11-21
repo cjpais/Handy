@@ -735,28 +735,70 @@ impl Drop for RescanGuard {
     }
 }
 
-/// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
-/// when dropped, unless explicitly disarmed. This ensures consistent cleanup on
-/// every error path without requiring manual cleanup at each `?` or `return Err`.
+type DownloadTokens = Arc<Mutex<HashMap<String, Arc<CancellationToken>>>>;
+
+/// A download may finish unwinding after the user has already retried it.
+/// Only the attempt that still owns the registration may clean up its state.
 struct DownloadCleanup<'a> {
     available_models: &'a Mutex<HashMap<String, ModelInfo>>,
-    cancel_flags: &'a Arc<Mutex<HashMap<String, CancellationToken>>>,
+    cancel_flags: &'a DownloadTokens,
     model_id: String,
+    cancel_token: Arc<CancellationToken>,
     disarmed: bool,
 }
 
-impl<'a> Drop for DownloadCleanup<'a> {
-    fn drop(&mut self) {
-        if self.disarmed {
-            return;
+impl<'a> DownloadCleanup<'a> {
+    fn new(
+        available_models: &'a Mutex<HashMap<String, ModelInfo>>,
+        cancel_flags: &'a DownloadTokens,
+        model_id: &str,
+    ) -> Self {
+        let cancel_token = Arc::new(CancellationToken::new());
+        // Registration and cleanup use the same lock order: tokens, then models.
+        // Keep both changes atomic so an old cleanup cannot clear a new flag.
+        let mut flags = cancel_flags.lock().unwrap();
+        flags.insert(model_id.to_string(), cancel_token.clone());
+        if let Some(model) = available_models.lock().unwrap().get_mut(model_id) {
+            model.is_downloading = true;
         }
+        Self {
+            available_models,
+            cancel_flags,
+            model_id: model_id.to_string(),
+            cancel_token,
+            disarmed: false,
+        }
+    }
+
+    /// Returns true only for the current attempt, including on successful exit.
+    fn finish(&mut self, completed: bool) -> bool {
+        if self.disarmed {
+            return false;
+        }
+        self.disarmed = true;
+        let mut flags = self.cancel_flags.lock().unwrap();
+        if !flags
+            .get(&self.model_id)
+            .is_some_and(|token| Arc::ptr_eq(token, &self.cancel_token))
         {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(self.model_id.as_str()) {
-                model.is_downloading = false;
+            return false;
+        }
+        flags.remove(&self.model_id);
+        let mut models = self.available_models.lock().unwrap();
+        if let Some(model) = models.get_mut(&self.model_id) {
+            model.is_downloading = false;
+            if completed {
+                model.is_downloaded = true;
+                model.partial_size = 0;
             }
         }
-        self.cancel_flags.lock().unwrap().remove(&self.model_id);
+        true
+    }
+}
+
+impl Drop for DownloadCleanup<'_> {
+    fn drop(&mut self) {
+        self.finish(false);
     }
 }
 
@@ -868,7 +910,7 @@ pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
-    cancel_flags: Arc<Mutex<HashMap<String, CancellationToken>>>,
+    cancel_flags: DownloadTokens,
     /// Single-flight guard for [`Self::rescan_local_models`] so concurrent
     /// refresh requests coalesce instead of scanning the disk in parallel.
     is_rescanning: Arc<AtomicBool>,
@@ -1312,8 +1354,8 @@ impl ModelManager {
     }
 
     fn update_download_status(&self) -> Result<()> {
-        // Snapshot in-flight download ids before taking the registry lock (the
-        // two locks are never nested) so a mid-download entry is never dropped.
+        // Snapshot in-flight ids without holding both locks during filesystem
+        // checks, so a mid-download entry is never dropped.
         let downloading_ids: HashSet<String> =
             self.cancel_flags.lock().unwrap().keys().cloned().collect();
         let mut models = self.available_models.lock().unwrap();
@@ -1834,28 +1876,9 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Mark downloading; the guard resets the flag on any error path.
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(&model_id) {
-                model.is_downloading = true;
-            }
-        }
-
-        // Register a cancellation token so `cancel_download` can abort this
-        // transfer promptly. The guard removes it on every exit path.
-        let cancel_token = CancellationToken::new();
-        {
-            let mut flags = self.cancel_flags.lock().unwrap();
-            flags.insert(model_id.clone(), cancel_token.clone());
-        }
-
-        let mut cleanup = DownloadCleanup {
-            available_models: &self.available_models,
-            cancel_flags: &self.cancel_flags,
-            model_id: model_id.clone(),
-            disarmed: false,
-        };
+        let mut cleanup =
+            DownloadCleanup::new(&self.available_models, &self.cancel_flags, &model_id);
+        let cancel_token = cleanup.cancel_token.clone();
 
         // The detector, then the model, as one bar: the detector's bytes come
         // first, out of both files' total.
@@ -1907,10 +1930,9 @@ impl ModelManager {
             }
         }
 
-        cleanup.disarmed = true;
-        self.update_download_status()?;
-        self.cancel_flags.lock().unwrap().remove(&model_id);
-        let _ = self.app_handle.emit("model-download-complete", &model_id);
+        if cleanup.finish(true) {
+            let _ = self.app_handle.emit("model-download-complete", &model_id);
+        }
         info!("HF model {} downloaded", model_id);
         Ok(())
     }
@@ -1937,19 +1959,16 @@ impl ModelManager {
     /// Download the language detector on its own, tracked and cancelled under
     /// [`LANGUAGE_DETECTOR_ID`] like a model.
     pub async fn download_language_detector(&self) -> Result<()> {
-        let cancel_token = CancellationToken::new();
-        self.cancel_flags
-            .lock()
-            .unwrap()
-            .insert(LANGUAGE_DETECTOR_ID.to_string(), cancel_token.clone());
+        let mut cleanup = DownloadCleanup::new(
+            &self.available_models,
+            &self.cancel_flags,
+            LANGUAGE_DETECTOR_ID,
+        );
+        let cancel_token = cleanup.cancel_token.clone();
         let fetched = self
             .fetch_language_detector(ProgressTarget::own(LANGUAGE_DETECTOR_ID), &cancel_token)
             .await;
-        self.cancel_flags
-            .lock()
-            .unwrap()
-            .remove(LANGUAGE_DETECTOR_ID);
-        if fetched? {
+        if fetched? && cleanup.finish(true) {
             let _ = self
                 .app_handle
                 .emit("model-download-complete", LANGUAGE_DETECTOR_ID);
@@ -2296,29 +2315,9 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Mark as downloading
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = true;
-            }
-        }
-
-        // Create cancellation token for this download
-        let cancel_token = CancellationToken::new();
-        {
-            let mut flags = self.cancel_flags.lock().unwrap();
-            flags.insert(model_id.to_string(), cancel_token.clone());
-        }
-
-        // Guard ensures is_downloading and cancel_flags are cleaned up on every
-        // error path. Disarmed only on success (which sets is_downloaded = true).
-        let mut cleanup = DownloadCleanup {
-            available_models: &self.available_models,
-            cancel_flags: &self.cancel_flags,
-            model_id: model_id.to_string(),
-            disarmed: false,
-        };
+        let mut cleanup =
+            DownloadCleanup::new(&self.available_models, &self.cancel_flags, model_id);
+        let cancel_token = cleanup.cancel_token.clone();
 
         // URL sources carry no authoritative size, so the helper falls back to
         // the server's content-length for progress and completeness checks.
@@ -2344,21 +2343,9 @@ impl ModelManager {
 
         fs::rename(&partial_path, &model_path)?;
 
-        // Disarm the guard — success path does its own cleanup because it
-        // additionally sets is_downloaded = true.
-        cleanup.disarmed = true;
-        {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = false;
-                model.is_downloaded = true;
-                model.partial_size = 0;
-            }
+        if cleanup.finish(true) {
+            let _ = self.app_handle.emit("model-download-complete", model_id);
         }
-        self.cancel_flags.lock().unwrap().remove(model_id);
-
-        // Emit completion event
-        let _ = self.app_handle.emit("model-download-complete", model_id);
 
         info!(
             "Successfully downloaded model {} to {:?}",
@@ -2615,6 +2602,162 @@ impl ModelManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cancelled_download_cleanup_does_not_unregister_retry() {
+        let models = Mutex::new(HashMap::new());
+        let flags = Arc::new(Mutex::new(HashMap::new()));
+        let cancelled = Arc::new(CancellationToken::new());
+        flags
+            .lock()
+            .unwrap()
+            .insert("model".into(), cancelled.clone());
+        let cleanup = DownloadCleanup {
+            available_models: &models,
+            cancel_flags: &flags,
+            model_id: "model".into(),
+            cancel_token: cancelled.clone(),
+            disarmed: false,
+        };
+
+        // Cancellation returns to the UI before the old future has unwound.
+        cancelled.cancel();
+        let retry = Arc::new(CancellationToken::new());
+        flags.lock().unwrap().insert("model".into(), retry.clone());
+        drop(cleanup);
+
+        let flags = flags.lock().unwrap();
+        let registered = flags
+            .get("model")
+            .expect("the cancelled attempt must not unregister its retry");
+        registered.cancel();
+        assert!(retry.is_cancelled(), "the retry must remain cancellable");
+    }
+
+    fn download_models(ids: &[&str]) -> Mutex<HashMap<String, ModelInfo>> {
+        Mutex::new(
+            ids.iter()
+                .map(|id| {
+                    let mut model = catalog_model("").to_model_info(&DiskStatus {
+                        partial_size: 17,
+                        ..DiskStatus::default()
+                    });
+                    model.id = id.to_string();
+                    (id.to_string(), model)
+                })
+                .collect(),
+        )
+    }
+
+    #[test]
+    fn download_cleanup_on_failure_preserves_partial_status() {
+        let models = download_models(&["model"]);
+        let flags = DownloadTokens::default();
+        let attempt = DownloadCleanup::new(&models, &flags, "model");
+        assert!(models.lock().unwrap()["model"].is_downloading);
+        drop(attempt);
+        assert!(flags.lock().unwrap().is_empty());
+        let models = models.lock().unwrap();
+        assert!(!models["model"].is_downloading);
+        assert!(!models["model"].is_downloaded);
+        assert_eq!(models["model"].partial_size, 17);
+    }
+
+    #[test]
+    fn download_cleanup_on_success_marks_only_the_owned_model_complete() {
+        let models = download_models(&["model", "other"]);
+        let flags = DownloadTokens::default();
+        let mut attempt = DownloadCleanup::new(&models, &flags, "model");
+        let other = DownloadCleanup::new(&models, &flags, "other");
+        assert!(attempt.finish(true));
+        assert!(!attempt.finish(true));
+        let flags = flags.lock().unwrap();
+        assert!(!flags.contains_key("model"));
+        assert!(Arc::ptr_eq(&flags["other"], &other.cancel_token));
+        let models = models.lock().unwrap();
+        assert!(!models["model"].is_downloading);
+        assert!(models["model"].is_downloaded);
+        assert_eq!(models["model"].partial_size, 0);
+        assert!(models["other"].is_downloading);
+        assert!(!models["other"].is_downloaded);
+    }
+
+    #[test]
+    fn download_cleanup_of_retired_attempt_preserves_retry_status() {
+        let models = download_models(&["model"]);
+        let flags = DownloadTokens::default();
+        let old = DownloadCleanup::new(&models, &flags, "model");
+        old.cancel_token.cancel();
+        let retry = DownloadCleanup::new(&models, &flags, "model");
+        drop(old);
+        assert!(models.lock().unwrap()["model"].is_downloading);
+        let flags = flags.lock().unwrap();
+        assert!(Arc::ptr_eq(&flags["model"], &retry.cancel_token));
+        flags["model"].cancel();
+        assert!(retry.cancel_token.is_cancelled());
+    }
+
+    #[test]
+    fn download_cleanup_of_retired_success_cannot_complete_retry() {
+        let models = download_models(&["model"]);
+        let flags = DownloadTokens::default();
+        let mut old = DownloadCleanup::new(&models, &flags, "model");
+        let retry = DownloadCleanup::new(&models, &flags, "model");
+        assert!(!old.finish(true), "must not emit stale completion");
+        let models = models.lock().unwrap();
+        assert!(models["model"].is_downloading);
+        assert!(!models["model"].is_downloaded);
+        assert_eq!(models["model"].partial_size, 17);
+        assert!(!retry.cancel_token.is_cancelled());
+    }
+
+    #[test]
+    fn download_cleanup_of_completed_attempt_cannot_remove_later_retry() {
+        let models = download_models(&["model"]);
+        let flags = DownloadTokens::default();
+        let mut old = DownloadCleanup::new(&models, &flags, "model");
+        assert!(old.finish(true));
+        let retry = DownloadCleanup::new(&models, &flags, "model");
+        drop(old);
+        assert!(models.lock().unwrap()["model"].is_downloading);
+        assert!(Arc::ptr_eq(
+            &flags.lock().unwrap()["model"],
+            &retry.cancel_token
+        ));
+    }
+
+    #[test]
+    fn download_cleanup_without_model_entry_releases_registration() {
+        let models = Mutex::new(HashMap::new());
+        let flags = DownloadTokens::default();
+        // The standalone language detector has no available_models entry.
+        for completed in [false, true] {
+            let mut attempt = DownloadCleanup::new(&models, &flags, LANGUAGE_DETECTOR_ID);
+            assert!(attempt.finish(completed));
+            assert!(flags.lock().unwrap().is_empty());
+        }
+    }
+
+    #[test]
+    fn download_cleanup_from_another_thread_keeps_retry_cancellable() {
+        let models = download_models(&["model"]);
+        let flags = DownloadTokens::default();
+        let old = DownloadCleanup::new(&models, &flags, "model");
+        old.cancel_token.cancel();
+        let ready = std::sync::Barrier::new(2);
+        std::thread::scope(|scope| {
+            let old_cleanup = scope.spawn(|| {
+                ready.wait();
+                drop(old);
+            });
+            let retry = DownloadCleanup::new(&models, &flags, "model");
+            ready.wait();
+            old_cleanup.join().unwrap();
+            assert!(models.lock().unwrap()["model"].is_downloading);
+            flags.lock().unwrap()["model"].cancel();
+            assert!(retry.cancel_token.is_cancelled());
+        });
+    }
 
     #[test]
     fn detector_then_model_report_as_one_bar() {
