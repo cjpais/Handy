@@ -6,6 +6,7 @@ import { LiveLogViewer } from "./LiveLogViewer";
 import { PasteDelay } from "./PasteDelay";
 import { HoldThreshold } from "./HoldThreshold";
 import { ReliablePasteToggle } from "./ReliablePaste";
+import { ClipboardRestoreDelay } from "./ClipboardRestoreDelay";
 import { RecordingBuffer } from "./RecordingBuffer";
 import { LanguageDetectionWindow } from "./LanguageDetectionWindow";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -67,6 +68,7 @@ export const DebugSettings: React.FC<DebugSettingsProps> = ({
           labelKey="settings.debug.pasteDelayAfter.title"
           descriptionKey="settings.debug.pasteDelayAfter.description"
         />
+        <ClipboardRestoreDelay descriptionMode="tooltip" grouped={true} />
         <ReliablePasteToggle descriptionMode="tooltip" grouped={true} />
         <HoldThreshold descriptionMode="tooltip" grouped={true} />
         <RecordingBuffer descriptionMode="tooltip" grouped={true} />

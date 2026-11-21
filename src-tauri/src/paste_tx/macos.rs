@@ -3,9 +3,11 @@
 //! Publishes the transcript with `declareTypes:owner:`, which puts a *promise*
 //! on the general pasteboard instead of data. When any consumer actually
 //! requests the text, AppKit calls `pasteboard:provideDataForType:` on our
-//! owner object — that callback is the read receipt. The previous clipboard is
-//! restored once receipts go quiet (see `paste_tx::evaluate`), guarded by the
-//! pasteboard `changeCount` so we never clobber a newer user copy.
+//! owner object — that callback is the read receipt. Once receipts go quiet
+//! (see `paste_tx::evaluate`) the transaction settles: the auto-submit Enter
+//! goes out and the previous clipboard is restored by `clipboard_restore`,
+//! `clipboard_restore_delay_ms` after the read, guarded by the pasteboard
+//! `changeCount` so we never clobber a newer user copy.
 //!
 //! Threading: publishing and chord injection happen on the calling (main)
 //! thread, because promised pasteboard data is serviced by AppKit on the main
@@ -26,6 +28,8 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use super::{evaluate, send_chord, TxState, WaitDecision};
 use crate::clipboard::send_return_key;
+use crate::clipboard::SavedClipboard;
+use crate::clipboard_restore;
 use crate::input::EnigoState;
 use crate::settings::{AutoSubmitKey, ClipboardHandling, PasteMethod};
 
@@ -95,8 +99,8 @@ impl HandyPasteProvider {
 
 struct MacPending {
     state: Arc<Mutex<TxState>>,
-    saved_text: Option<String>,
-    saved_image: Option<tauri::image::Image<'static>>,
+    /// Taken by `settle`.
+    saved: Option<SavedClipboard>,
     change_count: NSInteger,
     provider: Option<Retained<HandyPasteProvider>>,
     auto_submit: bool,
@@ -132,10 +136,11 @@ fn settle(
     }
     p.settled = true;
 
-    let (receipt_seen, ownership_lost) = match p.state.lock() {
-        Ok(st) => (st.any_receipt_after_injection(), st.ownership_lost),
-        Err(_) => (false, true),
+    let (read_at, ownership_lost) = match p.state.lock() {
+        Ok(st) => (st.last_receipt_after_injection(), st.ownership_lost),
+        Err(_) => (None, true),
     };
+    let receipt_seen = read_at.is_some();
 
     // Auto-submit only once the target demonstrably read the transcript;
     // pressing Enter after an unconfirmed paste could submit stale content.
@@ -164,21 +169,40 @@ fn settle(
         // it and it survives this app exiting.
         let _ = app_handle.clipboard().write_text(&p.transcript);
         info!("[reliable-paste] left transcript on clipboard as plain text");
-    } else {
-        let clipboard = app_handle.clipboard();
-        if let Some(text) = &p.saved_text {
-            let _ = clipboard.write_text(text);
-        } else if let Some(image) = &p.saved_image {
-            let _ = clipboard.write_image(image);
-        } else {
-            let _ = clipboard.clear();
+    } else if let Some(saved) = p.saved.take() {
+        match read_at {
+            // Read: leave the transcript up for the rest of the restore delay,
+            // as data, since the promise's owner goes away below.
+            Some(read_at) => {
+                let change_count = replace_promise_with_data(&p.transcript);
+                clipboard_restore::schedule(app_handle, saved, change_count, read_at);
+            }
+            // Nobody read it within the timeout: waiting longer won't help.
+            None => {
+                saved.restore(app_handle);
+                info!("[reliable-paste] restored previous clipboard");
+            }
         }
-        info!("[reliable-paste] restored previous clipboard");
     }
 
     // Release the owner; any outstanding promise dies with the pasteboard
     // contents we just replaced (or with the external change).
     p.provider = None;
+}
+
+/// Puts the transcript itself on the pasteboard in place of the promise, with
+/// the same concealment markers. Returns the new changeCount.
+fn replace_promise_with_data(text: &str) -> NSInteger {
+    let pasteboard = NSPasteboard::generalPasteboard();
+    pasteboard.clearContents();
+    // SAFETY: NSPasteboardTypeString is a read-only framework static.
+    let _ =
+        pasteboard.setString_forType(&NSString::from_str(text), unsafe { NSPasteboardTypeString });
+    let marker = NSString::from_str("");
+    for t in CONCEALMENT_TYPES {
+        let _ = pasteboard.setString_forType(&marker, &NSString::from_str(t));
+    }
+    pasteboard.changeCount()
 }
 
 /// If a previous transaction is still holding the clipboard, settle it now so
@@ -262,19 +286,10 @@ pub(super) fn run(
     auto_submit_key: AutoSubmitKey,
     clipboard_handling: ClipboardHandling,
 ) -> Result<(), String> {
-    // Settle any previous transaction first so the snapshot below captures the
-    // user's original clipboard, not the previous transcript.
+    // Settle any previous transaction first, and take over a restore still
+    // pending, so the snapshot is the user's clipboard, not a transcript.
     flush_pending(app_handle, enigo);
-
-    let clipboard = app_handle.clipboard();
-    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
-    // Only probe for an image when there is no text; reading an image decodes
-    // the full bitmap (mirrors the legacy path).
-    let saved_image = if saved_text.is_none() {
-        clipboard.read_image().ok().map(|image| image.to_owned())
-    } else {
-        None
-    };
+    let saved = clipboard_restore::take_saved(app_handle);
 
     let state = Arc::new(Mutex::new(TxState::new()));
     let provider = HandyPasteProvider::new(state.clone(), text.to_string());
@@ -292,6 +307,8 @@ pub(super) fn run(
     let change_count: NSInteger =
         unsafe { msg_send![&*pasteboard, declareTypes: &*types, owner: &*provider] };
     if change_count <= 0 {
+        // Put back what `take_saved` took over, for the fallback paste to save.
+        saved.restore(app_handle);
         return Err("declareTypes:owner: failed".to_string());
     }
     info!("[reliable-paste] published transcript as lazy promise (changeCount {change_count})");
@@ -317,8 +334,7 @@ pub(super) fn run(
 
     let pending = Arc::new(Mutex::new(MacPending {
         state,
-        saved_text,
-        saved_image,
+        saved: Some(saved),
         change_count,
         provider: Some(provider),
         auto_submit,

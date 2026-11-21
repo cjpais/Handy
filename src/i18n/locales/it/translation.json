@@ -837,6 +837,10 @@
         "title": "Incolla affidabile (Beta)",
         "description": "Ripristina gli appunti solo dopo che l'app di destinazione ha effettivamente letto la trascrizione, anziché dopo un ritardo fisso. Serve a risolvere l'incollaggio del vecchio contenuto degli appunti quando il sistema è sotto carico. Richiede un metodo di incollaggio tramite appunti; solo macOS e Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Ritardo di ripristino degli appunti",
+        "description": "Per quanto tempo (in millisecondi) la trascrizione resta negli appunti dopo essere stata incollata, prima di ripristinare gli appunti precedenti. Con Incolla affidabile, il tempo parte da quando un'app legge la trascrizione. Aumentare se viene incollato il vecchio contenuto degli appunti invece della trascrizione."
+      },
       "recordingBuffer": {
         "title": "Buffer di registrazione extra",
         "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."

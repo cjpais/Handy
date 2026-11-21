@@ -837,6 +837,10 @@
         "title": "Niezawodne wklejanie (Beta)",
         "description": "Przywracaj schowek dopiero po tym, jak docelowa aplikacja faktycznie odczyta transkrypcję, a nie po ustalonym opóźnieniu. Ma naprawić wklejanie starej zawartości schowka przy obciążeniu systemu. Wymaga metody wklejania przez schowek; tylko macOS i Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Opóźnienie przywracania schowka",
+        "description": "Jak długo (w milisekundach) transkrypcja pozostaje w schowku po wklejeniu, zanim zostanie przywrócony poprzedni schowek. Przy niezawodnym wklejaniu czas liczy się od chwili, gdy aplikacja odczyta transkrypcję. Zwiększ, jeśli zamiast transkrypcji wklejana jest stara zawartość schowka."
+      },
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."

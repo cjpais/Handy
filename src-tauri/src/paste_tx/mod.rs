@@ -30,6 +30,9 @@
 //! transcript may occupy the clipboard; the failure mode is always "the
 //! transcript stays on the clipboard a bit longer", never "stale content gets
 //! pasted".
+//!
+//! On macOS the quiet period only times the auto-submit Enter: the restore is
+//! handed to `clipboard_restore`, `clipboard_restore_delay_ms` after the read.
 
 // The shared transaction state is compiled on all platforms (for the unit
 // tests), but only the macOS/Windows platform modules consume all of it.

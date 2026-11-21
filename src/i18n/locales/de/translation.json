@@ -837,6 +837,10 @@
         "title": "Zuverlässiges Einfügen (Beta)",
         "description": "Die Zwischenablage erst wiederherstellen, wenn die Ziel-App die Transkription tatsächlich gelesen hat, statt nach einer festen Verzögerung. Soll verhindern, dass bei Systemlast der alte Inhalt der Zwischenablage eingefügt wird. Erfordert eine Einfügemethode über die Zwischenablage; nur macOS und Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Verzögerung beim Wiederherstellen der Zwischenablage",
+        "description": "Wie lange (in Millisekunden) die Transkription nach dem Einfügen in der Zwischenablage bleibt, bevor deine vorherige Zwischenablage wiederhergestellt wird. Bei Zuverlässigem Einfügen zählt die Zeit ab dem Moment, in dem eine App die Transkription liest. Erhöhe den Wert, wenn der alte Inhalt der Zwischenablage statt der Transkription eingefügt wird."
+      },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
