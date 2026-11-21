@@ -8,17 +8,49 @@
 //! `SMAppService` login items are attributed to the app bundle itself and
 //! appear under "Open at Login" with the app's name and icon.
 
+use std::sync::{Mutex, PoisonError};
+
 use tauri::AppHandle;
 use tauri_plugin_autostart::ManagerExt;
 
+/// Held while the login item is being changed. On macOS a change is
+/// check-then-act (read the `SMAppService` status, then register or
+/// unregister), so two changes that interleave can leave the OS registered
+/// against the older request.
+static APPLYING: Mutex<()> = Mutex::new(());
+
 /// Apply the user's autostart preference using the best mechanism for the
 /// current platform.
+///
+/// This blocks: on macOS 13+ the `SMAppService` status query is a synchronous
+/// round trip to a system service. Startup uses [`reconcile_autostart`] on a
+/// background thread instead.
 ///
 /// Errors are logged rather than returned: the preference is re-applied on
 /// every launch, so a transient failure self-heals and must not block
 /// startup. This mirrors the pre-existing behavior of ignoring
 /// enable()/disable() results.
 pub fn apply_autostart(app: &AppHandle, enabled: bool) {
+    serialized(|| enabled, |enabled| apply_now(app, enabled));
+}
+
+/// Bring the login item in line with the persisted `autostart_enabled`
+/// preference. The preference is read only once no other change is in
+/// flight, so a settings toggle made while this waited is what gets applied.
+pub fn reconcile_autostart(app: &AppHandle) {
+    serialized(
+        || crate::settings::get_settings(app).autostart_enabled,
+        |enabled| apply_now(app, enabled),
+    );
+}
+
+/// Read the preference and apply it with [`APPLYING`] held across both.
+fn serialized(read: impl FnOnce() -> bool, apply: impl FnOnce(bool)) {
+    let _applying = APPLYING.lock().unwrap_or_else(PoisonError::into_inner);
+    apply(read());
+}
+
+fn apply_now(app: &AppHandle, enabled: bool) {
     #[cfg(target_os = "macos")]
     if macos::login_item_api_available() {
         macos::remove_plugin_launch_agent(app);
@@ -151,5 +183,74 @@ mod macos {
             let dir = tempfile::tempdir().unwrap();
             remove_launch_agent_file(&dir.path().join("Handy.plist"));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::serialized;
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::thread;
+    use std::time::Duration;
+
+    /// Startup reconciles the login item on a background thread, so it can
+    /// begin while a settings toggle is still changing it. It must wait for
+    /// that change and then apply the preference as persisted at that point,
+    /// never a value it read while the toggle was in flight.
+    #[test]
+    fn startup_reconcile_waits_for_an_in_flight_toggle() {
+        let persisted = Arc::new(Mutex::new(true));
+        let login_item = Arc::new(Mutex::new(None));
+
+        // The user turns autostart off. The settings command persists the
+        // choice, then applies it, and the OS call stalls part-way.
+        *persisted.lock().unwrap() = false;
+        let (stalled_tx, stalled_rx) = mpsc::channel();
+        let (resume_tx, resume_rx) = mpsc::channel::<()>();
+        let toggle = thread::spawn({
+            let login_item = Arc::clone(&login_item);
+            move || {
+                serialized(
+                    || false,
+                    |enabled| {
+                        stalled_tx.send(()).unwrap();
+                        resume_rx.recv().unwrap();
+                        *login_item.lock().unwrap() = Some(enabled);
+                    },
+                )
+            }
+        });
+        stalled_rx.recv().unwrap();
+
+        let (read_tx, read_rx) = mpsc::channel();
+        let reconcile = thread::spawn({
+            let persisted = Arc::clone(&persisted);
+            let login_item = Arc::clone(&login_item);
+            move || {
+                serialized(
+                    || {
+                        read_tx.send(()).unwrap();
+                        *persisted.lock().unwrap()
+                    },
+                    |enabled| *login_item.lock().unwrap() = Some(enabled),
+                )
+            }
+        });
+
+        // A correct implementation cannot read while the toggle is in flight,
+        // however long this waits; the window only gives a broken one the
+        // chance to show itself.
+        assert!(
+            read_rx.recv_timeout(Duration::from_millis(200)).is_err(),
+            "the reconcile read the preference while a toggle was changing the login item"
+        );
+
+        // The user turns autostart back on before the first change lands.
+        *persisted.lock().unwrap() = true;
+        resume_tx.send(()).unwrap();
+        toggle.join().unwrap();
+        reconcile.join().unwrap();
+
+        assert_eq!(*login_item.lock().unwrap(), Some(true));
     }
 }
