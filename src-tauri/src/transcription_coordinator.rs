@@ -1,5 +1,6 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::transcription::TranscriptionManager;
 use crate::settings::ShortcutActivation;
 use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
@@ -767,6 +768,10 @@ fn start(app: &AppHandle, binding_id: &str, hotkey_string: &str) -> bool {
         .is_some_and(|a| a.is_recording());
     if !recording {
         debug!("Start for '{binding_id}' did not begin recording; staying idle");
+        // No session will finish to unload a model this start loaded or joined.
+        if let Some(tm) = app.try_state::<Arc<TranscriptionManager>>() {
+            tm.maybe_unload_after_dictation("failed recording start");
+        }
     }
     recording
 }
