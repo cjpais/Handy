@@ -715,6 +715,11 @@
       "readingFile": "Læser fil...",
       "showMore": "Vis mere",
       "showLess": "Vis mindre",
+      "postProcess": "Efterbehandl transskription",
+      "postProcessError": "Efterbehandlingen mislykkedes. Tjek dine indstillinger for efterbehandling eller logfilerne.",
+      "postProcessedTab": "Efterbehandlet",
+      "originalTab": "Original",
+      "postProcessFailed": "Efterbehandlingen mislykkedes, så den oprindelige transskription blev brugt.",
       "dropTitle": "Slip for at transskribere",
       "dropDescription": "Den vises i historikken."
     },

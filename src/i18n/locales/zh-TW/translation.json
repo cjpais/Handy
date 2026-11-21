@@ -715,6 +715,11 @@
       "readingFile": "正在讀取檔案...",
       "showMore": "顯示更多",
       "showLess": "收合",
+      "postProcess": "後處理轉錄",
+      "postProcessError": "後處理失敗。請檢查後處理設定或記錄檔。",
+      "postProcessedTab": "後處理結果",
+      "originalTab": "原文",
+      "postProcessFailed": "後處理失敗，因此使用了原始轉錄。",
       "dropTitle": "拖放到此處進行轉錄",
       "dropDescription": "它會出現在歷史記錄中。"
     },

@@ -715,6 +715,11 @@
       "readingFile": "Odczytuję plik...",
       "showMore": "Pokaż więcej",
       "showLess": "Pokaż mniej",
+      "postProcess": "Przetwórz transkrypcję",
+      "postProcessError": "Przetwarzanie końcowe nie powiodło się. Sprawdź ustawienia przetwarzania końcowego lub logi.",
+      "postProcessedTab": "Przetworzona",
+      "originalTab": "Oryginalna",
+      "postProcessFailed": "Przetwarzanie końcowe nie powiodło się, więc użyto oryginalnej transkrypcji.",
       "dropTitle": "Upuść, aby transkrybować",
       "dropDescription": "Pojawi się w historii."
     },
