@@ -1,6 +1,16 @@
 {
   description = "Handy - A free, open source, and extensible speech-to-text application that works completely offline";
 
+  # Pull pre-built binaries from the Handy Cachix cache (populated by CI in
+  # .github/workflows/nix-check.yml) so users skip the ~25 min local build.
+  # `extra-*` settings append to the user's defaults instead of replacing them.
+  nixConfig = {
+    extra-substituters = [ "https://handy-computer.cachix.org" ];
+    extra-trusted-public-keys = [
+      "handy-computer.cachix.org-1:Sihzctn6DC0CJM5QeL+9nBEL3CL8c33m777C+eIv748="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
