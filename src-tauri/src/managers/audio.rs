@@ -454,7 +454,25 @@ fn open_microphone_on_channel(
 /// blocks the shortcut coordinator: callers hand it to a dedicated worker.
 pub struct RecordingReadiness {
     receiver: mpsc::Receiver<()>,
+    ownership: RecordingReadinessOwnership,
+}
+
+#[derive(Clone)]
+pub(crate) struct RecordingReadinessOwnership {
     generation: u64,
+    current: Arc<Mutex<u64>>,
+}
+
+impl RecordingReadinessOwnership {
+    /// Commit a short, non-reentrant effect only while this recording owns it.
+    pub(crate) fn with_current<R>(&self, effect: impl FnOnce() -> R) -> Option<R> {
+        let current = self.current.lock().unwrap();
+        if *current == self.generation {
+            Some(effect())
+        } else {
+            None
+        }
+    }
 }
 
 impl RecordingReadiness {
@@ -463,7 +481,11 @@ impl RecordingReadiness {
     }
 
     pub fn generation(&self) -> u64 {
-        self.generation
+        self.ownership.generation
+    }
+
+    pub(crate) fn ownership(&self) -> RecordingReadinessOwnership {
+        self.ownership.clone()
     }
 }
 
@@ -503,7 +525,7 @@ pub struct AudioRecordingManager {
     /// Invalidates asynchronous first-sample UI/chime work when a recording is
     /// stopped or cancelled. This prevents a slow device from producing a late
     /// "ready" indication for a session the user already ended.
-    capture_generation: Arc<AtomicU64>,
+    capture_generation: Arc<Mutex<u64>>,
     /// Resolution of a *named* microphone (selected or clamshell) to its
     /// recorder device ID, cached so on-demand recording starts skip an extra
     /// device enumeration. Keyed by the resolved name, so a settings change
@@ -552,7 +574,7 @@ impl AudioRecordingManager {
             close_generation: Arc::new(AtomicU64::new(0)),
             cancel_generation: Arc::new(AtomicU64::new(0)),
             recording_active: Arc::new(AtomicBool::new(false)),
-            capture_generation: Arc::new(AtomicU64::new(0)),
+            capture_generation: Arc::new(Mutex::new(0)),
             cached_device: Arc::new(Mutex::new(None)),
             last_input_silent: Arc::new(AtomicBool::new(false)),
         };
@@ -1044,6 +1066,8 @@ impl AudioRecordingManager {
             return Err(anyhow::anyhow!("Already recording"));
         }
 
+        let ownership = self.begin_recording_readiness();
+
         // Cancel any pending lazy close (no-op in always-on mode, where
         // closes are never scheduled).
         self.close_generation.fetch_add(1, Ordering::SeqCst);
@@ -1077,7 +1101,6 @@ impl AudioRecordingManager {
             };
             match microphone.recorder.start(sink) {
                 Ok(()) => {
-                    let generation = self.capture_generation.fetch_add(1, Ordering::AcqRel) + 1;
                     *self.is_recording.lock().unwrap() = true;
                     self.set_state(
                         &mut state,
@@ -1088,7 +1111,7 @@ impl AudioRecordingManager {
                     debug!("Recording requested for binding {binding_id}");
                     return Ok(RecordingReadiness {
                         receiver,
-                        generation,
+                        ownership,
                     });
                 }
                 Err(StartError { error, sink }) => {
@@ -1218,14 +1241,23 @@ impl AudioRecordingManager {
         Ok(())
     }
 
+    fn begin_recording_readiness(&self) -> RecordingReadinessOwnership {
+        let mut current = self.capture_generation.lock().unwrap();
+        *current += 1;
+        RecordingReadinessOwnership {
+            generation: *current,
+            current: Arc::clone(&self.capture_generation),
+        }
+    }
+
     /// Invalidate pending first-sample UI and audio-feedback work immediately.
     /// Called at the beginning of stop, before the slower capture drain starts.
     pub fn invalidate_recording_readiness(&self) {
-        self.capture_generation.fetch_add(1, Ordering::AcqRel);
+        *self.capture_generation.lock().unwrap() += 1;
     }
 
     pub fn is_recording_readiness_current(&self, generation: u64) -> bool {
-        self.capture_generation.load(Ordering::Acquire) == generation
+        *self.capture_generation.lock().unwrap() == generation
     }
 
     pub fn cancel_generation(&self) -> u64 {
@@ -1249,6 +1281,8 @@ impl AudioRecordingManager {
             RecordingState::Recording {
                 binding_id: ref active,
             } if active == binding_id => {
+                // Startup may have minted ownership while stop waited for state.
+                self.invalidate_recording_readiness();
                 self.set_state(&mut state, RecordingState::Stopping);
                 drop(state);
 
@@ -1328,6 +1362,8 @@ impl AudioRecordingManager {
         self.invalidate_recording_readiness();
         self.cancel_generation.fetch_add(1, Ordering::AcqRel);
         let mut state = self.state.lock().unwrap();
+        // Startup may have minted ownership while cancellation waited for state.
+        self.invalidate_recording_readiness();
 
         match *state {
             RecordingState::Recording { .. } => {
