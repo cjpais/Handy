@@ -444,6 +444,15 @@
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
+      "microphonePriority": {
+        "title": "Microphone Order",
+        "description": "Handy records from the first microphone in this list that is connected. If none is connected, it uses the system default.",
+        "add": "Add microphone...",
+        "notConnected": "Not connected",
+        "moveUp": "Move {{name}} up",
+        "moveDown": "Move {{name}} down",
+        "remove": "Remove {{name}}"
+      },
       "channel": {
         "title": "Input Channel",
         "description": "Select which input channel to record from. Use this if your audio interface has multiple inputs.",

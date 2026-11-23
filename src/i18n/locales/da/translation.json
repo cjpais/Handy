@@ -444,6 +444,15 @@
         "placeholder": "Vælg mikrofon...",
         "loading": "Indlæser..."
       },
+      "microphonePriority": {
+        "title": "Mikrofonrækkefølge",
+        "description": "Handy optager med den første tilsluttede mikrofon på listen. Hvis ingen er tilsluttet, bruges systemets standardmikrofon.",
+        "add": "Tilføj mikrofon...",
+        "notConnected": "Ikke tilsluttet",
+        "moveUp": "Flyt {{name}} op",
+        "moveDown": "Flyt {{name}} ned",
+        "remove": "Fjern {{name}}"
+      },
       "channel": {
         "title": "Inputkanal",
         "description": "Vælg, hvilken inputkanal der skal optages fra. Brug dette, hvis din lydgrænseflade har flere indgange.",

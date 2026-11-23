@@ -444,6 +444,15 @@
         "placeholder": "選擇麥克風...",
         "loading": "載入中..."
       },
+      "microphonePriority": {
+        "title": "麥克風順序",
+        "description": "Handy 會使用此清單中第一個已連接的麥克風錄音。如果都未連接,則使用系統預設麥克風。",
+        "add": "新增麥克風...",
+        "notConnected": "未連接",
+        "moveUp": "上移 {{name}}",
+        "moveDown": "下移 {{name}}",
+        "remove": "移除 {{name}}"
+      },
       "channel": {
         "title": "輸入聲道",
         "description": "選擇要錄音的輸入聲道。如果您的音訊介面有多個輸入，請使用此選項。",

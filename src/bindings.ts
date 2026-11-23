@@ -864,6 +864,17 @@ async getSelectedMicrophone() : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Replace the microphone order: Handy records from the first one plugged in.
+ */
+async setMicrophonePriority(priority: string[]) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_microphone_priority", { priority }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getAvailableOutputDevices() : Promise<Result<AudioDevice[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_output_devices") };
@@ -1132,6 +1143,12 @@ hold_threshold_ms?: number; audio_feedback?: boolean; audio_feedback_volume?: nu
  * see the current release's notes — see `apply_settings_migrations`.
  */
 whats_new_last_seen_version?: string; selected_model?: string; onboarding_completed?: boolean; always_on_microphone?: boolean; selected_microphone?: string | null; 
+/**
+ * Microphones in order of preference: Handy records from the first one
+ * that is plugged in, and from the system default when none is.
+ * `selected_microphone` mirrors its head.
+ */
+microphone_priority?: string[]; 
 /**
  * Which input channel to use on the selected microphone device.
  * None means "average all channels" (original behavior).

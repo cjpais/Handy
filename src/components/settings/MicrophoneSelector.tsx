@@ -37,10 +37,12 @@ export const MicrophoneDropdown: React.FC<{
     onPicked?.();
   };
 
-  const microphoneOptions = audioDevices.map((device) => ({
-    value: device.name,
-    label: device.name,
-  }));
+  // An unplugged microphone stays selected: keep its name on the button.
+  const names = audioDevices.map((device) => device.name);
+  if (audioDevices.length > 0 && !names.includes(selectedMicrophone)) {
+    names.push(selectedMicrophone);
+  }
+  const microphoneOptions = names.map((name) => ({ value: name, label: name }));
 
   return (
     <Dropdown

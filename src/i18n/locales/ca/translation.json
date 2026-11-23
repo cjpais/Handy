@@ -444,6 +444,15 @@
         "placeholder": "Seleccionaun micròfon...",
         "loading": "S'està carregant..."
       },
+      "microphonePriority": {
+        "title": "Ordre dels micròfons",
+        "description": "Handy enregistra amb el primer micròfon connectat d'aquesta llista. Si no n'hi ha cap de connectat, fa servir el predeterminat del sistema.",
+        "add": "Afegeix un micròfon...",
+        "notConnected": "No connectat",
+        "moveUp": "Mou {{name}} amunt",
+        "moveDown": "Mou {{name}} avall",
+        "remove": "Treu {{name}}"
+      },
       "channel": {
         "title": "Canal d'entrada",
         "description": "Seleccioneu el canal d'entrada des del qual voleu enregistrar. Feu servir aquesta opció si la interfície d'àudio té diverses entrades.",

@@ -444,6 +444,15 @@
         "placeholder": "Sélectionner un microphone...",
         "loading": "Chargement..."
       },
+      "microphonePriority": {
+        "title": "Ordre des microphones",
+        "description": "Handy enregistre avec le premier microphone connecté de cette liste. Si aucun n’est connecté, il utilise le microphone par défaut du système.",
+        "add": "Ajouter un microphone...",
+        "notConnected": "Non connecté",
+        "moveUp": "Monter {{name}}",
+        "moveDown": "Descendre {{name}}",
+        "remove": "Retirer {{name}}"
+      },
       "channel": {
         "title": "Canal d’entrée",
         "description": "Sélectionnez le canal d’entrée à enregistrer. Utilisez cette option si votre interface audio possède plusieurs entrées.",

@@ -444,6 +444,15 @@
         "placeholder": "Vyberte mikrofon...",
         "loading": "Načítání..."
       },
+      "microphonePriority": {
+        "title": "Pořadí mikrofonů",
+        "description": "Handy nahrává prvním připojeným mikrofonem z tohoto seznamu. Pokud není připojen žádný, použije výchozí mikrofon systému.",
+        "add": "Přidat mikrofon...",
+        "notConnected": "Nepřipojeno",
+        "moveUp": "Posunout {{name}} nahoru",
+        "moveDown": "Posunout {{name}} dolů",
+        "remove": "Odebrat {{name}}"
+      },
       "channel": {
         "title": "Vstupní kanál",
         "description": "Vyberte vstupní kanál, ze kterého se má nahrávat. Tuto možnost použijte, pokud má vaše zvukové rozhraní více vstupů.",

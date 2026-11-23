@@ -6,7 +6,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[cfg(target_os = "windows")]
 use winreg::{
@@ -235,12 +235,29 @@ pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
 #[specta::specta]
 pub async fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.selected_microphone = if device_name == "default" {
-        None
-    } else {
-        Some(device_name)
-    };
+    settings.prefer_microphone((device_name != "default").then_some(device_name));
+    apply_microphone_order(app, settings).await
+}
+
+/// Replace the microphone order: Handy records from the first one plugged in.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_microphone_priority(app: AppHandle, priority: Vec<String>) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.set_microphone_priority(priority);
+    apply_microphone_order(app, settings).await
+}
+
+async fn apply_microphone_order(
+    app: AppHandle,
+    settings: crate::settings::AppSettings,
+) -> Result<(), String> {
     write_settings(&app, settings);
+    // The order and the selected microphone change together: reload both.
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({ "setting": "selected_microphone" }),
+    );
 
     // Update the audio manager to use the new device. update_selected_device
     // can restart the cpal stream (blocking CoreAudio) — run it on a blocking

@@ -444,6 +444,15 @@
         "placeholder": "Pilih mikrofon...",
         "loading": "Memuat..."
       },
+      "microphonePriority": {
+        "title": "Urutan Mikrofon",
+        "description": "Handy merekam dengan mikrofon pertama dalam daftar ini yang terhubung. Jika tidak ada yang terhubung, default sistem digunakan.",
+        "add": "Tambah mikrofon...",
+        "notConnected": "Tidak terhubung",
+        "moveUp": "Pindahkan {{name}} ke atas",
+        "moveDown": "Pindahkan {{name}} ke bawah",
+        "remove": "Hapus {{name}}"
+      },
       "channel": {
         "title": "Kanal Masukan",
         "description": "Pilih kanal masukan yang akan direkam. Gunakan ini jika antarmuka audio Anda memiliki beberapa masukan.",

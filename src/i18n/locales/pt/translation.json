@@ -444,6 +444,15 @@
         "placeholder": "Selecionar microfone...",
         "loading": "Carregando..."
       },
+      "microphonePriority": {
+        "title": "Ordem dos microfones",
+        "description": "O Handy grava com o primeiro microfone conectado desta lista. Se nenhum estiver conectado, usa o padrão do sistema.",
+        "add": "Adicionar microfone...",
+        "notConnected": "Não conectado",
+        "moveUp": "Mover {{name}} para cima",
+        "moveDown": "Mover {{name}} para baixo",
+        "remove": "Remover {{name}}"
+      },
       "channel": {
         "title": "Canal de entrada",
         "description": "Selecione o canal de entrada que será gravado. Use esta opção se a sua interface de áudio tiver várias entradas.",

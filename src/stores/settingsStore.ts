@@ -116,6 +116,8 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  microphone_priority: (value) =>
+    commands.setMicrophonePriority(value as string[]),
   selected_channel: async (value) => {
     const result = await commands.setSelectedChannel(
       (value as number | null | undefined) ?? null,

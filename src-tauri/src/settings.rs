@@ -443,6 +443,11 @@ pub struct AppSettings {
     pub always_on_microphone: bool,
     #[serde(default)]
     pub selected_microphone: Option<String>,
+    /// Microphones in order of preference: Handy records from the first one
+    /// that is plugged in, and from the system default when none is.
+    /// `selected_microphone` mirrors its head.
+    #[serde(default)]
+    pub microphone_priority: Vec<String>,
     /// Which input channel to use on the selected microphone device.
     /// None means "average all channels" (original behavior).
     #[serde(default)]
@@ -1026,6 +1031,7 @@ pub fn get_default_settings() -> AppSettings {
         always_on_microphone: false,
         spoken_languages: Vec::new(),
         selected_microphone: None,
+        microphone_priority: Vec::new(),
         selected_channel: None,
         clamshell_microphone: None,
         selected_output_device: None,
@@ -1090,6 +1096,29 @@ impl Default for AppSettings {
 pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
 
 impl AppSettings {
+    /// Replace the microphone order, without duplicates.
+    pub fn set_microphone_priority(&mut self, priority: Vec<String>) {
+        self.microphone_priority.clear();
+        for name in priority {
+            if !self.microphone_priority.contains(&name) {
+                self.microphone_priority.push(name);
+            }
+        }
+        self.selected_microphone = self.microphone_priority.first().cloned();
+    }
+
+    /// Move one microphone to the head of the order. `None` is the system
+    /// default: it empties the order.
+    pub fn prefer_microphone(&mut self, name: Option<String>) {
+        let priority: Vec<String> = match name {
+            Some(name) => std::iter::once(name)
+                .chain(std::mem::take(&mut self.microphone_priority))
+                .collect(),
+            None => Vec::new(),
+        };
+        self.set_microphone_priority(priority);
+    }
+
     /// Samples (16 kHz) of speech the language detector hears.
     pub fn language_detection_window_samples(&self) -> usize {
         let (min, max) = LANGUAGE_DETECTION_WINDOW_SECS.into_inner();
@@ -1302,6 +1331,15 @@ fn apply_settings_migrations(
             ChineseScript::TraditionalTw
         };
         updated = true;
+    }
+
+    // One-time microphone order migration: the single selected microphone
+    // becomes the head of the order.
+    if settings_value.get("microphone_priority").is_none() {
+        if let Some(name) = &settings.selected_microphone {
+            settings.microphone_priority = vec![name.clone()];
+            updated = true;
+        }
     }
 
     let stored_schema_version = settings_value
@@ -2092,6 +2130,32 @@ mod tests {
             settings.transcribe_gpu_device.as_deref(),
             Some("[\"vulkan\",\"id\",\"0000:01:00.0\"]")
         );
+    }
+
+    #[test]
+    fn selected_microphone_migrates_to_the_head_of_the_order() {
+        let mut settings = get_default_settings();
+        settings.selected_microphone = Some("USB Mic".to_string());
+        let raw = serde_json::json!({ "selected_microphone": "USB Mic" });
+
+        assert!(apply_settings_migrations(&mut settings, &raw));
+        assert_eq!(settings.microphone_priority, ["USB Mic"]);
+    }
+
+    #[test]
+    fn preferring_a_microphone_moves_it_to_the_head_of_the_order() {
+        let mut settings = get_default_settings();
+        settings.set_microphone_priority(vec!["A".into(), "B".into(), "A".into(), "C".into()]);
+        assert_eq!(settings.microphone_priority, ["A", "B", "C"]);
+        assert_eq!(settings.selected_microphone.as_deref(), Some("A"));
+
+        settings.prefer_microphone(Some("C".into()));
+        assert_eq!(settings.microphone_priority, ["C", "A", "B"]);
+        assert_eq!(settings.selected_microphone.as_deref(), Some("C"));
+
+        settings.prefer_microphone(None);
+        assert!(settings.microphone_priority.is_empty());
+        assert_eq!(settings.selected_microphone, None);
     }
 
     #[test]

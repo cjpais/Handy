@@ -444,6 +444,15 @@
         "placeholder": "Välj mikrofon...",
         "loading": "Laddar..."
       },
+      "microphonePriority": {
+        "title": "Mikrofonordning",
+        "description": "Handy spelar in med den första anslutna mikrofonen i listan. Om ingen är ansluten används systemets standardmikrofon.",
+        "add": "Lägg till mikrofon...",
+        "notConnected": "Inte ansluten",
+        "moveUp": "Flytta upp {{name}}",
+        "moveDown": "Flytta ned {{name}}",
+        "remove": "Ta bort {{name}}"
+      },
       "channel": {
         "title": "Ingångskanal",
         "description": "Välj vilken ingångskanal du vill spela in från. Använd detta om ditt ljudgränssnitt har flera ingångar.",

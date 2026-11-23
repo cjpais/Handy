@@ -444,6 +444,15 @@
         "placeholder": "Mikrofon seçin...",
         "loading": "Yükleniyor..."
       },
+      "microphonePriority": {
+        "title": "Mikrofon Sırası",
+        "description": "Handy, bu listedeki bağlı ilk mikrofonla kayıt yapar. Hiçbiri bağlı değilse sistem varsayılanını kullanır.",
+        "add": "Mikrofon ekle...",
+        "notConnected": "Bağlı değil",
+        "moveUp": "{{name}} öğesini yukarı taşı",
+        "moveDown": "{{name}} öğesini aşağı taşı",
+        "remove": "{{name}} öğesini kaldır"
+      },
       "channel": {
         "title": "Giriş Kanalı",
         "description": "Kayıt yapılacak giriş kanalını seçin. Ses arabiriminizde birden fazla giriş varsa bu seçeneği kullanın.",

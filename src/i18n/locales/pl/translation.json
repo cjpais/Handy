@@ -444,6 +444,15 @@
         "placeholder": "Wybierz mikrofon...",
         "loading": "Wczytywanie..."
       },
+      "microphonePriority": {
+        "title": "Kolejność mikrofonów",
+        "description": "Handy nagrywa pierwszym podłączonym mikrofonem z tej listy. Jeśli żaden nie jest podłączony, używa domyślnego mikrofonu systemu.",
+        "add": "Dodaj mikrofon...",
+        "notConnected": "Niepodłączony",
+        "moveUp": "Przenieś {{name}} w górę",
+        "moveDown": "Przenieś {{name}} w dół",
+        "remove": "Usuń {{name}}"
+      },
       "channel": {
         "title": "Kanał wejściowy",
         "description": "Wybierz kanał wejściowy, z którego chcesz nagrywać. Użyj tej opcji, jeśli interfejs audio ma wiele wejść.",

@@ -444,6 +444,15 @@
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
       },
+      "microphonePriority": {
+        "title": "麦克风顺序",
+        "description": "Handy 使用此列表中第一个已连接的麦克风录音。如果都未连接,则使用系统默认麦克风。",
+        "add": "添加麦克风...",
+        "notConnected": "未连接",
+        "moveUp": "上移 {{name}}",
+        "moveDown": "下移 {{name}}",
+        "remove": "移除 {{name}}"
+      },
       "channel": {
         "title": "输入通道",
         "description": "选择要录制的输入通道。如果您的音频接口有多个输入，请使用此选项。",

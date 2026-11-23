@@ -444,6 +444,15 @@
         "placeholder": "Microfoon selecteren...",
         "loading": "Laden..."
       },
+      "microphonePriority": {
+        "title": "Microfoonvolgorde",
+        "description": "Handy neemt op met de eerste aangesloten microfoon in deze lijst. Als er geen is aangesloten, wordt de systeemstandaard gebruikt.",
+        "add": "Microfoon toevoegen...",
+        "notConnected": "Niet aangesloten",
+        "moveUp": "{{name}} omhoog verplaatsen",
+        "moveDown": "{{name}} omlaag verplaatsen",
+        "remove": "{{name}} verwijderen"
+      },
       "channel": {
         "title": "Ingangskanaal",
         "description": "Selecteer het ingangskanaal waarvan moet worden opgenomen. Gebruik dit als je audio-interface meerdere ingangen heeft.",

@@ -444,6 +444,15 @@
         "placeholder": "マイクを選択…",
         "loading": "読み込み中…"
       },
+      "microphonePriority": {
+        "title": "マイクの優先順位",
+        "description": "Handy は、このリストで接続されている最初のマイクで録音します。どれも接続されていない場合は、システムのデフォルトを使用します。",
+        "add": "マイクを追加...",
+        "notConnected": "未接続",
+        "moveUp": "{{name}} を上へ移動",
+        "moveDown": "{{name}} を下へ移動",
+        "remove": "{{name}} を削除"
+      },
       "channel": {
         "title": "入力チャンネル",
         "description": "録音に使用する入力チャンネルを選択します。オーディオインターフェースに複数の入力がある場合に使用してください。",

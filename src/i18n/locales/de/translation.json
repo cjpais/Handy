@@ -444,6 +444,15 @@
         "placeholder": "Mikrofon auswählen...",
         "loading": "Wird geladen..."
       },
+      "microphonePriority": {
+        "title": "Mikrofon-Reihenfolge",
+        "description": "Handy nimmt mit dem ersten verbundenen Mikrofon dieser Liste auf. Ist keines verbunden, wird das Standardmikrofon des Systems verwendet.",
+        "add": "Mikrofon hinzufügen...",
+        "notConnected": "Nicht verbunden",
+        "moveUp": "{{name}} nach oben verschieben",
+        "moveDown": "{{name}} nach unten verschieben",
+        "remove": "{{name}} entfernen"
+      },
       "channel": {
         "title": "Eingangskanal",
         "description": "Wähle den Eingangskanal aus, von dem aufgenommen werden soll. Verwende diese Option, wenn dein Audio-Interface mehrere Eingänge hat.",

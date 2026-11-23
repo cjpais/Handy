@@ -444,6 +444,15 @@
         "placeholder": "Chọn micrô...",
         "loading": "Đang tải..."
       },
+      "microphonePriority": {
+        "title": "Thứ tự micrô",
+        "description": "Handy ghi âm bằng micrô đầu tiên trong danh sách này đang được kết nối. Nếu không có micrô nào được kết nối, Handy dùng micrô mặc định của hệ thống.",
+        "add": "Thêm micrô...",
+        "notConnected": "Chưa kết nối",
+        "moveUp": "Chuyển {{name}} lên",
+        "moveDown": "Chuyển {{name}} xuống",
+        "remove": "Xóa {{name}}"
+      },
       "channel": {
         "title": "Kênh đầu vào",
         "description": "Chọn kênh đầu vào để ghi âm. Sử dụng tùy chọn này nếu giao diện âm thanh của bạn có nhiều đầu vào.",

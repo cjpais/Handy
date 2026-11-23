@@ -444,6 +444,15 @@
         "placeholder": "마이크 선택...",
         "loading": "로딩 중..."
       },
+      "microphonePriority": {
+        "title": "마이크 순서",
+        "description": "Handy는 이 목록에서 연결된 첫 번째 마이크로 녹음합니다. 연결된 마이크가 없으면 시스템 기본값을 사용합니다.",
+        "add": "마이크 추가...",
+        "notConnected": "연결되지 않음",
+        "moveUp": "{{name}} 위로 이동",
+        "moveDown": "{{name}} 아래로 이동",
+        "remove": "{{name}} 제거"
+      },
       "channel": {
         "title": "입력 채널",
         "description": "녹음할 입력 채널을 선택하세요. 오디오 인터페이스에 입력이 여러 개 있는 경우 사용하세요.",
