@@ -1,0 +1,998 @@
+{
+  "tray": {
+    "settings": "Beállítások...",
+    "checkUpdates": "Frissítések keresése...",
+    "copyLastTranscript": "Utolsó átirat másolása",
+    "unloadModel": "Modell eltávolítása a memóriából",
+    "model": "Modell",
+    "quit": "Kilépés",
+    "cancel": "Mégse",
+    "secureInputWarning": "⚠ A Biztonságos bevitel letiltotta a billentyűparancsokat",
+    "language": "Nyelv",
+    "autoLanguage": "Automatikus",
+    "otherLanguages": "További nyelvek"
+  },
+  "sidebar": {
+    "general": "Általános",
+    "models": "Modellek",
+    "advanced": "Speciális",
+    "postProcessing": "Utófeldolgozás",
+    "history": "Előzmények",
+    "debug": "Hibakeresés",
+    "about": "Névjegy"
+  },
+  "onboarding": {
+    "customModelDescription": "Hivatalosan nem támogatott",
+    "migration": {
+      "title": "A modelljeidet frissíteni kell",
+      "description": "A Handy mostantól újabb típusú modellt használ. Töltsd le az új verziót, hogy továbbra is működjön az átírás. A régi verziók törlődnek.",
+      "replaces": "Ezt váltja fel: {{name}}",
+      "oldFormat": "Régi formátum",
+      "failed": "A letöltés sikertelen",
+      "retry": "Újra",
+      "chooseAnother": "Másik modell választása",
+      "download": "Modellek letöltése ({{size}})",
+      "continue": "Tovább"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Gyors és meglehetősen pontos."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Jó pontosság, közepes sebesség"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Kiegyensúlyozott pontosság és sebesség."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Jó pontosság, de lassú."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Tajvani mandarinra optimalizálva. Támogatja a nyelvek közti váltást."
+      }
+    },
+    "errors": {
+      "selectModel": "A modell kiválasztása sikertelen"
+    },
+    "permissions": {
+      "microphone": {
+        "name": "Mikrofon",
+        "why": "Hogy a Handy hallja a hangodat. A hang ezen a számítógépen alakul szöveggé, és soha nem töltődik fel."
+      },
+      "accessibility": {
+        "name": "Kisegítő lehetőségek",
+        "why": "Hogy a billentyűparancs minden alkalmazásban működjön, és a Handy oda írhassa a szöveget, ahol a kurzor van."
+      },
+      "errors": {
+        "checkFailed": "Az engedélyek ellenőrzése sikertelen. Próbáld újra.",
+        "requestFailed": "Az engedély kérése sikertelen. Próbáld újra."
+      },
+      "titleMac": "Két engedély, és kész is vagy",
+      "titleWindows": "Egy engedély, és kész is vagy",
+      "subtitleMac": "A macOS rákérdez, mielőtt egy alkalmazás hallgathatna vagy gépelhetne.",
+      "subtitleWindows": "A Windows rákérdez, mielőtt egy alkalmazás hallgathatna.",
+      "allow": "Engedélyezés",
+      "openSettings": "Beállítások megnyitása",
+      "allowed": "Engedélyezve",
+      "waiting": "Várakozás",
+      "turnOnMac": "Kapcsold be a Handyt a Rendszerbeállításokban, majd gyere vissza ide.",
+      "turnOnWindows": "Kapcsold be a mikrofonhozzáférést a Windows beállításaiban, majd gyere vissza ide.",
+      "hintBoth": "A folytatáshoz engedélyezd mindkettőt",
+      "hintMicrophone": "A folytatáshoz engedélyezd a mikrofont",
+      "welcomeBack": "Üdv újra! Ott folytatjuk, ahol abbahagytad.",
+      "relaunch": "Ezután sem reagál a billentyűparancs? <relaunch>Indítsd újra a Handyt</relaunch>, és pontosan ide térsz vissza."
+    },
+    "shell": {
+      "back": "Vissza",
+      "continue": "Tovább",
+      "progress": "{{step}}/{{count}}. lépés"
+    },
+    "welcome": {
+      "title": "Beszélj gépelés helyett, bármelyik alkalmazásban",
+      "subtitle": "Válaszd ki a nyelveket, amelyeken diktálni fogsz",
+      "languagesLabel": "Nyelvek",
+      "noMatch": "Nincs találat erre: „{{query}}”. A Handy modelljei körülbelül 100 nyelvet ismernek; a többit a beállításokban találod.",
+      "appLanguage": "Az alkalmazás nyelve",
+      "menusIn": "Menük nyelve: <b>{{language}}</b>",
+      "chinese": {
+        "question": "Beszélt nyelveid: {{languages}}. Milyen írásjegyekkel írjon a Handy?",
+        "label": "Kínai írásjegyek",
+        "zh-Hans": "Egyszerűsített",
+        "zh-Hant": "Tajvani",
+        "zh-HK": "Hongkongi"
+      },
+      "hint": {
+        "pickOne": "Válassz legalább egy nyelvet",
+        "weak_one": "{{languages}}: egyik modell sem érti még jól",
+        "weak_other": "{{languages}}: egyik modell sem érti még jól őket"
+      }
+    },
+    "download": {
+      "checking": "A letöltés ellenőrzése…",
+      "ready": "Kész: {{name}}",
+      "failed": "A letöltés leállt",
+      "downloading": "Letöltés: {{name}}",
+      "progress": "{{done}} / {{total}}",
+      "progressLeft": "{{done}} / {{total}}, még {{time}}",
+      "checkingName": "Ellenőrzés: {{name}}",
+      "checkingDetail": "Annak ellenőrzése, hogy a letöltés teljes-e",
+      "stopped": "A letöltés leállt: {{name}}",
+      "retryDetail": "Újrapróbáláskor ott folytatódik, ahol abbamaradt",
+      "retryDownload": "Letöltés újrapróbálása",
+      "cardProgress": "Letöltés: {{percent}}%, {{done}} / {{total}}",
+      "timeLeft": "még {{time}}",
+      "speedLeft": "{{speed}}, még {{time}}"
+    },
+    "model": {
+      "title": "Válassz beszédmodellt",
+      "subtitle": "A beszédmodell alakítja szöveggé a beszédedet, közvetlenül ezen a számítógépen",
+      "label": "Beszédmodell",
+      "lines": {
+        "recommended": "A sebesség és a pontosság legjobb egyensúlya a nyelveidhez",
+        "faster": "Gyorsabb, kicsit több hibával",
+        "accurate": "A legkevesebb hiba, de lassabb"
+      },
+      "shorts": {
+        "recommended": "Számodra a legjobb egyensúly",
+        "faster": "Gyorsabb, kicsit több hiba",
+        "accurate": "Legkevesebb hiba, de lassabb"
+      },
+      "model": "Modell",
+      "showAll": "Az összes modell megjelenítése ({{count}})",
+      "download": "Letöltés: {{size}}",
+      "downloadInstead": "Váltás és letöltés ({{size}})",
+      "pauses": "{{name}}: a letöltés {{percent}}%-nál szünetel",
+      "resumeLater": "Ha újra kiválasztod, ott folytatódik, ahol abbamaradt",
+      "hint": "Letöltődik, amíg befejezed a beállítást"
+    },
+    "demo": {
+      "title": "Beszélj bármelyik alkalmazásban, egyetlen billentyűparanccsal",
+      "hold": "<0>Kattints oda, ahová gépelnél.</0> <1>Tartsd lenyomva a billentyűparancsot, és beszélj.</1> <2>Engedd el, és megjelennek a szavaid.</2>",
+      "tap": "<0>Kattints oda, ahová gépelnél.</0> <1>Koppints a billentyűparancsra, és beszélj.</1> <2>Koppints újra, és megjelennek a szavaid.</2>",
+      "apps": {
+        "messages": "Üzenetek",
+        "notes": "Jegyzetek"
+      },
+      "chat": "Ma este még jössz?",
+      "noteTitle": "Hétvégi tervek",
+      "screenLabel": "Egy laptop: valaki belekattint egy alkalmazásba, megnyomja a billentyűparancsot és beszél, a szavai pedig megjelennek ott, ahová kattintott.",
+      "change": "Módosítás",
+      "yourShortcut": "A billentyűparancsod:",
+      "pressKeys": "Nyomd meg az új billentyűket",
+      "addKey": "Most adj hozzá még egy billentyűt",
+      "cancel": "Mégse",
+      "tryIt": "Próbáld ki magad"
+    },
+    "try": {
+      "title": "Próbáld ki!",
+      "subtitle": "A Handy ott van a sarokban, és végigvezet rajta",
+      "noteLabel": "Jegyzet",
+      "placeholder": "Új jegyzet",
+      "hold": "Tartsd lenyomva: <keys/>, és beszélj.",
+      "tapNext": "Most koppints egyszer: <keys/>, majd beszélj.",
+      "letGo": "Engedd el: <keys/>, ha végeztél.",
+      "tapAgain": "Koppints újra: <keys/>, ha végeztél.",
+      "watch": "Figyeld a jegyzetet.",
+      "changeKeys": "Billentyűparancs módosítása: {{keys}}",
+      "doneHold": "Pacsi! Ez volt a nyomva tartás.",
+      "doneHoldNext": "Jöhet a kézmentes mód.",
+      "doneTap": "Csapj bele! Ez volt a koppintás.",
+      "doneTapNext": "Most próbáld nyomva tartani beszéd közben.",
+      "giveFive": "Megy ez! Adj egy pacsit!",
+      "highFive": "Pacsi!",
+      "slowLine": "{{name}} ezen a számítógépen {{wait}} alatt végzett. <faster>Próbálj gyorsabb modellt</faster>",
+      "nothingTyped": "Hmm, nem jelent meg semmi.",
+      "nothingTypedSub": "Előbb kattints a jegyzetbe, aztán próbáld újra.",
+      "silent": "Nem hallottam semmit.",
+      "silentSub": "Ebből a mikrofonból nem jött hang. Próbálj egy másikat:",
+      "noWords": "Nem értettem egy szót sem.",
+      "noWordsSub": "Próbáld újra, és mondj egy egész mondatot.",
+      "finish": "Befejezés",
+      "skip": "Kihagyás",
+      "seconds": "{{value}} mp"
+    },
+    "done": {
+      "title": "Minden kész",
+      "subMac": "A Handy mostantól a menüsorban van. Bármelyik alkalmazásban tartsd lenyomva vagy koppints: <keys/>, és beszélj.",
+      "subTray": "A Handy mostantól a tálcán van. Bármelyik alkalmazásban tartsd lenyomva vagy koppints: <keys/>, és beszélj.",
+      "hint": "Ezeket később módosíthatod a Beállításokban",
+      "highFiveLabel": "Pacsi",
+      "atLogin": "A Handy indítása bejelentkezéskor",
+      "finish": "Kész",
+      "panel": {
+        "name": "Handy",
+        "ready": "Kész",
+        "languages": "Nyelvek",
+        "model": "Beszédmodell",
+        "shortcut": "Billentyűparancs",
+        "changeLanguages": "Nyelvek módosítása: {{languages}}",
+        "changeModel": "Beszédmodell módosítása: {{model}}"
+      }
+    },
+    "linux": {
+      "tryIt": "Nem működik? <guide>Linux beállítási útmutató</guide>",
+      "done": "Más alkalmazásokban nem működik? <guide>Linux beállítási útmutató</guide>"
+    }
+  },
+  "modelTable": {
+    "tags": {
+      "preview": "Élő előnézet",
+      "previewTitle": "Beszéd közben megjeleníti a szavaidat az Élő jelzőben, majd amikor abbahagyod, beírja őket",
+      "translate": "Fordít",
+      "translateTitle": "Angol szöveggé tudja alakítani, amit mondasz. A beállításokban kapcsolható be"
+    },
+    "rubric": {
+      "gradeTitle": "Pontosság ({{language}}): {{grade}}",
+      "accuracyTitle": "Pontosság ({{language}})",
+      "overallTitle": "Pontosság a nyelveiden: {{grade}}",
+      "overall": "Pontosság a nyelveiden",
+      "meaning": {
+        "A": "Nagyon kevés hiba: a szavaid általában úgy jelennek meg, ahogy mondtad",
+        "B": "Néhány hiba: számíts rá, hogy itt-ott ki kell javítanod egy szót",
+        "C": "Gyakori hibák: egyes részletek elveszhetnek",
+        "D": "Sok hiba: ellenőrizned és javítanod kell, amit beír",
+        "F": "Gyakran érthetetlen: a mondanivalód nagy része hibásan jelenhet meg"
+      },
+      "unsupported": "Ez a modell nem érti ezt a nyelvet: {{language}}, ezért nem tudja leírni",
+      "unrated": "Ez a modell érti ezt a nyelvet: {{language}}, de még nem mértük, mennyire jól",
+      "under": "{{max}}% alatt",
+      "between": "{{min}} és {{max}}% között",
+      "over": "{{min}}% vagy több",
+      "speedTitle": "Sebesség: {{speed}}",
+      "speedName": {
+        "0": "Nagyon lassú",
+        "1": "Lassú",
+        "2": "Közepes",
+        "3": "Gyors",
+        "4": "Nagyon gyors"
+      },
+      "speedMeaning": {
+        "0": "A szavaid hosszú várakozás után jelennek meg",
+        "1": "A szavaid várakozás után jelennek meg",
+        "2": "A szavaid rövid várakozás után jelennek meg",
+        "3": "A szavaid szinte azonnal megjelennek",
+        "4": "A szavaid azonnal megjelennek"
+      },
+      "speedPreview": "{{meaning}}, élő előnézettel beszéd közben",
+      "untimed": "Még nem mértük, milyen gyors",
+      "underSeconds": "{{max}} mp alatt",
+      "betweenSeconds": "{{min}} és {{max}} mp között",
+      "overSeconds": "{{min}} mp vagy több"
+    },
+    "roles": {
+      "recommended": "Ajánlott",
+      "faster": "Gyorsabb",
+      "accurate": "Pontosabb",
+      "fromAll": "Az összes modellből"
+    },
+    "speed": "Sebesség",
+    "size": "Méret",
+    "accuracy": "Pontosság",
+    "search": "Modellek keresése",
+    "allLabel": "Beszédmodellek",
+    "noMatch": "Nincs találat erre: „{{query}}”. Próbálj nyelvet vagy modellcsaládot, például Whisper vagy Parakeet",
+    "noFilterMatch": "Egy modell sem felel meg a szűrőknek",
+    "speedUntested": "A sebességet még nem mértük",
+    "speedWords": {
+      "0": "Nagyon lassú, a szavak hosszú várakozás után jelennek meg",
+      "1": "Lassú, a szavak várakozás után jelennek meg",
+      "2": "Közepes, a szavak rövid várakozás után jelennek meg",
+      "3": "Gyors, a szavak szinte azonnal megjelennek",
+      "4": "Nagyon gyors, a szavak azonnal megjelennek"
+    },
+    "speedWordsPreview": {
+      "0": "Nagyon lassú, élő előnézettel beszéd közben",
+      "1": "Lassú, élő előnézettel beszéd közben",
+      "2": "Közepes, élő előnézettel beszéd közben",
+      "3": "Gyors, élő előnézettel beszéd közben",
+      "4": "Nagyon gyors, élő előnézettel beszéd közben"
+    },
+    "missingLanguage": "Hiányzik egy nyelv",
+    "allLanguages": "Mind",
+    "downloadingLine": "{{percent}}% letöltve ({{total}})",
+    "customLine": "A modellek mappájából hozzáadva. Nincs értékelve.",
+    "legacyLine": "Régebbi letöltés. Nincs értékelve."
+  },
+  "languagePicker": {
+    "search": "Nyelvek keresése",
+    "addAnother": "Másik hozzáadása",
+    "remove": "Eltávolítás: {{language}}",
+    "alreadyAdded_one": "Már hozzáadva: {{languages}}.",
+    "alreadyAdded_other": "Már hozzáadva: {{languages}}."
+  },
+  "modelSelector": {
+    "custom": "Egyéni",
+    "streaming": "Valós idejű",
+    "active": "Aktív",
+    "noModelsAvailable": "Nincs elérhető modell",
+    "verifying": "Ellenőrzés: {{modelName}}...",
+    "verifyingGeneric": "Ellenőrzés...",
+    "downloading": "Letöltés: {{percentage}}%",
+    "downloadingMultiple": "{{count}} modell letöltése...",
+    "modelReady": "A modell kész",
+    "loading": "Betöltés: {{modelName}}...",
+    "loadingGeneric": "Betöltés...",
+    "modelError": "Modellhiba",
+    "modelUnloaded": "A modell nincs betöltve",
+    "noModelDownloadRequired": "Nincs modell, letöltés szükséges",
+    "downloadSpeed": "{{speed}} MB/s",
+    "lockedWhileTranscribing": "Modellt akkor válthatsz, ha az Előzményekben futó átírás befejeződött."
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "{{model}} beállításai"
+    },
+    "general": {
+      "title": "Általános",
+      "shortcut": {
+        "title": "Handy billentyűparancsok",
+        "description": "Állítsd be a billentyűparancsokat, amelyek elindítják a beszédfelvételt és az átírást",
+        "loading": "Billentyűparancsok betöltése...",
+        "none": "Nincs beállított billentyűparancs",
+        "notFound": "A billentyűparancs nem található",
+        "pressKeys": "Nyomd meg a billentyűket...",
+        "bindings": {
+          "transcribe": {
+            "name": "Átírás billentyűparancsa",
+            "description": "Billentyűparancs a hangod rögzítéséhez és átírásához."
+          },
+          "cancel": {
+            "name": "Megszakítás billentyűparancsa",
+            "description": "Billentyűparancs az aktuális felvétel megszakításához."
+          },
+          "transcribe_with_post_process": {
+            "name": "Utófeldolgozás billentyűparancsa",
+            "description": "Opcionális: külön billentyűparancs, amely az átiratra mindig AI-alapú utófeldolgozást alkalmaz."
+          }
+        },
+        "errors": {
+          "set": "A billentyűparancs beállítása sikertelen: {{error}}"
+        }
+      },
+      "language": {
+        "title": "Nyelv",
+        "description": "Válaszd ki a beszédfelismerés nyelvét. Az Automatikus beállítás magától felismeri a nyelvet, egy konkrét nyelv kiválasztása viszont javíthatja a pontosságot az adott nyelven.",
+        "searchPlaceholder": "Nyelvek keresése...",
+        "noResults": "Nem található nyelv",
+        "auto": "Automatikus",
+        "autoUnavailable": {
+          "title": "Az Automatikus mód ki van kapcsolva",
+          "oneLanguage": "A nyelveid közül csak egy működik ezzel a modellel",
+          "undetectable": "Nem érhető el ezekkel: {{languages}}",
+          "noMatch": "A nyelveid közül egyik sem működik ezzel a modellel"
+        },
+        "detectorMissingTitle": "Az Automatikus módhoz külön letöltés kell",
+        "detectorMissing": "Ez a modell nem tudja megmondani, milyen nyelven beszélsz. Az Automatikus módhoz egy kis nyelvfelismerő kell",
+        "stopDetectorDownload": "A nyelvfelismerő letöltésének leállítása"
+      },
+      "preferredLanguages": {
+        "title": "Előnyben részesített nyelvek",
+        "description": "A nyelvek, amelyeken beszélsz. A Handy ezek alapján ajánl modelleket.",
+        "noMatch": "Nincs találat erre: „{{query}}”",
+        "weak": "Ezt egyik modell sem ismeri fel még jól: {{languages}}."
+      },
+      "shortcutActivation": {
+        "title": "Billentyűparancs működése",
+        "description": "Válaszd ki, hogyan indítja és állítja le a felvételt az átírás billentyűparancsa.",
+        "options": {
+          "holdOrToggle": "Automatikus",
+          "pushToTalk": "Nyomva tartás",
+          "toggle": "Koppintás"
+        },
+        "descriptions": {
+          "hold_or_toggle": "Tartsd nyomva a felvételhez, vagy koppints az indításhoz és a leállításhoz",
+          "push_to_talk": "Addig rögzít, amíg nyomva tartod a billentyűparancsot",
+          "toggle": "Koppints a billentyűparancsra a felvétel indításához, és újra a leállításához"
+        }
+      }
+    },
+    "models": {
+      "title": "Modellek",
+      "changeLanguages": "Nyelvek módosítása",
+      "sections": {
+        "yours": "Ezen a számítógépen",
+        "fits": "A nyelveidhez",
+        "untested": "Nem tesztelt"
+      },
+      "untestedNote": "Nem teszteltük őket a Handyvel. Lassabbak lehetnek, vagy több hibát véthetnek.",
+      "untestedHidden_one": "Még {{count}} modell nincs diktálásra hangolva. Kereséssel megtalálod.",
+      "untestedHidden_other": "Még {{count}} modell nincs diktálásra hangolva. Kereséssel megtalálod őket.",
+      "emptyYours": "Még nincs modell. Válassz egyet lent: letöltődik, majd a Handy használja.",
+      "showMore": "Még {{count}} megjelenítése",
+      "showFewer": "Kevesebb megjelenítése",
+      "download": "Letöltés és használat",
+      "downloadingThenUse": "{{percent}}% letöltve ({{total}}), utána átvált",
+      "loading": "Betöltés…",
+      "deleteAsk": "Törlöd ezt: {{name}}? {{size}} szabadul fel.",
+      "deleteAskActive": "Törlöd ezt: {{name}}? A Handy nem tud átírni, amíg másikat nem választasz.",
+      "cancel": "Mégse",
+      "deleteModel": "Törlés: {{name}}",
+      "cancelDownload": "Letöltés leállítása: {{name}}",
+      "legend": {
+        "open": "Hogyan értékeljük a modelleket",
+        "accuracyNote": "Minden nyelvedhez: hány szót tévesztett el a modell a tesztfelvételeinken.",
+        "speedNote": {
+          "accelerated": "Mennyi ideig tart 30 másodpercnyi beszéd leírása a tesztlaptopunk grafikus processzorán. Ezen a számítógépen eltérhet.",
+          "cpu": "Mennyi ideig tart 30 másodpercnyi beszéd leírása a tesztlaptopunk processzorán. Ezen a számítógépen eltérhet."
+        },
+        "marks": "? még nem mértük. – nem érti az adott nyelvet."
+      },
+      "retiredNotice": {
+        "title": "A régi modellek már nem működnek a Handyvel",
+        "description": "{{size}} helyet foglalnak a számítógépeden.",
+        "delete": "Modellek törlése",
+        "deleteFailed": "Néhány régi modellt nem sikerült törölni. A részleteket a naplóban találod."
+      },
+      "rescan": {
+        "label": "Újrakeresés",
+        "tooltip": "A modellek mappájába vagy a Hugging Face gyorsítótárába a Handyn kívül hozzáadott modellek keresése"
+      }
+    },
+    "languages": {
+      "title": "Nyelvek"
+    },
+    "sound": {
+      "title": "Hang",
+      "microphone": {
+        "title": "Mikrofon",
+        "description": "Válaszd ki a használni kívánt mikrofont",
+        "placeholder": "Mikrofon kiválasztása...",
+        "loading": "Betöltés..."
+      },
+      "channel": {
+        "title": "Bemeneti csatorna",
+        "description": "Válaszd ki, melyik bemeneti csatornáról történjen a felvétel. Akkor hasznos, ha a hangkártyádnak több bemenete van.",
+        "average": "Az összes csatorna átlaga",
+        "channel": "{{n}}. csatorna"
+      },
+      "audioFeedback": {
+        "label": "Hangjelzés",
+        "description": "Hang lejátszása a felvétel indításakor és leállításakor"
+      },
+      "outputDevice": {
+        "title": "Kimeneti eszköz",
+        "description": "Válaszd ki a visszajelző hangokhoz használt hangkimenetet",
+        "placeholder": "Kimeneti eszköz kiválasztása...",
+        "loading": "Betöltés..."
+      },
+      "volume": {
+        "title": "Hangerő",
+        "description": "A hangjelzések hangerejének beállítása"
+      }
+    },
+    "advanced": {
+      "groups": {
+        "app": "Alkalmazás",
+        "output": "Kimenet",
+        "transcription": "Átírás",
+        "history": "Előzmények",
+        "experimental": "Kísérleti"
+      },
+      "experimentalToggle": {
+        "label": "Kísérleti funkciók",
+        "description": "A még fejlesztés alatt álló kísérleti funkciók engedélyezése."
+      },
+      "lazyStreamClose": {
+        "label": "Mikrofon nyitva tartása átírások között",
+        "description": "A felvétel leállítása után 30 másodpercig nyitva tartja a mikrofont, így gyorsabb az egymás utáni átírás. Amíg aktív, ronthatja a Bluetooth-hangminőséget."
+      },
+      "airpodsMode": {
+        "label": "AirPods mód",
+        "description": "Átíráskor automatikusan a Macre váltja az AirPodsot, ha egy iPhone hangot játszik le. Enélkül a felvételek némák lehetnek."
+      },
+      "acceleration": {
+        "transcribe": {
+          "title": "Hardveres gyorsítás",
+          "description": "Válaszd ki az átíráshoz használt hardvert. Az Automatikus a GPU-t használja, ha elérhető, egyébként a CPU-ra vált."
+        },
+        "gpuDevice": {
+          "auto": "Automatikus"
+        }
+      },
+      "startHidden": {
+        "label": "Indítás rejtve",
+        "description": "Indítás a tálcára, az ablak megnyitása nélkül."
+      },
+      "autostart": {
+        "label": "Automatikus indítás",
+        "description": "A Handy automatikus indítása, amikor bejelentkezel a számítógépedre."
+      },
+      "showTrayIcon": {
+        "label": "Tálcaikon megjelenítése",
+        "description": "A Handy ikonjának megjelenítése a tálcán."
+      },
+      "overlay": {
+        "style": {
+          "title": "Lebegő jelző",
+          "description": "Válaszd ki a felvétel lebegő jelzőjét: a Nincs elrejti, a Minimális kis kapszulát mutat, az Élő beszéd közben valós időben mutatja az átírást (csak valós idejű modelleknél: keresd a Valós idejű jelvényt a modellválasztóban). Linuxon a „Nincs” ajánlott.",
+          "options": {
+            "none": "Nincs",
+            "minimal": "Minimális",
+            "live": "Élő"
+          }
+        },
+        "position": {
+          "title": "Lebegő jelző helye",
+          "description": "Hol jelenjen meg a lebegő jelző a képernyőn felvétel és átírás közben.",
+          "options": {
+            "bottom": "Alul",
+            "top": "Felül"
+          }
+        }
+      },
+      "pasteMethod": {
+        "title": "Beillesztés módja",
+        "description": "Válaszd ki, hogyan kerüljön be a szöveg. Közvetlen: a gépelést szimulálja a rendszer bemenetén át. Nincs: kihagyja a beillesztést, csak az előzményeket és a vágólapot frissíti.",
+        "options": {
+          "clipboard": "Vágólap ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Vágólap (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Vágólap (Shift+Insert)",
+          "direct": "Közvetlen",
+          "none": "Nincs",
+          "externalScript": "Külső szkript"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "Gépelőeszköz",
+        "description": "Válaszd ki, melyik linuxos gépelőeszközt használja a Közvetlen beillesztési mód. Az Automatikus felismeri és használja a rendszeredhez legjobban illőt.",
+        "options": {
+          "auto": "Automatikus (ajánlott)"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Vágólap kezelése",
+        "description": "A Vágólap változatlanul hagyása az átírás után is megőrzi a vágólap jelenlegi tartalmát. A Másolás a vágólapra beillesztés után a vágólapon hagyja az átírás eredményét.",
+        "options": {
+          "dontModify": "Vágólap változatlanul hagyása",
+          "copyToClipboard": "Másolás a vágólapra"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatikus küldés",
+        "description": "A szöveg beszúrása után automatikusan elküldi a kiválasztott billentyűkombinációt. A Cmd+Enter macOS-en érvényes, Windowson és Linuxon a Super+Enter.",
+        "options": {
+          "off": "Ki",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Fordítás angolra",
+        "description": "A más nyelvű beszéd automatikus fordítása angolra az átírás során."
+      },
+      "modelUnload": {
+        "title": "Modell eltávolítása a memóriából",
+        "description": "A GPU- és CPU-memória automatikus felszabadítása, ha a modell a megadott ideig nincs használatban",
+        "options": {
+          "never": "Soha",
+          "immediately": "Azonnal",
+          "min2": "2 perc után",
+          "min5": "5 perc után",
+          "min10": "10 perc után",
+          "min15": "15 perc után",
+          "hour1": "1 óra után",
+          "sec15": "15 mp után (hibakeresés)"
+        }
+      },
+      "customWords": {
+        "title": "Egyéni szavak",
+        "description": "Segít a támogatott modelleknek felismerni a neveket és a szakkifejezéseket. A közelítő javítás jelenleg csak az A–Z betűket és számokat tartalmazó szavakra működik.",
+        "placeholder": "Szó hozzáadása",
+        "add": "Hozzáadás",
+        "remove": "Eltávolítás: {{word}}",
+        "duplicate": "„{{word}}” már szerepel a listában"
+      },
+      "voiceActivityDetection": {
+        "title": "Hangaktivitás-észlelés",
+        "description": "A csend kiszűrése a felvételekből. A valós idejű modellek hosszabb VAD-lecsengést használnak; ha kikapcsolod a VAD-ot, a nyers hangot rögzíti."
+      },
+      "longFormChunking": {
+        "title": "Hosszú felvételek darabolása",
+        "description": "Az átírás előtt a hosszú felvételeket a szüneteknél darabokra bontja, ami általában jobb átírást eredményez. A fájlok átírását és a hosszú újraátírásokat mindig darabolja."
+      },
+      "languageDetection": {
+        "title": "Automatikus mód korlátozása a nyelveimre",
+        "description": "Az Automatikus mód csak az előnyben részesített nyelveid közül választ, egy kis nyelvfelismerő segítségével. Kapcsold be, ha az Automatikus mód folyton olyan nyelvet választ, amelyet nem beszélsz",
+        "downloadHint": "A bekapcsolás letölt egy kis nyelvfelismerőt",
+        "downloadingHint": "A nyelvfelismerő letöltése folyamatban. A megszakításhoz kapcsold ki"
+      },
+      "vadBackend": {
+        "title": "Hangaktivitás-motor",
+        "description": "Válaszd ki a csend kiszűrésére használt észlelőt. Az Earshot kísérleti; ha a beszéd megcsonkul vagy a zaj bennmarad, válts vissza a Silero motorra.",
+        "options": {
+          "silero": "Silero",
+          "earshot": "Earshot"
+        }
+      },
+      "fillerWordRemoval": {
+        "title": "Töltelékszavak eltávolítása",
+        "description": "Eltávolítja az átiratokból a gyakori töltelékszavakat. Kapcsold ki, ha meg akarod tartani őket."
+      },
+      "chineseScript": {
+        "title": "Kínai írásmód",
+        "description": "A mandarin és kantoni átiratokat egyszerűsített írásjegyekkel, vagy a Tajvanon, illetve Hongkongban használt hagyományos írásjegyekkel írja. Más nyelveket nem módosít.",
+        "options": {
+          "asTranscribed": "Változatlanul",
+          "simplified": "Egyszerűsített",
+          "traditionalTw": "Hagyományos (Tajvan)",
+          "traditionalHk": "Hagyományos (Hongkong)"
+        }
+      }
+    },
+    "postProcessing": {
+      "hotkey": {
+        "title": "Billentyűparancs"
+      },
+      "api": {
+        "title": "API",
+        "provider": {
+          "title": "Szolgáltató",
+          "description": "Válassz OpenAI-kompatibilis vagy Anthropic-kompatibilis szolgáltatót."
+        },
+        "apiFormat": {
+          "title": "API-formátum",
+          "description": "Az egyéni végpontod által várt kérésformátum.",
+          "options": {
+            "openai": "OpenAI-kompatibilis (Chat Completions)",
+            "anthropic": "Anthropic Messages"
+          }
+        },
+        "appleIntelligence": {
+          "unavailable": "Az Apple Intelligence nem érhető el ezen az eszközön. Apple Silicon Macet igényel macOS Tahoe (26.0) vagy újabb rendszerrel, a Rendszerbeállításokban bekapcsolt Apple Intelligence mellett."
+        },
+        "baseUrl": {
+          "title": "Alap-URL",
+          "description": "A kiválasztott szolgáltató API-alap-URL-je. Csak az egyéni szolgáltatóé szerkeszthető.",
+          "placeholder": "https://api.openai.com/v1",
+          "placeholderAnthropic": "https://api.anthropic.com/v1"
+        },
+        "apiKey": {
+          "title": "API-kulcs",
+          "description": "A kiválasztott szolgáltató API-kulcsa.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modell",
+          "descriptionCustom": "Add meg az egyéni végpontod által várt modellazonosítót.",
+          "descriptionDefault": "Válassz a kiválasztott szolgáltató által kínált modellek közül.",
+          "placeholderWithOptions": "Modell keresése vagy kiválasztása",
+          "placeholderNoOptions": "Írd be a modell nevét",
+          "refreshModels": "Modellek frissítése"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Kiválasztott prompt",
+          "description": "Válassz sablont az átiratok finomításához, vagy hozz létre újat. A prompt szövegében a ${output} használatával hivatkozhatsz a rögzített átiratra."
+        },
+        "noPrompts": "Nincs elérhető prompt",
+        "selectPrompt": "Válassz egy promptot",
+        "createNew": "Új prompt létrehozása",
+        "promptLabel": "Prompt neve",
+        "promptLabelPlaceholder": "Add meg a prompt nevét",
+        "promptInstructions": "Prompt utasításai",
+        "promptInstructionsPlaceholder": "Írd le az átírás után futtatandó utasításokat. Példa: Javítsd a következő szöveg nyelvtanát és érthetőségét: ${output}",
+        "promptTip": "Tipp: a <code>${output}</code> használatával szúrhatod be a promptba az átírt szöveget.",
+        "updatePrompt": "Prompt frissítése",
+        "deletePrompt": "Prompt törlése",
+        "createPrompt": "Prompt létrehozása",
+        "cancel": "Mégse",
+        "selectToEdit": "Válassz ki fent egy promptot a részleteinek megtekintéséhez és szerkesztéséhez.",
+        "createFirst": "Az első utófeldolgozási promptod létrehozásához kattints fent az „Új prompt létrehozása” gombra."
+      }
+    },
+    "history": {
+      "title": "Előzmények",
+      "openFolder": "Felvételek mappájának megnyitása",
+      "loading": "Előzmények betöltése...",
+      "empty": "Még nincs átirat. Kezdj el felvételt készíteni, és itt gyűlnek az előzményeid!",
+      "copyToClipboard": "Átirat másolása a vágólapra",
+      "copyError": "Az átirat vágólapra másolása sikertelen.",
+      "save": "Átirat mentése",
+      "unsave": "Eltávolítás a mentettek közül",
+      "delete": "Bejegyzés törlése",
+      "deleteError": "A bejegyzés törlése sikertelen. Próbáld újra.",
+      "retranscribe": "Újraátírás",
+      "cancelTranscription": "Átírás megszakítása",
+      "transcribing": "Átírás...",
+      "transcriptionFailed": "Az átírás sikertelen. Az újrapróbálás ikonnal átírhatod újra.",
+      "notTranscribed": "Nincs átírva. Az újrapróbálás ikonnal átírhatod.",
+      "transcribeFile": "Fájl átírása",
+      "mediaFiles": "Hang és videó",
+      "fileUnsupported": "Nem sikerült hangot beolvasni innen: {{name}}.",
+      "transcribeFailed": "Az átírás sikertelen. Próbáld újra.",
+      "waiting": "Várakozás az átírásra",
+      "transcribingPercent": "Átírás, {{percent}}%",
+      "readingFile": "Fájl beolvasása...",
+      "showMore": "Több megjelenítése",
+      "showLess": "Kevesebb megjelenítése",
+      "dropTitle": "Engedd el az átíráshoz",
+      "dropDescription": "Megjelenik az Előzményekben."
+    },
+    "debug": {
+      "title": "Hibakeresés",
+      "logDirectory": {
+        "title": "Naplók mappája",
+        "description": "A naplófájlok tárolási helye"
+      },
+      "logLevel": {
+        "title": "Naplózási szint",
+        "description": "A naplózás részletességének beállítása"
+      },
+      "liveLogs": {
+        "title": "Élő naplók",
+        "description": "Az alkalmazás naplóinak valós idejű közvetítése, hogy a naplófájl megnyitása nélkül diagnosztizálhasd a hibákat. Csak a panel nyitva tartása alatt keletkezett naplók jelennek meg; figyelembe veszi a fenti Naplózási szint beállítást.",
+        "live": "Élő",
+        "paused": "Szüneteltetve",
+        "pause": "Szünet",
+        "resume": "Folytatás",
+        "copied": "Másolva",
+        "lineCount": "{{count}} sor",
+        "empty": "Várakozás a naplókra… A bejegyzések itt jelennek meg, ahogy az alkalmazás naplóz."
+      },
+      "updateChecks": {
+        "label": "Frissítések keresése",
+        "description": "A Handy új verzióinak automatikus keresése",
+        "lockedDescription": "A rendszerkonfiguráció letiltotta (HANDY_DISABLE_UPDATER)"
+      },
+      "whatsNewPreview": {
+        "title": "Újdonságok előnézete",
+        "description": "A legutóbbi mellékelt kiadási jegyzet megnyitása anélkül, hogy megtekintettnek jelölné",
+        "button": "Előnézet"
+      },
+      "onboardingPreview": {
+        "title": "Első indítás előnézete",
+        "description": "Az első indítás képernyőinek előnézete az engedélyek, a modellek és a befejezettség módosítása nélkül",
+        "exitButton": "Kilépés az előnézetből",
+        "choose": "Válassz képernyőt",
+        "screens": {
+          "welcome": "Üdvözlés",
+          "permissions": "Engedélyek",
+          "model": "Modell",
+          "demo": "Bemutató",
+          "try": "Próbáld ki",
+          "done": "Minden kész"
+        }
+      },
+      "onboardingRun": {
+        "title": "Első indítás futtatása",
+        "description": "Az első indítás végigjárása élesben, az elejétől: engedélyeket kér, modelleket tölt le és menti a választásaidat",
+        "button": "Indítás"
+      },
+      "modelMigration": {
+        "title": "Modellek átállítása",
+        "description": "A régi formátumú modellek frissítési képernyőjének megnyitása élesben: cseremodelleket tölt le, modellt vált és törli a régi fájlokat",
+        "button": "Megnyitás"
+      },
+      "soundTheme": {
+        "label": "Hangtéma",
+        "description": "Válassz hangtémát a felvétel indítási és leállítási hangjelzéséhez"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Szójavítási küszöb",
+        "description": "Az egyéni szavak javításának érzékenysége"
+      },
+      "historyLimit": {
+        "title": "Előzmények korlátja",
+        "description": "A megőrzött előzménybejegyzések legnagyobb száma",
+        "entries": "bejegyzés"
+      },
+      "recordingRetention": {
+        "title": "Felvételek automatikus törlése",
+        "description": "A régi felvételek automatikus törlése a tárhely kímélésére",
+        "never": "Soha",
+        "preserveLimit": "A legutóbbi {{count}} megtartása",
+        "days3": "3 nap után",
+        "weeks2": "2 hét után",
+        "months3": "3 hónap után",
+        "placeholder": "Megőrzési idő kiválasztása..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Mindig bekapcsolt mikrofon",
+        "description": "A mikrofon aktívan tartása a gyorsabb reagálásért"
+      },
+      "clamshellMicrophone": {
+        "title": "Mikrofon lecsukott fedélnél",
+        "description": "A laptop lecsukott fedele mellett használt mikrofon"
+      },
+      "postProcessingToggle": {
+        "label": "Utófeldolgozás",
+        "description": "AI-alapú szövegfinomítás engedélyezése az átírás után"
+      },
+      "muteWhileRecording": {
+        "label": "Némítás felvétel közben",
+        "description": "A rendszerhang némítása a felvétel alatt"
+      },
+      "appendTrailingSpace": {
+        "label": "Záró szóköz hozzáfűzése",
+        "description": "Szóköz hozzáadása a beillesztett átirat után"
+      },
+      "keyboardImplementation": {
+        "title": "Billentyűzetkezelés",
+        "description": "Válaszd ki a billentyűparancsokat kezelő háttérrendszert.",
+        "bindingsReset": "A billentyűparancsok nem voltak kompatibilisek, ezért visszaálltak az alapértelmezettekre"
+      },
+      "pasteDelay": {
+        "title": "Beillesztési késleltetés (előtte)",
+        "description": "Késleltetés (ezredmásodpercben) a szöveg másolása után, a beillesztés billentyűleütésének elküldése előtt. Növeld, ha nem illesztődik be semmi."
+      },
+      "pasteDelayAfter": {
+        "title": "Beillesztési késleltetés (utána)",
+        "description": "Késleltetés (ezredmásodpercben) a beillesztés billentyűleütése után, az előző vágólap-tartalom visszaállítása előtt. Növeld, ha az átirat helyett a régi vágólap-tartalom illesztődik be."
+      },
+      "holdThreshold": {
+        "title": "Nyomva tartás küszöbe",
+        "description": "Csak Automatikus módban: mennyi ideig (ezredmásodpercben) kell nyomva tartani a billentyűparancsot, hogy koppintás helyett nyomva tartásnak számítson. Csökkentsd, ha a rövid nyomva tartások bekapcsolva hagyják a felvételt; növeld, ha a szándékos koppintásokat nyomva tartásnak veszi."
+      },
+      "reliablePaste": {
+        "title": "Megbízható beillesztés (béta)",
+        "description": "A vágólapot fix késleltetés helyett csak azután állítja vissza, hogy a célalkalmazás ténylegesen beolvasta az átiratot. Célja, hogy rendszerterhelés alatt ne a régi vágólap-tartalom illesztődjön be. Vágólapos beillesztési módot igényel; csak macOS-en és Windowson."
+      },
+      "recordingBuffer": {
+        "title": "Extra felvételi puffer",
+        "description": "Extra idő (ezredmásodpercben), ameddig a billentyű elengedése után is rögzít, hogy a lecsengő hang is felkerüljön. 0 = nincs extra puffer."
+      },
+      "languageDetectionWindow": {
+        "title": "Nyelvfelismerési időablak",
+        "description": "Hány másodpercnyi beszédet hall a nyelvfelismerő. A hosszabb pontosabb, de lassabb."
+      },
+      "keyboardDiagnostic": {
+        "title": "Billentyűzet-diagnosztika",
+        "description": "Ellenőrzi, eljutnak-e a billentyűesemények a Handyhez. Csak az események számát rögzíti, soha azt, hogy mely billentyűket nyomod meg.",
+        "run": "10 mp-es diagnosztika futtatása",
+        "running": "Figyelés… nyomd meg néhányszor a billentyűparancsodat (pl. Option+Space)",
+        "secureInputLabel": "Biztonságos bevitel",
+        "enabled": "bekapcsolva",
+        "disabled": "kikapcsolva",
+        "holder": "foglalja: {{name}} (PID {{pid}})",
+        "holderUnknown": "nem látható, mi foglalja",
+        "keyDown": "Billentyű lenyomása",
+        "keyUp": "Billentyű felengedése",
+        "flagsChanged": "Módosító billentyűk",
+        "mouse": "Egér",
+        "verdictBlocked": "A Biztonságos bevitel blokkolja a billentyűeseményeket, a billentyűparancsok nem működhetnek, amíg ez meg nem oldódik.",
+        "verdictSuspicious": "Módosítóesemények érkeztek, de billentyűesemények nem: valami elnyeli a billentyűket, bár a Biztonságos bevitel kikapcsoltnak jelzi magát. Jelezd ezt a GitHubon.",
+        "verdictOk": "A billentyűesemények rendesen eljutnak a Handyhez.",
+        "verdictNoEvents": "Nem érkezett esemény. Nyomtál meg billentyűket a teszt alatt?",
+        "failed": "A diagnosztika sikertelen: {{error}}"
+      }
+    },
+    "about": {
+      "title": "Névjegy",
+      "version": {
+        "title": "Verzió",
+        "description": "A Handy jelenlegi verziója"
+      },
+      "whatsNewUpdates": {
+        "label": "Újdonságok megjelenítése",
+        "description": "A kiadási jegyzetek megjelenítése a Handy frissítései után"
+      },
+      "appDataDirectory": {
+        "title": "Alkalmazásadatok mappája",
+        "description": "A hely, ahol a Handy az adatait tárolja"
+      },
+      "sourceCode": {
+        "title": "Forráskód",
+        "description": "A forráskód megtekintése és közreműködés",
+        "button": "Megtekintés a GitHubon"
+      },
+      "supportDevelopment": {
+        "title": "A fejlesztés támogatása",
+        "description": "Segíts, hogy tovább építhessük a Handyt",
+        "button": "Adományozás"
+      },
+      "acknowledgments": {
+        "title": "Köszönetnyilvánítás",
+        "ggml": {
+          "title": "ggml",
+          "description": "Nagy teljesítményű tenzorkönyvtár gépi tanulási modellek eszközön történő futtatásához",
+          "details": "A Handy helyi beszédfelismerése a transcribe.cpp-re és a ggml-re épül. Köszönet Georgi Gerganov és a közreműködők csodálatos munkájáért."
+        }
+      }
+    }
+  },
+  "footer": {
+    "checkingUpdates": "Frissítések keresése...",
+    "updateAvailableShort": "Frissítés elérhető",
+    "upToDate": "Naprakész",
+    "updateCheckingDisabled": "A frissítések keresése ki van kapcsolva",
+    "downloading": "Letöltés... {{progress}}%",
+    "installing": "Telepítés...",
+    "preparing": "Előkészítés...",
+    "checkForUpdates": "Frissítések keresése",
+    "portableUpdateTitle": "Kézi frissítés szükséges",
+    "portableUpdateMessage": "A hordozható telepítések nem frissíthetők automatikusan. Töltsd le lent a rendszeredhez való telepítőt, futtasd, és telepítsd ugyanabba a mappába: a Data/ mappa (beállítások, modellek, felvételek) a helyén marad.",
+    "portableUpdateButton": "Telepítő letöltése",
+    "portableUpdateBrowseMessage": "A hordozható telepítések nem frissíthetők automatikusan. Töltsd le a rendszeredhez való legújabb verziót a GitHub Releases oldalról, és telepítsd ugyanabba a mappába: a Data/ mappa (beállítások, modellek, felvételek) a helyén marad.",
+    "portableUpdateBrowseButton": "GitHub Releases megnyitása"
+  },
+  "whatsNew": {
+    "title": "A Handy v{{version}} újdonságai"
+  },
+  "common": {
+    "playbackPosition": "Lejátszási pozíció",
+    "resetSetting": "Alapértelmezés visszaállítása: {{setting}}",
+    "loading": "Betöltés...",
+    "delete": "Törlés",
+    "close": "Bezárás",
+    "open": "Megnyitás",
+    "copy": "Másolás",
+    "clear": "Törlés",
+    "noOptionsFound": "Nem található lehetőség"
+  },
+  "errors": {
+    "loadDirectory": "Hiba a mappa betöltésekor: {{error}}",
+    "micPermissionDeniedTitle": "A mikrofonhozzáférés megtagadva",
+    "micPermissionDenied": {
+      "generic": "Az operációs rendszer megtagadta a mikrofonhozzáférést. Add meg a mikrofonengedélyt a rendszerbeállításokban.",
+      "windows": "Kapcsold be a mikrofonhozzáférést itt: Beállítások → Adatvédelem és biztonság → Mikrofon (az asztali alkalmazások hozzáférését is beleértve).",
+      "macos": "Add meg a mikrofonhozzáférést itt: Rendszerbeállítások → Adatvédelem és biztonság → Mikrofon.",
+      "linux": "Add meg a mikrofonhozzáférést a rendszer hang- vagy adatvédelmi beállításaiban."
+    },
+    "noInputDeviceTitle": "Nem található mikrofon",
+    "noInputDevice": "Nem található hangbemeneti eszköz. Csatlakoztass mikrofont vagy headsetet, és próbáld újra.",
+    "microphoneSilentTitle": "A mikrofon néma",
+    "microphoneSilent": "A mikrofonod csak csendet küldött. Ellenőrizd, hogy nincs-e némítva, vagy válassz másik mikrofont a Beállításokban.",
+    "recordingFailedTitle": "A felvétel indítása sikertelen",
+    "modelLoadFailed": "A Handy nem tudta betölteni ezt a modellt. Próbáld újra, vagy válassz másikat.",
+    "modelLoadFailedTitle": "A modell betöltése sikertelen",
+    "noModelSelected": "Tölts le vagy válassz modellt a Beállítások > Modellek részben.",
+    "noModelSelectedTitle": "Nincs kiválasztott modell",
+    "modelDownloadFailed": "A letöltés sikertelen",
+    "pasteFailedTitle": "A szöveg beillesztése sikertelen",
+    "pasteFailed": "A szöveget nem sikerült beilleszteni az aktív alkalmazásba.",
+    "pasteBlockedElevatedTitle": "Rendszergazdai alkalmazásba nem lehet beilleszteni",
+    "pasteBlockedElevated": "Az aktív alkalmazás rendszergazdaként fut, ezért a Handy nem tud beilleszteni bele. Az átiratot az Előzményekből másolhatod ki.",
+    "postProcessFailedTitle": "Beillesztve utófeldolgozás nélkül",
+    "postProcessFailed": "Az utófeldolgozás nem fejeződött be, ezért az eredeti átirat lett beillesztve.",
+    "filePostProcessFailedTitle": "Átírva utófeldolgozás nélkül",
+    "filePostProcessFailed": "Az utófeldolgozás nem fejeződött be, ezért az eredeti átirat lett mentve.",
+    "fileTranscriptionFailedTitle": "A fájl átírása sikertelen",
+    "transcriptionFailedTitle": "Az átírás sikertelen"
+  },
+  "notices": {
+    "errorOne": "{{n}} hiba",
+    "errorMany": "{{n}} hiba",
+    "warningOne": "{{n}} figyelmeztetés",
+    "warningMany": "{{n}} figyelmeztetés",
+    "errorsAndWarnings": "{{errors}}, {{warnings}}"
+  },
+  "appLanguage": {
+    "title": "Az alkalmazás nyelve",
+    "description": "A Handy felületének nyelve"
+  },
+  "theme": {
+    "title": "Az alkalmazás témája",
+    "description": "Válaszd ki, hogy a Handy kövesse a rendszer témáját, vagy maradjon világos vagy sötét",
+    "options": {
+      "system": "Rendszer",
+      "light": "Világos",
+      "dark": "Sötét"
+    }
+  },
+  "overlay": {
+    "transcribing": "Átírás...",
+    "processing": "Feldolgozás...",
+    "loadingModel": "Modell betöltése..."
+  },
+  "secureInput": {
+    "blockedWithCulprit_one": "{{name}} 1 billentyűparancsot blokkolhat",
+    "blockedWithCulprit_other": "{{name}} {{count}} billentyűparancsot blokkolhat",
+    "blockedNoCulprit_one": "A macOS átmenetileg blokkol 1 billentyűparancsot",
+    "blockedNoCulprit_other": "A macOS átmenetileg blokkol {{count}} billentyűparancsot",
+    "recorderBlockedWithCulprit": "{{name}} blokkolhatja a billentyűparancsok módosítását",
+    "recorderBlockedNoCulprit": "A macOS átmenetileg blokkolja a billentyűparancsok módosítását",
+    "learnMore": "Megoldás",
+    "recorderBlocked": "Most nem lehet billentyűparancsot rögzíteni: a macOS Biztonságos bevitele blokkolja a billentyűeseményeket. Előbb szüntesd meg a Biztonságos bevitel okozta problémát.",
+    "dismiss": "Elrejtés"
+  }
+}
