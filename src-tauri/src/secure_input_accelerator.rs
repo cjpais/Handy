@@ -74,6 +74,8 @@ fn accelerator_key(key: Key) -> Option<&'static str> {
         Key::Delete => Some("Backspace"),
         Key::ForwardDelete => Some("Delete"),
         Key::Insert => Some("Insert"),
+        Key::Pause => Some("Pause"),
+        Key::PrintScreen => Some("PrintScreen"),
         Key::Home => Some("Home"),
         Key::End => Some("End"),
         Key::PageUp => Some("PageUp"),
@@ -122,6 +124,7 @@ fn accelerator_key(key: Key) -> Option<&'static str> {
         | Key::KeypadClear
         | Key::KeypadComma
         | Key::Dictation
+        | Key::ContextMenu
         | Key::MouseLeft
         | Key::MouseRight
         | Key::MouseMiddle
@@ -160,7 +163,7 @@ mod tests {
     use super::*;
     use tauri_plugin_global_shortcut::Shortcut;
 
-    // All variants from handy-keys 0.3.3 src/types/key.rs.
+    // All variants from handy-keys 0.3.5 src/types/key.rs.
     const SUPPORTED: &[Key] = &[
         Key::A,
         Key::B,
@@ -233,6 +236,8 @@ mod tests {
         Key::Delete,
         Key::ForwardDelete,
         Key::Insert,
+        Key::Pause,
+        Key::PrintScreen,
         Key::Home,
         Key::End,
         Key::PageUp,
@@ -282,6 +287,7 @@ mod tests {
         Key::KeypadClear,
         Key::KeypadComma,
         Key::Dictation,
+        Key::ContextMenu,
         Key::MouseLeft,
         Key::MouseRight,
         Key::MouseMiddle,
@@ -291,7 +297,7 @@ mod tests {
 
     #[test]
     fn secure_input_accelerator_all_keys() {
-        assert_eq!(SUPPORTED.len() + UNSUPPORTED.len(), 123);
+        assert_eq!(SUPPORTED.len() + UNSUPPORTED.len(), 126);
         for &key in SUPPORTED {
             let hotkey = Hotkey::new(M::CTRL, Some(key)).unwrap();
             let (shadow, degraded) = carbon_equivalent(&hotkey).unwrap();
@@ -313,6 +319,9 @@ mod tests {
         assert_eq!(accelerator_key(Key::Delete), Some("Backspace"));
         assert_eq!(accelerator_key(Key::ForwardDelete), Some("Delete"));
         assert_eq!(accelerator_key(Key::Section), None);
+        assert_eq!(accelerator_key(Key::Pause), Some("Pause"));
+        assert_eq!(accelerator_key(Key::PrintScreen), Some("PrintScreen"));
+        assert_eq!(accelerator_key(Key::ContextMenu), None);
     }
 
     #[test]
