@@ -389,6 +389,10 @@
           "push_to_talk": "Nimmt auf, solange die Tastenkombination gedrückt bleibt",
           "toggle": "Tastenkombination antippen, um die Aufnahme zu starten, erneut antippen zum Stoppen"
         }
+      },
+      "holdStartDelay": {
+        "title": "Startverzögerung beim Halten",
+        "description": "Nur im Modus „Halten“: wie lange (in Millisekunden) die Tastenkombination gedrückt bleiben muss, bevor die Aufnahme beginnt. Wird währenddessen eine andere Taste gedrückt, wird abgebrochen. So kann eine einzelne Sondertaste wie Strg die Tastenkombination sein, ohne dass Strg+C eine Aufnahme startet. 0 startet sofort."
       }
     },
     "models": {

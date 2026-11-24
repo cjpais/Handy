@@ -110,6 +110,8 @@ const settingUpdaters: {
     commands.changeShortcutActivationSetting(value as ShortcutActivation),
   hold_threshold_ms: (value) =>
     commands.changeHoldThresholdMsSetting(value as number),
+  push_to_talk_start_delay_ms: (value) =>
+    commands.changePushToTalkStartDelayMsSetting(value as number),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
       (value as string) === "Default" || value === null

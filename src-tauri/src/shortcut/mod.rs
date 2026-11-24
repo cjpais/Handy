@@ -143,6 +143,17 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
     }
 }
 
+/// Report keys other than `hotkey_string` to the transcription coordinator
+/// while it is held (push-to-talk start delay); `None` stops. Only the
+/// handy-keys implementation sees other keys: elsewhere the delay still
+/// applies, but other keys don't cancel.
+pub fn watch_other_keys(app: &AppHandle, hotkey_string: Option<&str>) {
+    let settings = get_settings(app);
+    if settings.keyboard_implementation == KeyboardImplementation::HandyKeys {
+        handy_keys::watch_other_keys(app, hotkey_string);
+    }
+}
+
 /// Unregister a shortcut using the appropriate implementation
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     let settings = get_settings(app);
@@ -602,6 +613,15 @@ pub fn change_shortcut_activation_setting(
 pub fn change_hold_threshold_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.hold_threshold_ms = ms;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_push_to_talk_start_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.push_to_talk_start_delay_ms = ms;
     settings::write_settings(&app, settings);
     Ok(())
 }

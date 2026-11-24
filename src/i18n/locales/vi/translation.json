@@ -389,6 +389,10 @@
           "push_to_talk": "Ghi âm trong lúc bạn giữ phím tắt",
           "toggle": "Nhấn phím tắt để bắt đầu ghi âm, nhấn lại để dừng"
         }
+      },
+      "holdStartDelay": {
+        "title": "Độ trễ bắt đầu khi giữ",
+        "description": "Chỉ ở chế độ Giữ: phải giữ phím tắt bao lâu (tính bằng mili giây) trước khi bắt đầu ghi âm. Nhấn bất kỳ phím nào khác trong lúc đó sẽ hủy, nên một phím bổ trợ như Ctrl có thể làm phím tắt mà Ctrl+C không bắt đầu ghi âm. 0 là bắt đầu ngay."
       }
     },
     "models": {

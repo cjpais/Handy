@@ -389,6 +389,10 @@
           "push_to_talk": "Spelar in så länge du håller genvägen nedtryckt",
           "toggle": "Tryck på genvägen för att starta inspelningen, tryck igen för att stoppa"
         }
+      },
+      "holdStartDelay": {
+        "title": "Startfördröjning för Håll",
+        "description": "Endast i läget Håll: hur länge (i millisekunder) kortkommandot måste hållas nere innan inspelningen startar. Om du trycker på någon annan tangent under tiden avbryts den, så en enda modifierartangent som Ctrl kan vara kortkommandot utan att Ctrl+C startar en inspelning. 0 startar direkt."
       }
     },
     "models": {

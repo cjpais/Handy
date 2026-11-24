@@ -389,6 +389,10 @@
           "push_to_talk": "Optager, mens du holder genvejen nede",
           "toggle": "Tryk på genvejen for at starte optagelsen, tryk igen for at stoppe"
         }
+      },
+      "holdStartDelay": {
+        "title": "Startforsinkelse for Hold",
+        "description": "Kun i tilstanden Hold: hvor længe (i millisekunder) genvejen skal holdes nede, før optagelsen starter. Tryk på en anden tast imens annullerer, så en enkelt ændringstast som Ctrl kan være genvejen, uden at Ctrl+C starter en optagelse. 0 starter med det samme."
       }
     },
     "models": {

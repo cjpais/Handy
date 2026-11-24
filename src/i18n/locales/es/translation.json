@@ -389,6 +389,10 @@
           "push_to_talk": "Graba mientras mantienes pulsado el atajo",
           "toggle": "Toca el atajo para empezar a grabar, tócalo de nuevo para detener"
         }
+      },
+      "holdStartDelay": {
+        "title": "Retraso al mantener",
+        "description": "Solo en el modo «Mantener»: cuánto tiempo (en milisegundos) hay que mantener el atajo antes de que empiece la grabación. Pulsar cualquier otra tecla mientras tanto la cancela, así un solo modificador como Ctrl puede ser el atajo sin que Ctrl+C inicie una grabación. 0 empieza al instante."
       }
     },
     "models": {

@@ -27,7 +27,7 @@
 //! polled from a dedicated recording thread. Events are emitted to the frontend
 //! via Tauri's event system.
 
-use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
+use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyEvent, KeyboardListener};
 use log::{debug, error, info};
 use serde::Serialize;
 use specta::Type;
@@ -39,6 +39,7 @@ use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
+use crate::TranscriptionCoordinator;
 
 use super::handler::handle_shortcut_event;
 
@@ -70,6 +71,91 @@ pub struct HandyKeysState {
     recording_binding_id: Mutex<Option<String>>,
     /// Flag to stop recording loop
     recording_running: Arc<AtomicBool>,
+    /// Reports other keys pressed while a push-to-talk shortcut is held
+    other_keys: OtherKeyWatcher,
+}
+
+/// Tells the transcription coordinator when a key other than the held
+/// shortcut goes down, for the push-to-talk start delay. `HotkeyManager`
+/// only reports registered hotkeys, so this runs its own passive
+/// `KeyboardListener`, started the first time it is needed. Events are
+/// dropped unless a shortcut is being watched.
+struct OtherKeyWatcher {
+    /// The held shortcut; `None` while nothing is watched.
+    watched: Arc<Mutex<Option<Hotkey>>>,
+    started: AtomicBool,
+    running: Arc<AtomicBool>,
+}
+
+impl OtherKeyWatcher {
+    fn new() -> Self {
+        Self {
+            watched: Arc::new(Mutex::new(None)),
+            started: AtomicBool::new(false),
+            running: Arc::new(AtomicBool::new(true)),
+        }
+    }
+
+    fn watch(&self, app: &AppHandle, hotkey_string: Option<&str>) {
+        let hotkey = match hotkey_string.map(str::parse::<Hotkey>) {
+            None => None,
+            Some(Ok(hotkey)) => Some(hotkey),
+            Some(Err(e)) => {
+                error!("Can't watch other keys for '{hotkey_string:?}': {e}");
+                None
+            }
+        };
+        let watching = hotkey.is_some();
+        if let Ok(mut watched) = self.watched.lock() {
+            *watched = hotkey;
+        }
+        if watching && !self.started.swap(true, Ordering::SeqCst) {
+            let app = app.clone();
+            let watched = Arc::clone(&self.watched);
+            let running = Arc::clone(&self.running);
+            thread::spawn(move || Self::run(app, watched, running));
+        }
+    }
+
+    fn run(app: AppHandle, watched: Arc<Mutex<Option<Hotkey>>>, running: Arc<AtomicBool>) {
+        let listener = match KeyboardListener::new() {
+            Ok(listener) => listener,
+            Err(e) => {
+                error!("Failed to start the other-key listener: {e}");
+                return;
+            }
+        };
+        debug!("Other-key listener started");
+        while running.load(Ordering::SeqCst) {
+            let Ok(event) = listener.recv_timeout(std::time::Duration::from_millis(100)) else {
+                continue;
+            };
+            let other = watched
+                .lock()
+                .ok()
+                .and_then(|w| *w)
+                .is_some_and(|hotkey| is_other_key(&hotkey, &event));
+            if other {
+                if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+                    coordinator.notify_other_key();
+                }
+            }
+        }
+        debug!("Other-key listener stopped");
+    }
+}
+
+/// Whether `event` is a key going down that isn't part of `hotkey`: its key
+/// repeating, or one of its modifiers, doesn't count.
+fn is_other_key(hotkey: &Hotkey, event: &KeyEvent) -> bool {
+    if !event.is_key_down {
+        return false;
+    }
+    match (event.key, event.changed_modifier) {
+        (Some(key), _) => hotkey.key != Some(key),
+        (None, Some(changed)) => !hotkey.modifiers.intersects(changed),
+        (None, None) => false,
+    }
 }
 
 /// Key event sent to frontend during recording mode
@@ -108,6 +194,7 @@ impl HandyKeysState {
             is_recording: AtomicBool::new(false),
             recording_binding_id: Mutex::new(None),
             recording_running: Arc::new(AtomicBool::new(false)),
+            other_keys: OtherKeyWatcher::new(),
         })
     }
 
@@ -357,8 +444,9 @@ impl HandyKeysState {
 
 impl Drop for HandyKeysState {
     fn drop(&mut self) {
-        // Signal recording to stop
+        // Signal recording and the other-key listener to stop
         self.recording_running.store(false, Ordering::SeqCst);
+        self.other_keys.running.store(false, Ordering::SeqCst);
         self.is_recording.store(false, Ordering::SeqCst);
 
         // Send shutdown command
@@ -469,6 +557,13 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     state.unregister(&binding)
 }
 
+/// Watch for other keys while `hotkey_string` is held; `None` stops.
+pub fn watch_other_keys(app: &AppHandle, hotkey_string: Option<&str>) {
+    if let Some(state) = app.try_state::<HandyKeysState>() {
+        state.other_keys.watch(app, hotkey_string);
+    }
+}
+
 /// Start key recording mode
 #[tauri::command]
 #[specta::specta]
@@ -522,4 +617,66 @@ pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
     let result = state.stop_recording();
     super::resume_all_shortcuts(&app);
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use handy_keys::{Key, Modifiers};
+
+    fn key_down(modifiers: Modifiers, key: Option<Key>, changed: Option<Modifiers>) -> KeyEvent {
+        KeyEvent {
+            modifiers,
+            key,
+            is_key_down: true,
+            changed_modifier: changed,
+        }
+    }
+
+    #[test]
+    fn modifier_only_shortcut_counts_other_keys() {
+        let ctrl: Hotkey = "ctrl_left".parse().unwrap();
+        let held = Modifiers::CTRL_LEFT;
+
+        // Ctrl+C: C goes down while left Ctrl is held.
+        assert!(is_other_key(&ctrl, &key_down(held, Some(Key::C), None)));
+        // Another modifier joins (Ctrl+Shift+…).
+        assert!(is_other_key(
+            &ctrl,
+            &key_down(
+                held | Modifiers::SHIFT_LEFT,
+                None,
+                Some(Modifiers::SHIFT_LEFT)
+            )
+        ));
+        // The shortcut's own modifier is not another key.
+        assert!(!is_other_key(
+            &ctrl,
+            &key_down(held, None, Some(Modifiers::CTRL_LEFT))
+        ));
+    }
+
+    #[test]
+    fn key_shortcut_ignores_its_own_repeat() {
+        let shortcut: Hotkey = "option+space".parse().unwrap();
+        let held = Modifiers::OPT_LEFT;
+
+        assert!(!is_other_key(
+            &shortcut,
+            &key_down(held, Some(Key::Space), None)
+        ));
+        assert!(!is_other_key(
+            &shortcut,
+            &key_down(held, None, Some(Modifiers::OPT_LEFT))
+        ));
+        assert!(is_other_key(&shortcut, &key_down(held, Some(Key::A), None)));
+    }
+
+    #[test]
+    fn key_up_is_never_another_key() {
+        let ctrl: Hotkey = "ctrl_left".parse().unwrap();
+        let mut event = key_down(Modifiers::CTRL_LEFT, Some(Key::C), None);
+        event.is_key_down = false;
+        assert!(!is_other_key(&ctrl, &event));
+    }
 }

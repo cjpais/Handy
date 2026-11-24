@@ -389,6 +389,10 @@
           "push_to_talk": "Nagrywa, dopóki trzymasz skrót",
           "toggle": "Dotknij skrótu, aby rozpocząć nagrywanie, dotknij ponownie, aby zatrzymać"
         }
+      },
+      "holdStartDelay": {
+        "title": "Opóźnienie startu przy przytrzymaniu",
+        "description": "Tylko w trybie „Przytrzymaj”: jak długo (w milisekundach) trzeba przytrzymać skrót, zanim zacznie się nagrywanie. Naciśnięcie w tym czasie dowolnego innego klawisza anuluje, więc skrótem może być sam modyfikator, np. Ctrl, a Ctrl+C nie rozpocznie nagrywania. 0 rozpoczyna od razu."
       }
     },
     "models": {

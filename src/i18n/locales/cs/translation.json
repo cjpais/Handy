@@ -389,6 +389,10 @@
           "push_to_talk": "Nahrává, dokud držíte zkratku",
           "toggle": "Klepněte na zkratku pro zahájení nahrávání, klepněte znovu pro zastavení"
         }
+      },
+      "holdStartDelay": {
+        "title": "Zpoždění spuštění při podržení",
+        "description": "Pouze v režimu „Podržet“: jak dlouho (v milisekundách) musí být zkratka podržena, než začne nahrávání. Stisknutí jakékoli jiné klávesy mezitím nahrávání zruší, takže zkratkou může být samotný modifikátor jako Ctrl, aniž by Ctrl+C spustilo nahrávání. 0 spustí ihned."
       }
     },
     "models": {

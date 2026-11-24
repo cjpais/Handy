@@ -78,6 +78,18 @@ struct PendingPress {
     /// within the threshold (a tap). An unlocked pending press is a key we
     /// believe is still held.
     locked: bool,
+    /// Push-to-talk start delay that applied to this press; a held press
+    /// still waits it out (from `pressed_at`) once the pipeline drains.
+    start_delay: Duration,
+}
+
+/// Push-to-talk with a start delay: the key is down, but recording waits
+/// until `deadline` so a quick press (or a modifier used for another
+/// shortcut, like Ctrl+C) never starts it.
+struct PendingStart {
+    binding_id: String,
+    hotkey_string: String,
+    deadline: Instant,
 }
 
 impl PendingPress {
@@ -106,6 +118,11 @@ struct Hold {
     /// ignored. Always set for toggle; set for hold-or-toggle once a release
     /// has been classified as a tap.
     locked: bool,
+    /// Started after a push-to-talk start delay: any other key pressed while
+    /// the shortcut is held cancels the recording.
+    cancel_on_other_key: bool,
+    /// The shortcut held, so other keys can be told apart from it.
+    hotkey_string: String,
 }
 
 /// What to do with an input that arrives while the pipeline is busy
@@ -164,6 +181,9 @@ struct InputEvent {
     mode: ShortcutActivation,
     /// Hold-or-toggle: minimum press duration that counts as a hold.
     hold_threshold: Duration,
+    /// Push-to-talk: how long the key must be held before recording starts.
+    /// Zero starts on key-down.
+    start_delay: Duration,
     /// External triggers (SIGUSR2, CLI flags) rather than physical keys.
     /// They fire on every edge by design and must never be debounced —
     /// dropping one desyncs toggle parity and wedges recording on.
@@ -187,6 +207,16 @@ impl InputEvent {
             ShortcutActivation::PushToTalk | ShortcutActivation::Toggle => Duration::ZERO,
         }
     }
+
+    /// How long a press waits before recording starts. Only push-to-talk
+    /// waits: a hold-or-toggle tap must start at once, and external triggers
+    /// are deliberate.
+    fn effective_start_delay(&self) -> Duration {
+        match self.mode {
+            ShortcutActivation::PushToTalk if !self.external => self.start_delay,
+            _ => Duration::ZERO,
+        }
+    }
 }
 
 /// A side effect decided by [`CoordinatorState`]; the coordinator thread is
@@ -202,12 +232,18 @@ enum Effect {
         binding_id: String,
         hotkey_string: String,
     },
+    /// Throw the recording away, as the cancel shortcut does.
+    Cancel,
 }
 
 /// Commands processed sequentially by the coordinator thread.
 enum Command {
     Input(InputEvent),
-    Cancel { recording_was_active: bool },
+    /// A key other than the held shortcut went down.
+    OtherKey,
+    Cancel {
+        recording_was_active: bool,
+    },
     ProcessingFinished,
 }
 
@@ -253,12 +289,21 @@ fn classify_ptt_event(
 /// * toggle — releases are ignored, the next press stops (locked from the start)
 /// * hold-or-toggle — a release after a long hold stops; a release after a
 ///   short tap locks the session, and the next press stops
+///
+/// Push-to-talk can also wait before starting (`start_delay`): the press is
+/// kept as a [`PendingStart`] until the delay passes, and a release or any
+/// other key before then means nothing happens. Once such a recording runs,
+/// any other key pressed while the shortcut is held cancels it.
 struct CoordinatorState {
     stage: Stage,
     hold: Option<Hold>,
     last_press: Option<Instant>,
     pending_release: Option<PendingRelease>,
     pending_press: Option<PendingPress>,
+    pending_start: Option<PendingStart>,
+    /// A binding whose key is still down after another key cancelled it:
+    /// its presses (auto-repeat) are ignored until it is really released.
+    suppressed: Option<String>,
 }
 
 impl CoordinatorState {
@@ -269,12 +314,126 @@ impl CoordinatorState {
             last_press: None,
             pending_release: None,
             pending_press: None,
+            pending_start: None,
+            suppressed: None,
         }
     }
 
-    /// Deadline of the deferred release, if any — drives `recv_timeout`.
+    /// Deadline of the deferred release, if any.
     fn grace_deadline(&self) -> Option<Instant> {
         self.pending_release.as_ref().map(|p| p.deadline)
+    }
+
+    /// When the coordinator thread must wake up next — drives `recv_timeout`.
+    /// A deferred release is resolved first: a delayed start can't fire while
+    /// we don't yet know whether its key is still down.
+    fn next_deadline(&self) -> Option<Instant> {
+        self.grace_deadline()
+            .or_else(|| self.pending_start.as_ref().map(|p| p.deadline))
+    }
+
+    /// The timer from [`CoordinatorState::next_deadline`] fired.
+    fn on_timer(&mut self, now: Instant) -> Option<Effect> {
+        if self.pending_release.is_some() {
+            if self.grace_deadline().is_some_and(|d| d <= now) {
+                return self.on_grace_expired();
+            }
+            return None;
+        }
+        self.on_start_due(now)
+    }
+
+    /// A delayed push-to-talk press has been held long enough: start.
+    fn on_start_due(&mut self, now: Instant) -> Option<Effect> {
+        if self.pending_release.is_some()
+            || !self
+                .pending_start
+                .as_ref()
+                .is_some_and(|p| p.deadline <= now)
+        {
+            return None;
+        }
+        let pending = self.pending_start.take()?;
+        if self.stage != Stage::Idle {
+            return None;
+        }
+        debug!(
+            "Held '{}' past the start delay: starting",
+            pending.binding_id
+        );
+        Some(self.begin_recording(
+            pending.binding_id,
+            pending.hotkey_string,
+            pending.deadline,
+            false,
+            true,
+        ))
+    }
+
+    /// A key other than the held shortcut went down. Before a delayed start
+    /// that abandons it; during a recording that started after a delay it
+    /// cancels the recording. A key pressed after the shortcut came up (a
+    /// release still in its grace window) is ordinary typing and is ignored.
+    fn on_other_key(&mut self) -> Option<Effect> {
+        if self.pending_release.is_some() {
+            return None;
+        }
+        if let Some(pending) = self.pending_start.take() {
+            debug!(
+                "Another key pressed while holding '{}': not starting",
+                pending.binding_id
+            );
+            self.suppressed = Some(pending.binding_id);
+            return None;
+        }
+        if let Some(pending) = self
+            .pending_press
+            .take_if(|p| !p.locked && !p.start_delay.is_zero())
+        {
+            debug!(
+                "Another key pressed while holding '{}': forgetting remembered press",
+                pending.binding_id
+            );
+            self.suppressed = Some(pending.binding_id);
+            return None;
+        }
+        if let Stage::Recording(id) = &self.stage {
+            if self
+                .hold
+                .as_ref()
+                .is_some_and(|h| h.cancel_on_other_key && !h.locked)
+            {
+                debug!("Another key pressed while holding '{id}': cancelling recording");
+                self.suppressed = Some(id.clone());
+                self.stage = Stage::Idle;
+                self.hold = None;
+                return Some(Effect::Cancel);
+            }
+        }
+        None
+    }
+
+    /// The hotkey of the shortcut being held whose start or recording another
+    /// key would cancel, if any. The coordinator watches other keys only
+    /// while this is set.
+    fn other_key_watch(&self) -> Option<&str> {
+        if let Some(pending) = &self.pending_start {
+            return Some(&pending.hotkey_string);
+        }
+        if let Some(pending) = &self.pending_press {
+            if !pending.locked && !pending.start_delay.is_zero() {
+                return Some(&pending.hotkey_string);
+            }
+        }
+        if matches!(self.stage, Stage::Recording(_))
+            && self
+                .hold
+                .as_ref()
+                .is_some_and(|h| h.cancel_on_other_key && !h.locked)
+        {
+            return self.hold.as_ref().map(|h| h.hotkey_string.as_str());
+        }
+        None
     }
 
     /// Whether the current session (recording, or remembered for the drain)
@@ -297,7 +456,13 @@ impl CoordinatorState {
         let held_binding = match &self.stage {
             Stage::Recording(id) => Some(id.as_str()),
             Stage::Processing => self.pending_press.as_ref().map(|p| p.binding_id.as_str()),
-            Stage::Idle => None,
+            // A delayed start, or a key still down after another key
+            // cancelled it: its releases get the same auto-repeat grace.
+            Stage::Idle => self
+                .pending_start
+                .as_ref()
+                .map(|p| p.binding_id.as_str())
+                .or(self.suppressed.as_deref()),
         };
         let hold_to_talk = input.mode != ShortcutActivation::Toggle && !self.is_locked();
 
@@ -323,6 +488,15 @@ impl CoordinatorState {
                 return None;
             }
             PttAction::Passthrough => {}
+        }
+
+        // Another key cancelled this binding while it was held: nothing it
+        // does counts until it has really come up.
+        if !input.external && self.suppressed.as_deref() == Some(input.binding_id.as_str()) {
+            if !input.is_pressed {
+                self.suppressed = None;
+            }
+            return None;
         }
 
         // Debounce rapid-fire press events (key repeat / double-tap).
@@ -367,6 +541,7 @@ impl CoordinatorState {
                     self.pending_press = Some(PendingPress {
                         // Toggle never ends on a release: locked from the start.
                         locked: input.mode == ShortcutActivation::Toggle,
+                        start_delay: input.effective_start_delay(),
                         binding_id: input.binding_id,
                         hotkey_string: input.hotkey_string,
                         pressed_at: now,
@@ -386,6 +561,28 @@ impl CoordinatorState {
         if input.is_pressed {
             match &self.stage {
                 Stage::Idle => {
+                    if let Some(pending) = &self.pending_start {
+                        // The delayed key is still down (a repeat), or another
+                        // binding is waiting to start.
+                        debug!(
+                            "Ignoring press for '{}': '{}' is waiting out its start delay",
+                            input.binding_id, pending.binding_id
+                        );
+                        return None;
+                    }
+                    let delay = input.effective_start_delay();
+                    if !delay.is_zero() {
+                        debug!(
+                            "Press for '{}': starting if held for {delay:?}",
+                            input.binding_id
+                        );
+                        self.pending_start = Some(PendingStart {
+                            binding_id: input.binding_id,
+                            hotkey_string: input.hotkey_string,
+                            deadline: now + delay,
+                        });
+                        return None;
+                    }
                     // Toggle never ends on a release: locked from the start.
                     let locked = input.mode == ShortcutActivation::Toggle;
                     return Some(self.begin_recording(
@@ -393,6 +590,7 @@ impl CoordinatorState {
                         input.hotkey_string,
                         now,
                         locked,
+                        false,
                     ));
                 }
                 Stage::Recording(id) if id == &input.binding_id => {
@@ -419,6 +617,15 @@ impl CoordinatorState {
             // binding): resolve it immediately rather than dropping it.
             let threshold = input.effective_hold_threshold();
             return self.finish_hold(input.binding_id, input.hotkey_string, now, threshold);
+        } else if !input.is_pressed
+            && self
+                .pending_start
+                .as_ref()
+                .is_some_and(|p| p.binding_id == input.binding_id)
+        {
+            // Released before the start delay passed (and not deferred, as one
+            // release is already pending): it was only a press.
+            self.pending_start = None;
         }
         None
     }
@@ -428,6 +635,22 @@ impl CoordinatorState {
     /// holding — the live recording, or a press remembered while busy.
     fn on_grace_expired(&mut self) -> Option<Effect> {
         let pending = self.pending_release.take()?;
+        if self.suppressed.as_deref() == Some(pending.binding_id.as_str()) {
+            self.suppressed = None;
+            return None;
+        }
+        if self
+            .pending_start
+            .as_ref()
+            .is_some_and(|p| p.binding_id == pending.binding_id)
+        {
+            debug!(
+                "Released '{}' before the start delay: not starting",
+                pending.binding_id
+            );
+            self.pending_start = None;
+            return None;
+        }
         match &self.stage {
             Stage::Recording(id) if *id == pending.binding_id => self.finish_hold(
                 pending.binding_id,
@@ -505,6 +728,7 @@ impl CoordinatorState {
         // An explicit cancel abandons any remembered start too — the user
         // asked for silence, not a deferred recording.
         self.pending_press = None;
+        self.pending_start = None;
         // Don't reset during processing — wait for the pipeline to finish.
         if !matches!(self.stage, Stage::Processing)
             && (recording_was_active || matches!(self.stage, Stage::Recording(_)))
@@ -518,6 +742,20 @@ impl CoordinatorState {
         self.stage = Stage::Idle;
         self.hold = None;
         let pending = self.pending_press.take()?;
+        if !pending.locked && !pending.start_delay.is_zero() {
+            // Still held: wait out what is left of the start delay. A
+            // deadline already past fires on the coordinator's next wake-up.
+            debug!(
+                "Pipeline drained; '{}' starts once held past its start delay",
+                pending.binding_id
+            );
+            self.pending_start = Some(PendingStart {
+                deadline: pending.pressed_at + pending.start_delay,
+                binding_id: pending.binding_id,
+                hotkey_string: pending.hotkey_string,
+            });
+            return None;
+        }
         debug!(
             "Pipeline drained; starting remembered press for '{}'",
             pending.binding_id
@@ -527,6 +765,7 @@ impl CoordinatorState {
             pending.hotkey_string,
             pending.pressed_at,
             pending.locked,
+            false,
         ))
     }
 
@@ -548,9 +787,15 @@ impl CoordinatorState {
         hotkey_string: String,
         pressed_at: Instant,
         locked: bool,
+        cancel_on_other_key: bool,
     ) -> Effect {
         self.stage = Stage::Recording(binding_id.clone());
-        self.hold = Some(Hold { pressed_at, locked });
+        self.hold = Some(Hold {
+            pressed_at,
+            locked,
+            cancel_on_other_key,
+            hotkey_string: hotkey_string.clone(),
+        });
         Effect::Start {
             binding_id,
             hotkey_string,
@@ -587,14 +832,22 @@ impl TranscriptionCoordinator {
         thread::spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut state = CoordinatorState::new();
+                // The hotkey other keys are currently watched against.
+                let mut watching: Option<String> = None;
 
                 loop {
-                    let cmd = if let Some(deadline) = state.grace_deadline() {
+                    let wanted = state.other_key_watch();
+                    if wanted != watching.as_deref() {
+                        watching = wanted.map(str::to_string);
+                        crate::shortcut::watch_other_keys(&app, watching.as_deref());
+                    }
+
+                    let cmd = if let Some(deadline) = state.next_deadline() {
                         match rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
                             Ok(cmd) => cmd,
                             Err(mpsc::RecvTimeoutError::Timeout) => {
                                 let was_locked = state.is_recording_locked();
-                                if let Some(effect) = state.on_grace_expired() {
+                                if let Some(effect) = state.on_timer(Instant::now()) {
                                     run_effect(&app, &mut state, effect);
                                 }
                                 if !was_locked && state.is_recording_locked() {
@@ -634,6 +887,11 @@ impl TranscriptionCoordinator {
                                 emit_recording_phase(&app, RecordingPhase::Cancelled);
                             }
                         }
+                        Command::OtherKey => {
+                            if let Some(effect) = state.on_other_key() {
+                                run_effect(&app, &mut state, effect);
+                            }
+                        }
                         Command::ProcessingFinished => {
                             if let Some(effect) = state.on_processing_finished() {
                                 run_effect(&app, &mut state, effect);
@@ -655,7 +913,8 @@ impl TranscriptionCoordinator {
     }
 
     /// Send a keyboard input event for a transcribe binding. `hold_threshold`
-    /// only matters for [`ShortcutActivation::HoldOrToggle`].
+    /// only matters for [`ShortcutActivation::HoldOrToggle`], `start_delay`
+    /// only for [`ShortcutActivation::PushToTalk`].
     pub fn send_input(
         &self,
         binding_id: &str,
@@ -663,6 +922,7 @@ impl TranscriptionCoordinator {
         is_pressed: bool,
         mode: ShortcutActivation,
         hold_threshold: Duration,
+        start_delay: Duration,
     ) {
         self.send(
             binding_id,
@@ -670,8 +930,17 @@ impl TranscriptionCoordinator {
             is_pressed,
             mode,
             hold_threshold,
+            start_delay,
             false,
         );
+    }
+
+    /// A key other than the held transcribe shortcut went down. Sent by the
+    /// watcher started through `shortcut::watch_other_keys`.
+    pub fn notify_other_key(&self) {
+        if self.tx.send(Command::OtherKey).is_err() {
+            warn!("Transcription coordinator channel closed");
+        }
     }
 
     /// Send an external trigger (SIGUSR2, CLI flag). Always a toggle press,
@@ -683,10 +952,12 @@ impl TranscriptionCoordinator {
             true,
             ShortcutActivation::Toggle,
             Duration::ZERO,
+            Duration::ZERO,
             true,
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn send(
         &self,
         binding_id: &str,
@@ -694,6 +965,7 @@ impl TranscriptionCoordinator {
         is_pressed: bool,
         mode: ShortcutActivation,
         hold_threshold: Duration,
+        start_delay: Duration,
         external: bool,
     ) {
         if self
@@ -704,6 +976,7 @@ impl TranscriptionCoordinator {
                 is_pressed,
                 mode,
                 hold_threshold,
+                start_delay,
                 external,
                 received_at: Instant::now(),
             }))
@@ -751,6 +1024,8 @@ fn run_effect(app: &AppHandle, state: &mut CoordinatorState, effect: Effect) {
             stop(app, &binding_id, &hotkey_string);
             emit_recording_phase(app, RecordingPhase::Stopped);
         }
+        // Reports back through `notify_cancel`, which emits `Cancelled`.
+        Effect::Cancel => crate::utils::cancel_current_operation(app),
     }
 }
 
@@ -965,6 +1240,7 @@ mod tests {
             is_pressed,
             mode: ShortcutActivation::PushToTalk,
             hold_threshold: Duration::ZERO,
+            start_delay: Duration::ZERO,
             external: false,
             received_at: Instant::now(),
         }
@@ -991,7 +1267,7 @@ mod tests {
             match effect {
                 Some(Effect::Start { .. }) => starts += 1,
                 Some(Effect::Stop { .. }) => stops += 1,
-                None => {}
+                Some(Effect::Cancel) | None => {}
             }
         }
 
@@ -1104,6 +1380,7 @@ mod tests {
                     is_pressed: true,
                     mode: ShortcutActivation::Toggle,
                     hold_threshold: Duration::ZERO,
+                    start_delay: Duration::ZERO,
                     external: true,
                     received_at: at,
                 },
@@ -1167,6 +1444,7 @@ mod tests {
             is_pressed: true,
             mode: ShortcutActivation::Toggle,
             hold_threshold: Duration::ZERO,
+            start_delay: Duration::ZERO,
             external,
             received_at: Instant::now(),
         }
@@ -1293,6 +1571,7 @@ mod tests {
             is_pressed,
             mode,
             hold_threshold: HOLD_THRESHOLD,
+            start_delay: Duration::ZERO,
             external: false,
             received_at: Instant::now(),
         }
@@ -1733,5 +2012,198 @@ mod tests {
             "held 400ms since the real key-down: must stop, not lock"
         );
         assert_eq!(state.stage, Stage::Processing);
+    }
+
+    // ---------------------------------------------------------------------
+    // Push-to-talk start delay: recording waits until the key has been held
+    // for `start_delay`, and another key pressed while it is held abandons
+    // the start or cancels the recording.
+    // ---------------------------------------------------------------------
+
+    const START_DELAY: Duration = Duration::from_millis(300);
+
+    fn delayed_ptt(is_pressed: bool) -> InputEvent {
+        InputEvent {
+            start_delay: START_DELAY,
+            ..ptt_input(is_pressed)
+        }
+    }
+
+    fn at_ms(t0: Instant, n: u64) -> Instant {
+        t0 + Duration::from_millis(n)
+    }
+
+    #[test]
+    fn delayed_press_released_early_never_starts() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(state.on_input(delayed_ptt(true), t0).is_none());
+        assert_eq!(state.stage, Stage::Idle);
+        assert_eq!(state.next_deadline(), Some(t0 + START_DELAY));
+
+        assert!(state.on_input(delayed_ptt(false), at_ms(t0, 100)).is_none());
+        // The grace window resolves the release before the start is due.
+        assert_eq!(state.next_deadline(), state.grace_deadline());
+        assert!(state.on_timer(at_ms(t0, 150)).is_none());
+        assert!(state.pending_start.is_none());
+        assert!(state.next_deadline().is_none());
+        assert_eq!(state.stage, Stage::Idle);
+    }
+
+    #[test]
+    fn delayed_press_held_past_delay_starts_then_stops_on_release() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(state.on_input(delayed_ptt(true), t0).is_none());
+        assert!(state.on_timer(at_ms(t0, 299)).is_none(), "not due yet");
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 300)),
+            Some(Effect::Start { .. })
+        ));
+        assert_eq!(state.stage, Stage::Recording(BINDING.to_string()));
+
+        assert!(state
+            .on_input(delayed_ptt(false), at_ms(t0, 2000))
+            .is_none());
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 2050)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+
+    #[test]
+    fn auto_repeat_during_delay_keeps_the_pending_start() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(state.on_input(delayed_ptt(true), t0).is_none());
+        // X11 auto-repeat: a synthesized release/press pair.
+        assert!(state.on_input(delayed_ptt(false), at_ms(t0, 100)).is_none());
+        assert!(state.on_input(delayed_ptt(true), at_ms(t0, 105)).is_none());
+        assert!(state.on_input(delayed_ptt(true), at_ms(t0, 200)).is_none());
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 300)),
+            Some(Effect::Start { .. })
+        ));
+    }
+
+    #[test]
+    fn other_key_during_delay_abandons_start_until_release() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(state.on_input(delayed_ptt(true), t0).is_none());
+        assert_eq!(state.other_key_watch(), Some(BINDING));
+        assert!(state.on_other_key().is_none());
+        assert!(state.next_deadline().is_none(), "nothing left to start");
+        assert!(state.other_key_watch().is_none());
+
+        // Still held: repeats don't start a new delay.
+        assert!(state.on_input(delayed_ptt(true), at_ms(t0, 400)).is_none());
+        assert!(state.pending_start.is_none());
+
+        // Really released, then pressed again: a fresh delay begins.
+        assert!(state.on_input(delayed_ptt(false), at_ms(t0, 500)).is_none());
+        assert!(state.on_timer(at_ms(t0, 550)).is_none());
+        assert!(state.suppressed.is_none());
+        assert!(state.on_input(delayed_ptt(true), at_ms(t0, 1000)).is_none());
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 1300)),
+            Some(Effect::Start { .. })
+        ));
+    }
+
+    #[test]
+    fn other_key_while_recording_after_delay_cancels() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        state.on_input(delayed_ptt(true), t0);
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 300)),
+            Some(Effect::Start { .. })
+        ));
+        assert_eq!(state.other_key_watch(), Some(BINDING));
+
+        assert_eq!(state.on_other_key(), Some(Effect::Cancel));
+        assert_eq!(state.stage, Stage::Idle);
+        // The executor's cancel reports back; nothing else happens.
+        state.on_cancel(true);
+
+        // The key's eventual release must not stop or start anything.
+        assert!(state.on_input(delayed_ptt(false), at_ms(t0, 900)).is_none());
+        assert!(state.on_timer(at_ms(t0, 950)).is_none());
+        assert_eq!(state.stage, Stage::Idle);
+        assert!(state.suppressed.is_none());
+    }
+
+    #[test]
+    fn other_key_after_release_does_not_cancel() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        state.on_input(delayed_ptt(true), t0);
+        state.on_timer(at_ms(t0, 300));
+        // Released, and typing resumes within the grace window.
+        assert!(state
+            .on_input(delayed_ptt(false), at_ms(t0, 2000))
+            .is_none());
+        assert!(state.on_other_key().is_none());
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 2050)),
+            Some(Effect::Stop { .. })
+        ));
+    }
+
+    #[test]
+    fn no_delay_starts_on_press_and_ignores_other_keys() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        assert!(matches!(
+            state.on_input(ptt_input(true), t0),
+            Some(Effect::Start { .. })
+        ));
+        assert!(state.other_key_watch().is_none());
+        assert!(state.on_other_key().is_none());
+        assert_eq!(state.stage, Stage::Recording(BINDING.to_string()));
+    }
+
+    #[test]
+    fn hold_or_toggle_ignores_start_delay() {
+        let mut state = CoordinatorState::new();
+        let event = InputEvent {
+            start_delay: START_DELAY,
+            ..input(ShortcutActivation::HoldOrToggle, true)
+        };
+        assert!(matches!(
+            state.on_input(event, Instant::now()),
+            Some(Effect::Start { .. })
+        ));
+    }
+
+    #[test]
+    fn press_held_while_busy_still_waits_out_delay_after_drain() {
+        let mut state = CoordinatorState::new();
+        let t0 = Instant::now();
+
+        state.on_input(delayed_ptt(true), t0);
+        state.on_timer(at_ms(t0, 300));
+        state.on_input(delayed_ptt(false), at_ms(t0, 1000));
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 1050)),
+            Some(Effect::Stop { .. })
+        ));
+
+        // Pressed again while transcribing, and still held at the drain.
+        assert!(state.on_input(delayed_ptt(true), at_ms(t0, 1100)).is_none());
+        assert!(state.on_processing_finished().is_none());
+        assert_eq!(state.next_deadline(), Some(at_ms(t0, 1400)));
+        assert!(matches!(
+            state.on_timer(at_ms(t0, 1400)),
+            Some(Effect::Start { .. })
+        ));
     }
 }

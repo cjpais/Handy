@@ -389,6 +389,10 @@
           "push_to_talk": "Grava enquanto você mantém o atalho pressionado",
           "toggle": "Toque no atalho para começar a gravar, toque novamente para parar"
         }
+      },
+      "holdStartDelay": {
+        "title": "Atraso ao segurar",
+        "description": "Apenas no modo Segurar: quanto tempo (em milissegundos) o atalho deve ser segurado antes de a gravação começar. Pressionar qualquer outra tecla nesse intervalo cancela, assim um único modificador como Ctrl pode ser o atalho sem que Ctrl+C inicie uma gravação. 0 começa na hora."
       }
     },
     "models": {

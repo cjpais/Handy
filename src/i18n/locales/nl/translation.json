@@ -389,6 +389,10 @@
           "push_to_talk": "Neemt op zolang je de sneltoets ingedrukt houdt",
           "toggle": "Tik op de sneltoets om de opname te starten, tik opnieuw om te stoppen"
         }
+      },
+      "holdStartDelay": {
+        "title": "Startvertraging bij vasthouden",
+        "description": "Alleen in de modus Vasthouden: hoe lang (in milliseconden) de sneltoets ingedrukt moet blijven voordat de opname begint. Een andere toets indrukken in die tijd annuleert, zodat één modificatietoets zoals Ctrl de sneltoets kan zijn zonder dat Ctrl+C een opname start. 0 start meteen."
       }
     },
     "models": {

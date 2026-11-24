@@ -389,6 +389,10 @@
           "push_to_talk": "Addig rögzít, amíg nyomva tartod a billentyűparancsot",
           "toggle": "Koppints a billentyűparancsra a felvétel indításához, és újra a leállításához"
         }
+      },
+      "holdStartDelay": {
+        "title": "Indítási késleltetés nyomva tartáskor",
+        "description": "Csak „Nyomva tartás” módban: mennyi ideig (ezredmásodpercben) kell nyomva tartani a billentyűparancsot, mielőtt a felvétel elindul. Ha közben bármely más billentyűt lenyomsz, megszakad, így egyetlen módosítóbillentyű, például a Ctrl is lehet a parancs anélkül, hogy a Ctrl+C felvételt indítana. A 0 azonnal indít."
       }
     },
     "models": {

@@ -389,6 +389,10 @@
           "push_to_talk": "Merekam selama Anda menahan pintasan",
           "toggle": "Ketuk pintasan untuk mulai merekam, lalu ketuk lagi untuk berhenti"
         }
+      },
+      "holdStartDelay": {
+        "title": "Jeda Mulai Tahan",
+        "description": "Hanya mode Tahan: berapa lama (dalam milidetik) pintasan harus ditahan sebelum perekaman dimulai. Menekan tombol lain selama itu akan membatalkan, sehingga satu tombol pengubah seperti Ctrl bisa menjadi pintasan tanpa Ctrl+C memulai perekaman. 0 langsung dimulai."
       }
     },
     "models": {

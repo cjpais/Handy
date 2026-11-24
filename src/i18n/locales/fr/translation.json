@@ -389,6 +389,10 @@
           "push_to_talk": "Enregistre tant que le raccourci est maintenu",
           "toggle": "Appuyez sur le raccourci pour démarrer l'enregistrement, appuyez à nouveau pour arrêter"
         }
+      },
+      "holdStartDelay": {
+        "title": "Délai de démarrage en maintien",
+        "description": "Mode « Maintenir » uniquement : durée (en millisecondes) pendant laquelle le raccourci doit être maintenu avant que l'enregistrement commence. Appuyer sur une autre touche pendant ce temps annule, ce qui permet d'utiliser une seule touche de modification comme Ctrl sans que Ctrl+C lance un enregistrement. 0 démarre immédiatement."
       }
     },
     "models": {

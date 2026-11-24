@@ -389,6 +389,10 @@
           "push_to_talk": "Enregistreu mentre manteniu premuda la drecera",
           "toggle": "Premeu la drecera per iniciar l'enregistrament i torneu-la a prémer per aturar-lo"
         }
+      },
+      "holdStartDelay": {
+        "title": "Retard d'inici en mantenir premut",
+        "description": "Només en el mode «Mantén premuda»: quant de temps (en mil·lisegons) cal mantenir la drecera abans que comenci l'enregistrament. Prémer qualsevol altra tecla mentrestant el cancel·la, de manera que un sol modificador com Ctrl pot ser la drecera sense que Ctrl+C iniciï un enregistrament. 0 comença immediatament."
       }
     },
     "models": {

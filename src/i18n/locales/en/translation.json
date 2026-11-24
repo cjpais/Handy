@@ -389,6 +389,10 @@
           "push_to_talk": "Records while you hold the shortcut",
           "toggle": "Tap the shortcut to start recording, tap again to stop"
         }
+      },
+      "holdStartDelay": {
+        "title": "Hold Start Delay",
+        "description": "Hold mode only: how long (in milliseconds) the shortcut must be held before recording starts. Pressing any other key while it's held cancels, so a single modifier like Ctrl can be the shortcut without Ctrl+C starting a recording. 0 starts right away."
       }
     },
     "models": {

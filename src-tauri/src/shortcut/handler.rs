@@ -43,6 +43,7 @@ pub fn handle_shortcut_event(
                 is_pressed,
                 settings.shortcut_activation,
                 std::time::Duration::from_millis(settings.hold_threshold_ms),
+                std::time::Duration::from_millis(settings.push_to_talk_start_delay_ms),
             );
         } else {
             warn!("TranscriptionCoordinator is not initialized");

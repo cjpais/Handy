@@ -389,6 +389,10 @@
           "push_to_talk": "Registra finché tieni premuta la scorciatoia",
           "toggle": "Tocca la scorciatoia per avviare la registrazione, tocca di nuovo per fermarla"
         }
+      },
+      "holdStartDelay": {
+        "title": "Ritardo di avvio con pressione prolungata",
+        "description": "Solo in modalità «Tieni premuto»: per quanto tempo (in millisecondi) la scorciatoia deve essere tenuta premuta prima che inizi la registrazione. Premere qualsiasi altro tasto nel frattempo annulla, così un solo modificatore come Ctrl può essere la scorciatoia senza che Ctrl+C avvii una registrazione. 0 avvia subito."
       }
     },
     "models": {

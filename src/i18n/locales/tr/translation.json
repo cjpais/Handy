@@ -389,6 +389,10 @@
           "push_to_talk": "Kısayolu basılı tuttuğunuz sürece kaydeder",
           "toggle": "Kaydı başlatmak için kısayola dokunun, durdurmak için tekrar dokunun"
         }
+      },
+      "holdStartDelay": {
+        "title": "Basılı tutma başlatma gecikmesi",
+        "description": "Yalnızca Basılı tut modunda: kayıt başlamadan önce kısayolun ne kadar süre (milisaniye) basılı tutulması gerektiği. Bu sırada başka bir tuşa basmak iptal eder; böylece Ctrl gibi tek bir değiştirici tuş, Ctrl+C kayıt başlatmadan kısayol olabilir. 0 hemen başlatır."
       }
     },
     "models": {
