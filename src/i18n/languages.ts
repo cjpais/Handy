@@ -47,4 +47,5 @@ export const LANGUAGE_METADATA: Record<
     priority: 26,
   },
   th: { name: "Thai", nativeName: "ไทย", priority: 27 },
+  hu: { name: "Hungarian", nativeName: "Magyar", priority: 28 },
 };
