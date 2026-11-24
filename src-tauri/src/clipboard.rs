@@ -48,10 +48,24 @@ fn with_enigo<T: Send + 'static>(
 }
 
 fn write_text_to_clipboard(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+    // Without data-control, wl-copy needs to focus a temporary window. GNOME
+    // can deny that focus behind an always-on-top window; the plugin already
+    // falls back to X11 when data-control is unavailable.
+    #[cfg(target_os = "linux")]
+    if is_gnome_wayland() {
+        match app_handle.clipboard().write_text(text) {
+            Ok(()) => return Ok(()),
+            Err(e) => log::warn!("Could not write with the clipboard plugin; trying wl-copy: {e}"),
+        }
+    }
+
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
-        return write_clipboard_via_wl_copy(text);
+        match crate::wl_copy::run(&["--", text]) {
+            Ok(()) => return Ok(()),
+            Err(e) => log::warn!("Could not write with wl-copy; trying the clipboard plugin: {e}"),
+        }
     }
 
     app_handle
@@ -638,27 +652,6 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("kwtype failed: {}", stderr));
-    }
-
-    Ok(())
-}
-
-/// Write text to clipboard via wl-copy (Wayland clipboard tool).
-/// Uses Stdio::null() to avoid blocking on repeated calls — wl-copy forks a
-/// daemon that inherits piped fds, causing read_to_end to hang indefinitely.
-#[cfg(target_os = "linux")]
-fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
-    use std::process::Stdio;
-    let status = Command::new("wl-copy")
-        .arg("--")
-        .arg(text)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
-
-    if !status.success() {
-        return Err("wl-copy failed".into());
     }
 
     Ok(())
