@@ -131,7 +131,7 @@ Settings are stored using Tauri's store plugin with reactive updates:
 
 ### Single Instance Architecture
 
-The app enforces single instance behavior — launching when already running brings the settings window to front rather than creating a new process. Remote control flags (`--toggle-transcription`, etc.) work by launching a second instance that sends args to the running instance via `tauri_plugin_single_instance`, then exits.
+The app enforces single instance behavior — launching when already running brings the settings window to front rather than creating a new process. Remote control flags (`--toggle-transcription`, etc.) work by launching a second instance that sends args to the running instance via `tauri_plugin_single_instance`, then exits. If Handy isn't running, the toggle flags start it and begin recording; `--cancel` does nothing.
 
 ## Error notices
 
@@ -205,7 +205,7 @@ Handy supports command-line parameters on all platforms for integration with scr
 
 | Flag                     | Description                                                |
 | ------------------------ | ---------------------------------------------------------- |
-| `--toggle-transcription` | Toggle recording on/off on a running instance              |
+| `--toggle-transcription` | Toggle recording on/off; starts it if Handy isn't running  |
 | `--toggle-post-process`  | Toggle recording with post-processing on/off               |
 | `--cancel`               | Cancel the current operation on a running instance         |
 | `--start-hidden`         | Launch without showing the main window (tray icon visible) |
