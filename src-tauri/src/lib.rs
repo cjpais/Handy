@@ -1151,12 +1151,8 @@ pub fn run(cli_args: CliArgs) {
                 show_main_window(&app_handle);
             }
 
-            // A remote-control flag on a cold start has no running instance to
-            // be forwarded to, so act on it here instead of dropping it
-            // (#2554). Same precedence as the single-instance callback;
-            // --cancel has nothing to cancel yet. Sent last because the
-            // coordinator starts recording on its own thread right away, and
-            // that needs the managers, tray and overlay set up above.
+            // Cold start: no running instance to forward the flag to, so act on it here (#2554).
+            // Kept last: recording starts at once and needs everything set up above.
             if cli_args.toggle_transcription {
                 signal_handle::send_transcription_input(&app_handle, "transcribe", "CLI");
             } else if cli_args.toggle_post_process {
