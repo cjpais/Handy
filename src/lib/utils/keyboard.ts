@@ -242,6 +242,27 @@ export const normalizeKey = (key: string): string => {
   return key;
 };
 
+/**
+ * Append normalized key(s) from a keydown event to an in-progress chord.
+ * On Linux, window managers such as GNOME may swallow the Super keydown
+ * while still setting `metaKey` on the companion key event.
+ */
+export const recordChordKeys = (
+  recorded: readonly string[],
+  e: KeyboardEvent,
+  osType: OSType = "unknown",
+): string[] => {
+  const next = [...recorded];
+  const key = normalizeKey(getKeyName(e, osType));
+  if (osType === "linux" && e.metaKey && !next.includes("super")) {
+    next.push("super");
+  }
+  if (!next.includes(key)) {
+    next.push(key);
+  }
+  return next;
+};
+
 /** Keys that only modify another: a binding needs a key besides these. */
 export const MODIFIERS = [
   "ctrl",
