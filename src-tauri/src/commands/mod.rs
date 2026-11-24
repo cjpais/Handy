@@ -195,6 +195,26 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Open System Settings at the Accessibility list. macOS shows its own prompt
+/// only sometimes, so onboarding opens the list itself when none appears.
+#[specta::specta]
+#[tauri::command]
+pub fn open_accessibility_settings() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            .spawn()
+            .map_err(|e| format!("Failed to open macOS accessibility settings: {e}"))?;
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("Opening accessibility settings is only supported on macOS".to_string())
+    }
+}
+
 /// Mark onboarding as finished; called when its last screen closes, so quitting
 /// midway resumes the flow.
 #[specta::specta]

@@ -26,6 +26,8 @@ export interface Permissions {
   allGranted: boolean;
   /** Asked once already: asking again opens the OS settings instead. */
   microphoneAsked: boolean;
+  /** Asked once already: asking again opens System Settings instead. */
+  accessibilityAsked: boolean;
   requestMicrophone: () => Promise<void>;
   requestAccessibility: () => Promise<void>;
 }
@@ -58,6 +60,7 @@ export const usePermissions = (preview: boolean): Permissions => {
     useState<PermissionStatus>("checking");
   const [needed, setNeeded] = useState(false);
   const [microphoneAsked, setMicrophoneAsked] = useState(false);
+  const [accessibilityAsked, setAccessibilityAsked] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const errorCountRef = useRef(0);
 
@@ -219,7 +222,18 @@ export const usePermissions = (preview: boolean): Permissions => {
   const requestAccessibility = async () => {
     if (preview) return;
     try {
-      await requestAccessibilityPermission();
+      // macOS doesn't always prompt (not again once Handy is in the list, and
+      // not at all on some versions), so open System Settings when it doesn't.
+      if (accessibilityAsked) await commands.openAccessibilitySettings();
+      else {
+        await requestAccessibilityPermission();
+        // A prompt takes focus from Handy; still in front a moment later
+        // means there was none.
+        setTimeout(() => {
+          if (document.hasFocus()) commands.openAccessibilitySettings();
+        }, 1000);
+      }
+      setAccessibilityAsked(true);
       setAccessibility("waiting");
       startPolling();
     } catch (error) {
@@ -259,6 +273,7 @@ export const usePermissions = (preview: boolean): Permissions => {
     needed,
     allGranted,
     microphoneAsked,
+    accessibilityAsked,
     requestMicrophone,
     requestAccessibility,
   };
