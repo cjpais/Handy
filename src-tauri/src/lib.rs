@@ -1151,6 +1151,18 @@ pub fn run(cli_args: CliArgs) {
                 show_main_window(&app_handle);
             }
 
+            // Handy wasn't running, so no single-instance callback handles this flag; do it here (#2554).
+            // Must stay at the end of setup(): recording starts immediately and needs the managers, tray and overlay.
+            if cli_args.toggle_transcription {
+                signal_handle::send_transcription_input(&app_handle, "transcribe", "CLI");
+            } else if cli_args.toggle_post_process {
+                signal_handle::send_transcription_input(
+                    &app_handle,
+                    "transcribe_with_post_process",
+                    "CLI",
+                );
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| match event {
