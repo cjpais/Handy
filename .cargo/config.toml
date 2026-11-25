@@ -1,1 +1,6 @@
 [build]
+
+[env]
+# No system BLAS runtime dependency (libopenblas) on Linux; measured no significant
+# speedup. transcribe-cpp defaults this OFF after 0.4.2; remove once we upgrade.
+TRANSCRIBE_CMAKE_ARGS = "-DTRANSCRIBE_USE_SYSTEM_BLAS=OFF"
