@@ -658,9 +658,6 @@
           "title": "API 密钥",
           "description": "所选提供商的 API 密钥。Handy 会将其保存在系统钥匙串中。",
           "placeholder": "sk-...",
-          "savedWithHint": "已保存的密钥，结尾为 {{hint}}",
-          "saved": "已保存的密钥",
-          "remove": "移除",
           "inSettingsFile": "系统钥匙串不可用，因此此密钥以未加密形式保存在 Handy 的设置文件中。"
         },
         "model": {

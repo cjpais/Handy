@@ -658,9 +658,6 @@
           "title": "Clave API",
           "description": "Clave de API del proveedor seleccionado. Handy la guarda en el llavero del sistema.",
           "placeholder": "sk-...",
-          "savedWithHint": "Clave guardada que termina en {{hint}}",
-          "saved": "Clave guardada",
-          "remove": "Quitar",
           "inSettingsFile": "No hay un llavero del sistema disponible, así que esta clave se guarda sin cifrar en el archivo de configuración de Handy."
         },
         "model": {

@@ -658,9 +658,6 @@
           "title": "API キー",
           "description": "選択したプロバイダーの API キー。Handy はシステムのキーチェーンに保存します。",
           "placeholder": "sk-…",
-          "savedWithHint": "保存済みのキー（末尾 {{hint}}）",
-          "saved": "保存済みのキー",
-          "remove": "削除",
           "inSettingsFile": "システムのキーチェーンが使えないため、このキーは Handy の設定ファイルに暗号化されずに保存されています。"
         },
         "model": {

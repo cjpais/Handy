@@ -148,7 +148,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [apiFormat, selectedProviderId, updatePostProcessApiFormat],
   );
 
-  // The page never sees the saved key, so any key typed is saved: "" removes it.
+  // ApiKeyField sends only real changes: a new key, or "" to remove the saved one.
   const handleApiKeyChange = useCallback(
     (value: string) => {
       void updatePostProcessApiKey(selectedProviderId, value.trim());

@@ -658,9 +658,6 @@
           "title": "Klucz API",
           "description": "Klucz API wybranego dostawcy. Handy zapisuje go w systemowym pęku kluczy.",
           "placeholder": "sk-...",
-          "savedWithHint": "Zapisany klucz kończący się na {{hint}}",
-          "saved": "Zapisany klucz",
-          "remove": "Usuń",
           "inSettingsFile": "Systemowy pęk kluczy jest niedostępny, więc ten klucz jest zapisany bez szyfrowania w pliku ustawień Handy."
         },
         "model": {

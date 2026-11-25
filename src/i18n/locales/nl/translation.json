@@ -658,9 +658,6 @@
           "title": "API-sleutel",
           "description": "API-sleutel voor de gekozen provider. Handy bewaart hem in de sleutelhanger van het systeem.",
           "placeholder": "sk-...",
-          "savedWithHint": "Opgeslagen sleutel die eindigt op {{hint}}",
-          "saved": "Opgeslagen sleutel",
-          "remove": "Verwijderen",
           "inSettingsFile": "Er is geen sleutelhanger van het systeem beschikbaar, dus deze sleutel staat onversleuteld in het instellingenbestand van Handy."
         },
         "model": {

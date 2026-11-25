@@ -658,9 +658,6 @@
           "title": "API-nyckel",
           "description": "API-nyckel för vald leverantör. Handy sparar den i systemets nyckelring.",
           "placeholder": "sk-...",
-          "savedWithHint": "Sparad nyckel som slutar på {{hint}}",
-          "saved": "Sparad nyckel",
-          "remove": "Ta bort",
           "inSettingsFile": "Ingen nyckelring finns i systemet, så nyckeln är sparad okrypterad i Handys inställningsfil."
         },
         "model": {

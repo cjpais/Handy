@@ -658,9 +658,6 @@
           "title": "Khóa API",
           "description": "Khóa API của nhà cung cấp đã chọn. Handy lưu khóa trong chuỗi khóa của hệ thống.",
           "placeholder": "sk-...",
-          "savedWithHint": "Khóa đã lưu, kết thúc bằng {{hint}}",
-          "saved": "Khóa đã lưu",
-          "remove": "Xóa",
           "inSettingsFile": "Không có chuỗi khóa hệ thống, nên khóa này được lưu không mã hóa trong tệp cài đặt của Handy."
         },
         "model": {
