@@ -47,7 +47,6 @@
       "deb": {
         "depends": [
           "libgtk-layer-shell0",
-          "libopenblas0",
           "libssl3t64 | libssl3"
         ],
         "files": {
@@ -56,8 +55,7 @@
       },
       "rpm": {
         "depends": [
-          "libgtk-layer-shell.so.0()(64bit)",
-          "libopenblas.so.0()(64bit)"
+          "libgtk-layer-shell.so.0()(64bit)"
         ],
         "compression": {
           "type": "none"
