@@ -16,6 +16,11 @@ This guide covers how to set up the development environment and build Handy from
 
 - Xcode Command Line Tools
 - Install with: `xcode-select --install`
+- [CMake](https://cmake.org/download/) (must be on `PATH`):
+
+  ```bash
+  brew install cmake
+  ```
 
 #### Windows
 
