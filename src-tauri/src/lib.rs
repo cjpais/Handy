@@ -250,7 +250,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle, false);
 
-    let mut tray_builder = TrayIconBuilder::new()
+    let mut tray_builder = TrayIconBuilder::with_id("handy")
         .icon(
             Image::from_path(
                 app_handle
@@ -771,7 +771,6 @@ pub fn run(cli_args: CliArgs) {
             commands::check_apple_intelligence_available,
             commands::initialize_enigo,
             commands::initialize_shortcuts,
-            commands::reset_macos_permission,
             commands::complete_onboarding,
             commands::models::get_available_models,
             commands::models::get_model_info,
@@ -1150,6 +1149,18 @@ pub fn run(cli_args: CliArgs) {
             let tray_available = settings.show_tray_icon && !cli_args.no_tray;
             if should_force_show || !should_hide || !tray_available {
                 show_main_window(&app_handle);
+            }
+
+            // Handy wasn't running, so no single-instance callback handles this flag; do it here (#2554).
+            // Must stay at the end of setup(): recording starts immediately and needs the managers, tray and overlay.
+            if cli_args.toggle_transcription {
+                signal_handle::send_transcription_input(&app_handle, "transcribe", "CLI");
+            } else if cli_args.toggle_post_process {
+                signal_handle::send_transcription_input(
+                    &app_handle,
+                    "transcribe_with_post_process",
+                    "CLI",
+                );
             }
 
             Ok(())

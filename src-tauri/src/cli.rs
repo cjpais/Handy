@@ -12,15 +12,18 @@ pub struct CliArgs {
     #[arg(long)]
     pub no_tray: bool,
 
-    /// Toggle transcription on/off (sent to running instance)
+    /// Toggle transcription on/off (sent to the running instance, or starts
+    /// recording once Handy has launched)
     #[arg(long)]
     pub toggle_transcription: bool,
 
-    /// Toggle transcription with post-processing on/off (sent to running instance)
+    /// Toggle transcription with post-processing on/off (sent to the running
+    /// instance, or starts recording once Handy has launched)
     #[arg(long)]
     pub toggle_post_process: bool,
 
-    /// Cancel the current operation (sent to running instance)
+    /// Cancel the current operation (sent to the running instance; does
+    /// nothing if Handy isn't running yet)
     #[arg(long)]
     pub cancel: bool,
 
