@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "מפתח API",
-          "description": "מפתח API עבור הספק הנבחר.",
-          "placeholder": "sk-..."
+          "description": "מפתח API עבור הספק שנבחר. Handy שומר אותו במחזיק המפתחות של המערכת.",
+          "placeholder": "sk-...",
+          "savedWithHint": "מפתח שמור שמסתיים ב-{{hint}}",
+          "saved": "מפתח שמור",
+          "remove": "הסר",
+          "inSettingsFile": "אין מחזיק מפתחות זמין במערכת, ולכן המפתח נשמר ללא הצפנה בקובץ ההגדרות של Handy."
         },
         "model": {
           "title": "מודל",

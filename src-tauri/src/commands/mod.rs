@@ -40,7 +40,11 @@ pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
-    Ok(get_settings(&app))
+    let mut settings = get_settings(&app);
+    // API keys never reach the page; `post_process_saved_api_keys` says
+    // which providers have one.
+    settings.post_process_api_keys.clear();
+    Ok(settings)
 }
 
 #[tauri::command]

@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API Anahtarı",
-          "description": "Seçili sağlayıcı için API anahtarı.",
-          "placeholder": "sk-..."
+          "description": "Seçilen sağlayıcının API anahtarı. Handy bunu sistem anahtar zincirine kaydeder.",
+          "placeholder": "sk-...",
+          "savedWithHint": "{{hint}} ile biten kayıtlı anahtar",
+          "saved": "Kayıtlı anahtar",
+          "remove": "Kaldır",
+          "inSettingsFile": "Sistem anahtar zinciri kullanılamıyor, bu yüzden bu anahtar Handy'nin ayar dosyasına şifrelenmeden kaydedildi."
         },
         "model": {
           "title": "Model",

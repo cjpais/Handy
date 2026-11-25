@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API 키",
-          "description": "선택한 제공자의 API 키입니다.",
-          "placeholder": "sk-..."
+          "description": "선택한 제공자의 API 키입니다. Handy는 이를 시스템 키체인에 저장합니다.",
+          "placeholder": "sk-...",
+          "savedWithHint": "{{hint}}(으)로 끝나는 저장된 키",
+          "saved": "저장된 키",
+          "remove": "제거",
+          "inSettingsFile": "시스템 키체인을 사용할 수 없어 이 키는 Handy 설정 파일에 암호화되지 않은 채 저장되었습니다."
         },
         "model": {
           "title": "모델",

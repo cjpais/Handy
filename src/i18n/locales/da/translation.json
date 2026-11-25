@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API-nøgle",
-          "description": "API-nøgle til den valgte udbyder.",
-          "placeholder": "sk-..."
+          "description": "API-nøgle til den valgte udbyder. Handy gemmer den i systemets nøglering.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Gemt nøgle, der slutter på {{hint}}",
+          "saved": "Gemt nøgle",
+          "remove": "Fjern",
+          "inSettingsFile": "Der er ingen nøglering i systemet, så nøglen er gemt ukrypteret i Handys indstillingsfil."
         },
         "model": {
           "title": "Model",

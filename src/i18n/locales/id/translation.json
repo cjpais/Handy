@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "Kunci API",
-          "description": "Kunci API untuk penyedia yang dipilih.",
-          "placeholder": "sk-..."
+          "description": "Kunci API untuk penyedia yang dipilih. Handy menyimpannya di keychain sistem.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Kunci tersimpan yang berakhiran {{hint}}",
+          "saved": "Kunci tersimpan",
+          "remove": "Hapus",
+          "inSettingsFile": "Keychain sistem tidak tersedia, jadi kunci ini disimpan tanpa enkripsi di file pengaturan Handy."
         },
         "model": {
           "title": "Model",

@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "Chave da API",
-          "description": "Chave da API para o provedor selecionado.",
-          "placeholder": "sk-..."
+          "description": "Chave de API do provedor selecionado. O Handy a salva no chaveiro do sistema.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Chave salva terminada em {{hint}}",
+          "saved": "Chave salva",
+          "remove": "Remover",
+          "inSettingsFile": "Nenhum chaveiro do sistema está disponível, então esta chave está salva sem criptografia no arquivo de configurações do Handy."
         },
         "model": {
           "title": "Modelo",

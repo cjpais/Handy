@@ -1,4 +1,5 @@
 mod actions;
+mod api_keys;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
 mod audio_feedback;
@@ -12,6 +13,7 @@ mod commands;
 pub mod engine_supervisor;
 mod helpers;
 mod input;
+mod keychain;
 mod language_detection;
 mod languages;
 mod llm_client;
@@ -238,6 +240,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // (#1660) — see signal_handle.rs.
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone());
+
+    // Move API keys older versions kept in the settings file into the system
+    // keychain. On a thread of its own: the keychain may wait on an unlock
+    // prompt.
+    let keys_app = app_handle.clone();
+    std::thread::spawn(move || api_keys::move_to_keychain(&keys_app));
 
     // The macOS activation policy for a start-hidden launch is applied before
     // the event loop runs (see `apply_startup_activation_policy`), not here:

@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "Chiave API",
-          "description": "Chiave API per il provider selezionato.",
-          "placeholder": "sk-..."
+          "description": "Chiave API del provider selezionato. Handy la salva nel portachiavi di sistema.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Chiave salvata che termina con {{hint}}",
+          "saved": "Chiave salvata",
+          "remove": "Rimuovi",
+          "inSettingsFile": "Nessun portachiavi di sistema disponibile, quindi questa chiave è salvata senza crittografia nel file delle impostazioni di Handy."
         },
         "model": {
           "title": "Modello",

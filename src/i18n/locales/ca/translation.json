@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "Clau de l'API",
-          "description": "Clau de l'API del proveïdor seleccionat.",
-          "placeholder": "sk-..."
+          "description": "Clau API del proveïdor seleccionat. Handy la desa al clauer del sistema.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Clau desada que acaba en {{hint}}",
+          "saved": "Clau desada",
+          "remove": "Elimina",
+          "inSettingsFile": "No hi ha cap clauer del sistema disponible, així que aquesta clau es desa sense xifrar al fitxer de configuració de Handy."
         },
         "model": {
           "title": "Model",

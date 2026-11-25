@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API klíč",
-          "description": "API klíč pro vybraného poskytovatele.",
-          "placeholder": "sk-..."
+          "description": "API klíč pro vybraného poskytovatele. Handy ho ukládá do systémové klíčenky.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Uložený klíč končící na {{hint}}",
+          "saved": "Uložený klíč",
+          "remove": "Odebrat",
+          "inSettingsFile": "Systémová klíčenka není k dispozici, proto je tento klíč uložen nešifrovaně v souboru nastavení Handy."
         },
         "model": {
           "title": "Model",

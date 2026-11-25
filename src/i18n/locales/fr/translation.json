@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "Clé API",
-          "description": "Clé API pour le fournisseur sélectionné.",
-          "placeholder": "sk-..."
+          "description": "Clé API du fournisseur sélectionné. Handy l'enregistre dans le trousseau du système.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Clé enregistrée se terminant par {{hint}}",
+          "saved": "Clé enregistrée",
+          "remove": "Supprimer",
+          "inSettingsFile": "Aucun trousseau système n'est disponible : cette clé est donc enregistrée sans chiffrement dans le fichier de paramètres de Handy."
         },
         "model": {
           "title": "Modèle",

@@ -389,6 +389,24 @@ impl std::ops::DerefMut for SecretMap {
     }
 }
 
+/// Where a provider's API key is kept.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ApiKeyStorage {
+    /// The system keychain.
+    Keychain,
+    /// `post_process_api_keys` in the settings file.
+    SettingsFile,
+}
+
+/// A saved API key as the settings page shows it, without the key.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
+pub struct SavedApiKey {
+    pub storage: ApiKeyStorage,
+    /// The key's last four characters, or empty for a short key.
+    pub hint: String,
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 /// The container-level `serde(default)` (backed by the `Default` impl below)
 /// guarantees every field — including ones added in the future — falls back to
@@ -489,8 +507,13 @@ pub struct AppSettings {
     pub post_process_provider_id: String,
     #[serde(default = "default_post_process_providers")]
     pub post_process_providers: Vec<PostProcessProvider>,
+    /// API keys kept in this file instead of the system keychain: in portable
+    /// mode, or with no keychain to use. See `api_keys`.
     #[serde(default = "default_post_process_api_keys")]
     pub post_process_api_keys: SecretMap,
+    /// Which providers have a saved key, and where. Never the key itself.
+    #[serde(default)]
+    pub post_process_saved_api_keys: HashMap<String, SavedApiKey>,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
@@ -1047,6 +1070,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_provider_id: default_post_process_provider_id(),
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
+        post_process_saved_api_keys: HashMap::new(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
@@ -1168,7 +1192,8 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let defaults_added = ensure_post_process_defaults(&mut settings);
+    if crate::api_keys::reconcile(&mut settings) || defaults_added {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

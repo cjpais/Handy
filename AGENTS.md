@@ -68,6 +68,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri 2.
 - `cli.rs` - CLI argument definitions (clap derive)
 - `shortcut.rs` - Global keyboard shortcut handling
 - `settings.rs` - Application settings management
+- `api_keys.rs` / `keychain.rs` - Post-processing API keys, kept in the system keychain (settings only record that a key exists)
 - `notices.rs` - Reports background errors to the user (see [Error notices](#error-notices))
 - `overlay.rs` - Recording overlay window (platform-specific)
 - `signal_handle.rs` - `send_transcription_input()` reusable function

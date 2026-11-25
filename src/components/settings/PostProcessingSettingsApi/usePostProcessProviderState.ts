@@ -4,6 +4,7 @@ import {
   commands,
   type PostProcessApiFormat,
   type PostProcessProvider,
+  type SavedApiKey,
 } from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
@@ -21,7 +22,7 @@ type PostProcessProviderState = {
   apiFormat: PostProcessApiFormat;
   handleApiFormatChange: (value: PostProcessApiFormat) => void;
   isApiFormatUpdating: boolean;
-  apiKey: string;
+  savedApiKey: SavedApiKey | undefined;
   handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
   model: string;
@@ -71,7 +72,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
   const apiFormat = selectedProvider?.api_format ?? "openai";
-  const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
+  const savedApiKey =
+    settings?.post_process_saved_api_keys?.[selectedProviderId];
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
@@ -107,9 +109,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       // to avoid unnecessary backend errors.
       if (providerId !== APPLE_PROVIDER_ID) {
         const provider = providers.find((p) => p.id === providerId);
-        const apiKey = settings?.post_process_api_keys?.[providerId] ?? "";
         const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
-        const hasApiKey = apiKey.trim() !== "";
+        const hasApiKey = !!settings?.post_process_saved_api_keys?.[providerId];
 
         if (provider?.id === "custom" ? hasBaseUrl : hasApiKey) {
           void fetchPostProcessModels(providerId);
@@ -147,14 +148,12 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [apiFormat, selectedProviderId, updatePostProcessApiFormat],
   );
 
+  // The page never sees the saved key, so any key typed is saved: "" removes it.
   const handleApiKeyChange = useCallback(
     (value: string) => {
-      const trimmed = value.trim();
-      if (trimmed !== apiKey) {
-        void updatePostProcessApiKey(selectedProviderId, trimmed);
-      }
+      void updatePostProcessApiKey(selectedProviderId, value.trim());
     },
-    [apiKey, selectedProviderId, updatePostProcessApiKey],
+    [selectedProviderId, updatePostProcessApiKey],
   );
 
   const handleModelChange = useCallback(
@@ -243,7 +242,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     apiFormat,
     handleApiFormatChange,
     isApiFormatUpdating,
-    apiKey,
+    savedApiKey,
     handleApiKeyChange,
     isApiKeyUpdating,
     model,

@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API 金鑰",
-          "description": "所選供應商的 API 金鑰",
-          "placeholder": "sk-..."
+          "description": "所選提供者的 API 金鑰。Handy 會將其儲存在系統鑰匙圈中。",
+          "placeholder": "sk-...",
+          "savedWithHint": "已儲存的金鑰，結尾為 {{hint}}",
+          "saved": "已儲存的金鑰",
+          "remove": "移除",
+          "inSettingsFile": "系統鑰匙圈無法使用，因此此金鑰以未加密的形式儲存在 Handy 的設定檔中。"
         },
         "model": {
           "title": "模型",

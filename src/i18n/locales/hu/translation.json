@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API-kulcs",
-          "description": "A kiválasztott szolgáltató API-kulcsa.",
-          "placeholder": "sk-..."
+          "description": "A kiválasztott szolgáltató API-kulcsa. A Handy a rendszer kulcstartójába menti.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Mentett kulcs, vége: {{hint}}",
+          "saved": "Mentett kulcs",
+          "remove": "Eltávolítás",
+          "inSettingsFile": "Nincs elérhető rendszerkulcstartó, ezért ez a kulcs titkosítatlanul van mentve a Handy beállításfájljában."
         },
         "model": {
           "title": "Modell",

@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "مفتاح API",
-          "description": "مفتاح API للمزود المختار.",
-          "placeholder": "sk-..."
+          "description": "مفتاح API للمزوّد المحدد. يحفظه Handy في سلسلة مفاتيح النظام.",
+          "placeholder": "sk-...",
+          "savedWithHint": "مفتاح محفوظ ينتهي بـ {{hint}}",
+          "saved": "مفتاح محفوظ",
+          "remove": "إزالة",
+          "inSettingsFile": "لا تتوفر سلسلة مفاتيح للنظام، لذا حُفظ هذا المفتاح دون تشفير في ملف إعدادات Handy."
         },
         "model": {
           "title": "النموذج",

@@ -25,6 +25,14 @@ import { useSettings } from "../../../hooks/useSettings";
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
+  // Portable installs keep keys in their folder on purpose; say nothing there.
+  const [isPortable, setIsPortable] = useState(true);
+  useEffect(() => {
+    commands
+      .isPortable()
+      .then(setIsPortable)
+      .catch(() => setIsPortable(false));
+  }, []);
 
   return (
     <>
@@ -121,8 +129,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <ApiKeyField
-                value={state.apiKey}
-                onBlur={state.handleApiKeyChange}
+                saved={state.savedApiKey}
+                onSave={state.handleApiKeyChange}
                 placeholder={t(
                   "settings.postProcessing.api.apiKey.placeholder",
                 )}
@@ -131,6 +139,11 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               />
             </div>
           </SettingContainer>
+          {state.savedApiKey?.storage === "settings_file" && !isPortable && (
+            <Alert variant="warning" contained>
+              {t("settings.postProcessing.api.apiKey.inSettingsFile")}
+            </Alert>
+          )}
         </>
       )}
 

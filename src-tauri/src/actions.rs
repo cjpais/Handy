@@ -282,11 +282,16 @@ async fn post_process_transcription(
         provider.id, model
     );
 
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
+    let api_key = match crate::api_keys::load_async(settings, &provider.id).await {
+        Ok(key) => key.unwrap_or_default(),
+        Err(e) => {
+            error!(
+                "Post-processing skipped because the API key for '{}' couldn't be read: {e}",
+                provider.id
+            );
+            return PostProcessOutcome::Failed;
+        }
+    };
 
     // Ask these providers to skip reasoning/thinking — post-processing rarely
     // benefits from it and it adds seconds of latency. llm_client picks the
@@ -1198,6 +1203,65 @@ mod tests {
         assert_eq!(
             run_post_process(&post_process_settings(&url), "hello"),
             PostProcessOutcome::Failed
+        );
+    }
+
+    /// Answers one chat completion request, and returns its URL and a
+    /// receiver for the request's text.
+    fn serve_once_recording(body: &'static str) -> (String, std::sync::mpsc::Receiver<String>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let (sender, requests) = std::sync::mpsc::channel();
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = [0; 8192];
+            let read = stream.read(&mut request).unwrap_or(0);
+            let _ = sender.send(String::from_utf8_lossy(&request[..read]).to_string());
+            let response = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+        (format!("http://{address}"), requests)
+    }
+
+    /// The whole path: a key saved to the real system keychain is the one a
+    /// dictation sends, and the settings never hold it. Touches the keychain,
+    /// so it runs only when asked: `cargo test --lib -- --ignored keychain`.
+    #[test]
+    #[ignore]
+    fn post_processing_sends_the_key_saved_in_the_keychain() {
+        let (url, requests) =
+            serve_once_recording(r#"{"choices":[{"message":{"content":"polished"}}]}"#);
+        let mut settings = post_process_settings(&url);
+        // Its own provider id, so it can't touch a real saved key.
+        let provider_id = "keychain-e2e-test".to_string();
+        let default_id =
+            std::mem::replace(&mut settings.post_process_provider_id, provider_id.clone());
+        for provider in &mut settings.post_process_providers {
+            if provider.id == default_id {
+                provider.id = provider_id.clone();
+            }
+        }
+        settings
+            .post_process_models
+            .insert(provider_id.clone(), "model".to_string());
+        let key = "sk-keychain-e2e-0123456789";
+        crate::api_keys::save_with_os_keychain(&mut settings, &provider_id, key).unwrap();
+        crate::keychain::clear_cache();
+
+        assert!(!serde_json::to_string(&settings).unwrap().contains(key));
+        assert_eq!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::Done("polished".to_string())
+        );
+        let request = requests.recv_timeout(Duration::from_secs(5)).unwrap();
+        crate::api_keys::save_with_os_keychain(&mut settings, &provider_id, "").unwrap();
+        assert!(
+            request.contains(&format!("Bearer {key}")),
+            "the request carried the key: {request}"
         );
     }
 

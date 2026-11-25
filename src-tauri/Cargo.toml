@@ -66,6 +66,10 @@ symphonia-adapter-libopus = "0.2.9"
 # Resamples a decoded file to 16 kHz; the version handy-recorder already uses.
 rubato = "5"
 handy-recorder = "0.1.1"
+# API keys go to the system keychain. On Linux it reaches the Secret Service
+# through libdbus, which tao already links; crypto-rust encrypts that session
+# without OpenSSL.
+keyring = { version = "3.6", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 reqwest = { version = "0.12", features = ["json", "stream", "gzip", "brotli", "deflate"] }
 futures-util = "0.3"
 rustfft = "6.4.0"

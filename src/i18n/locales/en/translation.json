@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API Key",
-          "description": "API key for the selected provider.",
-          "placeholder": "sk-..."
+          "description": "API key for the selected provider. Handy saves it in your system keychain.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Saved key ending in {{hint}}",
+          "saved": "Saved key",
+          "remove": "Remove",
+          "inSettingsFile": "No system keychain is available, so this key is saved unencrypted in Handy's settings file."
         },
         "model": {
           "title": "Model",

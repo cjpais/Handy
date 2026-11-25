@@ -656,8 +656,12 @@
         },
         "apiKey": {
           "title": "API-Schlüssel",
-          "description": "API-Schlüssel für den ausgewählten Anbieter.",
-          "placeholder": "sk-..."
+          "description": "API-Schlüssel für den ausgewählten Anbieter. Handy speichert ihn im Schlüsselbund des Systems.",
+          "placeholder": "sk-...",
+          "savedWithHint": "Gespeicherter Schlüssel, endet auf {{hint}}",
+          "saved": "Gespeicherter Schlüssel",
+          "remove": "Entfernen",
+          "inSettingsFile": "Kein Schlüsselbund des Systems verfügbar, daher ist dieser Schlüssel unverschlüsselt in der Einstellungsdatei von Handy gespeichert."
         },
         "model": {
           "title": "Modell",
