@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API-sleutel",
-          "description": "API-sleutel voor de gekozen provider. Handy bewaart hem in de sleutelhanger van het systeem.",
+          "description": "API-sleutel voor de gekozen provider. Handy bewaart hem in de sleutelhanger van het systeem als die er is.",
           "placeholder": "sk-...",
           "inSettingsFile": "Er is geen sleutelhanger van het systeem beschikbaar, dus deze sleutel staat onversleuteld in het instellingenbestand van Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd geplakt.",
     "filePostProcessFailedTitle": "Getranscribeerd zonder naverwerking",
     "filePostProcessFailed": "De naverwerking is niet voltooid, dus de transcriptie is ongewijzigd opgeslagen.",
+    "apiKeyUnavailableTitle": "API-sleutel niet leesbaar",
+    "apiKeyUnavailable": "Nabewerking is overgeslagen omdat Handy de API-sleutel niet uit de sleutelhanger van het systeem kon lezen. Gebeurt dit vaker, voer de sleutel dan opnieuw in bij de instellingen voor nabewerking.",
     "fileTranscriptionFailedTitle": "Transcriptie van bestand mislukt",
     "transcriptionFailedTitle": "Transcriptie mislukt"
   },

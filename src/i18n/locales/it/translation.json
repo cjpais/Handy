@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Chiave API",
-          "description": "Chiave API del provider selezionato. Handy la salva nel portachiavi di sistema.",
+          "description": "Chiave API del provider selezionato. Handy la conserva nel portachiavi di sistema, se disponibile.",
           "placeholder": "sk-...",
           "inSettingsFile": "Nessun portachiavi di sistema disponibile, quindi questa chiave è salvata senza crittografia nel file delle impostazioni di Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata incollata così com'è.",
     "filePostProcessFailedTitle": "Trascritto senza post-elaborazione",
     "filePostProcessFailed": "La post-elaborazione non è terminata, quindi la trascrizione è stata salvata così com'è.",
+    "apiKeyUnavailableTitle": "Chiave API non leggibile",
+    "apiKeyUnavailable": "La post-elaborazione è stata saltata perché Handy non è riuscito a leggere la chiave API dal portachiavi di sistema. Se succede di nuovo, inserisci di nuovo la chiave nelle impostazioni di post-elaborazione.",
     "fileTranscriptionFailedTitle": "Trascrizione del file non riuscita",
     "transcriptionFailedTitle": "Trascrizione non riuscita"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Khóa API",
-          "description": "Khóa API của nhà cung cấp đã chọn. Handy lưu khóa trong chuỗi khóa của hệ thống.",
+          "description": "Khóa API của nhà cung cấp đã chọn. Handy lưu khóa trong chuỗi khóa của hệ thống khi có.",
           "placeholder": "sk-...",
           "inSettingsFile": "Không có chuỗi khóa hệ thống, nên khóa này được lưu không mã hóa trong tệp cài đặt của Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được dán nguyên trạng.",
     "filePostProcessFailedTitle": "Đã chép lời không qua xử lý sau",
     "filePostProcessFailed": "Xử lý sau chưa hoàn tất nên bản chép lời được lưu nguyên trạng.",
+    "apiKeyUnavailableTitle": "Không đọc được khóa API",
+    "apiKeyUnavailable": "Đã bỏ qua hậu xử lý vì Handy không đọc được khóa API từ chuỗi khóa của hệ thống. Nếu điều này lặp lại, hãy nhập lại khóa trong cài đặt hậu xử lý.",
     "fileTranscriptionFailedTitle": "Phiên âm tệp thất bại",
     "transcriptionFailedTitle": "Phiên âm thất bại"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API 키",
-          "description": "선택한 제공자의 API 키입니다. Handy는 이를 시스템 키체인에 저장합니다.",
+          "description": "선택한 제공자의 API 키입니다. 시스템 키체인을 사용할 수 있으면 Handy가 그곳에 보관합니다.",
           "placeholder": "sk-...",
           "inSettingsFile": "시스템 키체인을 사용할 수 없어 이 키는 Handy 설정 파일에 암호화되지 않은 채 저장되었습니다."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 붙여넣었습니다.",
     "filePostProcessFailedTitle": "후처리 없이 받아씀",
     "filePostProcessFailed": "후처리가 완료되지 않아 받아쓰기 결과를 그대로 저장했습니다.",
+    "apiKeyUnavailableTitle": "API 키를 읽을 수 없음",
+    "apiKeyUnavailable": "Handy가 시스템 키체인에서 API 키를 읽지 못해 후처리를 건너뛰었습니다. 계속 발생하면 후처리 설정에서 키를 다시 입력하세요.",
     "fileTranscriptionFailedTitle": "파일 음성 인식 실패",
     "transcriptionFailedTitle": "음성 인식 실패"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Klucz API",
-          "description": "Klucz API wybranego dostawcy. Handy zapisuje go w systemowym pęku kluczy.",
+          "description": "Klucz API wybranego dostawcy. Handy przechowuje go w systemowym pęku kluczy, jeśli jest dostępny.",
           "placeholder": "sk-...",
           "inSettingsFile": "Systemowy pęk kluczy jest niedostępny, więc ten klucz jest zapisany bez szyfrowania w pliku ustawień Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Postproces nie został ukończony, więc transkrypcja została wklejona bez zmian.",
     "filePostProcessFailedTitle": "Przetranskrybowano bez postprocesu",
     "filePostProcessFailed": "Postproces nie został ukończony, więc transkrypcja została zapisana bez zmian.",
+    "apiKeyUnavailableTitle": "Nie można odczytać klucza API",
+    "apiKeyUnavailable": "Pominięto przetwarzanie końcowe, ponieważ Handy nie mógł odczytać klucza API z systemowego pęku kluczy. Jeśli to się powtarza, wpisz klucz ponownie w ustawieniach przetwarzania końcowego.",
     "fileTranscriptionFailedTitle": "Transkrypcja pliku nie powiodła się",
     "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API 密钥",
-          "description": "所选提供商的 API 密钥。Handy 会将其保存在系统钥匙串中。",
+          "description": "所选提供商的 API 密钥。如有系统钥匙串，Handy 会将其保存在其中。",
           "placeholder": "sk-...",
           "inSettingsFile": "系统钥匙串不可用，因此此密钥以未加密形式保存在 Handy 的设置文件中。"
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "后处理未完成，因此按原样粘贴转录内容。",
     "filePostProcessFailedTitle": "已转录，未经后处理",
     "filePostProcessFailed": "后处理未完成，因此按原样保存转录内容。",
+    "apiKeyUnavailableTitle": "无法读取 API 密钥",
+    "apiKeyUnavailable": "由于 Handy 无法从系统钥匙串读取 API 密钥，已跳过后处理。如果反复出现，请在后处理设置中重新输入密钥。",
     "fileTranscriptionFailedTitle": "文件转录失败",
     "transcriptionFailedTitle": "转录失败"
   },

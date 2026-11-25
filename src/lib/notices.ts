@@ -58,6 +58,10 @@ const NOTICE_DISPLAY: Record<NoticeCode, NoticeDisplay> = {
     title: "errors.filePostProcessFailedTitle",
     explanation: (t) => t("errors.filePostProcessFailed"),
   },
+  ApiKeyUnavailable: {
+    title: "errors.apiKeyUnavailableTitle",
+    explanation: (t) => t("errors.apiKeyUnavailable"),
+  },
 };
 
 export const noticeDisplay = (code: NoticeCode) => NOTICE_DISPLAY[code];

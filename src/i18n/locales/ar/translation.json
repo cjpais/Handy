@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "مفتاح API",
-          "description": "مفتاح API للمزوّد المحدد. يحفظه Handy في سلسلة مفاتيح النظام.",
+          "description": "مفتاح API للمزوّد المحدد. يحفظه Handy في سلسلة مفاتيح النظام عند توفرها.",
           "placeholder": "sk-...",
           "inSettingsFile": "لا تتوفر سلسلة مفاتيح للنظام، لذا حُفظ هذا المفتاح دون تشفير في ملف إعدادات Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا لُصق النص المنسوخ كما هو.",
     "filePostProcessFailedTitle": "نُسخ بدون معالجة لاحقة",
     "filePostProcessFailed": "لم تكتمل المعالجة اللاحقة، لذا حُفظ النص المنسوخ كما هو.",
+    "apiKeyUnavailableTitle": "تعذّرت قراءة مفتاح API",
+    "apiKeyUnavailable": "تم تخطي المعالجة اللاحقة لأن Handy لم يتمكن من قراءة مفتاح API من سلسلة مفاتيح النظام. إذا تكرر ذلك، أدخل المفتاح مجددًا في إعدادات المعالجة اللاحقة.",
     "fileTranscriptionFailedTitle": "فشل التفريغ النصي للملف",
     "transcriptionFailedTitle": "فشل التفريغ النصي"
   },

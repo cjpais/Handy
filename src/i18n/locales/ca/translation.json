@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Clau de l'API",
-          "description": "Clau API del proveïdor seleccionat. Handy la desa al clauer del sistema.",
+          "description": "Clau API del proveïdor seleccionat. Handy la desa al clauer del sistema quan n'hi ha un.",
           "placeholder": "sk-...",
           "inSettingsFile": "No hi ha cap clauer del sistema disponible, així que aquesta clau es desa sense xifrar al fitxer de configuració de Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha enganxat tal qual.",
     "filePostProcessFailedTitle": "Transcrit sense postprocessament",
     "filePostProcessFailed": "El postprocessament no ha acabat, així que la transcripció s'ha desat tal qual.",
+    "apiKeyUnavailableTitle": "No s'ha pogut llegir la clau API",
+    "apiKeyUnavailable": "S'ha omès el postprocessament perquè Handy no ha pogut llegir la clau API del clauer del sistema. Si torna a passar, torna a introduir la clau a la configuració del postprocessament.",
     "fileTranscriptionFailedTitle": "La transcripció del fitxer ha fallat",
     "transcriptionFailedTitle": "La transcripció ha fallat"
   },

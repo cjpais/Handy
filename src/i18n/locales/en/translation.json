@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API Key",
-          "description": "API key for the selected provider. Handy saves it in your system keychain.",
+          "description": "API key for the selected provider. Handy keeps it in your system keychain when one is available.",
           "placeholder": "sk-...",
           "inSettingsFile": "No system keychain is available, so this key is saved unencrypted in Handy's settings file."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Post Process didn't finish, so the transcript was pasted as is.",
     "filePostProcessFailedTitle": "Transcribed Without Post-Processing",
     "filePostProcessFailed": "Post Process didn't finish, so the transcript was saved as is.",
+    "apiKeyUnavailableTitle": "Couldn't Read API Key",
+    "apiKeyUnavailable": "Post Process was skipped because Handy couldn't read its API key from the system keychain. If this keeps happening, enter the key again in Post Process settings.",
     "fileTranscriptionFailedTitle": "File Transcription Failed",
     "transcriptionFailedTitle": "Transcription Failed"
   },

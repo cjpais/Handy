@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Chave da API",
-          "description": "Chave de API do provedor selecionado. O Handy a salva no chaveiro do sistema.",
+          "description": "Chave de API do provedor selecionado. O Handy a guarda no chaveiro do sistema quando há um.",
           "placeholder": "sk-...",
           "inSettingsFile": "Nenhum chaveiro do sistema está disponível, então esta chave está salva sem criptografia no arquivo de configurações do Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "O pós-processamento não terminou, então a transcrição foi colada como está.",
     "filePostProcessFailedTitle": "Transcrito sem pós-processamento",
     "filePostProcessFailed": "O pós-processamento não terminou, então a transcrição foi salva como está.",
+    "apiKeyUnavailableTitle": "Chave de API ilegível",
+    "apiKeyUnavailable": "O pós-processamento foi ignorado porque o Handy não conseguiu ler a chave de API do chaveiro do sistema. Se isso continuar acontecendo, insira a chave novamente nas configurações de pós-processamento.",
     "fileTranscriptionFailedTitle": "Falha na transcrição do arquivo",
     "transcriptionFailedTitle": "Falha na transcrição"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "מפתח API",
-          "description": "מפתח API עבור הספק שנבחר. Handy שומר אותו במחזיק המפתחות של המערכת.",
+          "description": "מפתח API עבור הספק שנבחר. Handy שומר אותו במחזיק המפתחות של המערכת כשיש כזה.",
           "placeholder": "sk-...",
           "inSettingsFile": "אין מחזיק מפתחות זמין במערכת, ולכן המפתח נשמר ללא הצפנה בקובץ ההגדרות של Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול הודבק כפי שהוא.",
     "filePostProcessFailedTitle": "תומלל ללא עיבוד משלים",
     "filePostProcessFailed": "העיבוד המשלים לא הסתיים, ולכן התמלול נשמר כפי שהוא.",
+    "apiKeyUnavailableTitle": "לא ניתן לקרוא את מפתח ה-API",
+    "apiKeyUnavailable": "העיבוד הנוסף דולג כי Handy לא הצליח לקרוא את מפתח ה-API ממחזיק המפתחות של המערכת. אם זה חוזר, הזן את המפתח שוב בהגדרות העיבוד הנוסף.",
     "fileTranscriptionFailedTitle": "תמלול הקובץ נכשל",
     "transcriptionFailedTitle": "התמלול נכשל"
   },

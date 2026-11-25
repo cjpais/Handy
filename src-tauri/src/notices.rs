@@ -51,6 +51,9 @@ pub enum NoticeCode {
     PostProcessFailed,
     FileTranscriptionFailed,
     FilePostProcessFailed,
+    /// Post-processing was skipped because its API key couldn't be read from
+    /// the system keychain. Either source.
+    ApiKeyUnavailable,
 }
 
 impl NoticeCode {
@@ -66,7 +69,9 @@ impl NoticeCode {
             | Self::ModelLoadFailed
             | Self::NoModelSelected
             | Self::FileTranscriptionFailed => NoticeLevel::Error,
-            Self::PostProcessFailed | Self::FilePostProcessFailed => NoticeLevel::Warning,
+            Self::PostProcessFailed | Self::FilePostProcessFailed | Self::ApiKeyUnavailable => {
+                NoticeLevel::Warning
+            }
         }
     }
 
@@ -85,6 +90,7 @@ impl NoticeCode {
             Self::PostProcessFailed => &strings.post_process_failed_title,
             Self::FileTranscriptionFailed => &strings.file_transcription_failed_title,
             Self::FilePostProcessFailed => &strings.file_post_process_failed_title,
+            Self::ApiKeyUnavailable => &strings.api_key_unavailable_title,
         }
     }
 }

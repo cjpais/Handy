@@ -280,15 +280,12 @@ impl TranscriptionJobManager {
                     }
                 }
                 Ok(JobEnd::Finished {
-                    post_process_failed,
+                    post_process_failure,
                 }) => {
                     // Clear first, so the warning about this job survives it.
                     notices::clear(&self.app, NoticeSource::File);
-                    if post_process_failed {
-                        notices::raise(
-                            &self.app,
-                            Notice::new(NoticeCode::FilePostProcessFailed, NoticeSource::File),
-                        );
+                    if let Some(failure) = post_process_failure {
+                        notices::raise(&self.app, failure.notice(NoticeSource::File));
                     }
                     TranscriptionJobStatus::Finished
                 }
@@ -335,7 +332,7 @@ impl TranscriptionJobManager {
         if cancelled.load(Ordering::Acquire) {
             return Ok(JobEnd::Cancelled);
         }
-        let post_process_failed = processed.post_process_failed;
+        let post_process_failure = processed.post_process_failure;
         hm.update_transcription(
             entry.id,
             text,
@@ -344,14 +341,16 @@ impl TranscriptionJobManager {
             language,
         )?;
         Ok(JobEnd::Finished {
-            post_process_failed,
+            post_process_failure,
         })
     }
 }
 
 /// A cancelled job changes no notices.
 enum JobEnd {
-    Finished { post_process_failed: bool },
+    Finished {
+        post_process_failure: Option<crate::actions::PostProcessFailure>,
+    },
     Cancelled,
 }
 

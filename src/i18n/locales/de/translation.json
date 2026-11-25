@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API-Schlüssel",
-          "description": "API-Schlüssel für den ausgewählten Anbieter. Handy speichert ihn im Schlüsselbund des Systems.",
+          "description": "API-Schlüssel für den ausgewählten Anbieter. Handy speichert ihn im Schlüsselbund des Systems, sofern verfügbar.",
           "placeholder": "sk-...",
           "inSettingsFile": "Kein Schlüsselbund des Systems verfügbar, daher ist dieser Schlüssel unverschlüsselt in der Einstellungsdatei von Handy gespeichert."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert eingefügt.",
     "filePostProcessFailedTitle": "Ohne Nachbearbeitung transkribiert",
     "filePostProcessFailed": "Die Nachbearbeitung wurde nicht abgeschlossen, daher wurde das Transkript unverändert gespeichert.",
+    "apiKeyUnavailableTitle": "API-Schlüssel nicht lesbar",
+    "apiKeyUnavailable": "Die Nachbearbeitung wurde übersprungen, weil Handy den API-Schlüssel nicht aus dem Schlüsselbund des Systems lesen konnte. Wenn das wieder passiert, gib den Schlüssel in den Einstellungen zur Nachbearbeitung erneut ein.",
     "fileTranscriptionFailedTitle": "Dateitranskription fehlgeschlagen",
     "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },

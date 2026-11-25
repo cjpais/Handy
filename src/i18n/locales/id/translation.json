@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Kunci API",
-          "description": "Kunci API untuk penyedia yang dipilih. Handy menyimpannya di keychain sistem.",
+          "description": "Kunci API untuk penyedia yang dipilih. Handy menyimpannya di keychain sistem jika tersedia.",
           "placeholder": "sk-...",
           "inSettingsFile": "Keychain sistem tidak tersedia, jadi kunci ini disimpan tanpa enkripsi di file pengaturan Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Pascaproses tidak selesai, jadi transkrip ditempelkan apa adanya.",
     "filePostProcessFailedTitle": "Ditranskripsi Tanpa Pascaproses",
     "filePostProcessFailed": "Pascaproses tidak selesai, jadi transkrip disimpan apa adanya.",
+    "apiKeyUnavailableTitle": "Kunci API tidak terbaca",
+    "apiKeyUnavailable": "Pascapemrosesan dilewati karena Handy tidak dapat membaca kunci API dari keychain sistem. Jika ini terus terjadi, masukkan kunci lagi di pengaturan pascapemrosesan.",
     "fileTranscriptionFailedTitle": "Transkripsi File Gagal",
     "transcriptionFailedTitle": "Transkripsi Gagal"
   },

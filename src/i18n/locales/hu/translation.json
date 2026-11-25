@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API-kulcs",
-          "description": "A kiválasztott szolgáltató API-kulcsa. A Handy a rendszer kulcstartójába menti.",
+          "description": "A kiválasztott szolgáltató API-kulcsa. A Handy a rendszer kulcstartójában tárolja, ha van ilyen.",
           "placeholder": "sk-...",
           "inSettingsFile": "Nincs elérhető rendszerkulcstartó, ezért ez a kulcs titkosítatlanul van mentve a Handy beállításfájljában."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Az utófeldolgozás nem fejeződött be, ezért az eredeti átirat lett beillesztve.",
     "filePostProcessFailedTitle": "Átírva utófeldolgozás nélkül",
     "filePostProcessFailed": "Az utófeldolgozás nem fejeződött be, ezért az eredeti átirat lett mentve.",
+    "apiKeyUnavailableTitle": "Az API-kulcs nem olvasható",
+    "apiKeyUnavailable": "Az utófeldolgozás elmaradt, mert a Handy nem tudta kiolvasni az API-kulcsot a rendszer kulcstartójából. Ha ez ismétlődik, add meg újra a kulcsot az utófeldolgozás beállításaiban.",
     "fileTranscriptionFailedTitle": "A fájl átírása sikertelen",
     "transcriptionFailedTitle": "Az átírás sikertelen"
   },

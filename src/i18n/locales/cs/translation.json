@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API klíč",
-          "description": "API klíč pro vybraného poskytovatele. Handy ho ukládá do systémové klíčenky.",
+          "description": "API klíč pro vybraného poskytovatele. Handy ho ukládá do systémové klíčenky, pokud je k dispozici.",
           "placeholder": "sk-...",
           "inSettingsFile": "Systémová klíčenka není k dispozici, proto je tento klíč uložen nešifrovaně v souboru nastavení Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis vložen beze změn.",
     "filePostProcessFailedTitle": "Přepsáno bez následného zpracování",
     "filePostProcessFailed": "Následné zpracování se nedokončilo, takže byl přepis uložen beze změn.",
+    "apiKeyUnavailableTitle": "API klíč nelze načíst",
+    "apiKeyUnavailable": "Následné zpracování bylo přeskočeno, protože Handy nemohl načíst API klíč ze systémové klíčenky. Pokud se to opakuje, zadejte klíč znovu v nastavení následného zpracování.",
     "fileTranscriptionFailedTitle": "Přepis souboru selhal",
     "transcriptionFailedTitle": "Přepis selhal"
   },

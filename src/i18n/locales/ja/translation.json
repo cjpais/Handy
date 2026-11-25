@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API キー",
-          "description": "選択したプロバイダーの API キー。Handy はシステムのキーチェーンに保存します。",
+          "description": "選択したプロバイダーの API キー。Handy は利用可能な場合、システムのキーチェーンに保存します。",
           "placeholder": "sk-…",
           "inSettingsFile": "システムのキーチェーンが使えないため、このキーは Handy の設定ファイルに暗号化されずに保存されています。"
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま貼り付けました。",
     "filePostProcessFailedTitle": "後処理なしで文字起こししました",
     "filePostProcessFailed": "後処理が完了しなかったため、文字起こしをそのまま保存しました。",
+    "apiKeyUnavailableTitle": "API キーを読み取れません",
+    "apiKeyUnavailable": "Handy がシステムのキーチェーンから API キーを読み取れなかったため、後処理をスキップしました。繰り返し起きる場合は、後処理の設定でキーを再入力してください。",
     "fileTranscriptionFailedTitle": "ファイルの文字起こしに失敗しました",
     "transcriptionFailedTitle": "文字起こしに失敗しました"
   },

@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API 金鑰",
-          "description": "所選提供者的 API 金鑰。Handy 會將其儲存在系統鑰匙圈中。",
+          "description": "所選提供者的 API 金鑰。若有系統鑰匙圈，Handy 會將其儲存在其中。",
           "placeholder": "sk-...",
           "inSettingsFile": "系統鑰匙圈無法使用，因此此金鑰以未加密的形式儲存在 Handy 的設定檔中。"
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "後處理未完成，因此按原樣貼上轉錄內容。",
     "filePostProcessFailedTitle": "已轉錄，未經後處理",
     "filePostProcessFailed": "後處理未完成，因此按原樣儲存轉錄內容。",
+    "apiKeyUnavailableTitle": "無法讀取 API 金鑰",
+    "apiKeyUnavailable": "由於 Handy 無法從系統鑰匙圈讀取 API 金鑰，已略過後處理。若持續發生，請在後處理設定中重新輸入金鑰。",
     "fileTranscriptionFailedTitle": "檔案轉錄失敗",
     "transcriptionFailedTitle": "轉錄失敗"
   },

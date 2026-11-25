@@ -216,6 +216,35 @@ enum PostProcessOutcome {
     /// The user asked for it, but it couldn't run or produced nothing, so the
     /// transcript goes out as it is.
     Failed,
+    /// [`PostProcessOutcome::Failed`], because the API key couldn't be read
+    /// from the system keychain. Holds why.
+    KeyUnavailable(String),
+}
+
+/// Why a transcript the user wanted post-processed went out as it was.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum PostProcessFailure {
+    Failed,
+    /// Its API key couldn't be read from the system keychain; holds why.
+    KeyUnavailable(String),
+}
+
+impl PostProcessFailure {
+    /// The notice that tells the user.
+    pub(crate) fn notice(&self, source: NoticeSource) -> Notice {
+        match self {
+            Self::Failed => Notice::new(
+                match source {
+                    NoticeSource::File => NoticeCode::FilePostProcessFailed,
+                    _ => NoticeCode::PostProcessFailed,
+                },
+                source,
+            ),
+            Self::KeyUnavailable(why) => {
+                Notice::new(NoticeCode::ApiKeyUnavailable, source).with_detail(why.clone())
+            }
+        }
+    }
 }
 
 async fn post_process_transcription(
@@ -289,7 +318,7 @@ async fn post_process_transcription(
                 "Post-processing skipped because the API key for '{}' couldn't be read: {e}",
                 provider.id
             );
-            return PostProcessOutcome::Failed;
+            return PostProcessOutcome::KeyUnavailable(e);
         }
     };
 
@@ -456,8 +485,9 @@ pub(crate) struct ProcessedTranscription {
     pub final_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
-    /// `final_text` is the bare transcript because post-processing failed.
-    pub post_process_failed: bool,
+    /// Set when `final_text` is the bare transcript because post-processing
+    /// failed.
+    pub post_process_failure: Option<PostProcessFailure>,
 }
 
 pub(crate) async fn process_transcription_output(
@@ -469,7 +499,7 @@ pub(crate) async fn process_transcription_output(
     let mut final_text = transcription.to_string();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
-    let mut post_process_failed = false;
+    let mut post_process_failure = None;
 
     if post_process {
         // A reply that's blank once cleaned is no better than none.
@@ -492,7 +522,10 @@ pub(crate) async fn process_transcription_output(
         };
         match outcome {
             PostProcessOutcome::Skipped => {}
-            PostProcessOutcome::Failed => post_process_failed = true,
+            PostProcessOutcome::Failed => post_process_failure = Some(PostProcessFailure::Failed),
+            PostProcessOutcome::KeyUnavailable(why) => {
+                post_process_failure = Some(PostProcessFailure::KeyUnavailable(why))
+            }
             PostProcessOutcome::Done(processed_text) => {
                 post_processed_text = Some(processed_text.clone());
                 final_text = processed_text;
@@ -514,7 +547,7 @@ pub(crate) async fn process_transcription_output(
         final_text,
         post_processed_text,
         post_process_prompt,
-        post_process_failed,
+        post_process_failure,
     }
 }
 
@@ -895,7 +928,7 @@ impl ShortcutAction for TranscribeAction {
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
-                                let post_process_failed = processed.post_process_failed;
+                                let post_process_failure = processed.post_process_failure;
                                 let rm_for_paste = Arc::clone(&rm);
                                 // Taken before the paste thread exists, and so
                                 // before the next session can start.
@@ -932,12 +965,10 @@ impl ShortcutAction for TranscribeAction {
                                                             NoticeSource::Dictation,
                                                         );
                                                     }
-                                                    let notice = post_process_failed.then(|| {
-                                                        Notice::new(
-                                                            NoticeCode::PostProcessFailed,
-                                                            NoticeSource::Dictation,
-                                                        )
-                                                    });
+                                                    let notice =
+                                                        post_process_failure.map(|failure| {
+                                                            failure.notice(NoticeSource::Dictation)
+                                                        });
                                                     (TranscriptionOutcome::Typed, notice)
                                                 }
                                                 Ok(utils::PasteOutcome::Blocked) => (
@@ -1120,8 +1151,9 @@ mod tests {
     use super::{
         complete_unless_cancelled, is_blank_transcription, non_blank_post_processed_text,
         post_process_transcription, should_use_streaming_overlay, strip_invisible_chars,
-        strip_think_block, PostProcessOutcome,
+        strip_think_block, PostProcessFailure, PostProcessOutcome,
     };
+    use crate::notices::{NoticeCode, NoticeSource};
     use crate::settings::{get_default_settings, AppSettings, OverlayStyle};
     use std::future;
     use std::io::{Read, Write};
@@ -1204,6 +1236,62 @@ mod tests {
             run_post_process(&post_process_settings(&url), "hello"),
             PostProcessOutcome::Failed
         );
+    }
+
+    #[test]
+    fn a_key_the_keychain_cant_give_gets_its_own_notice() {
+        let notice =
+            PostProcessFailure::KeyUnavailable("locked".into()).notice(NoticeSource::Dictation);
+        assert_eq!(notice.code, NoticeCode::ApiKeyUnavailable);
+        assert_eq!(notice.detail.as_deref(), Some("locked"));
+        assert_eq!(
+            PostProcessFailure::KeyUnavailable("locked".into())
+                .notice(NoticeSource::File)
+                .code,
+            NoticeCode::ApiKeyUnavailable
+        );
+        assert_eq!(
+            PostProcessFailure::Failed
+                .notice(NoticeSource::Dictation)
+                .code,
+            NoticeCode::PostProcessFailed
+        );
+        assert_eq!(
+            PostProcessFailure::Failed.notice(NoticeSource::File).code,
+            NoticeCode::FilePostProcessFailed
+        );
+    }
+
+    /// A key the settings say is in the keychain, but isn't (deleted there,
+    /// or no keychain at all), skips post-processing with its own outcome.
+    /// Reads the real keychain, so it runs only when asked.
+    #[test]
+    #[ignore]
+    fn a_key_missing_from_the_keychain_skips_post_processing() {
+        let mut settings = post_process_settings("http://127.0.0.1:1");
+        let provider_id = settings.post_process_provider_id.clone();
+        // Under its own id, so no real saved key is read.
+        let test_id = "keychain-missing-test".to_string();
+        for provider in &mut settings.post_process_providers {
+            if provider.id == provider_id {
+                provider.id = test_id.clone();
+            }
+        }
+        settings.post_process_provider_id = test_id.clone();
+        settings
+            .post_process_models
+            .insert(test_id.clone(), "model".to_string());
+        settings.post_process_saved_api_keys.insert(
+            test_id,
+            crate::settings::SavedApiKey {
+                storage: crate::settings::ApiKeyStorage::Keychain,
+                hint: String::new(),
+            },
+        );
+        assert!(matches!(
+            run_post_process(&settings, "hello"),
+            PostProcessOutcome::KeyUnavailable(_)
+        ));
     }
 
     /// Answers one chat completion request, and returns its URL and a

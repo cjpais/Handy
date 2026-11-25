@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API-nyckel",
-          "description": "API-nyckel för vald leverantör. Handy sparar den i systemets nyckelring.",
+          "description": "API-nyckel för vald leverantör. Handy sparar den i systemets nyckelring när en sådan finns.",
           "placeholder": "sk-...",
           "inSettingsFile": "Ingen nyckelring finns i systemet, så nyckeln är sparad okrypterad i Handys inställningsfil."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen klistrades in som den är.",
     "filePostProcessFailedTitle": "Transkriberat utan efterbearbetning",
     "filePostProcessFailed": "Efterbearbetningen slutfördes inte, så transkriptionen sparades som den är.",
+    "apiKeyUnavailableTitle": "Kunde inte läsa API-nyckeln",
+    "apiKeyUnavailable": "Efterbearbetningen hoppades över eftersom Handy inte kunde läsa API-nyckeln från systemets nyckelring. Om det händer igen, ange nyckeln på nytt i inställningarna för efterbearbetning.",
     "fileTranscriptionFailedTitle": "Transkriptionen av filen misslyckades",
     "transcriptionFailedTitle": "Transkriptionen misslyckades"
   },

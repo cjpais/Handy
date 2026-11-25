@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Clave API",
-          "description": "Clave de API del proveedor seleccionado. Handy la guarda en el llavero del sistema.",
+          "description": "Clave de API del proveedor seleccionado. Handy la guarda en el llavero del sistema cuando hay uno.",
           "placeholder": "sk-...",
           "inSettingsFile": "No hay un llavero del sistema disponible, así que esta clave se guarda sin cifrar en el archivo de configuración de Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "El post proceso no terminó, así que la transcripción se pegó tal cual.",
     "filePostProcessFailedTitle": "Transcrito sin post proceso",
     "filePostProcessFailed": "El post proceso no terminó, así que la transcripción se guardó tal cual.",
+    "apiKeyUnavailableTitle": "No se pudo leer la clave de API",
+    "apiKeyUnavailable": "Se omitió el post proceso porque Handy no pudo leer la clave de API del llavero del sistema. Si vuelve a pasar, introduce la clave de nuevo en la configuración de post proceso.",
     "fileTranscriptionFailedTitle": "Error al transcribir el archivo",
     "transcriptionFailedTitle": "Error de transcripción"
   },

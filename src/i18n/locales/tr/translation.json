@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "API Anahtarı",
-          "description": "Seçilen sağlayıcının API anahtarı. Handy bunu sistem anahtar zincirine kaydeder.",
+          "description": "Seçilen sağlayıcının API anahtarı. Handy, varsa bunu sistem anahtar zincirinde saklar.",
           "placeholder": "sk-...",
           "inSettingsFile": "Sistem anahtar zinciri kullanılamıyor, bu yüzden bu anahtar Handy'nin ayar dosyasına şifrelenmeden kaydedildi."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi yapıştırıldı.",
     "filePostProcessFailedTitle": "Son işlem olmadan yazıya döküldü",
     "filePostProcessFailed": "Son işlem tamamlanmadı, bu yüzden metin olduğu gibi kaydedildi.",
+    "apiKeyUnavailableTitle": "API anahtarı okunamadı",
+    "apiKeyUnavailable": "Handy API anahtarını sistem anahtar zincirinden okuyamadığı için son işleme atlandı. Bu tekrarlanırsa anahtarı son işleme ayarlarına yeniden girin.",
     "fileTranscriptionFailedTitle": "Dosya transkripsiyonu başarısız oldu",
     "transcriptionFailedTitle": "Transkripsiyon başarısız oldu"
   },

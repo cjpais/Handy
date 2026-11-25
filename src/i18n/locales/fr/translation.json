@@ -656,7 +656,7 @@
         },
         "apiKey": {
           "title": "Clé API",
-          "description": "Clé API du fournisseur sélectionné. Handy l'enregistre dans le trousseau du système.",
+          "description": "Clé API du fournisseur sélectionné. Handy l'enregistre dans le trousseau du système lorsqu'il y en a un.",
           "placeholder": "sk-...",
           "inSettingsFile": "Aucun trousseau système n'est disponible : cette clé est donc enregistrée sans chiffrement dans le fichier de paramètres de Handy."
         },
@@ -957,6 +957,8 @@
     "postProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été collée telle quelle.",
     "filePostProcessFailedTitle": "Transcrit sans post-traitement",
     "filePostProcessFailed": "Le post-traitement n'a pas abouti, la transcription a donc été enregistrée telle quelle.",
+    "apiKeyUnavailableTitle": "Clé API illisible",
+    "apiKeyUnavailable": "Le post-traitement a été ignoré car Handy n'a pas pu lire la clé API dans le trousseau du système. Si cela se reproduit, saisissez à nouveau la clé dans les paramètres de post-traitement.",
     "fileTranscriptionFailedTitle": "Échec de la transcription du fichier",
     "transcriptionFailedTitle": "Échec de la transcription"
   },
