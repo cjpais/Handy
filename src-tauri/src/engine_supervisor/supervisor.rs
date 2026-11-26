@@ -580,6 +580,9 @@ enum Failure {
     /// transcribe.cpp returned a backend error (e.g. a lost GPU device). The
     /// worker answered, but its backend may fail every later run.
     Backend(String),
+    /// A run failed because the decoder looped, hit its budget, or could not
+    /// resolve a language token. The worker itself is fine.
+    Decode(String),
     Cancelled,
 }
 
@@ -601,6 +604,7 @@ impl fmt::Display for Failure {
             Failure::Crashed(detail) => write!(f, "transcription worker crashed ({detail})"),
             Failure::Hung(t) => write!(f, "transcription worker did not respond within {t:?}"),
             Failure::Backend(message) => write!(f, "transcription backend failed ({message})"),
+            Failure::Decode(message) => write!(f, "decoder failed ({message})"),
             Failure::Cancelled => f.write_str("cancelled"),
         }
     }
@@ -906,10 +910,11 @@ impl Owner {
         }
     }
 
-    /// Retry once after a crash, hang or backend error, on CPU if it happened
-    /// on the GPU. A first backend error on the GPU retries on a fresh GPU
-    /// worker first, without using up that retry. Not after a hang or backend
-    /// error on CPU, and never for an explicitly chosen device.
+    /// Retry once after a crash, hang, backend error, or a decoder failure
+    /// (repetition/truncation/language token) on the GPU. A first backend error
+    /// on the GPU retries on a fresh GPU worker first, without using up that
+    /// retry. Decoder failures go straight to CPU: the worker is healthy, the
+    /// backend's arithmetic isn't. Never retries an explicitly chosen device.
     fn transcribe(
         &mut self,
         pcm: &[f32],
@@ -951,6 +956,27 @@ impl Owner {
                     } else {
                         warn!("Retrying the transcription in a fresh worker");
                         retried = true;
+                    }
+                }
+                // A decoder failure is different from a lost worker: the
+                // process is still healthy, but this backend produced garbage
+                // (a repetition loop, an early budget stop, or a missing
+                // language token). AMD Vulkan does this consistently on some
+                // machines while CPU decoding of the same PCM is correct.
+                // Drop the GPU worker and let `ensure_worker` load on CPU.
+                Err(failure @ Failure::Decode(_)) => {
+                    let info = self.worker.take().and_then(|worker| worker.info.clone());
+                    let pinned = self.spec.as_ref().is_some_and(LoadSpec::pinned);
+                    match info {
+                        Some(info) if info.on_gpu && !pinned && !retried => {
+                            self.shared.mark_gpu_unavailable(format!(
+                                "decoder failed on GPU '{}' ({})",
+                                info.device, failure
+                            ));
+                            warn!("Retrying the transcription on CPU after a GPU decode failure");
+                            retried = true;
+                        }
+                        _ => return Err(failure.into()),
                     }
                 }
                 Err(failure) => return Err(failure.into()),
@@ -1291,6 +1317,7 @@ impl Worker {
         match self.responses.recv_timeout(deadline) {
             Ok(Response::Error(message)) => Err(Failure::Remote(message)),
             Ok(Response::BackendError(message)) => Err(Failure::Backend(message)),
+            Ok(Response::DecodeError(message)) => Err(Failure::Decode(message)),
             Ok(response) => Ok(response),
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 self.control.kill();
@@ -1887,6 +1914,27 @@ mod tests {
         println!("recovered on CPU: {}", transcript.text);
         assert!(engine.shared.gpu_unavailable());
         assert!(!engine.loaded().unwrap().on_gpu);
+        set_fault(None, false);
+    }
+
+    /// A GPU that returns a decoder failure (repetition loop / budget stop)
+    /// rather than crashing: the current run is retried on CPU and the GPU is
+    /// marked unavailable for later loads. Needs a real GPU to reproduce.
+    #[test]
+    #[ignore]
+    fn gpu_decode_failure_recovers_on_cpu() {
+        let pcm = test_pcm();
+        set_fault(Some("decode@run"), true);
+        let engine = EngineSupervisor::new(true);
+        let info = engine.load(spec()).unwrap();
+        assert!(info.on_gpu, "needs a GPU to test GPU-only decode faults");
+        let transcript = engine
+            .transcribe(pcm.clone(), RunOptions::default())
+            .unwrap();
+        println!("recovered on CPU: {}", transcript.text);
+        assert!(engine.shared.gpu_unavailable());
+        assert!(!engine.loaded().unwrap().on_gpu);
+        engine.transcribe(pcm, RunOptions::default()).unwrap();
         set_fault(None, false);
     }
 

@@ -116,6 +116,8 @@ pub fn run() -> i32 {
                 Some((session, info)) => {
                     if inject_fault("run", info.on_gpu) {
                         injected_backend_error()
+                    } else if inject_fault("decode", info.on_gpu) {
+                        injected_decode_error()
                     } else {
                         match session.run(&pcm, &options) {
                             Ok(transcript) => Response::Transcript(transcript),
@@ -266,15 +268,31 @@ fn not_loaded() -> Response {
 /// every later run, so it gets its own response and the parent replaces
 /// the worker.
 fn run_error(e: transcribe_cpp::Error) -> Response {
-    if e.kind() == ErrorKind::Backend {
-        Response::BackendError(e.to_string())
-    } else {
-        Response::Error(e.to_string())
+    match e.kind() {
+        ErrorKind::Backend => Response::BackendError(e.to_string()),
+        // These statuses mean the model ran but produced no usable text. On
+        // some GPUs they are numerically induced (the same audio decodes fine
+        // on CPU), so let the parent retry the run on CPU instead of failing
+        // the dictation outright.
+        ErrorKind::OutputRepetition | ErrorKind::OutputTruncated | ErrorKind::ModelLoad => {
+            Response::DecodeError(e.to_string())
+        }
+        _ => Response::Error(e.to_string()),
     }
 }
 
 fn injected_backend_error() -> Response {
     Response::BackendError("injected backend error".to_string())
+}
+
+#[cfg(debug_assertions)]
+fn injected_decode_error() -> Response {
+    Response::DecodeError("injected decode error (status 19)".to_string())
+}
+
+#[cfg(not(debug_assertions))]
+fn injected_decode_error() -> Response {
+    Response::DecodeError("injected decode error".to_string())
 }
 
 fn load(
@@ -351,11 +369,12 @@ fn load(
     Ok((session, info))
 }
 
-/// Debug-build fault injection for exercising crash/hang recovery:
-/// `HANDY_WORKER_FAULT=<abort|segv|hang|backend>@<init|list|load|run|feed|finalize>`
+/// Debug-build fault injection for exercising crash/hang/decode recovery:
+/// `HANDY_WORKER_FAULT=<abort|segv|hang|backend|decode>@<init|list|load|run|feed|finalize>`
 /// (`abort` is what `GGML_ASSERT` ends in, `segv` a real invalid memory write,
-/// `backend` a backend error such as a lost device, which returns true so the
-/// caller answers with it; only at `run`, `feed` and `finalize`)
+/// `backend` a backend error such as a lost device, `decode` a decoder failure
+/// like a repetition loop, which return true so the caller answers with it;
+/// only at `run`, `feed` and `finalize`)
 /// (`init` is backend registration, before the hello). With `HANDY_WORKER_FAULT_ONCE=<marker
 /// path>` it fires only in the first worker to reach that stage (the marker
 /// file records that it fired). With `HANDY_WORKER_FAULT_GPU_ONLY=1` it fires
@@ -402,7 +421,7 @@ fn inject_fault(stage: &str, on_gpu: bool) -> bool {
         "hang" => loop {
             std::thread::sleep(std::time::Duration::from_secs(3600));
         },
-        "backend" => true,
+        "backend" | "decode" => true,
         _ => false,
     }
 }
@@ -513,5 +532,36 @@ fn take_stdout_for_protocol() -> io::Result<File> {
             return Err(io::Error::last_os_error());
         }
         Ok(File::from_raw_handle(handle as _))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_failures_are_distinct_from_backend_and_remote_errors() {
+        let repetition = run_error(transcribe_cpp::Error::OutputRepetition {
+            message: "output began repeating (status 19)".to_string(),
+            partial: None,
+        });
+        assert!(matches!(repetition, Response::DecodeError(_)));
+
+        let truncated = run_error(transcribe_cpp::Error::OutputTruncated {
+            message: "output truncated (status 18)".to_string(),
+            partial: None,
+        });
+        assert!(matches!(truncated, Response::DecodeError(_)));
+
+        let model = run_error(transcribe_cpp::Error::ModelLoad(
+            "gguf load error (status 4)".to_string(),
+        ));
+        assert!(matches!(model, Response::DecodeError(_)));
+
+        let backend = run_error(transcribe_cpp::Error::Backend("device lost".to_string()));
+        assert!(matches!(backend, Response::BackendError(_)));
+
+        let other = run_error(transcribe_cpp::Error::Other("bad argument".to_string()));
+        assert!(matches!(other, Response::Error(_)));
     }
 }

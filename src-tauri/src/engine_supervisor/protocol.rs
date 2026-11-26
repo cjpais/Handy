@@ -88,6 +88,10 @@ pub enum Response {
     /// A run, feed or finalize failed in the compute backend (e.g. a lost
     /// GPU device). The worker answered, but its backend may be unusable.
     BackendError(String),
+    /// A run produced no usable transcript because the decoder looped, hit
+    /// its budget, or could not resolve a language token. The worker is
+    /// healthy; this particular backend produced a bad decode.
+    DecodeError(String),
 }
 
 /// Serializable mirror of `transcribe_cpp::Device` (which holds a
