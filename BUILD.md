@@ -9,6 +9,10 @@ This guide covers how to set up the development environment and build Handy from
 - [Rust](https://rustup.rs/) (latest stable)
 - [Bun](https://bun.sh/) package manager
 - [Tauri Prerequisites](https://tauri.app/start/prerequisites/)
+- [CMake](https://cmake.org/download/) (must be on `PATH`):
+  - macOS: `brew install cmake`
+  - Windows: `winget install Kitware.CMake`
+  - Linux: included in the package lists below
 
 ### Platform-Specific Requirements
 
@@ -21,12 +25,6 @@ This guide covers how to set up the development environment and build Handy from
 
 - Microsoft C++ Build Tools: Visual Studio 2019/2022 with C++ development
   tools, or Visual Studio Build Tools 2019/2022
-- [CMake](https://cmake.org/download/) (must be on `PATH`):
-
-  ```powershell
-  winget install Kitware.CMake
-  ```
-
 - [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) from LunarG — required to
   build the Vulkan GPU backend (`vulkan-shaders-gen` needs the SDK's headers
   and `glslc`):
