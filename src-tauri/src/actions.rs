@@ -627,6 +627,18 @@ impl ShortcutAction for TranscribeAction {
                 let generation = readiness.generation();
                 let app_clone = app.clone();
                 let rm_clone = Arc::clone(&rm);
+                // With no start chime to keep audible there is nothing to wait
+                // for, so mute now rather than once the microphone is ready,
+                // which can take seconds. Its own thread keeps the mute from
+                // delaying the ready cue.
+                if !settings.audio_feedback {
+                    let rm_mute = Arc::clone(&rm);
+                    std::thread::spawn(move || {
+                        if rm_mute.is_recording_readiness_current(generation) {
+                            rm_mute.apply_mute();
+                        }
+                    });
+                }
                 std::thread::spawn(move || {
                     if !readiness.wait() {
                         debug!("Microphone readiness wait ended without receiving samples");
@@ -659,7 +671,8 @@ impl ShortcutAction for TranscribeAction {
                     // The start chime is a readiness cue, so it must follow the
                     // first real input callback rather than Stream::play() or a
                     // fixed delay. The helper returns immediately when feedback
-                    // is disabled; mute still follows the same readiness point.
+                    // is disabled; the mute was then already applied above and
+                    // this call is a no-op.
                     if rm_clone.is_recording_readiness_current(generation) {
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
                     }
