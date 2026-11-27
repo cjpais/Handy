@@ -35,12 +35,6 @@ export interface Grade {
   unsupported?: boolean;
 }
 
-/**
- * Max error % per grade (F beyond D). Keep in sync with the package's
- * ACCURACY_CEILINGS, which it doesn't export.
- */
-export const GRADE_CEILINGS = { A: 5, B: 10, C: 20, D: 30 } as const;
-
 // The package writes the minus as a hyphen; the design sets a real minus.
 const minus = (label: string) => label.replace("-", "−");
 

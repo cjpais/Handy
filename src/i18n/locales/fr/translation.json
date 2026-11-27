@@ -240,9 +240,6 @@
       },
       "unsupported": "Ce modèle ne comprend pas le {{language}}, il ne peut donc pas le saisir",
       "unrated": "Ce modèle comprend le {{language}}, mais nous n'avons pas encore mesuré sa précision",
-      "under": "moins de {{max}} %",
-      "between": "de {{min}} à {{max}} %",
-      "over": "{{min}} % ou plus",
       "speedTitle": "Vitesse : {{speed}}",
       "speedName": {
         "0": "Très lent",
@@ -263,6 +260,13 @@
       "underSeconds": "moins de {{max}} s",
       "betweenSeconds": "de {{min}} à {{max}} s",
       "overSeconds": "{{min}} s ou plus"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "Recommandé",

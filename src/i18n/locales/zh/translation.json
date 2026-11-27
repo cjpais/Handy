@@ -240,9 +240,6 @@
       },
       "unsupported": "此模型听不懂{{language}}，因此无法输入该语言",
       "unrated": "此模型能听懂{{language}}，但我们还没有测过效果如何",
-      "under": "低于 {{max}}%",
-      "between": "{{min}}% 至 {{max}}%",
-      "over": "{{min}}% 或更高",
       "speedTitle": "速度：{{speed}}",
       "speedName": {
         "0": "很慢",
@@ -263,6 +260,13 @@
       "underSeconds": "低于 {{max}} 秒",
       "betweenSeconds": "{{min}} 至 {{max}} 秒",
       "overSeconds": "{{min}} 秒或更久"
+    },
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "weak": "Weak"
     },
     "roles": {
       "recommended": "推荐",

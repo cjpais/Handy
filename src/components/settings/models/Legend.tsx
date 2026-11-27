@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleHelp } from "lucide-react";
-import { GradeChip } from "@/components/shared/GradeChip";
+import { GradeChip, RATING_KEYS } from "@/components/shared/GradeChip";
 import { SpeedBars } from "@/components/shared/SpeedBars";
 import { useRubric } from "@/components/shared/modelTable/rubric";
 import { usePressAway } from "@/hooks/usePressAway";
 
+// One row per star level: 4, 3, 2, 1 and 0 stars.
 const LETTERS = ["A", "B", "C", "D", "F"] as const;
 
 /** The "?" in the column heads: opens the full grade and speed scale. */
@@ -48,10 +49,8 @@ export const Legend: React.FC<{ tier: "accelerated" | "cpu" }> = ({ tier }) => {
           <ul className="mt-[8px] grid grid-cols-[auto_1fr_auto_1fr] items-center gap-x-[8px] gap-y-[5px]">
             {LETTERS.map((l) => (
               <React.Fragment key={l}>
-                <GradeChip letter={l} label={l} />
-                <span className="text-ink-2 tabular-nums">
-                  {rubric.gradeBand(l)}
-                </span>
+                <GradeChip letter={l} label={l} large />
+                <span className="text-ink-2">{t(RATING_KEYS[l])}</span>
               </React.Fragment>
             ))}
           </ul>
