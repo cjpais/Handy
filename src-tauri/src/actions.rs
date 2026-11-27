@@ -114,7 +114,7 @@ static RECORDING_SESSION: AtomicU64 = AtomicU64::new(0);
 struct FinishGuard(AppHandle, Arc<TranscriptionManager>);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
-        self.1.maybe_unload_immediately("transcription session");
+        self.1.maybe_unload_after_dictation("transcription session");
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
