@@ -1400,6 +1400,26 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_shortcut_passthrough_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    if !cfg!(target_os = "windows") {
+        return Err("Shortcut pass-through is only supported on Windows".into());
+    }
+    if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
+        return Err("Shortcut pass-through requires Handy Keys".into());
+    }
+    let state = app
+        .try_state::<handy_keys::HandyKeysState>()
+        .ok_or("HandyKeysState not initialized")?;
+    state.set_passthrough(enabled)?;
+    settings = settings::get_settings(&app);
+    settings.shortcut_passthrough = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.lazy_stream_close = enabled;
