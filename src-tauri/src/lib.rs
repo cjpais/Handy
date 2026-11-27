@@ -34,6 +34,8 @@ mod tray;
 mod tray_i18n;
 mod utils;
 pub mod webkit_renderer;
+#[cfg(target_os = "linux")]
+mod wl_copy;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]

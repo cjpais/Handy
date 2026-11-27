@@ -4,8 +4,8 @@
 //! while GUI apps read the clipboard. Writing the transcript to both lets one
 //! Shift+Insert paste it everywhere.
 //!
-//! Wayland uses wl-clipboard when it is installed (the same tool Handy uses for
-//! the clipboard there); everything else goes through arboard.
+//! Wayland uses wl-clipboard when it is installed, except on GNOME where its
+//! focus-based fallback can hang. GNOME prefers arboard when it is available.
 
 use log::{debug, warn};
 use std::io::Read;
@@ -13,7 +13,7 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use crate::utils::is_wayland;
+use crate::utils::{is_gnome_wayland, is_wayland};
 use arboard::{ClearExtLinux, Clipboard, GetExtLinux, LinuxClipboardKind, SetExtLinux};
 
 /// A frozen selection owner must not hang the paste: wl-paste waits for it.
@@ -34,6 +34,12 @@ fn with_arboard<T>(
 }
 
 fn use_wl_clipboard() -> bool {
+    // GNOME's focus-dependent wl-clipboard fallback can block behind an
+    // always-on-top window. Use arboard's existing X11 fallback there, for both
+    // saving and writing PRIMARY so a failed save cannot discard the selection.
+    if is_gnome_wayland() && with_arboard(|_| Ok(())).is_ok() {
+        return false;
+    }
     is_wayland() && which("wl-copy") && which("wl-paste")
 }
 
@@ -92,23 +98,10 @@ fn read_via_wl_paste() -> Option<String> {
 /// Puts `text` on PRIMARY.
 pub fn write(text: &str) -> Result<(), String> {
     if use_wl_clipboard() {
-        // Stdio::null: wl-copy forks a server that would keep piped fds open.
-        let status = Command::new("wl-copy")
-            .args(["--primary", "--"])
-            .arg(text)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map_err(|e| format!("Failed to execute wl-copy: {e}"))?;
-        return if status.success() {
-            Ok(())
-        } else {
-            Err(
-                "wl-copy --primary failed (does the compositor support the primary selection?)"
-                    .into(),
-            )
-        };
+        match crate::wl_copy::run(&["--primary", "--", text]) {
+            Ok(()) => return Ok(()),
+            Err(e) => warn!("Could not write PRIMARY with wl-copy; trying X11: {e}"),
+        }
     }
     with_arboard(|c| c.set().clipboard(LinuxClipboardKind::Primary).text(text))
 }
@@ -126,18 +119,10 @@ pub fn restore(saved: Option<String>) {
 
 fn clear() -> Result<(), String> {
     if use_wl_clipboard() {
-        let status = Command::new("wl-copy")
-            .args(["--primary", "--clear"])
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .map_err(|e| format!("Failed to execute wl-copy: {e}"))?;
-        return if status.success() {
-            Ok(())
-        } else {
-            Err("wl-copy --primary --clear failed".into())
-        };
+        match crate::wl_copy::run(&["--primary", "--clear"]) {
+            Ok(()) => return Ok(()),
+            Err(e) => warn!("Could not clear PRIMARY with wl-copy; trying X11: {e}"),
+        }
     }
     with_arboard(|c| c.clear_with().clipboard(LinuxClipboardKind::Primary))
 }
