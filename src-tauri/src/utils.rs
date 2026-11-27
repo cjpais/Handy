@@ -216,6 +216,91 @@ unsafe fn process_integrity_level(
     Ok(*GetSidSubAuthority(sid, count.saturating_sub(1)))
 }
 
+/// Lowercases the transcript's first letter when the text before the cursor
+/// ends mid-sentence, so a dictation that finishes a sentence doesn't start
+/// with a capital. See issue #382.
+pub fn match_case_to_cursor(text: String) -> String {
+    match text_before_cursor() {
+        Some(before) if continues_sentence(&before) => lowercase_first_word(text),
+        _ => text,
+    }
+}
+
+/// True if `before` ends mid-sentence: ignoring spaces and tabs, its last
+/// character is a letter, digit or comma. A line break starts a new sentence.
+fn continues_sentence(before: &str) -> bool {
+    before
+        .trim_end_matches([' ', '\t'])
+        .chars()
+        .last()
+        .is_some_and(|c| c.is_alphanumeric() || c == ',')
+}
+
+/// Lowercases the first letter, unless the first word is "I" (or "I'm" etc.)
+/// or has other capitals, like "NASA" or "McDonald".
+fn lowercase_first_word(text: String) -> String {
+    let word = text.split_whitespace().next().unwrap_or("");
+    let core = word.trim_end_matches(|c: char| !c.is_alphanumeric());
+    let keep = core == "I"
+        || word.starts_with("I'")
+        || word.starts_with("I\u{2019}")
+        || core.chars().skip(1).any(char::is_uppercase);
+    let mut chars = text.chars();
+    match chars.next() {
+        Some(first) if !keep && first.is_uppercase() => first.to_lowercase().chain(chars).collect(),
+        _ => text,
+    }
+}
+
+/// The few characters before the cursor in the focused text field, read with
+/// UI Automation. `None` for password fields, apps that don't expose their
+/// text, and other platforms.
+fn text_before_cursor() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::System::Com::{
+            CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
+        };
+        use windows::Win32::UI::Accessibility::{
+            CUIAutomation, IUIAutomation, IUIAutomationTextPattern, TextPatternRangeEndpoint_End,
+            TextPatternRangeEndpoint_Start, TextUnit_Character, UIA_TextPatternId,
+        };
+
+        // SAFETY: plain COM calls; every result is checked and the interfaces
+        // release themselves when dropped.
+        unsafe {
+            // Does nothing if this thread already joined the multithreaded apartment.
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+            let automation: IUIAutomation =
+                CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+            let focused = automation.GetFocusedElement().ok()?;
+            if focused.CurrentIsPassword().ok()?.as_bool() {
+                return None;
+            }
+            let pattern: IUIAutomationTextPattern =
+                focused.GetCurrentPatternAs(UIA_TextPatternId).ok()?;
+            let range = pattern.GetSelection().ok()?.GetElement(0).ok()?;
+            // Collapse to the cursor, then reach back a few characters.
+            range
+                .MoveEndpointByRange(
+                    TextPatternRangeEndpoint_End,
+                    &range,
+                    TextPatternRangeEndpoint_Start,
+                )
+                .ok()?;
+            range
+                .MoveEndpointByUnit(TextPatternRangeEndpoint_Start, TextUnit_Character, -3)
+                .ok()?;
+            Some(range.GetText(-1).ok()?.to_string())
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
+}
+
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
 pub fn cancel_current_operation(app: &AppHandle) {
@@ -357,6 +442,34 @@ pub fn apply_handy_gdk_backend() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn continues_sentence_after_a_word_or_comma() {
+        assert!(continues_sentence("I took the dog "));
+        assert!(continues_sentence("I took the dog"));
+        assert!(continues_sentence("first, "));
+        assert!(continues_sentence("walk"));
+        assert!(!continues_sentence("Done. "));
+        assert!(!continues_sentence("Really?"));
+        assert!(!continues_sentence("Wow!\n"));
+        assert!(!continues_sentence("a test\n"));
+        assert!(!continues_sentence("t\r\n"));
+        assert!(!continues_sentence(""));
+        assert!(!continues_sentence("   "));
+    }
+
+    #[test]
+    fn lowercases_only_ordinary_first_words() {
+        let lower = |s: &str| lowercase_first_word(s.to_string());
+        assert_eq!(lower("To the park"), "to the park");
+        assert_eq!(lower("I went"), "I went");
+        assert_eq!(lower("I'm here"), "I'm here");
+        assert_eq!(lower("I, too"), "I, too");
+        assert_eq!(lower("NASA said"), "NASA said");
+        assert_eq!(lower("McDonald's"), "McDonald's");
+        assert_eq!(lower("already lower"), "already lower");
+        assert_eq!(lower(""), "");
+    }
 
     #[test]
     fn only_a_higher_integrity_level_blocks_input() {

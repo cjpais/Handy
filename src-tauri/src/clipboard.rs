@@ -927,6 +927,8 @@ fn paste_as_configured(
     let paste_delay_ms = settings.paste_delay_ms;
     let paste_delay_after_ms = settings.paste_delay_after_ms;
 
+    let text = crate::utils::match_case_to_cursor(text);
+
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
         format!("{} ", text)
