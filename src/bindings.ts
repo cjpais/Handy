@@ -673,6 +673,18 @@ async initializeShortcuts() : Promise<Result<null, string>> {
 }
 },
 /**
+ * Open System Settings at the Accessibility list. macOS shows its own prompt
+ * only sometimes, so onboarding opens the list itself when none appears.
+ */
+async openAccessibilitySettings() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("open_accessibility_settings") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Mark onboarding as finished; called when its last screen closes, so quitting
  * midway resumes the flow.
  */
