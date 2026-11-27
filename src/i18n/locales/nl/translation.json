@@ -715,6 +715,11 @@
       "readingFile": "Bestand lezen...",
       "showMore": "Meer tonen",
       "showLess": "Minder tonen",
+      "postProcess": "Transcriptie nabewerken",
+      "postProcessError": "Nabewerking mislukt. Controleer je instellingen voor nabewerking of de logbestanden.",
+      "postProcessedTab": "Nabewerkt",
+      "originalTab": "Origineel",
+      "postProcessFailed": "De nabewerking is mislukt, dus de oorspronkelijke transcriptie is gebruikt.",
       "dropTitle": "Loslaten om te transcriberen",
       "dropDescription": "Het verschijnt in de geschiedenis."
     },

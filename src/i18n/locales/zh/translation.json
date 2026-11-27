@@ -715,6 +715,11 @@
       "readingFile": "正在读取文件...",
       "showMore": "显示更多",
       "showLess": "收起",
+      "postProcess": "后处理转录",
+      "postProcessError": "后处理失败。请检查后处理设置或日志。",
+      "postProcessedTab": "后处理结果",
+      "originalTab": "原文",
+      "postProcessFailed": "后处理失败，因此使用了原始转录。",
       "dropTitle": "拖放到此处进行转录",
       "dropDescription": "它会出现在历史记录中。"
     },

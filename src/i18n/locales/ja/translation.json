@@ -715,6 +715,11 @@
       "readingFile": "ファイルを読み込み中…",
       "showMore": "もっと見る",
       "showLess": "閉じる",
+      "postProcess": "文字起こしを後処理",
+      "postProcessError": "後処理に失敗しました。後処理の設定またはログを確認してください。",
+      "postProcessedTab": "後処理済み",
+      "originalTab": "元の文字起こし",
+      "postProcessFailed": "後処理に失敗したため、元の文字起こしが使用されました。",
       "dropTitle": "ドロップして文字起こし",
       "dropDescription": "履歴に表示されます。"
     },

@@ -715,6 +715,11 @@
       "readingFile": "Dosya okunuyor...",
       "showMore": "Daha fazla göster",
       "showLess": "Daha az göster",
+      "postProcess": "Transkripsiyonu son işlemden geçir",
+      "postProcessError": "Son işlem başarısız oldu. Son işlem ayarlarınızı veya günlükleri kontrol edin.",
+      "postProcessedTab": "Son işlemli",
+      "originalTab": "Orijinal",
+      "postProcessFailed": "Son işlem başarısız olduğu için orijinal transkripsiyon kullanıldı.",
       "dropTitle": "Yazıya dökmek için bırakın",
       "dropDescription": "Geçmiş'te görünecek."
     },

@@ -715,6 +715,11 @@
       "readingFile": "קורא קובץ...",
       "showMore": "הצג עוד",
       "showLess": "הצג פחות",
+      "postProcess": "עיבוד נוסף לתמלול",
+      "postProcessError": "העיבוד הנוסף נכשל. בדקו את הגדרות העיבוד הנוסף או את היומנים.",
+      "postProcessedTab": "מעובד",
+      "originalTab": "מקורי",
+      "postProcessFailed": "העיבוד הנוסף נכשל, ולכן נעשה שימוש בתמלול המקורי.",
       "dropTitle": "שחררו כדי לתמלל",
       "dropDescription": "הוא יופיע בהיסטוריה."
     },

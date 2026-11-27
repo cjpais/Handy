@@ -715,6 +715,11 @@
       "readingFile": "Đang đọc tệp...",
       "showMore": "Xem thêm",
       "showLess": "Thu gọn",
+      "postProcess": "Hậu xử lý bản chép lời",
+      "postProcessError": "Hậu xử lý thất bại. Hãy kiểm tra cài đặt hậu xử lý hoặc nhật ký.",
+      "postProcessedTab": "Đã hậu xử lý",
+      "originalTab": "Bản gốc",
+      "postProcessFailed": "Hậu xử lý thất bại nên bản chép lời gốc đã được dùng.",
       "dropTitle": "Thả để chép lời",
       "dropDescription": "Nó sẽ xuất hiện trong Lịch sử."
     },

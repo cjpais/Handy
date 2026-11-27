@@ -1,3 +1,4 @@
+use crate::actions::process_transcription_output;
 use crate::managers::{
     history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription_jobs::TranscriptionJobManager,
@@ -67,6 +68,37 @@ pub async fn delete_history_entry(
 #[specta::specta]
 pub fn retry_history_entry_transcription(jobs: State<'_, Arc<TranscriptionJobManager>>, id: i64) {
     jobs.retry(id);
+}
+
+/// Runs the entry's transcription through post-processing again with the
+/// current provider, model and prompt, and stores the result next to it.
+/// The reason for a failure is in the log.
+#[tauri::command]
+#[specta::specta]
+pub async fn post_process_history_entry(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<HistoryEntry, String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    let processed = process_transcription_output(&app, &entry.transcription_text, true).await;
+    let Some(post_processed_text) = processed.post_processed_text else {
+        return Err(format!("Post-processing failed for history entry {}", id));
+    };
+
+    history_manager
+        .update_post_processed(
+            id,
+            &entry.transcription_text,
+            post_processed_text,
+            processed.post_process_prompt,
+        )
+        .map_err(|e| e.to_string())
 }
 
 /// Stops the entry's background transcription: a queued one is dropped, a
