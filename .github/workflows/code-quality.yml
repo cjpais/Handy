@@ -55,6 +55,9 @@ jobs:
       - name: Check bundled model catalog matches @handy-computer/models
         run: bun run check:catalog
 
+      - name: Test post-processing model lists
+        run: bun run test:post-process-models
+
       - name: Test keyboard utilities
         run: bun run test:keyboard
 
