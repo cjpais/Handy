@@ -22,6 +22,10 @@ use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
 
+#[cfg(any(target_os = "macos", test))]
+#[path = "secure_input_accelerator.rs"]
+mod accelerator;
+
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct SecureInputStatus {
     /// Secure input is currently enabled (live check)
@@ -120,6 +124,7 @@ pub fn tray_warning_active(app: &AppHandle) -> bool {
 
 #[cfg(target_os = "macos")]
 mod imp {
+    use super::accelerator::carbon_equivalent;
     use super::*;
     use crate::settings::{self, KeyboardImplementation, ShortcutBinding};
     use log::{debug, error, info, warn};
@@ -363,35 +368,6 @@ mod imp {
         key.to_string().to_lowercase().starts_with("mouse")
     }
 
-    /// Build the Carbon-registrable equivalent of a keyed hotkey.
-    ///
-    /// Carbon has no concept of left/right modifiers, so side-specific
-    /// modifiers widen to the whole group — returned as `degraded: true` so
-    /// the UI can call out the changed matching. The fn key cannot be
-    /// expressed at all (`None`).
-    fn carbon_equivalent(hotkey: &handy_keys::Hotkey) -> Option<(String, bool)> {
-        use handy_keys::Modifiers as M;
-
-        if hotkey.modifiers.contains(M::FN) {
-            return None;
-        }
-
-        let mut widened = M::empty();
-        let mut degraded = false;
-        for group in [M::CTRL, M::OPT, M::SHIFT, M::CMD] {
-            if hotkey.modifiers.intersects(group) {
-                widened |= group;
-                if !hotkey.modifiers.contains(group) {
-                    // Only one side was specified — matching gets wider
-                    degraded = true;
-                }
-            }
-        }
-
-        let carbon_hotkey = handy_keys::Hotkey::new(widened, hotkey.key).ok()?;
-        Some((carbon_hotkey.to_handy_string(), degraded))
-    }
-
     /// Desired fallback for one binding, computed without plugin calls.
     enum ShadowPlan {
         /// Modifier-only or mouse-based; unaffected by secure input.
@@ -434,7 +410,7 @@ mod imp {
 
         let Some((carbon_binding, degraded)) = carbon_equivalent(&hotkey) else {
             warn!(
-                "SecureInput fallback: '{}' ('{}') cannot be expressed via Carbon",
+                "SecureInput fallback: '{}' ('{}') cannot be shadowed: the key or Fn modifier cannot be expressed by global-hotkey 0.8/Carbon; try an F-key or a modifier combo without Fn",
                 id, binding.current_binding
             );
             return ShadowPlan::Uncovered;
