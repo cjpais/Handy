@@ -10,6 +10,7 @@ import {
   getKeyName,
   MODIFIERS,
   normalizeKey,
+  recordChordKeys,
   type OSType,
 } from "@/lib/utils/keyboard";
 
@@ -174,13 +175,13 @@ export const useShortcutCapture = (
   useEffect(() => {
     if (!capturing || handyKeys) return;
     const pressed = new Set<string>();
-    const recorded: string[] = [];
+    let recorded: string[] = [];
     const onDown = (e: KeyboardEvent) => {
       if (escapeCancels && e.key === "Escape") return;
       e.preventDefault();
       const key = normalizeKey(getKeyName(e, osType));
       pressed.add(key);
-      if (!recorded.includes(key)) recorded.push(key);
+      recorded = recordChordKeys(recorded, e, osType);
       setPartial(recorded.join("+"));
     };
     const onUp = (e: KeyboardEvent) => {
@@ -190,6 +191,7 @@ export const useShortcutCapture = (
       const sorted = [...recorded].sort(
         (a, b) => +!MODIFIERS.includes(a) - +!MODIFIERS.includes(b),
       );
+      recorded = [];
       commit(sorted.join("+"));
     };
     window.addEventListener("keydown", onDown);
