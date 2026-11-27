@@ -30,6 +30,7 @@ import { VadBackendSelector } from "../VadBackendSelector";
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
+  const historyLimit = getSetting("history_limit");
   const experimentalEnabled = getSetting("experimental_enabled") || false;
 
   return (
@@ -60,10 +61,12 @@ export const AdvancedSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>
         <HistoryLimit descriptionMode="tooltip" grouped={true} />
-        <RecordingRetentionPeriodSelector
-          descriptionMode="tooltip"
-          grouped={true}
-        />
+        {!!historyLimit && (
+          <RecordingRetentionPeriodSelector
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+        )}
       </SettingsGroup>
 
       {experimentalEnabled && (
