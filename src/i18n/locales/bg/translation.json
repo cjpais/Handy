@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Бързите клавиши са блокирани от Secure Input",
     "language": "Език",
     "autoLanguage": "Автоматично",
-    "otherLanguages": "Други езици"
+    "otherLanguages": "Други езици",
+    "microphone": "Микрофон"
   },
   "sidebar": {
     "general": "Общи",

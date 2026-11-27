@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input",
     "language": "Language",
     "autoLanguage": "Auto",
-    "otherLanguages": "Other Languages"
+    "otherLanguages": "Other Languages",
+    "microphone": "Microphone"
   },
   "sidebar": {
     "general": "General",

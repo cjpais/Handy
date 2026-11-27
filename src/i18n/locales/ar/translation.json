@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ الاختصارات محجوبة بواسطة Secure Input",
     "language": "اللغة",
     "autoLanguage": "تلقائي",
-    "otherLanguages": "لغات أخرى"
+    "otherLanguages": "لغات أخرى",
+    "microphone": "الميكروفون"
   },
   "sidebar": {
     "general": "عام",

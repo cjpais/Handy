@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Kısayollar Secure Input tarafından engelleniyor",
     "language": "Dil",
     "autoLanguage": "Otomatik",
-    "otherLanguages": "Diğer Diller"
+    "otherLanguages": "Diğer Diller",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Genel",

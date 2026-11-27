@@ -201,11 +201,12 @@ pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
+pub async fn get_available_microphones(app: AppHandle) -> Result<Vec<AudioDevice>, String> {
     // cpal device enumeration can stall — run it off the webview/main run loop.
-    tokio::task::spawn_blocking(|| {
+    tokio::task::spawn_blocking(move || {
         let devices = handy_recorder::list_input_devices()
             .map_err(|e| format!("Failed to list audio devices: {}", e))?;
+        crate::tray::set_microphones(&app, devices.iter().map(|d| d.name.clone()).collect());
 
         let mut result = vec![AudioDevice {
             index: "default".to_string(),
@@ -241,6 +242,7 @@ pub async fn set_selected_microphone(app: AppHandle, device_name: String) -> Res
         Some(device_name)
     };
     write_settings(&app, settings);
+    crate::tray::update_tray_menu(&app);
 
     // Update the audio manager to use the new device. update_selected_device
     // can restart the cpal stream (blocking CoreAudio) — run it on a blocking

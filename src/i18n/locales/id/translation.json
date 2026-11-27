@@ -10,7 +10,8 @@
     "secureInputWarning": "⚠ Pintasan diblokir oleh Secure Input",
     "language": "Bahasa",
     "autoLanguage": "Otomatis",
-    "otherLanguages": "Bahasa Lain"
+    "otherLanguages": "Bahasa Lain",
+    "microphone": "Mikrofon"
   },
   "sidebar": {
     "general": "Umum",
