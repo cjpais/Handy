@@ -1,5 +1,5 @@
 use crate::audio_toolkit::{
-    audio::{AudioFrameCallback, LevelCallback},
+    audio::{AudioFrameCallback, LevelCallback, ReadySignal},
     vad::{
         frames_for_duration_ms, EarshotVad, SmoothedVad, VAD_OFFLINE_HANGOVER_MS, VAD_ONSET_MS,
         VAD_PREFILL_MS, VAD_STREAMING_HANGOVER_MS,
@@ -450,20 +450,46 @@ fn open_microphone_on_channel(
 
 /* ──────────────────────────────────────────────────────────────── */
 
+/// How long readiness waits for sound once the microphone is delivering only
+/// exact digital silence. A Bluetooth headset switching to its headset
+/// profile sends zeros for a second or so (#2387); a muted microphone sends
+/// them forever, so readiness gives up waiting and starts anyway.
+const SILENT_START_GRACE: Duration = Duration::from_millis(1500);
+
 /// One recording session's first-sample notification. Waiting on this never
 /// blocks the shortcut coordinator: callers hand it to a dedicated worker.
 pub struct RecordingReadiness {
-    receiver: mpsc::Receiver<()>,
+    receiver: mpsc::Receiver<ReadySignal>,
     generation: u64,
 }
 
 impl RecordingReadiness {
+    /// Blocks until the microphone delivers sound, or delivers only digital
+    /// silence for `SILENT_START_GRACE`. False if the recording ended first.
     pub fn wait(self) -> bool {
-        self.receiver.recv().is_ok()
+        wait_for_ready(&self.receiver, SILENT_START_GRACE)
     }
 
     pub fn generation(&self) -> u64 {
         self.generation
+    }
+}
+
+fn wait_for_ready(receiver: &mpsc::Receiver<ReadySignal>, silent_grace: Duration) -> bool {
+    match receiver.recv() {
+        Ok(ReadySignal::Sound) => true,
+        Ok(ReadySignal::Audio) => match receiver.recv_timeout(silent_grace) {
+            Ok(_) => true,
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                debug!(
+                    "Microphone delivered only digital silence for {:?}; starting anyway",
+                    silent_grace
+                );
+                true
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => false,
+        },
+        Err(_) => false,
     }
 }
 
@@ -910,7 +936,7 @@ impl AudioRecordingManager {
         }
         // The stream is running, but the device may not be delivering audio
         // yet (Bluetooth can take seconds); a recording's readiness waits for
-        // its first chunk.
+        // its first sound.
         info!(
             "Microphone stream initialized in {:?}",
             start_time.elapsed()
@@ -1360,6 +1386,40 @@ impl AudioRecordingManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn readiness_waits_through_a_silent_start_for_sound() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(ReadySignal::Audio).unwrap();
+        let sender = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(20));
+            tx.send(ReadySignal::Sound).unwrap();
+        });
+        let started = Instant::now();
+        assert!(wait_for_ready(&rx, Duration::from_secs(5)));
+        assert!(started.elapsed() >= Duration::from_millis(20));
+        sender.join().unwrap();
+    }
+
+    #[test]
+    fn readiness_gives_up_on_a_silent_microphone_after_the_grace() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(ReadySignal::Audio).unwrap();
+        assert!(wait_for_ready(&rx, Duration::from_millis(10)));
+        drop(tx);
+    }
+
+    #[test]
+    fn readiness_fails_when_the_recording_ends_before_sound() {
+        let (tx, rx) = mpsc::channel();
+        tx.send(ReadySignal::Audio).unwrap();
+        drop(tx);
+        assert!(!wait_for_ready(&rx, Duration::from_secs(5)));
+
+        let (tx, rx) = mpsc::channel::<ReadySignal>();
+        drop(tx);
+        assert!(!wait_for_ready(&rx, Duration::from_secs(5)));
+    }
 
     /// A recorder error, without touching a device: the request is rejected
     /// before one is opened.
