@@ -837,6 +837,10 @@
         "title": "Tempel Lebih Andal (Beta)",
         "description": "Kembalikan papan klip hanya setelah aplikasi target benar-benar membaca transkripsi, bukan setelah jeda tetap. Ditujukan untuk memperbaiki kasus isi papan klip lama yang tertempel saat sistem sedang terbebani. Memerlukan metode tempel papan klip; hanya macOS dan Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Jeda Pemulihan Papan Klip",
+        "description": "Berapa lama (dalam milidetik) transkripsi tetap di papan klip setelah ditempel, sebelum isi papan klip sebelumnya dikembalikan. Dengan Tempel Lebih Andal, waktunya dihitung sejak aplikasi membaca transkripsi. Tingkatkan jika isi papan klip lama yang ditempel alih-alih transkripsi."
+      },
       "recordingBuffer": {
         "title": "Buffer Perekaman Tambahan",
         "description": "Waktu tambahan (dalam milidetik) untuk terus merekam setelah Anda melepas tombol agar audio di bagian akhir tetap tertangkap. 0 = tanpa buffer tambahan."

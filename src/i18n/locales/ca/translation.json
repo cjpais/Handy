@@ -837,6 +837,10 @@
         "title": "Enganxament fiable (beta)",
         "description": "Restaura el porta-retalls només quan l'aplicació de destinació ha llegit la transcripció, en lloc de fer-ho després d'un retard fix. Pensat per evitar que s'enganxi el contingut antic del porta-retalls quan el sistema està carregat. Requereix un mètode d'enganxament amb el porta-retalls; només al macOS i al Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Retard de restauració del porta-retalls",
+        "description": "Quant de temps (en mil·lisegons) es manté la transcripció al porta-retalls després d'enganxar-la i abans de restaurar el porta-retalls anterior. Amb l'enganxament fiable, es compta des que una aplicació llegeix la transcripció. Augmenteu-lo si s'enganxa el contingut antic del porta-retalls en lloc de la transcripció."
+      },
       "recordingBuffer": {
         "title": "Marge addicional d'enregistrament",
         "description": "Temps addicional (en mil·lisegons) durant el qual es continua enregistrant després de deixar anar la tecla per capturar l'àudio final. 0 = sense marge addicional."

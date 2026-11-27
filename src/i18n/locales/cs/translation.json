@@ -837,6 +837,10 @@
         "title": "Spolehlivé vložení (Beta)",
         "description": "Obnoví schránku teprve poté, co cílová aplikace skutečně přečte přepis, místo po pevně daném zpoždění. Má odstranit vkládání starého obsahu schránky při zatížení systému. Vyžaduje způsob vložení přes schránku; pouze macOS a Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Zpoždění obnovení schránky",
+        "description": "Jak dlouho (v milisekundách) zůstane přepis ve schránce po vložení, než se obnoví předchozí schránka. Při spolehlivém vložení se počítá od chvíle, kdy přepis přečte některá aplikace. Zvyšte, pokud se místo přepisu vkládá starý obsah schránky."
+      },
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."

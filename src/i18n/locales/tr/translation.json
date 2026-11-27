@@ -837,6 +837,10 @@
         "title": "Güvenilir Yapıştırma (Beta)",
         "description": "Panoyu sabit bir gecikmenin ardından değil, hedef uygulama transkripsiyonu gerçekten okuduktan sonra geri yükler. Sistem yükü altında eski pano içeriğinin yapıştırılması sorununu gidermeyi amaçlar. Pano üzerinden çalışan bir yapıştırma yöntemi gerektirir; yalnızca macOS ve Windows."
       },
+      "clipboardRestoreDelay": {
+        "title": "Pano Geri Yükleme Gecikmesi",
+        "description": "Transkripsiyonun yapıştırıldıktan sonra, önceki panonuz geri yüklenmeden önce panoda ne kadar kaldığı (milisaniye cinsinden). Güvenilir Yapıştırma ile süre, bir uygulamanın transkripsiyonu okuduğu andan itibaren sayılır. Transkripsiyon yerine eski pano içeriği yapıştırılıyorsa artırın."
+      },
       "recordingBuffer": {
         "title": "Ekstra Kayıt Tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
