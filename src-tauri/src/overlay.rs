@@ -605,6 +605,16 @@ fn show_overlay_state_on_main(app_handle: &AppHandle, state: &str) {
             let pos_calc_elapsed = pos_started.elapsed() - set_pos_elapsed;
 
             let show_started = std::time::Instant::now();
+            #[cfg(target_os = "macos")]
+            {
+                use tauri_nspanel::ManagerExt;
+                if let Ok(panel) = app_handle.get_webview_panel("recording_overlay") {
+                    panel.show();
+                } else {
+                    let _ = overlay_window.show();
+                }
+            }
+            #[cfg(not(target_os = "macos"))]
             let _ = overlay_window.show();
             let show_elapsed = show_started.elapsed();
 
@@ -792,12 +802,26 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
         // Hide the window after a short delay to allow animation to complete,
         // unless a newer session has shown the overlay again by then.
         let window_clone = overlay_window.clone();
+        let handle = app_handle.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
             if OVERLAY_SHOW_GENERATION.load(Ordering::SeqCst) != scheduled_at {
                 log::debug!("Skipping stale overlay hide: a newer session is showing the overlay");
                 return;
             }
+            #[cfg(target_os = "macos")]
+            {
+                let app = handle.clone();
+                let _ = handle.run_on_main_thread(move || {
+                    use tauri_nspanel::ManagerExt;
+                    if let Ok(panel) = app.get_webview_panel("recording_overlay") {
+                        panel.hide();
+                    } else {
+                        let _ = window_clone.hide();
+                    }
+                });
+            }
+            #[cfg(not(target_os = "macos"))]
             let _ = window_clone.hide();
         });
     }
