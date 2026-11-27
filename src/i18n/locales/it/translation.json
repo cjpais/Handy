@@ -719,6 +719,18 @@
       "dropDescription": "Comparirà nella cronologia."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Acquisizione diagnostica",
+        "description": "Registra diagnostiche sui tempi per una sessione di assistenza.",
+        "start": "Avvia diagnostica",
+        "stopAndSave": "Interrompi e salva",
+        "active": "Registrazione diagnostica in corso",
+        "counts": "{{events}} eventi, {{dropped}} scartati",
+        "savedTo": "Salvato in {{path}}",
+        "reveal": "Mostra",
+        "privacyNote": "Solo dati sui tempi — nessun audio o testo trascritto viene registrato.",
+        "error": "Diagnostica non riuscita: {{message}}"
+      },
       "title": "Debug",
       "logDirectory": {
         "title": "Cartella dei Log",

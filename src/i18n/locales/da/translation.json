@@ -719,6 +719,18 @@
       "dropDescription": "Den vises i historikken."
     },
     "debug": {
+      "diagnostics": {
+        "title": "Diagnostikoptagelse",
+        "description": "Optag tidsdiagnostik til en supportsession.",
+        "start": "Start diagnostik",
+        "stopAndSave": "Stop og gem",
+        "active": "Optager diagnostik",
+        "counts": "{{events}} hændelser, {{dropped}} droppet",
+        "savedTo": "Gemt i {{path}}",
+        "reveal": "Vis",
+        "privacyNote": "Kun tidsdata — der optages ingen lyd eller transskriberet tekst.",
+        "error": "Diagnostik mislykkedes: {{message}}"
+      },
       "title": "Fejlfinding",
       "logDirectory": {
         "title": "Logmappe",

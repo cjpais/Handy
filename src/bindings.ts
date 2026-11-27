@@ -570,6 +570,25 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },
+async startDiagnostics() : Promise<Result<DiagnosticsStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_diagnostics") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopDiagnostics(destination: string | null) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_diagnostics", { destination }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async diagnosticsStatus() : Promise<DiagnosticsStatus> {
+    return await TAURI_INVOKE("diagnostics_status");
+},
 async isPortable() : Promise<boolean> {
     return await TAURI_INVOKE("is_portable");
 },
@@ -1207,6 +1226,11 @@ export type ChineseScript =
 "traditional_hk"
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
+/**
+ * Capture status as shown in the UI. Mirrors `diagnostics::Status` without
+ * tying the recorder module to Tauri types.
+ */
+export type DiagnosticsStatus = { active: boolean; started_at_ms: number | null; events: number; dropped: number }
 export type GpuDeviceOption = { id: string; name: string; total_vram_mb: number }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean; 
 /**

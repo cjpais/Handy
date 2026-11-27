@@ -719,6 +719,18 @@
       "dropDescription": "기록에 표시됩니다."
     },
     "debug": {
+      "diagnostics": {
+        "title": "진단 캡처",
+        "description": "지원 세션을 위한 타이밍 진단을 기록합니다.",
+        "start": "진단 시작",
+        "stopAndSave": "중지 후 저장",
+        "active": "진단 기록 중",
+        "counts": "이벤트 {{events}}개, {{dropped}}개 삭제됨",
+        "savedTo": "{{path}}에 저장됨",
+        "reveal": "표시",
+        "privacyNote": "타이밍 데이터만 기록됩니다. 오디오나 변환된 텍스트는 기록되지 않습니다.",
+        "error": "진단 실패: {{message}}"
+      },
       "title": "디버그",
       "logDirectory": {
         "title": "로그 디렉토리",
