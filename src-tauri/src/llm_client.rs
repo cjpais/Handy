@@ -3,7 +3,7 @@ use log::{debug, error, info};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::error::Error as StdError;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
@@ -26,6 +26,24 @@ struct ResponseFormat {
     #[serde(rename = "type")]
     format_type: String,
     json_schema: JsonSchema,
+}
+
+/// OpenRouter's default routing may send a request to a provider that ignores
+/// parameters it does not know, which silently drops a strict `response_format`.
+/// Asking for `require_parameters` restricts routing to providers that honour
+/// every parameter in the request, so the schema is actually enforced.
+#[derive(Debug, Serialize)]
+struct ProviderRouting {
+    require_parameters: bool,
+}
+
+fn require_parameters_routing(
+    provider: &PostProcessProvider,
+    structured_output: bool,
+) -> Option<ProviderRouting> {
+    (structured_output && provider.id == "openrouter").then_some(ProviderRouting {
+        require_parameters: true,
+    })
 }
 
 #[derive(Debug, Serialize, Clone, Default, PartialEq)]
@@ -110,6 +128,97 @@ fn remember_rejection(key: String) {
     }
 }
 
+fn reasoning_support_cache() -> &'static Mutex<HashMap<String, bool>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, bool>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn cached_reasoning_support(key: &str) -> Option<bool> {
+    reasoning_support_cache()
+        .lock()
+        .ok()
+        .and_then(|cache| cache.get(key).copied())
+}
+
+fn remember_reasoning_support(key: String, supported: bool) {
+    if let Ok(mut cache) = reasoning_support_cache().lock() {
+        cache.insert(key, supported);
+    }
+}
+
+fn failed_reasoning_lookups() -> &'static Mutex<HashSet<String>> {
+    static FAILED: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    FAILED.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn reasoning_lookup_failed(key: &str) -> bool {
+    failed_reasoning_lookups()
+        .lock()
+        .map(|failed| failed.contains(key))
+        .unwrap_or(false)
+}
+
+/// Keep the original behavior after a failed lookup, and do not repeat it for
+/// the life of the process.
+fn mark_reasoning_lookup_failed(key: &str) -> bool {
+    if let Ok(mut failed) = failed_reasoning_lookups().lock() {
+        failed.insert(key.to_string());
+    }
+    true
+}
+
+/// Ask OpenRouter once per model whether an endpoint supports both reasoning
+/// and the schema. Without this, models such as gpt-4o-mini and llama-3.3 would
+/// fail before Handy could retry. A failed lookup keeps the original behavior
+/// and lets the existing retry path decide.
+async fn openrouter_supports_reasoning(
+    provider: &PostProcessProvider,
+    api_key: &str,
+    model: &str,
+    key: &str,
+) -> bool {
+    if let Some(supported) = cached_reasoning_support(key) {
+        return supported;
+    }
+    if reasoning_lookup_failed(key) {
+        return true;
+    }
+
+    let base_url = provider.base_url.trim_end_matches('/');
+    let url = format!("{base_url}/models/{model}/endpoints");
+    let Ok(client) = create_client(provider, api_key) else {
+        return mark_reasoning_lookup_failed(key);
+    };
+    let Ok(response) = client
+        .get(&url)
+        .timeout(Duration::from_secs(15))
+        .send()
+        .await
+    else {
+        return mark_reasoning_lookup_failed(key);
+    };
+    if !response.status().is_success() {
+        return mark_reasoning_lookup_failed(key);
+    }
+    let Ok(json) = response.json::<Value>().await else {
+        return mark_reasoning_lookup_failed(key);
+    };
+    let Some(endpoints) = json["data"]["endpoints"].as_array() else {
+        return mark_reasoning_lookup_failed(key);
+    };
+
+    let supported = endpoints.iter().any(|endpoint| {
+        let params: Vec<&str> = endpoint["supported_parameters"]
+            .as_array()
+            .map(|params| params.iter().filter_map(|p| p.as_str()).collect())
+            .unwrap_or_default();
+        params.contains(&"reasoning")
+            && (params.contains(&"response_format") || params.contains(&"structured_outputs"))
+    });
+    remember_reasoning_support(key.to_string(), supported);
+    supported
+}
+
 #[derive(Debug, Serialize)]
 struct ChatCompletionRequest {
     model: String,
@@ -119,6 +228,8 @@ struct ChatCompletionRequest {
     response_format: Option<ResponseFormat>,
     #[serde(flatten)]
     reasoning: ReasoningParams,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: Option<ProviderRouting>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -482,12 +593,22 @@ pub async fn send_chat_completion_with_schema(
         },
     });
 
+    let structured_output = response_format.is_some();
     let key = endpoint_key(provider, model);
     let reasoning = if disable_reasoning && !is_known_rejected(&key) {
-        reasoning_disable_params(provider)
+        if structured_output
+            && provider.id == "openrouter"
+            && !openrouter_supports_reasoning(provider, &api_key, model, &key).await
+        {
+            ReasoningParams::default()
+        } else {
+            reasoning_disable_params(provider)
+        }
     } else {
         ReasoningParams::default()
     };
+
+    let provider_routing = require_parameters_routing(provider, structured_output);
 
     let mut request_body = ChatCompletionRequest {
         model: model.to_string(),
@@ -495,6 +616,7 @@ pub async fn send_chat_completion_with_schema(
         stream: false,
         response_format,
         reasoning,
+        provider: provider_routing,
     };
 
     let mut response = client
@@ -511,12 +633,16 @@ pub async fn send_chat_completion_with_schema(
         sanitized_url(response.url())
     );
 
+    let initial_status = status;
+
     // A 400/422 on a request carrying reasoning-disable fields is almost always
-    // the endpoint rejecting those fields — retry once without them.
-    if !status.is_success()
-        && matches!(status.as_u16(), 400 | 422)
-        && !request_body.reasoning.is_empty()
-    {
+    // the endpoint rejecting those fields. OpenRouter can also answer 404 when
+    // require_parameters finds no provider supporting every parameter, which
+    // includes the reasoning object. Retry without those fields in both cases,
+    // keeping the schema and routing requirement intact.
+    let retry_without_reasoning = matches!(status.as_u16(), 400 | 422)
+        || (status.as_u16() == 404 && request_body.provider.is_some());
+    if !status.is_success() && retry_without_reasoning && !request_body.reasoning.is_empty() {
         let error_text = response.text().await.unwrap_or_else(|e| {
             report_reqwest_error("Failed to read reasoning rejection response", &e)
         });
@@ -554,6 +680,12 @@ pub async fn send_chat_completion_with_schema(
             .text()
             .await
             .unwrap_or_else(|e| report_reqwest_error("Failed to read API error response", &e));
+        if initial_status != status {
+            return Err(format!(
+                "API request failed with status {} after retry (initial {}): {}",
+                status, initial_status, error_text
+            ));
+        }
         return Err(format!(
             "API request failed with status {}: {}",
             status, error_text
@@ -770,6 +902,7 @@ mod tests {
             stream: false,
             response_format: None,
             reasoning,
+            provider: None,
         };
         serde_json::to_value(&request).unwrap()
     }
@@ -790,6 +923,318 @@ mod tests {
         });
 
         format!("http://{address}")
+    }
+
+    /// Read one HTTP request from a test connection and return the body offset
+    /// with the raw bytes.
+    async fn read_request_body(stream: &mut tokio::net::TcpStream) -> Option<(usize, Vec<u8>)> {
+        let mut buf = Vec::new();
+        let mut tmp = [0_u8; 1024];
+        let header_end = loop {
+            let n = stream.read(&mut tmp).await.ok()?;
+            if n == 0 {
+                return None;
+            }
+            buf.extend_from_slice(&tmp[..n]);
+            if let Some(pos) = buf.windows(4).position(|w| w == b"\r\n\r\n") {
+                break pos + 4;
+            }
+        };
+        let header_text = String::from_utf8_lossy(&buf[..header_end]).to_string();
+        let content_length = header_text
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                if name.eq_ignore_ascii_case("content-length") {
+                    value.trim().parse::<usize>().ok()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0);
+        while buf.len() < header_end + content_length {
+            let n = stream.read(&mut tmp).await.ok()?;
+            if n == 0 {
+                break;
+            }
+            buf.extend_from_slice(&tmp[..n]);
+        }
+        Some((header_end, buf))
+    }
+
+    const CHAT_OK: &str = r#"{"choices":[{"message":{"content":"{\"transcription\":\"hello\"}"},"finish_reason":"stop"}]}"#;
+    const PARAM_REJECTED: &str =
+        r#"{"error":{"message":"No endpoints found that can handle the requested parameters"}}"#;
+
+    fn endpoints_body(reasoning_supported: bool) -> &'static str {
+        if reasoning_supported {
+            r#"{"data":{"endpoints":[{"supported_parameters":["reasoning","response_format"]}]}}"#
+        } else {
+            r#"{"data":{"endpoints":[{"supported_parameters":["response_format"]}]}}"#
+        }
+    }
+
+    /// Serve a scripted sequence of responses and capture JSON request bodies.
+    async fn serve_scripted(
+        responses: Vec<(&'static str, &'static str)>,
+    ) -> (String, std::sync::Arc<std::sync::Mutex<Vec<Value>>>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let captured_clone = captured.clone();
+
+        tokio::spawn(async move {
+            for (status, body) in responses {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                if let Some((header_end, buf)) = read_request_body(&mut stream).await {
+                    if let Ok(value) = serde_json::from_slice::<Value>(&buf[header_end..]) {
+                        captured_clone.lock().unwrap().push(value);
+                    }
+                }
+                let response = format!(
+                    "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+            }
+        });
+
+        (format!("http://{address}"), captured)
+    }
+
+    #[tokio::test]
+    async fn openrouter_skips_reasoning_when_model_lacks_it() {
+        let (base_url, captured) =
+            serve_scripted(vec![("200 OK", endpoints_body(false)), ("200 OK", CHAT_OK)]).await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": { "transcription": { "type": "string" } },
+            "required": ["transcription"],
+            "additionalProperties": false
+        });
+
+        let result = send_chat_completion_with_schema(
+            &openrouter,
+            "key".to_string(),
+            "test-model",
+            "hello".to_string(),
+            None,
+            Some(schema),
+            true,
+        )
+        .await;
+        assert!(result.is_ok(), "request failed: {result:?}");
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 1, "no rejected first attempt expected");
+        assert!(bodies[0].get("reasoning").is_none());
+        assert_eq!(bodies[0]["provider"]["require_parameters"], true);
+        assert_eq!(
+            cached_reasoning_support(&endpoint_key(&openrouter, "test-model")),
+            Some(false)
+        );
+    }
+
+    #[tokio::test]
+    async fn openrouter_structure_retries_404_without_reasoning() {
+        let (base_url, captured) = serve_scripted(vec![
+            ("200 OK", endpoints_body(true)),
+            ("404 Not Found", PARAM_REJECTED),
+            ("200 OK", CHAT_OK),
+        ])
+        .await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": { "transcription": { "type": "string" } },
+            "required": ["transcription"],
+            "additionalProperties": false
+        });
+
+        let result = send_chat_completion_with_schema(
+            &openrouter,
+            "key".to_string(),
+            "test-model",
+            "hello".to_string(),
+            None,
+            Some(schema),
+            true,
+        )
+        .await;
+        assert!(result.is_ok(), "request failed: {result:?}");
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 2, "expected an initial attempt and one retry");
+        assert_eq!(bodies[0]["reasoning"]["effort"], "none");
+        assert!(bodies[1].get("reasoning").is_none());
+        assert_eq!(bodies[1]["provider"]["require_parameters"], true);
+        assert_eq!(bodies[1]["response_format"]["type"], "json_schema");
+        assert!(is_known_rejected(&endpoint_key(&openrouter, "test-model")));
+    }
+
+    #[tokio::test]
+    async fn openrouter_structured_request_requires_parameters() {
+        let (base_url, captured) = serve_scripted(vec![("200 OK", CHAT_OK)]).await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": { "transcription": { "type": "string" } },
+            "required": ["transcription"],
+            "additionalProperties": false
+        });
+
+        let result = send_chat_completion_with_schema(
+            &openrouter,
+            "key".to_string(),
+            "test-model",
+            "hello".to_string(),
+            None,
+            Some(schema),
+            false,
+        )
+        .await;
+        assert!(result.is_ok(), "request failed: {result:?}");
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 1);
+        assert_eq!(bodies[0]["provider"]["require_parameters"], true);
+    }
+
+    #[tokio::test]
+    async fn openrouter_reuses_cached_model_support() {
+        let (base_url, captured) = serve_scripted(vec![
+            ("200 OK", endpoints_body(false)),
+            ("200 OK", CHAT_OK),
+            ("200 OK", CHAT_OK),
+        ])
+        .await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({ "type": "object", "properties": {} });
+
+        for _ in 0..2 {
+            let result = send_chat_completion_with_schema(
+                &openrouter,
+                "key".to_string(),
+                "test-model",
+                "hello".to_string(),
+                None,
+                Some(schema.clone()),
+                true,
+            )
+            .await;
+            assert!(result.is_ok(), "request failed: {result:?}");
+        }
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 2, "endpoints should be checked only once");
+        assert!(bodies.iter().all(|body| body.get("reasoning").is_none()));
+    }
+
+    #[tokio::test]
+    async fn openrouter_lookup_failure_keeps_reasoning_without_repeat() {
+        let (base_url, captured) = serve_scripted(vec![
+            ("500 Internal Server Error", "error"),
+            ("200 OK", CHAT_OK),
+            ("200 OK", CHAT_OK),
+        ])
+        .await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({ "type": "object", "properties": {} });
+
+        for _ in 0..2 {
+            let result = send_chat_completion_with_schema(
+                &openrouter,
+                "key".to_string(),
+                "test-model",
+                "hello".to_string(),
+                None,
+                Some(schema.clone()),
+                true,
+            )
+            .await;
+            assert!(result.is_ok(), "request failed: {result:?}");
+        }
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 2, "failed lookup should not be repeated");
+        assert!(bodies
+            .iter()
+            .all(|body| body["reasoning"]["effort"] == "none"));
+        assert!(reasoning_lookup_failed(&endpoint_key(
+            &openrouter,
+            "test-model"
+        )));
+    }
+
+    #[tokio::test]
+    async fn openrouter_malformed_endpoints_body_keeps_reasoning() {
+        let (base_url, captured) =
+            serve_scripted(vec![("200 OK", "{}"), ("200 OK", CHAT_OK)]).await;
+        let openrouter = provider("openrouter", &base_url);
+        let schema = serde_json::json!({ "type": "object", "properties": {} });
+
+        let result = send_chat_completion_with_schema(
+            &openrouter,
+            "key".to_string(),
+            "test-model",
+            "hello".to_string(),
+            None,
+            Some(schema),
+            true,
+        )
+        .await;
+        assert!(result.is_ok(), "request failed: {result:?}");
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 1);
+        assert_eq!(bodies[0]["reasoning"]["effort"], "none");
+        assert!(reasoning_lookup_failed(&endpoint_key(
+            &openrouter,
+            "test-model"
+        )));
+    }
+
+    #[tokio::test]
+    async fn non_openrouter_404_is_not_retried() {
+        let (base_url, captured) = serve_scripted(vec![("404 Not Found", PARAM_REJECTED)]).await;
+        let custom = provider("custom", &base_url);
+        let schema = serde_json::json!({ "type": "object", "properties": {} });
+
+        let result = send_chat_completion_with_schema(
+            &custom,
+            "key".to_string(),
+            "test-model",
+            "hello".to_string(),
+            None,
+            Some(schema),
+            true,
+        )
+        .await;
+        assert!(result.is_err());
+
+        let bodies = captured.lock().unwrap().clone();
+        assert_eq!(bodies.len(), 1, "no retry expected without routing");
+    }
+
+    #[test]
+    fn routing_requirement_is_limited_to_openrouter_schemas() {
+        for (id, structured) in [
+            ("openrouter", true),
+            ("openrouter", false),
+            ("custom", true),
+        ] {
+            let p = provider(id, "https://example.com/v1");
+            let routing = require_parameters_routing(&p, structured);
+            if id == "openrouter" && structured {
+                assert_eq!(
+                    serde_json::to_value(routing.unwrap()).unwrap(),
+                    serde_json::json!({ "require_parameters": true })
+                );
+            } else {
+                assert!(routing.is_none());
+            }
+        }
     }
 
     #[test]
